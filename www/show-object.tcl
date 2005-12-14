@@ -138,20 +138,32 @@ if {$show_source} {
   append output [::xotcl::api source_to_html $obj_create_source] \n
 }
 
+proc api_src_doc {out show_source scope object proc m} {
+  set output "<a name='$proc-$m'></a><li>$out"
+  if { $show_source } { 
+    append output \
+	"<pre class='code'>" \
+	[api_tcl_to_html [::xotcl::api proc_index $scope $object $proc $m]] \
+	</pre>
+  }
+  return $output
+}
+
 if {$show_methods} {
   append output "<h3>Methods</h3>\n" <ul> \n
-   foreach m [lsort [DO $object info procs]] {
+  foreach m [lsort [DO $object info procs]] {
     set out [api_documentation $scope $object proc $m]
     if {$out ne ""} {
-      append output "<a name='proc-$m'></a><li>$out"
-      if { $show_source } { 
-	append output \
-	    "<pre class='code'>" \
-	    [api_tcl_to_html [::xotcl::api proc_index $scope $object proc $m]] \
-	    </pre>
-      }
+      append output [api_src_doc $out $show_source $scope $object proc $m]
     }
   }
+  foreach m [lsort [DO $object info forward]] {
+    set out [api_documentation $scope $object forward $m]
+    if {$out ne ""} {
+      append output [api_src_doc $out $show_source $scope $object forward $m]
+    }
+  }
+
   if {$isclass} {
     set cls [lsort [DO $object info instprocs]]
     foreach m $cls {

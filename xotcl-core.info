@@ -8,10 +8,10 @@
     <singleton-p>t</singleton-p>
     <auto-mount>xotcl</auto-mount>
 
-    <version name="0.15" url="http://media.wu-wien.ac.at/download/xotcl-core-0.15.apm">
+    <version name="0.27" url="http://media.wu-wien.ac.at/download/xotcl-core-0.27.apm">
         <owner url="mailto:neumann@wu-wien.ac.at">Gustaf Neumann</owner>
-        <summary>XOTcl library functionality (e.g. thread handling, online documentation)</summary>
-        <release-date>2005-10-07</release-date>
+        <summary>XOTcl library functionality (e.g. thread handling, online documentation, Generic Form and List Classes)</summary>
+        <release-date>2005-12-08</release-date>
         <description format="text/html">This component contains some core functionality for OACS
 applications using XOTcl. It includes
 XOTcl thread handling for OACS (supporting persistent and
@@ -22,9 +22,10 @@ procs and instproc an be created using the methods ad_proc
 and ad_instproc. This component  provides as 
 well an XOTcl Object and Class browser, as well as
 means to control the recreation of objects and classes
-when components are reloaded.</description>
+when components are reloaded. 0.23 contains a major overhaul of the Generic classes. Object preliminary object layer for content repository, oo templating.</description>
+        <maturity>0</maturity>
 
-        <provides url="xotcl-core" version="0.15"/>
+        <provides url="xotcl-core" version="0.27"/>
 
         <callbacks>
         </callbacks>

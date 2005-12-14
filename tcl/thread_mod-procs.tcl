@@ -123,12 +123,13 @@ ad_library {
       "set ::xotcl::currentThread [self]" \n\
       $cmd 
   my set mutex [thread::mutex create]
+  ns_log notice "mutex [my set mutex] created"
   next
 }
 
-::xotcl::THREAD ad_proc recreate {obj args} {
-  # this method catches recreation of THREADs in worker threads 
-  # it reinitializes the thread according to the new definition.
+::xotcl::THREAD ad_proc -private recreate {obj args} {
+  this method catches recreation of THREADs in worker threads 
+  it reinitializes the thread according to the new definition.
 } {
   my log "recreating [self] $obj, tid [$obj exists tid]"
   if {![string match ::* $obj]} { set obj ::$obj }
@@ -153,12 +154,25 @@ ad_library {
     if {$refcount == 0} {
       my log "thread terminated"
       nsv_unset [self class] [self]
+      thread::mutex destroy [my set mutex]
+      ns_log notice "mutex [my set mutex] destroyed"
     }
   }
-  thread::mutex destroy [my set mutex]
   next
 }
-::xotcl::THREAD instproc do {o args} {
+
+::xotcl::THREAD instproc get_tid {} {
+  if {[nsv_exists [self class] [self]]} {
+    # the thread was already started
+    return [nsv_get [self class] [self]]
+  }
+  # start a small command in the thread
+  my do info exists x
+  # now we have the thread and can return the tid
+  return [my set tid]
+}
+
+::xotcl::THREAD instproc do {-async:switch args} {
   if {![nsv_exists [self class] [self]]} {
     # lazy creation of a new slave thread
 
@@ -193,8 +207,12 @@ ad_library {
     }
     my set tid $tid
   }
-  #my log "calling [self class] ($tid, [pid]) $o $args"
-  return [thread::send $tid "$o $args"]
+  #my log "calling [self class] ($tid, [pid]) $args"
+  if {$async} {
+    return [thread::send -async $tid $args]
+  } else {
+    return [thread::send $tid $args]
+  }
 }
 
 # create a sample persistent thread that can be acessed 
@@ -209,37 +227,35 @@ ad_library {
 #
 
 ################## forwarding  proxy ##################
-Class ::xotcl::THREAD::Proxy -parameter {attach} 
-::xotcl::THREAD::Proxy configure \
-    -instproc forward args {
-      set cp [self calledproc]
-      if { [string equal $cp attach] 
-	   || [string equal $cp filter] 
-	   || [string equal $cp detachAll]} {
-	next
-      } elseif {[string equal $cp destroy]} {
-	eval [my attach] do [self] $cp $args
-	my log "destroy"
-	next
-      } else {
-	my log "forwarding [my attach] do [self] $cp $args"
-	eval [my attach] do [self] $cp $args
-      }
-    } -instproc init args {
-      my filter forward
-    } -proc detachAll {} {
-      foreach i [my info instances] {$i filter ""}
-    }
-# the following does not work yet
-#::xotcl::THREAD::Proxy proc create {obj args} {
-#  my log "[self proc] $obj"
-#  my filter ""
-#  next
-#}
+# Class ::xotcl::THREAD::Proxy -parameter {attach} 
+# ::xotcl::THREAD::Proxy configure \
+#     -instproc forward args {
+#       set cp [self calledproc]
+#       if { [string equal $cp attach] 
+# 	   || [string equal $cp filter] 
+# 	   || [string equal $cp detachAll]} {
+# 	next
+#       } elseif {[string equal $cp destroy]} {
+# 	eval [my attach] do [self] $cp $args
+# 	my log "destroy"
+# 	next
+#       } else {
+# 	my log "forwarding [my attach] do [self] $cp $args"
+# 	eval [my attach] do [self] $cp $args
+#       }
+#     } -instproc init args {
+#       my filter forward
+#     } -proc detachAll {} {
+#       foreach i [my info instances] {$i filter ""}
+#     }
+
 
 # sample Thread client routine, calls a same named object in the server thread
-Class create ::xotcl::THREAD::Client -parameter server
+# a thread client should be created in an connection thread dynamically to 
+# avoid name clashes in the blueprint.
+ 
+Class create ::xotcl::THREAD::Client -parameter {server {serverobj [self]}}
 ::xotcl::THREAD::Client instproc do args {
-  eval [my server] do [self] $args
+  eval [my server] do [my serverobj] $args
 }
 

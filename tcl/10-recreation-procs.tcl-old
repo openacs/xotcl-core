@@ -8,7 +8,7 @@ ad_library {
   XOTcl provides support for altering this behavior through 
   the recreate method.
 
-  @author Gustaf Neumann (neumann@wu-wien.ac.at)
+  @author Gustaf Neumann
   @creation-date 2005-05-13
   @cvs-id $Id$
 }
@@ -54,7 +54,7 @@ if {![::xotcl::Object isclass ::xotcl::RecreationClass]} {
     {instreinit}
   } -superclass ::xotcl::Class \
       -instproc recreate {obj args} {
-	#my log "### recreateclass instproc $obj <$args>"
+	my log "### recreateclass instproc $obj <$args>"
 	# the minimal reconfiguration is to set the class and remove methods
 	$obj class [self]
 	foreach p [$obj info procs] {$obj proc $p {} {}}
@@ -133,27 +133,19 @@ Class ad_instproc recreate {obj args} {
 } {
   # clean on the object level
   my log "+++ instproc recreate $obj <$args> old class = [$obj info class], new class = [self]"
-  $obj filter set {}
-  $obj mixin set {}
   set cl [self] 
-  foreach p [$obj info commands] {$obj proc $p {} {}}
+  $obj class $cl
+  foreach p [$obj info procs] {$obj proc $p {} {}}
   foreach c [$obj info children] {
     my log "recreate destroy <$c destroy"
     $c destroy
   }
-  #my log "+++ $obj recreate unset vars"
-  #my log "+++ $obj vars = {[$obj info vars]}"
-  foreach var [$obj info vars] {
-    #my log "$obj unset $var"
-    $obj unset $var
-  }
-  #my log "+++ $obj recreate unset vars done" 
-  # set p new values
-  $obj class $cl 
+  foreach var [$obj info vars] {$obj unset $var}
+  $obj mixin set {}
+  $obj filter set {}
   set pcl [$cl info parameterclass]
-  #my log "+++ $obj recreate calling searchDefaults"
   $pcl searchDefaults $obj
-  #my log "+++ $obj recreate calling $obj configure $args"
+  #my log "+++ recreate calling $obj configure $args"
   set pos [eval $obj configure $args]
   #my log "+++ recreate instproc configure returns $pos"
   if {[lsearch -exact $args -init] == -1} {
@@ -163,10 +155,7 @@ Class ad_instproc recreate {obj args} {
   }
 }
 
-#::xotcl::Object instforward unset -objscope 
-#  ::xotcl::Object instforward unset
 ::Serializer exportMethods {
   ::xotcl::Class instproc recreate
   ::xotcl::Class proc recreate
-  ::xotcl::Object instforward unset
 }

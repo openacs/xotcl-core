@@ -20,21 +20,14 @@ package require xotcl::serializer 0.8
   ::xotcl::Class  instproc ad_instproc
   ::xotcl::Object instproc ad_doc
   ::xotcl::Object instproc __api_make_doc
+  ::xotcl::Object instproc __api_make_forward_doc
 }
 ::Serializer exportObjects {
   ::xotcl::api
 }
 
 ::xotcl::Object create ::xotcl::api \
-    -proc split_arguments {} {
-      my upvar args args arguments arguments doc doc body body
-      if {[llength $args]==3} {
-	foreach {arguments doc body} $args break
-      } else {
-	error "wrong number of arguments provided to ad_proc or ad_instproc"
-      }
-
-    } -proc isclass {scope obj} {
+    -proc isclass {scope obj} {
       if {$scope eq ""} {
 	set isclass [::xotcl::Object isclass $obj]
       } else {
@@ -59,7 +52,7 @@ package require xotcl::serializer 0.8
       return $scope
 
     } -proc inscope {scope args} {
-      expr {$scope eq "" ? [eval $args] : [$scope do $args]}
+      expr {$scope eq "" ? [eval $args] : [eval $scope do $args]}
 
     } -proc script_name {scope} {
       #set kind [expr {[my istype ::xotcl::Class] ? "Class" : "Object"}]
@@ -180,27 +173,77 @@ package require xotcl::serializer 0.8
   nsv_set api_proc_doc $proc_index [array get doc_elements]
 }
 
-::xotcl::Object instproc ad_proc {
-   {-private:switch false}
-   {-deprecated:switch false}
-   {-warn:switch false}
-   {-debug:switch false} 
-} {proc_name args} {
-  ::xotcl::api split_arguments
-  uplevel [list [self] proc $proc_name $arguments $body]
-  my __api_make_doc "" $proc_name
+::xotcl::Object instproc __api_make_forward_doc {inst method_name} {
+  upvar doc doc private private public public deprecated deprecated
+  if {$doc eq ""} {
+    set doc_elements(main) ""
+  } else {
+    ad_parse_documentation_string $doc doc_elements
+    #my log "doc_elements=[array get doc_elements]"
+  }
+  set defaults [list]
+  set public [expr {$private ? false : true}]
+  set doc_elements(public_p) $public
+  set doc_elements(private_p) $private
+  set doc_elements(deprecated_p) $deprecated
+  set doc_elements(varargs_p) false
+  set doc_elements(flags) [list]
+  set doc_elements(switches) [list]
+  set doc_elements(default_values) [list]
+  set doc_elements(positionals) [list] 
+  # argument documentation finished
+  set scope [::xotcl::api scope]
+  set doc_elements(script) [::xotcl::api script_name $scope]
+  set proc_index [::xotcl::api proc_index $scope [self] ${inst}forward $method_name]
+  if {![nsv_exists api_proc_doc $proc_index]} {
+    nsv_lappend api_proc_doc_scripts $doc_elements(script) $proc_index
+  }
+  my log "doc_elements=[array get doc_elements]"
+  my log "SETTING api_proc_doc '$proc_index'"
+  nsv_set api_proc_doc $proc_index [array get doc_elements]
 }
+
+::xotcl::Object instproc ad_proc {
+  {-private:switch false}
+  {-deprecated:switch false}
+  {-warn:switch false}
+  {-debug:switch false} 
+  proc_name arguments doc body} {
+    uplevel [list [self] proc $proc_name $arguments $body]
+    my __api_make_doc "" $proc_name
+  }
+
+::xotcl::Object instproc ad_forward {
+  {-private:switch false}
+  {-deprecated:switch false}
+  {-warn:switch false}
+  {-debug:switch false} 
+  method_name doc args} {
+    uplevel [self] forward $method_name $args
+    my __api_make_forward_doc "" $method_name
+  }
 
 ::xotcl::Class instproc ad_instproc {
    {-private:switch false}
    {-deprecated:switch false}
    {-warn:switch false}
    {-debug:switch false} 
-} {proc_name args} {
-  ::xotcl::api split_arguments
-  uplevel [list [self] instproc $proc_name $arguments $body]
-  my __api_make_doc inst $proc_name
-}
+  proc_name arguments doc body} {
+    uplevel [list [self] instproc $proc_name $arguments $body]
+    my __api_make_doc inst $proc_name
+  }
+
+::xotcl::Object instproc ad_instforward {
+  {-private:switch false}
+  {-deprecated:switch false}
+  {-warn:switch false}
+  {-debug:switch false} 
+  method_name doc args} {
+    uplevel [self] instforward $method_name $args
+    my __api_make_forward_doc inst $method_name
+  }
+
+
 
 ::xotcl::Object instproc ad_doc {doc_string} {
   ad_parse_documentation_string $doc_string doc_elements
