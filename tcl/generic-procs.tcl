@@ -227,8 +227,8 @@ namespace eval ::Generic {
       my set superclass [[my info superclass] set object_type]
     }
     set sql_attribute_names [list]
-    set o [Object new -volatile -contains [my cr_attributes]]
-    foreach att [$o info children] {
+    set o [xo::OrderedComposite new -volatile -contains [my cr_attributes]]
+    foreach att [$o children] { 
       lappend sql_attribute_names [$att attribute_name]
     }
     my log "-- attribute_names <$sql_attribute_names> [$o info children]"
