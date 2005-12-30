@@ -55,7 +55,10 @@ namespace eval ::xo {
 
   OrderedComposite instproc destroy {} {
     # destroy all children of the ordered composite
-    foreach c [my set __children] { $c destroy }
+    if {[my exists __children]} {
+      #my log "-- destroying children [my set __children]"
+      foreach c [my set __children] { $c destroy }
+    }
     next
   }
 

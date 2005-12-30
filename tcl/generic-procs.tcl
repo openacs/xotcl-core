@@ -221,7 +221,6 @@ namespace eval ::Generic {
   }
 
   CrClass instproc init {} {
-    my log "-- "
     my instvar object_type sql_attribute_names
     if {[my info superclass] ne "::Generic::CrItem"} {
       my set superclass [[my info superclass] set object_type]
@@ -231,7 +230,7 @@ namespace eval ::Generic {
     foreach att [$o children] { 
       lappend sql_attribute_names [$att attribute_name]
     }
-    my log "-- attribute_names <$sql_attribute_names> [$o info children]"
+    #my log "-- attribute_names <$sql_attribute_names> [$o info children]"
 
     if {![my object_type_exists]} {
       my create_object_type
@@ -240,7 +239,6 @@ namespace eval ::Generic {
       select tree_sortkey from acs_object_types 
       where object_type = :object_type
     }]
-    my log "-- type key = [my set object_type_key]"
     next
   }
   
@@ -334,6 +332,8 @@ namespace eval ::Generic {
     {-with_subtypes:boolean true}
     {-count:boolean false}
     {-folder_id}
+    {-page_size 20}
+    {-page_number ""}
   } {
     returns the SQL-query to select the CrItems of the specified object_type
     @select_attributes attributes for the sql query to be retrieved, in addion
@@ -357,17 +357,29 @@ namespace eval ::Generic {
 	      "acs_object_types.tree_sortkey between \
                '$object_type_key' and tree_right('$object_type_key')" :
 	      "acs_object_types.tree_sortkey = '$object_type_key'"}]
-    set attribute_selection [expr {$count ? "count(*)" : [join $attributes ,]}]
+    if {$count} {
+      set attribute_selection "count(*)"
+      set order_clause ""      ;# no need to order when we count
+      set page_number  ""      ;# no pagination when count is used
+    } else {
+      set attribute_selection [join $attributes ,]
+    }
+
     if {$where_clause ne ""} {
       set where_clause "and $where_clause"
+    }
+    if {$page_number ne ""} {
+      set pagination "offset [expr {$page_size*($page_number-1)}] limit $page_size"
+    } else {
+      set pagination ""
     }
     return "select $attribute_selection
     from acs_object_types, acs_objects, cr_items ci, cr_revisions cr 
         where $type_selection
         and acs_object_types.object_type = ci.content_type
         and ci.live_revision = cr.revision_id 
-        and parent_id = $folder_id
-        and acs_objects.object_id = cr.revision_id $where_clause $order_clause"
+        and parent_id = $folder_id and acs_objects.object_id = cr.revision_id \
+	$where_clause $order_clause $pagination"
   }
 
   CrClass ad_instproc instantiate_all {
@@ -376,13 +388,15 @@ namespace eval ::Generic {
     {-where_clause ""}
     {-with_subtypes:boolean true}
     {-folder_id}
+    {-page_size 20}
+    {-page_number ""}
   } {
     Return all instances of an content type class matching the
     specified clauses.
   } {
     set __result [::xo::OrderedComposite new]
     uplevel #1 [list $__result volatile]
-    $__result proc destroy {} {my log "-- "; next}
+    #$__result proc destroy {} {my log "-- "; next}
 
     set __attributes [list] 
     foreach a [concat [list ci.item_id acs_objects.object_type] \
@@ -396,7 +410,8 @@ namespace eval ::Generic {
 	     -select_attributes $select_attributes \
 	     -with_subtypes $with_subtypes \
 	     -where_clause $where_clause \
-	     -order_clause $order_clause] {
+	     -order_clause $order_clause \
+	     -page_size $page_size -page_number $page_number] {
 	       set __o [$object_type create ${__result}::$item_id]
 	       $__result add $__o
 	       #my log "-- $__result add $__o, $object_type $item_id"
@@ -424,7 +439,7 @@ namespace eval ::Generic {
   } { 
     db_1row get_class "select content_type as object_type from cr_items \
 	where item_id=$item_id"
-    if {![string match ::* $object_type]} {set object_type ::$object_type}
+    if {![string match "::*" $object_type]} {set object_type ::$object_type}
     set o [$object_type create ::[expr {$revision_id ? $revision_id : $item_id}]]
     $object_type fetch_object \
 	-item_id $item_id -revision_id $revision_id -object $o

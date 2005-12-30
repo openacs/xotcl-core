@@ -154,7 +154,8 @@ Class ad_instproc recreate {obj args} {
   #my log "+++ $obj recreate calling searchDefaults"
   $pcl searchDefaults $obj
   #my log "+++ $obj recreate calling $obj configure $args"
-  set pos [eval $obj configure $args]
+  # we use uplevel to handle -volatile correctly
+  set pos [my uplevel $obj configure $args]
   #my log "+++ recreate instproc configure returns $pos"
   if {[lsearch -exact $args -init] == -1} {
     incr pos -1

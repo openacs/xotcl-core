@@ -58,7 +58,7 @@ package require xotcl::serializer 0.8
       #set kind [expr {[my istype ::xotcl::Class] ? "Class" : "Object"}]
       #return "$scope$kind [self]"
       set script [info script]
-      if {[string equal "" $script] && [info exists ::xotcl::currentScript]} {
+      if {$script eq "" && [info exists ::xotcl::currentScript]} {
 	set script $::xotcl::currentScript
       }
       set root_dir [nsv_get acs_properties root_directory]
@@ -84,7 +84,7 @@ package require xotcl::serializer 0.8
       return "$scope$kind $obj"
 
     } -proc proc_index {scope obj instproc proc_name} {
-      if {[string equal "" $scope]} {
+      if {$scope eq ""} {
 	return "$obj $instproc $proc_name"
       } else {
 	return "$scope $obj $instproc $proc_name"

@@ -73,10 +73,10 @@ proc info_option {scope object kind {dosort 0}} {
       lappend refs [::xotcl::api object_link $scope $e]
     }
   }
-  if {[llength $refs]>0 && [string compare ::xotcl::Object $list]} {
+  if {[llength $refs]>0 && $list ne "::xotcl::Object"} {
     append class_references "<li>$kind: [join $refs {, }]</li>\n"
   }
-  if {[llength $list]>0 && [string compare ::xotcl::Object $list]} {
+  if {[llength $list]>0 && $list ne "::xotcl::Object"} {
     return " \\\n     -$kind [list $list]"
   }
   return ""
@@ -191,7 +191,7 @@ if {$show_variables} {
       append vars "$object set $v [list [DO $object set $v]]\n"
     }
   }
-  if {[string compare "" $vars]} {
+  if {$vars ne ""} {
     append output "<h3>Variables</h3>\n" \
 	[::xotcl::api source_to_html $vars] \n
   }
@@ -203,7 +203,7 @@ if {$isclass} {
     append instances [::xotcl::api object_link $scope $o] ", "
   }
   set instances [string trimright $instances ", "]
-  if {[string compare "" $instances]} {
+  if {$instances ne ""} {
     append output "<h3>Instances</h3>\n" \
 	<blockquote>\n \
 	$instances \

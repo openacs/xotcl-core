@@ -34,6 +34,13 @@ namespace eval ::xo {
   Class Table -superclass OrderedComposite \
       -parameter {{no_data  "No Data"} {renderer TABLE2}}
 
+  Table instproc destroy {} {
+    #my log "-- "
+    foreach c {__actions __columns} {
+      namespace eval [self]::$c {namespace forget [self class]::*}
+    }
+    next
+  }
   Table instproc actions {cmd} {
     set M [OrderedComposite create [self]::__actions]
     namespace eval $M {namespace import -force [self class]::*}
@@ -48,21 +55,26 @@ namespace eval ::xo {
       eval lappend slots [$c get-slots]
     }
     my proc add $slots {
-      set __self [Object new]
+      set __self [::xo::Table::Line new]
       foreach __v [info vars] {$__self set $__v [set $__v]}
       next $__self
     }
   }
 
   Table instproc render_with {renderer} {
-    #my log "--"
+    my log "--"
     set cl [self class]
     [self] mixin ${cl}::$renderer 
     foreach child [$cl info classchildren] {
       #my log "-- $child heritage [$child info heritage]"
       if {[$child info heritage ::xo::OrderedComposite::Child] eq ""} continue
-      $child instmixin ${cl}::${renderer}::[namespace tail $child]
-      #my log "-- $child instmixin ${cl}::${renderer}::[namespace tail $child]"
+      set mixinname ${cl}::${renderer}::[namespace tail $child]
+      if {[::xotcl::Object isclass $mixinname]} {
+	$child instmixin $mixinname
+	#my log "-- using mixin $mixinname"
+      } else {
+	#my log "-- no mixin $mixinname"
+      }
     }
     my init_renderer
   }
@@ -85,6 +97,18 @@ namespace eval ::xo {
     }
     ns_return 200 text/csv $output
   }
+
+  Class create Table::Line \
+      -instproc attlist {name atts {extra ""}} {
+	set result [list] 
+	foreach att $atts {
+	  set varname $name.$att
+	  if {[my exists $varname]} {lappend result $att [my set $varname]}
+	}
+	foreach {att val} $extra {lappend result $att $val}
+	return $result
+      }
+  
 
   #
   # Define elements of a Table
@@ -113,9 +137,43 @@ namespace eval ::xo {
 	  }
 	  return $slots
 	}
-  
+
+    Class ImageField \
+	-parameter {src width height border title alt} \
+	-superclass ::xo::Table::Field \
+	-instproc get-slots {} {
+	  set slots [list -[my name]]
+	  lappend slots [list -[my name].src [my src]]
+	  lappend slots [list -[my name].href ""]
+	  foreach att {width height border title alt} {
+	    if {[my exists $att]} {
+	      lappend slots [list -[my name].$att [my $att]]
+	    } else {
+	      lappend slots [list -[my name].$att]
+	    }
+	  }
+	  return $slots
+	}
+
+    Class ImageField_EditIcon \
+	-superclass ImageField -parameter {
+	  {src /resources/acs-subsite/Edit16.gif} {width 16} {height 16} {border 0} 
+	  {title "Edit Item"} {alt "edit"}
+	}
+    Class ImageField_ViewIcon \
+	-superclass ImageField -parameter {
+	  {src /resources/acs-subsite/Zoom16.gif} {width 16} {height 16} {border 0} 
+	  {title "View Item"} {alt "view"}
+	}
+    Class ImageField_DeleteIcon \
+	-superclass ImageField -parameter {
+	  {src /resources/acs-subsite/Delete16.gif} {width 16} {height 16} {border 0} 
+	  {title "Delete Item"} {alt "delete"}
+	}
+    
     # export table elements
-    namespace export Field AnchorField  Action
+    namespace export Field AnchorField  Action ImageField \
+	ImageField_EditIcon ImageField_ViewIcon ImageField_DeleteIcon
   }
 }
 
@@ -244,6 +302,14 @@ namespace eval ::xo::Table {
 	next
       }
 
+ 
+  Class create TABLE::ImageField \
+      -superclass TABLE::Field \
+      -instproc render-data {line} {
+	html::a -href [$line set [my name].href] -style "border-bottom: none;" {
+	  html::img [$line attlist [my name] {src width height border title alt}] {}
+	}
+      }
 
   Class TABLE2 \
       -superclass TABLE \
@@ -269,6 +335,7 @@ namespace eval ::xo::Table {
   Class create TABLE2::Action -superclass TABLE::Action
   Class create TABLE2::Field -superclass TABLE::Field
   Class create TABLE2::AnchorField -superclass TABLE::AnchorField
+  Class create TABLE2::ImageField -superclass TABLE::ImageField
   
 }
 

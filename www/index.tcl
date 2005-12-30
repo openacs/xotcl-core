@@ -26,7 +26,7 @@ set dimensional_slider [ad_dimensional {
 
 proc local_link cl {
   upvar all_classes all_classes
-  if {$all_classes || ![string match ::xotcl::* $cl]} {
+  if {$all_classes || ![string match "::xotcl::*" $cl]} {
     return "<a href='#$cl'>$cl</a>"
   } else {
     return $cl
@@ -50,7 +50,7 @@ proc info_classes {cl key} {
     append infos [local_link $s] ", "
   }
   set infos [string trimright $infos ", "]
-  if {[string compare "" $infos]} {
+  if {$infos ne ""} {
     return "<li><em>$key</em> $infos</li>\n"
   } else {
     return ""
@@ -59,7 +59,7 @@ proc info_classes {cl key} {
 
 set output "<ul>"
 foreach cl [lsort [::xotcl::Class allinstances]] {
-  if {!$all_classes && [string match ::xotcl::* $cl]} \
+  if {!$all_classes && [string match "::xotcl::*" $cl]} \
       continue
   
   append output "<li><b><a name='$cl'>[::xotcl::api object_link {} $cl]</b> <ul>"
@@ -72,7 +72,7 @@ foreach cl [lsort [::xotcl::Class allinstances]] {
     set infos ""
     foreach i [$cl info $key] {append infos [doc_link $cl $key $i] ", "}
     set infos [string trimright $infos ", "]
-    if {[string compare "" $infos]} {
+    if {$infos ne ""} {
       append output "<li><em>$key:</em> $infos</li>\n"
     }
     
@@ -81,7 +81,7 @@ foreach cl [lsort [::xotcl::Class allinstances]] {
   set infos ""
   foreach o [$cl info instances] {append infos [::xotcl::api object_link {} $o] ", "}
   set infos [string trimright $infos ", "]
-  if {[string compare "" $infos]} {
+  if {$infos ne ""} {
     append output "<li><em>instances:</em> $infos</li>\n"
   }
 

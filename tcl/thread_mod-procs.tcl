@@ -132,7 +132,7 @@ ad_library {
   it reinitializes the thread according to the new definition.
 } {
   my log "recreating [self] $obj, tid [$obj exists tid]"
-  if {![string match ::* $obj]} { set obj ::$obj }
+  if {![string match "::*" $obj]} { set obj ::$obj }
   $obj set recreate 1
   next
   $obj init [lindex $args 0]
@@ -231,11 +231,11 @@ ad_library {
 # ::xotcl::THREAD::Proxy configure \
 #     -instproc forward args {
 #       set cp [self calledproc]
-#       if { [string equal $cp attach] 
-# 	   || [string equal $cp filter] 
-# 	   || [string equal $cp detachAll]} {
+#       if { [string equal $cp "attach"] 
+# 	   || $cp eq "filter" 
+# 	   || $cp eq "detachAll"} {
 # 	next
-#       } elseif {[string equal $cp destroy]} {
+#       } elseif {$cp eq "destroy"} {
 # 	eval [my attach] do [self] $cp $args
 # 	my log "destroy"
 # 	next
