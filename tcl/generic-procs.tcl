@@ -123,7 +123,6 @@ namespace eval ::Generic {
       ::xotcl::Object -
       ::Generic::CrItem {set supertype content_revision}
     }
-    my log "--supertype = $supertype"
 
     db_transaction {
       db_1row create_type {
@@ -133,8 +132,8 @@ namespace eval ::Generic {
         )
       }
       if {[my cr_attributes] ne ""} {
-	set o [Object new -volatile -contains [my cr_attributes]]
-	foreach att [$o info children] {
+	set o [::xo::OrderedComposite new -volatile -contains [my cr_attributes]]
+	foreach att [$o children] {
 	  $att instvar attribute_name datatype pretty_name
 	  db_1row create_att {
 	    select content_type__create_attribute(
@@ -142,11 +141,6 @@ namespace eval ::Generic {
                 :pretty_name,null,null,null,'text'
             )
 	  }
-	  #content::type::attribute::new \
-	      -content_type $object_type \
-	      -attribute_name [$att attribute_name] \
-	      -datatype [$att datatype] \
-	      -pretty_name [$att pretty_name]
 	}
       }
       my folder_type register
@@ -655,7 +649,6 @@ namespace eval ::Generic {
   }
   Form instproc after_submit {item_id} {
     my instvar data
-    my log "-- item_id=$item_id [$data set item_id]"
     set link [my submit_link]
     if {$link ne "." && ![string match {*[?]*} $link]} {
       set link [export_vars -base $link {item_id}]
