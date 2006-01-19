@@ -507,7 +507,7 @@ namespace eval ::Generic {
     }
 
     db_transaction {
-      $__class instvar mime_type storage_type object_type
+      $__class instvar storage_type object_type
       $__class folder_type -folder_id $parent_id register
       set item_id [db_exec_plsql note_insert "
 	select content_item__new(:title,$parent_id,null,null,null,null,null,null,
@@ -534,7 +534,7 @@ namespace eval ::Generic {
     instance variable.
   } {
     # delegate deletion to the class
-    [my info class] delete [my set instance_id]
+    [my info class] delete [my set item_id]
   }
 
   #
@@ -875,3 +875,4 @@ namespace eval ::Generic {
   namespace export CrItem
 }
 namespace import -force ::Generic::*
+

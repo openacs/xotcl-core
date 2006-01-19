@@ -25,19 +25,122 @@ Object instproc asHTML {{-master defaultMaster} -page:switch} {
   }
 }
 
+
 #
-# Define Widget classes
+# Define Widget classes with localization
 #
-# ::xo::Table, somewhat similar to the classical multirow 
+# Most importantly, we define ::xo::Table, somewhat similar to the classical multirow 
 
 namespace eval ::xo {
+
+  #
+  # Localization
+  #
+
+  set ::xo::acs_lang_url [apm_package_url_from_key acs-lang]admin
+
+  proc localize text {
+    if {![my exists __localizer]} {
+      my set __localizer [list]
+    }
+    if {[string first \x002 $text] == -1} {
+      return $text
+    } else {
+      set return_text ""
+      while {[regexp {^([^\x002]*)\x002\(\x001([^\x001]*)\x001\)\x002(.*)$} $text _ \
+		  before key text]} {
+	append return_text $before
+	foreach {package_key message_key} [split $key .] break
+	set url [export_vars -base $::xo::acs_lang_url/edit-localized-message {
+	  {locale {[ad_conn locale]} }
+	  package_key message_key 
+	  {return_url [ad_return_url]} 
+	}]
+	if {[lang::message::message_exists_p [ad_conn locale] $key]} {
+	  set type localized
+	} elseif { [lang::message::message_exists_p "en_US" $key] } {
+	  set type us_only
+	} else { # message key is missing
+	  set url [export_vars -base $::xo::acs_lang_url/localized-message-new { 
+	    {locale en_US } package_key message_key 
+	    {return_url [ad_return_url]} 
+	  }]
+	  set type missing
+	}
+	my lappend __localizer [::xo::Localizer new -type $type -key $key -url $url]
+      }
+      append return_text $text
+      return $return_text
+    }
+  }
+
+  Class Localizer -parameter {type key url}
+
+  Localizer instproc render {} {
+    html::a -title [my key] -href [my url] {
+      switch [my type] {
+	localized {set char o; set style "color: green"}
+        us_only   {set char *; set style "background-color: yellow; color: red;"}
+        missing   {set char @; set style "background-color: red; color: white;"}
+      }
+      html::span -style $style {html::t $char}
+    }
+  }
+  Localizer instproc render {} {
+     html::a -title [my key] -href [my url] {
+       set path /resources/acs-templating/xinha-nightly/plugins/
+       switch [my type] {
+ 	localized {set img ImageManager/img/btn_ok.gif}
+         us_only  {set img Filter/img/ed_filter.gif}
+         missing  {set img LangMarks/img/en.gif}
+       }
+       html::img -alt [my type] -src $path/$img -width 16 -height 16 -border 0
+     }
+   }
+
+  ## todo : make these checks only in trn mode (additional mixin)
+  Class Drawable \
+      -instproc _ {attr} {
+	my set $attr
+      } \
+      -instproc render_localizer {} {
+      }
+
+  Class TRN-Mode \
+      -instproc _ {attr} {
+	return [::xo::localize [my set $attr]]
+      } \
+      -instproc render_localizer {} {
+	my log "-- "
+	if {[my exists __localizer]} {
+	  foreach l [my set __localizer] {
+	    $l render
+	    $l destroy
+	  }
+	}
+	my set __localizer [list]
+      } \
+      -instproc render-data args {
+	next
+	my render_localizer
+      } \
+      -instproc render args {
+	next
+	my render_localizer
+      }
+  
+  #
+  # define an abstract table
+  #
+
   Class Table -superclass OrderedComposite \
       -parameter {{no_data  "No Data"} {renderer TABLE2}}
-
+  
   Table instproc destroy {} {
-    #my log "-- "
+    my log "-- "
     foreach c {__actions __columns} {
-      namespace eval [self]::$c {namespace forget [self class]::*}
+      #my log "-- namespace eval [self]::$c {namespace forget *}"
+      namespace eval [self]::$c {namespace forget *}
     }
     next
   }
@@ -61,7 +164,7 @@ namespace eval ::xo {
     }
   }
 
-  Table instproc render_with {renderer} {
+  Table instproc render_with {renderer trn_mixin} {
     my log "--"
     set cl [self class]
     [self] mixin ${cl}::$renderer 
@@ -71,11 +174,13 @@ namespace eval ::xo {
       set mixinname ${cl}::${renderer}::[namespace tail $child]
       if {[::xotcl::Object isclass $mixinname]} {
 	$child instmixin $mixinname
-	#my log "-- using mixin $mixinname"
+	if {$trn_mixin ne ""} {$child instmixin add $trn_mixin}
+	#my log "-- $child using instmixin <[$child info instmixin]>"
       } else {
 	#my log "-- no mixin $mixinname"
       }
     }
+    Table::Line instmixin $trn_mixin
     my init_renderer
   }
 
@@ -99,11 +204,14 @@ namespace eval ::xo {
   }
 
   Class create Table::Line \
+      -superclass ::xo::Drawable \
       -instproc attlist {name atts {extra ""}} {
 	set result [list] 
 	foreach att $atts {
 	  set varname $name.$att
-	  if {[my exists $varname]} {lappend result $att [my set $varname]}
+	  if {[my exists $varname]} {
+	    lappend result $att [::xo::localize [my set $varname]]
+	  }
 	}
 	foreach {att val} $extra {lappend result $att $val}
 	return $result
@@ -116,7 +224,12 @@ namespace eval ::xo {
   namespace eval ::xo::Table {
     Class Action \
 	-superclass ::xo::OrderedComposite::Child \
-	-parameter {label url {tooltip {}}}
+	-parameter {label url {tooltip {}}} 
+    #-proc destroy {} {
+    #   my log "-- DESTROY "
+    #	  show_stack
+    #	  next
+    #	}
 
     Class Field \
 	-superclass ::xo::OrderedComposite::Child \
@@ -160,6 +273,8 @@ namespace eval ::xo {
 	  {src /resources/acs-subsite/Edit16.gif} {width 16} {height 16} {border 0} 
 	  {title "Edit Item"} {alt "edit"}
 	}
+
+    # for xotcl 1.4.0:  {title [_ xotcl-core.edit_item]} {alt "edit"}
     Class ImageField_ViewIcon \
 	-superclass ImageField -parameter {
 	  {src /resources/acs-subsite/Zoom16.gif} {width 16} {height 16} {border 0} 
@@ -175,6 +290,7 @@ namespace eval ::xo {
     namespace export Field AnchorField  Action ImageField \
 	ImageField_EditIcon ImageField_ViewIcon ImageField_DeleteIcon
   }
+  
 }
 
 
@@ -183,6 +299,7 @@ namespace eval ::xo::Table {
   # Class for rendering ::xo::Table as the html TABLE
   #
   Class TABLE \
+      -superclass ::xo::Drawable \
       -instproc init_renderer {} {
 	#my log "--"
 	my set __rowcount 0
@@ -240,11 +357,21 @@ namespace eval ::xo::Table {
   # ::xo:Table requires the elements to have the methods render and render-data 
   #
 
-  Class create TABLE::Action -instproc render {} {
-    html::a -class button -title [my tooltip] -href [my url] { html::t [my label] } 
-  }
+  Class create TABLE::Action \
+      -superclass ::xo::Drawable \
+      -instproc render {} {
+	html::a -class button -title [my _ tooltip] -href [my url] { 
+	  html::t [my _ label]
+	}
+	my log "-- "
+      }
+  #-proc destroy {} {
+  #  my log "-- DESTROY"
+  #  show_stack 
+  #  next
+  #}
 
-  Class create TABLE::Field
+  Class create TABLE::Field -superclass ::xo::Drawable 
   TABLE::Field instproc render-data {line} {
     html::t [$line set [my name]] 
   }
@@ -252,10 +379,11 @@ namespace eval ::xo::Table {
   TABLE::Field instproc render {} {
     html::th [concat [list class list] [my html]] { 
       if {[my set orderby] eq ""} {
-	html::t [my set label] 
+	html::t [my _ label]
       } else {
 	my renderSortLabels
       }
+      my render_localizer ;# run this before th is closed
     }
   }
 
@@ -285,7 +413,7 @@ namespace eval ::xo::Table {
     }
     set href [export_vars -base [ad_conn url] $query]
     html::a -href $href -title $title {
-      html::t [my set label]
+      html::t [my _ label]
       html::img -src $img -alt ""
     }
   }
@@ -309,6 +437,7 @@ namespace eval ::xo::Table {
 	html::a -href [$line set [my name].href] -style "border-bottom: none;" {
 	  html::img [$line attlist [my name] {src width height border title alt}] {}
 	}
+	$line render_localizer
       }
 
   Class TABLE2 \
@@ -342,7 +471,8 @@ namespace eval ::xo::Table {
 Class TableWidget \
     -superclass ::xo::Table \
     -instproc init {} {
-      my render_with [my renderer]
+      set trn_mixin [expr {[lang::util::translator_mode_p] ?"::xo::TRN-Mode" : ""}]
+      my render_with [my renderer] $trn_mixin
       next
     }
 

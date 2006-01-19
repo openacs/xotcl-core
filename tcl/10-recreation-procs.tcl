@@ -100,74 +100,87 @@ if {![::xotcl::Object isclass ::xotcl::RecreationClass]} {
   }
 }
 
-Class ad_proc recreate {obj args} { 
-  The re-definition of recreate makes reloading of class definitions via 
-  apm possible, since the foreign keys of the class relations 
-  to these classes survive these calls. One can define specialized
-  versions of this for certain classes or use ::xotcl::RecreationClass.
+set version [package require XOTcl]
+if {[string match "1.3.*" $version]} {
+  Class ad_proc recreate {obj args} { 
+    The re-definition of recreate makes reloading of class definitions via 
+    apm possible, since the foreign keys of the class relations 
+    to these classes survive these calls. One can define specialized
+    versions of this for certain classes or use ::xotcl::RecreationClass.
 
-  Class proc recreate is called on the class level, while 
-  Class instproc recreate is called on the instance level.
+    Class proc recreate is called on the class level, while 
+    Class instproc recreate is called on the instance level.
 
-  @param obj name of the object to be recreated
-  @param args arguments passed to recreate (might contain parameters)
-} {
-  # clean on the class level
-  #my log "proc recreate $obj $args"
-  foreach p [$obj info instprocs] {$obj instproc $p {} {}}
-  $obj instmixin set {}
-  $obj instfilter set {}
-  next ; # clean next on object level
-}
-Class ad_instproc recreate {obj args} { 
-  The re-definition of recreate makes reloading of class definitions via 
-  apm possible, since the foreign keys of the class relations 
-  to these classes survive these calls. One can define specialized
-  versions of this for certain classes or use ::xotcl::RecreationClass.
-
-  Class proc recreate is called on the class level, while 
-  Class instproc recreate is called on the instance level.
-
-  @param obj name of the object to be recreated
-  @param args arguments passed to recreate (might contain parameters)
-} {
-  # clean on the object level
-  my log "+++ instproc recreate $obj <$args> old class = [$obj info class], new class = [self]"
-  $obj filter set {}
-  $obj mixin set {}
-  set cl [self] 
-  foreach p [$obj info commands] {$obj proc $p {} {}}
-  foreach c [$obj info children] {
-    my log "recreate destroy <$c destroy"
-    $c destroy
+    @param obj name of the object to be recreated
+    @param args arguments passed to recreate (might contain parameters)
+  } {
+    # clean on the class level
+    #my log "proc recreate $obj $args"
+    foreach p [$obj info instprocs] {$obj instproc $p {} {}}
+    $obj instmixin set {}
+    $obj instfilter set {}
+    next ; # clean next on object level
   }
-  #my log "+++ $obj recreate unset vars"
-  #my log "+++ $obj vars = {[$obj info vars]}"
-  foreach var [$obj info vars] {
-    #my log "$obj unset $var"
-    $obj unset $var
-  }
-  #my log "+++ $obj recreate unset vars done" 
-  # set p new values
-  $obj class $cl 
-  set pcl [$cl info parameterclass]
-  #my log "+++ $obj recreate calling searchDefaults"
-  $pcl searchDefaults $obj
-  #my log "+++ $obj recreate calling $obj configure $args"
-  # we use uplevel to handle -volatile correctly
-  set pos [my uplevel $obj configure $args]
-  #my log "+++ recreate instproc configure returns $pos"
-  if {[lsearch -exact $args -init] == -1} {
-    incr pos -1
-    #my log "+++ $obj init [lrange $args 0 $pos]"
-    eval $obj init [lrange $args 0 $pos]
-  }
-}
+  Class ad_instproc recreate {obj args} { 
+    The re-definition of recreate makes reloading of class definitions via 
+    apm possible, since the foreign keys of the class relations 
+    to these classes survive these calls. One can define specialized
+    versions of this for certain classes or use ::xotcl::RecreationClass.
 
-#::xotcl::Object instforward unset -objscope 
-#  ::xotcl::Object instforward unset
-::Serializer exportMethods {
-  ::xotcl::Class instproc recreate
-  ::xotcl::Class proc recreate
-  ::xotcl::Object instforward unset
+    Class proc recreate is called on the class level, while 
+    Class instproc recreate is called on the instance level.
+
+    @param obj name of the object to be recreated
+    @param args arguments passed to recreate (might contain parameters)
+  } {
+    # clean on the object level
+    my log "+++ instproc recreate $obj <$args> old class = [$obj info class], new class = [self]"
+    $obj filter set {}
+    $obj mixin set {}
+    set cl [self] 
+    foreach p [$obj info commands] {$obj proc $p {} {}}
+    foreach c [$obj info children] {
+      my log "recreate destroy <$c destroy"
+      $c destroy
+    }
+    #my log "+++ $obj recreate unset vars"
+    #my log "+++ $obj vars = {[$obj info vars]}"
+    foreach var [$obj info vars] {
+      #my log "$obj unset $var"
+      $obj unset $var
+    }
+    #my log "+++ $obj recreate unset vars done" 
+    # set p new values
+    $obj class $cl 
+    set pcl [$cl info parameterclass]
+    #my log "+++ $obj recreate calling searchDefaults"
+    $pcl searchDefaults $obj
+    #my log "+++ $obj recreate calling $obj configure $args"
+    # we use uplevel to handle -volatile correctly
+    set pos [my uplevel $obj configure $args]
+    #my log "+++ recreate instproc configure returns $pos"
+    if {[lsearch -exact $args -init] == -1} {
+      incr pos -1
+      #my log "+++ $obj init [lrange $args 0 $pos]"
+      eval $obj init [lrange $args 0 $pos]
+    }
+  }
+
+  #::xotcl::Object instforward unset -objscope 
+  #  ::xotcl::Object instforward unset
+  ::Serializer exportMethods {
+    ::xotcl::Class instproc recreate
+    ::xotcl::Class proc recreate
+    ::xotcl::Object instforward unset
+  }
+} else {
+  ns_log notice "-- softrecreate"
+  ::xotcl::configure softrecreate true
+
+  Class RR -instproc recreate args { 
+    my log "-- [self args]"; next
+  } -instproc create args { 
+    my log "-- [self args]"; next
+  }
+  #::xotcl::Class instmixin RR
 }
