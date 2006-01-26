@@ -65,7 +65,12 @@ namespace eval ::Generic {
 
   CrClass set common_query_atts {
     item_id creation_user creation_date last_modified object_type
+    creation_user last_modified
   }
+  if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} {
+    CrClass lappend common_query_atts object_package_id
+  }
+
   CrClass set common_insert_atts {title description mime_type nls_language text}
 
   CrClass instproc object_types {
@@ -175,12 +180,13 @@ namespace eval ::Generic {
     if {[info exists package_id]} {
       set cid $package_id
     } elseif {[ad_conn isconnected]} {
+      set package_id [ad_conn package_id]
       set cid ""
       if {[info command dotlrn_community::get_community_id_from_url] ne ""} {
 	set cid [dotlrn_community::get_community_id_from_url -url [ad_conn url]]
       }
       if {$cid eq ""} {
-	set cid [ad_conn package_id]
+	set cid $package_id
       }
     } else {
       set cid -100
@@ -196,7 +202,16 @@ namespace eval ::Generic {
 			 -name $fullname -parent_id $parent_id]
     }
     if {$folder_id eq ""} {
-      set folder_id [content::folder::new -name $fullname -parent_id $parent_id]
+      set folder_id [content::folder::new -name $fullname -parent_id $parent_id \
+			 -package_id $package_id]
+    }
+    if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} { 
+      #### for search, we need the package_id
+      set pid [db_string get_package_id "select package_id from acs_objects where object_id = $folder_id"]
+      if {$pid eq ""} {
+	db_dml update_package_id \
+	    "update acs_objects set package_id = :package_id where object_id = $folder_id"
+      }
     }
     return $folder_id
   }
@@ -279,7 +294,7 @@ namespace eval ::Generic {
     if {$revision_id} {
       db_1row note_select "
        select [join $atts ,], i.parent_id from [my set table_name]i n, cr_items i
-       where  n.revision_id = :revision_id and i.item_id = :item_id"
+       where  n.revision_id = :revision_id and i.item_id = n.item_id"
     } else {
       db_1row note_select "
        select [join $atts ,], i.parent_id from cr_items i, [my set table_name]i n
@@ -431,8 +446,13 @@ namespace eval ::Generic {
     CrItem. 
     @return object containing the attributes of the CrItem
   } { 
-    db_1row get_class "select content_type as object_type from cr_items \
-	where item_id=$item_id"
+
+    if {$item_id} {
+      db_1row get_class "select content_type as object_type from cr_items where item_id=$item_id"
+    } else {
+      db_1row get_class "select object_type from acs_objects where object_id=$revision_id"
+    }
+    
     if {![string match "::*" $object_type]} {set object_type ::$object_type}
     set o [$object_type create ::[expr {$revision_id ? $revision_id : $item_id}]]
     $object_type fetch_object \
@@ -480,7 +500,17 @@ namespace eval ::Generic {
 
     db_transaction {
       set revision_id [db_nextval acs_object_id_seq]
-      
+
+      if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} { 
+	my instvar object_package_id
+	if {![info exists object_package_id] || $object_package_id eq ""} {
+	  set object_package_id [ad_conn package_id]
+	  #ns_log notice "-- ad_conn package_id = $object_package_id"
+	}
+	#ns_log notice "-- pid = $object_package_id"
+	lappend __atts object_package_id
+      }
+
       db_dml revision_add "
 	insert into [[my info class] set table_name]i ([join $__atts ,]) 
 	values (:[join $__atts ,:])"
@@ -492,7 +522,7 @@ namespace eval ::Generic {
     return $item_id
   }
 
-  CrItem ad_instproc save_new {} {
+  CrItem ad_instproc save_new {-package_id} {
     Insert a new item to the content repository and make
     it the live revision. 
   } {
@@ -506,17 +536,30 @@ namespace eval ::Generic {
       if {![info exists $__var]} {set $__var ""}
     }
 
+    if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} { 
+      if {![info exists package_id]} {
+	if {[ad_conn isconnected]} {
+	  set package_id [ad_conn package_id]
+	} else {
+	  error "cannot determine package_id"
+	}
+      }
+      set object_package_id $package_id
+      lappend __atts object_package_id
+    }
+      
+    #my log "-- mime_type = $mime_type"
     db_transaction {
       $__class instvar storage_type object_type
       $__class folder_type -folder_id $parent_id register
-      set item_id [db_exec_plsql note_insert "
+       set item_id [db_exec_plsql note_insert "
 	select content_item__new(:title,$parent_id,null,null,null,null,null,null,
 				 'content_item',:object_type,:title,
 				 :description,:mime_type,
 				 :nls_language,:text,:storage_type)"]
       
       set revision_id [db_nextval acs_object_id_seq]
-      my log "-- NEW item_id = $item_id, revision_id = $revision_id"
+      #my log "-- NEW item_id = $item_id, revision_id = $revision_id"
       db_dml revision_add "
 	insert into [$__class set table_name]i ([join $__atts ,]) 
 	values (:[join $__atts ,:])"
@@ -692,7 +735,7 @@ namespace eval ::Generic {
 
       append new_data {
 	category::map_object -remove_old -object_id $item_id $category_ids
-	ns_log notice "-- new data category::map_object -remove_old -object_id $item_id $category_ids"
+	#ns_log notice "-- new data category::map_object -remove_old -object_id $item_id $category_ids"
 	db_dml insert_asc_named_object \
 	    "insert into acs_named_objects (object_id,object_name,package_id) \
              values (:item_id, :title, :package_id)"
@@ -701,7 +744,7 @@ namespace eval ::Generic {
 	db_dml update_asc_named_object \
 	    "update acs_named_objects set object_name = :title, \
 		package_id = :package_id where object_id = :item_id"
-	ns_log notice "-- edit data category::map_object -remove_old -object_id $item_id $category_ids"
+	#ns_log notice "-- edit data category::map_object -remove_old -object_id $item_id $category_ids"
 	category::map_object -remove_old -object_id $item_id $category_ids
       }
       append on_submit {
@@ -710,7 +753,7 @@ namespace eval ::Generic {
       }
     }
 
-    ns_log notice "-- ad_form new_data=<$new_data> edit_data=<$edit_data>"
+    #ns_log notice "-- ad_form new_data=<$new_data> edit_data=<$edit_data>"
     
     # action blocks must be added last
     ad_form -extend -name [my name] \

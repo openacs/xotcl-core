@@ -78,7 +78,7 @@ if {![::xotcl::Object isclass ::xotcl::RecreationClass]} {
 	  #my log "### instproc recreate $obj + init ..."
 	}
       } -proc recreate {obj args} {
-	my log "### recreateclass proc $obj <$args>"
+	#my log "### recreateclass proc $obj <$args>"
 	# the minimal reconfiguration is to set the class and remove methods
 	$obj class [self]
 	foreach p [$obj info instprocs] {$obj instproc $p {} {}}
@@ -134,7 +134,7 @@ if {[string match "1.3.*" $version]} {
     @param args arguments passed to recreate (might contain parameters)
   } {
     # clean on the object level
-    my log "+++ instproc recreate $obj <$args> old class = [$obj info class], new class = [self]"
+    #my log "+++ instproc recreate $obj <$args> old class = [$obj info class], new class = [self]"
     $obj filter set {}
     $obj mixin set {}
     set cl [self] 
@@ -143,25 +143,17 @@ if {[string match "1.3.*" $version]} {
       my log "recreate destroy <$c destroy"
       $c destroy
     }
-    #my log "+++ $obj recreate unset vars"
-    #my log "+++ $obj vars = {[$obj info vars]}"
     foreach var [$obj info vars] {
-      #my log "$obj unset $var"
       $obj unset $var
     }
-    #my log "+++ $obj recreate unset vars done" 
     # set p new values
     $obj class $cl 
     set pcl [$cl info parameterclass]
-    #my log "+++ $obj recreate calling searchDefaults"
     $pcl searchDefaults $obj
-    #my log "+++ $obj recreate calling $obj configure $args"
     # we use uplevel to handle -volatile correctly
     set pos [my uplevel $obj configure $args]
-    #my log "+++ recreate instproc configure returns $pos"
     if {[lsearch -exact $args -init] == -1} {
       incr pos -1
-      #my log "+++ $obj init [lrange $args 0 $pos]"
       eval $obj init [lrange $args 0 $pos]
     }
   }
