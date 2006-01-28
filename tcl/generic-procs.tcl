@@ -213,7 +213,16 @@ namespace eval ::Generic {
 	    "update acs_objects set package_id = :package_id where object_id = $folder_id"
       }
     }
+    my require_folder_object -folder_id $folder_id -package_id $package_id
     return $folder_id
+  }
+
+  CrClass ad_proc require_folder_object {
+    -folder_id
+    -package_id 
+  } {
+    Dummy stub; let specializations define it
+  } {
   }
 
   CrClass instproc getFormClass {} {
@@ -593,6 +602,7 @@ namespace eval ::Generic {
     # delegate deletion to the class
     [my info class] delete [my set item_id]
   }
+
 
   #
   # Form template class

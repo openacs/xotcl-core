@@ -271,10 +271,16 @@ namespace eval ::xo {
     Class ImageField_EditIcon \
 	-superclass ImageField -parameter {
 	  {src /resources/acs-subsite/Edit16.gif} {width 16} {height 16} {border 0} 
-	  {title "Edit Item"} {alt "edit"}
+	  {title "[_ xotcl-core.edit_item]"} {alt "edit"}
+	}
+    # for xotcl 1.4.0:  {title [_ xotcl-core.edit_item]} {alt "edit"}
+    
+    Class ImageField_AddIcon \
+	-superclass ImageField -parameter {
+	  {src /resources/acs-subsite/Add16.gif} {width 16} {height 16} {border 0} 
+	  {title "Add Item"} {alt "add"}
 	}
 
-    # for xotcl 1.4.0:  {title [_ xotcl-core.edit_item]} {alt "edit"}
     Class ImageField_ViewIcon \
 	-superclass ImageField -parameter {
 	  {src /resources/acs-subsite/Zoom16.gif} {width 16} {height 16} {border 0} 
@@ -288,7 +294,7 @@ namespace eval ::xo {
     
     # export table elements
     namespace export Field AnchorField  Action ImageField \
-	ImageField_EditIcon ImageField_ViewIcon ImageField_DeleteIcon
+	ImageField_EditIcon ImageField_ViewIcon ImageField_DeleteIcon ImageField_AddIcon
   }
   
 }
