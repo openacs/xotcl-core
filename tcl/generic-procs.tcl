@@ -495,8 +495,15 @@ namespace eval ::Generic {
     it the live revision. We insert a new revision instead of 
     changing the current revision.
   } {
-    set __atts [concat [list item_id revision_id] [[my info class] edit_atts]]
+    set __atts [concat [list item_id revision_id modifying_user] [[my info class] edit_atts]]
     eval my instvar $__atts 
+
+    if {[ad_conn isconnected]} {
+      set user_id [ad_conn user_id]
+    } else {
+      set user_id ""
+    }
+    set modifying_user $user_id
 
     db_transaction {
       set revision_id [db_nextval acs_object_id_seq]
@@ -529,13 +536,13 @@ namespace eval ::Generic {
     set __class [my info class]
     my instvar parent_id item_id
 
-    set __atts  [list item_id revision_id]
+    set __atts  [list item_id revision_id modifying_user creation_user]
     foreach __var [$__class edit_atts] {
       my instvar $__var
       lappend __atts $__var
       if {![info exists $__var]} {set $__var ""}
     }
-
+    
     if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} { 
       if {![info exists package_id]} {
 	if {[ad_conn isconnected]} {
@@ -547,13 +554,20 @@ namespace eval ::Generic {
       set object_package_id $package_id
       lappend __atts object_package_id
     }
+    if {[ad_conn isconnected]} {
+      set user_id [ad_conn user_id]
+    } else {
+      set user_id ""
+    }
+    set modifying_user $user_id
+    set creation_user $user_id
       
     #my log "-- mime_type = $mime_type"
     db_transaction {
       $__class instvar storage_type object_type
       $__class folder_type -folder_id $parent_id register
        set item_id [db_exec_plsql note_insert "
-	select content_item__new(:title,$parent_id,null,null,null,null,null,null,
+	select content_item__new(:title,$parent_id,null,null,null,:user_id,null,null,
 				 'content_item',:object_type,:title,
 				 :description,:mime_type,
 				 :nls_language,:text,:storage_type)"]
@@ -753,8 +767,8 @@ namespace eval ::Generic {
       }
     }
 
-    #ns_log notice "-- ad_form new_data=<$new_data> edit_data=<$edit_data>"
-    
+    #ns_log notice "-- ad_form new_data=<$new_data> edit_data=<$edit_data> edit_request=<$edit_request>"
+   
     # action blocks must be added last
     ad_form -extend -name [my name] \
 	-validate [my validate] \
