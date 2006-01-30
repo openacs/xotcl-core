@@ -67,9 +67,9 @@ namespace eval ::Generic {
     item_id creation_user creation_date last_modified object_type
     creation_user last_modified
   }
-  if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} {
-    CrClass lappend common_query_atts object_package_id
-  }
+  #if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} {
+  #   CrClass lappend common_query_atts object_package_id
+  #}
 
   CrClass set common_insert_atts {title description mime_type nls_language text}
 
@@ -312,6 +312,7 @@ namespace eval ::Generic {
     }
     $object set text $data
     $object set item_id $item_id
+    $object initialize_loaded_object
     return $object
   }
 
@@ -446,6 +447,9 @@ namespace eval ::Generic {
   #}
 
   Class create CrItem 
+  CrItem instproc initialize_loaded_object {} {
+    # dummy action, to be refined
+  }
 
   CrItem ad_proc instantiate {
     -item_id
@@ -504,28 +508,14 @@ namespace eval ::Generic {
     it the live revision. We insert a new revision instead of 
     changing the current revision.
   } {
-    set __atts [concat [list item_id revision_id modifying_user] [[my info class] edit_atts]]
+    set __atts [concat \
+		    [list item_id revision_id creation_user] \
+		    [[my info class] edit_atts]]
     eval my instvar $__atts 
-
-    if {[ad_conn isconnected]} {
-      set user_id [ad_conn user_id]
-    } else {
-      set user_id ""
-    }
-    set modifying_user $user_id
+    set creation_user [expr {[ad_conn isconnected] ? [ad_conn user_id] : ""}]
 
     db_transaction {
       set revision_id [db_nextval acs_object_id_seq]
-
-      if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} { 
-	my instvar object_package_id
-	if {![info exists object_package_id] || $object_package_id eq ""} {
-	  set object_package_id [ad_conn package_id]
-	  #ns_log notice "-- ad_conn package_id = $object_package_id"
-	}
-	#ns_log notice "-- pid = $object_package_id"
-	lappend __atts object_package_id
-      }
 
       db_dml revision_add "
 	insert into [[my info class] set table_name]i ([join $__atts ,]) 
@@ -545,44 +535,24 @@ namespace eval ::Generic {
     set __class [my info class]
     my instvar parent_id item_id
 
-    set __atts  [list item_id revision_id modifying_user creation_user]
+    set __atts  [list item_id revision_id creation_user]
     foreach __var [$__class edit_atts] {
       my instvar $__var
       lappend __atts $__var
       if {![info exists $__var]} {set $__var ""}
     }
-    
-    if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} { 
-      if {![info exists package_id]} {
-	if {[ad_conn isconnected]} {
-	  set package_id [ad_conn package_id]
-	} else {
-	  error "cannot determine package_id"
-	}
-      }
-      set object_package_id $package_id
-      lappend __atts object_package_id
-    }
-    if {[ad_conn isconnected]} {
-      set user_id [ad_conn user_id]
-    } else {
-      set user_id ""
-    }
-    set modifying_user $user_id
-    set creation_user $user_id
-      
-    #my log "-- mime_type = $mime_type"
+    set creation_user [expr {[ad_conn isconnected] ? [ad_conn user_id] : ""}]
+
     db_transaction {
       $__class instvar storage_type object_type
       $__class folder_type -folder_id $parent_id register
        set item_id [db_exec_plsql note_insert "
-	select content_item__new(:title,$parent_id,null,null,null,:user_id,null,null,
+	select content_item__new(:title,$parent_id,null,null,null,:creation_user,null,null,
 				 'content_item',:object_type,:title,
 				 :description,:mime_type,
 				 :nls_language,:text,:storage_type)"]
       
       set revision_id [db_nextval acs_object_id_seq]
-      #my log "-- NEW item_id = $item_id, revision_id = $revision_id"
       db_dml revision_add "
 	insert into [$__class set table_name]i ([join $__atts ,]) 
 	values (:[join $__atts ,:])"
@@ -590,7 +560,6 @@ namespace eval ::Generic {
       db_exec_plsql make_live {
 	select content_item__set_live_revision(:revision_id)
       }
-      my log "-- end object_type == $object_type"
     }
     return $item_id
   }
@@ -676,6 +645,7 @@ namespace eval ::Generic {
     foreach __var [my form_vars] {
       $data set $__var [my var $__var]
     }
+    $data initialize_loaded_object
     $data save_new
     return [$data set item_id]
   }
@@ -685,6 +655,7 @@ namespace eval ::Generic {
     foreach __var [my form_vars] {
       $data set $__var [my var $__var]
     }
+    $data initialize_loaded_object
     $data save
     return [$data set item_id]
   }
@@ -734,12 +705,12 @@ namespace eval ::Generic {
     @template is the name of the tcl variable to contain the filled in template
   } {
     # set form name for adp file
-    uplevel set $template [my name]
+    my set $template [my name]
     my instvar data folder_id
     set object_type [[$data info class] object_type]
-    my log "-- $data, cl=[$data info class] [[$data info class] object_type]"
+    #my log "-- $data, cl=[$data info class] [[$data info class] object_type]"
 
-    #my log "--final fields [my fields]"
+    #my log "--e final fields [my fields]"
     ad_form -name [my name] -form [my fields] \
 	-export [list [list object_type $object_type] [list folder_id $folder_id]] 
     
