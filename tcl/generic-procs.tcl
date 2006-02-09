@@ -248,6 +248,11 @@ namespace eval ::Generic {
     foreach att [$o children] { 
       lappend sql_attribute_names [$att attribute_name]
     }
+    set sc [my info superclass]
+    if {[$sc exists sql_attribute_names]} {
+      # my log "-- inherited attribute_names <[$sc set sql_attribute_names]>"
+      foreach n [$sc set sql_attribute_names] {lappend sql_attribute_names $n}
+    }
     #my log "-- attribute_names <$sql_attribute_names> [$o info children]"
 
     if {![my object_type_exists]} {
@@ -660,11 +665,11 @@ namespace eval ::Generic {
     return [$data set item_id]
   }
   Form instproc request {privelege} {
-    my instvar page_title context
+    my instvar edit_form_page_title context
     auth::require_login
     permission::require_permission -object_id [ad_conn package_id] -privilege $privelege
-    set page_title [my add_page_title]
-    set context [list $page_title]
+    set edit_form_page_title [my add_page_title]
+    set context [list $edit_form_page_title]
   }
   Form instproc new_request {} {
     my log "--- new_request ---"
@@ -680,10 +685,10 @@ namespace eval ::Generic {
   }
 
   Form instproc on_validation_error {} {
-    my instvar page_title context
+    my instvar edit_form_page_title context
     my log "-- "
-    set page_title [my edit_page_title]
-    set context [list $page_title]
+    set edit_form_page_title [my edit_page_title]
+    set context [list $edit_form_page_title]
   }
   Form instproc after_submit {item_id} {
     my instvar data
