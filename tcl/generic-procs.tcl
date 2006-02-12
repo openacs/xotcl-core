@@ -187,7 +187,7 @@ namespace eval ::Generic {
       }
       if {$cid eq ""} {
 	set cid $package_id
-      }
+      } 
     } else {
       set cid -100
     }
@@ -203,7 +203,7 @@ namespace eval ::Generic {
     }
     if {$folder_id eq ""} {
       set folder_id [content::folder::new -name $fullname -parent_id $parent_id \
-			 -package_id $package_id]
+			 -package_id $package_id -context_id $cid]
     }
     if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} { 
       #### for search, we need the package_id
@@ -212,7 +212,7 @@ namespace eval ::Generic {
 	db_dml update_package_id \
 	    "update acs_objects set package_id = :package_id where object_id = $folder_id"
       }
-    }
+    } 
     my require_folder_object -folder_id $folder_id -package_id $package_id
     return $folder_id
   }
