@@ -111,7 +111,7 @@ namespace eval ::xo {
 	return [::xo::localize [my set $attr]]
       } \
       -instproc render_localizer {} {
-	my log "-- "
+	#my log "-- "
 	if {[my exists __localizer]} {
 	  foreach l [my set __localizer] {
 	    $l render
@@ -137,7 +137,7 @@ namespace eval ::xo {
       -parameter {{no_data  "No Data"} {renderer TABLE2}}
   
   Table instproc destroy {} {
-    my log "-- "
+    #my log "-- "
     foreach c {__actions __columns} {
       #my log "-- namespace eval [self]::$c {namespace forget *}"
       namespace eval [self]::$c {namespace forget *}
@@ -165,7 +165,7 @@ namespace eval ::xo {
   }
 
   Table instproc render_with {renderer trn_mixin} {
-    my log "--"
+    #my log "--"
     set cl [self class]
     [self] mixin ${cl}::$renderer 
     foreach child [$cl info classchildren] {
@@ -369,7 +369,7 @@ namespace eval ::xo::Table {
 	html::a -class button -title [my _ tooltip] -href [my url] { 
 	  html::t [my _ label]
 	}
-	my log "-- "
+	#my log "-- "
       }
   #-proc destroy {} {
   #  my log "-- DESTROY"

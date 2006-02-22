@@ -230,7 +230,7 @@ namespace eval ::Generic {
     set item_id [ns_set get $nsform item_id] ;# item_id should be be hardcoded
     set confirmed_p [ns_set get $nsform __confirmed_p]
     set new_p [ns_set get $nsform __new_p]
-    my log "-- item_id '$item_id', confirmed_p '$confirmed_p', new_p '$new_p'"
+    #my log "-- item_id '$item_id', confirmed_p '$confirmed_p', new_p '$new_p'"
     if {$item_id ne "" && $new_p ne "1" && [my exists edit_form]} {
       return [my edit_form]
     } else {
@@ -285,6 +285,7 @@ namespace eval ::Generic {
     return 0
   }
 
+
   CrClass ad_instproc fetch_object {
     -item_id:required
     {-revision_id 0}
@@ -292,11 +293,15 @@ namespace eval ::Generic {
   } {
     Load a content item into the specified object. If revision_id is
     provided, the specified revision is returned, otherwise the live
-    revision of the item_id.
+    revision of the item_id. If the object does not exist, we create it.
 
     @return cr item object
   } {
     #my log "-- [self args]"
+    if {![::xotcl::Object isobject $object]} {
+      # if the object does not yet exist, we have to create it
+      my create $object
+    }
     my instvar table_name 
     $object instvar parent_id
     set raw_atts [concat [[self class] set common_query_atts] [my edit_atts]]
@@ -327,15 +332,15 @@ namespace eval ::Generic {
     {-revision_id 0}
   } { 
     Retrieve either the live revision or a specified revision
-    of a content item with all attributes. 
+    of a content item with all attributes into a newly created object.
     The retrieved attributes are strored in the instance variables in
     class representing the object_type.
 
     @param item_id id of the item to be retrieved.
     @param revision_id revision-id of the item to be retrieved.
   } {
-    set o [my create ::[expr {$revision_id ? $revision_id : $item_id}]]
-    my fetch_object -object $o -item_id $item_id -revision_id $revision_id
+    my fetch_object -object ::[expr {$revision_id ? $revision_id : $item_id}] \
+	-item_id $item_id -revision_id $revision_id
   }
 
   CrClass ad_instproc delete {
@@ -470,13 +475,9 @@ namespace eval ::Generic {
     } else {
       db_1row get_class "select object_type from acs_objects where object_id=$revision_id"
     }
-    
-    if {![string match "::*" $object_type]} {set object_type ::$object_type}
-    set o [$object_type create ::[expr {$revision_id ? $revision_id : $item_id}]]
-    $object_type fetch_object \
-	-item_id $item_id -revision_id $revision_id -object $o
-    #my log "-- fetched $o of type $object_type"
-    return $o
+
+    #if {![string match "::*" $object_type]} {set object_type ::$object_type}
+    return [$object_type instantiate -item_id $item_id -revision_id $revision_id]
   }
   
 
@@ -576,6 +577,52 @@ namespace eval ::Generic {
     # delegate deletion to the class
     [my info class] delete [my set item_id]
   }
+
+  #
+  # Form template class
+  #
+  
+  Class CrCache 
+  CrCache instproc fetch_object {
+    -item_id:required
+    {-revision_id 0}
+    -object:required
+  } {
+    set code [ns_cache eval xotcl_object_cache $object {
+      set created 1
+      set o [next]
+      return [::Serializer deepSerialize $o]
+    }]
+    #my log "--CACHE: [self args], created [info exists created] o [info exists o]"
+    if {![info exists created]} {
+      set o [eval $code]
+    }
+    return $object
+  }
+
+  Class CrCache::Item
+  CrCache::Item instproc save {} {
+    set r [next]
+    my log "--CACHE saving [self] in cache"
+    ns_cache set xotcl_object_cache [self] \
+	[::Serializer deepSerialize [self]]
+    return $r
+  }
+  CrCache::Item instproc save_new args {
+    set item_id [next]
+    # the following approach will now work nicely, we would have to rename the object
+    # caching this does not seem important here, the next fetch will cache it anyhow
+    #ns_cache set xotcl_object_cache $item_id [::Serializer deepSerialize [self]]
+    return $item_id
+  }
+  CrCache::Item instproc delete args {
+    ns_cache flush xotcl_object_cache [self]
+    next
+  }
+  
+  CrClass instmixin CrCache
+  CrItem instmixin CrCache::Item
+  
 
 
   #
@@ -715,7 +762,7 @@ namespace eval ::Generic {
     set object_type [[$data info class] object_type]
     #my log "-- $data, cl=[$data info class] [[$data info class] object_type]"
 
-    #my log "--e final fields [my fields]"
+    my log "--e final fields [my fields]"
     ad_form -name [my name] -form [my fields] \
 	-export [list [list object_type $object_type] [list folder_id $folder_id]] 
     
