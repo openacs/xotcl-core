@@ -191,28 +191,24 @@ namespace eval ::Generic {
     } else {
       set cid -100
     }
-    set fullname "$name: $cid"
-
-    if {[info command content::item::get_id_by_name] eq ""} {
-      set folder_id ""
-      db_0or1row get_id_by_name "select item_id as folder_id from cr_items \
+    set folder_id [ns_cache eval xotcl_object_type_cache cid-$cid {
+      set fullname "$name: $cid"
+      
+      if {[info command content::item::get_id_by_name] eq ""} {
+	set folder_id ""
+	db_0or1row get_id_by_name "select item_id as folder_id from cr_items \
 	 where name = :fullname and parent_id = :parent_id"
-    } else {
-      set folder_id [content::item::get_id_by_name \
-			 -name $fullname -parent_id $parent_id]
-    }
-    if {$folder_id eq ""} {
-      set folder_id [content::folder::new -name $fullname -parent_id $parent_id \
-			 -package_id $package_id -context_id $cid]
-    }
-    if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} { 
-      #### for search, we need the package_id
-      set pid [db_string get_package_id "select package_id from acs_objects where object_id = $folder_id"]
-      if {$pid eq ""} {
-	db_dml update_package_id \
-	    "update acs_objects set package_id = :package_id where object_id = $folder_id"
+      } else {
+	set folder_id [content::item::get_id_by_name \
+			   -name $fullname -parent_id $parent_id]
       }
-    } 
+      if {$folder_id eq ""} {
+	set folder_id [content::folder::new -name $fullname -parent_id $parent_id \
+			   -package_id $package_id -context_id $cid]
+      }
+      return $folder_id
+    }]
+    
     my require_folder_object -folder_id $folder_id -package_id $package_id
     return $folder_id
   }
@@ -469,13 +465,15 @@ namespace eval ::Generic {
     CrItem. 
     @return object containing the attributes of the CrItem
   } { 
-
-    if {$item_id} {
-      db_1row get_class "select content_type as object_type from cr_items where item_id=$item_id"
-    } else {
-      db_1row get_class "select object_type from acs_objects where object_id=$revision_id"
-    }
-
+    set object_type [ns_cache eval xotcl_object_type_cache \
+			 [expr {$item_id ? $item_id : $revision_id}] {
+      if {$item_id} {
+	db_1row get_class "select content_type as object_type from cr_items where item_id=$item_id"
+      } else {
+	db_1row get_class "select object_type from acs_objects where object_id=$revision_id"
+      }
+      return $object_type
+    }]
     #if {![string match "::*" $object_type]} {set object_type ::$object_type}
     return [$object_type instantiate -item_id $item_id -revision_id $revision_id]
   }
