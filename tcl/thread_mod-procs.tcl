@@ -101,6 +101,9 @@ ad_library {
     -instrecreate 1 \
     -parameter {{persistent 0}}
 
+#Class create ::xotcl::THREAD \
+#    -parameter {{persistent 0}}
+
 ::xotcl::THREAD instproc check_blueprint {} {
   if {![[self class] exists __blueprint_checked]} {
     if {[string first ::xotcl::THREAD [ns_ictl get]] == -1} {
