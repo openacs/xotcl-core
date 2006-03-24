@@ -156,11 +156,11 @@ namespace eval ::xo {
   }
 
   
-  #############
-  # class procs 
-  #############
-  Class ChatProcs
-  ChatProcs method sweep_all_chats {} {
+  ############################################################################
+  # Chat meta class, since we need to define general class-specific methods
+  ############################################################################
+  Class create ChatClass -superclass ::xotcl::Class
+  ChatClass method sweep_all_chats {} {
     my log "-- starting"
     foreach nsv [nsv_names "[self]-*-seen"] {
       if { [regexp "[self]-(\[0-9\]+)-seen" $nsv _ chat_id] } {
@@ -171,7 +171,7 @@ namespace eval ::xo {
     my log "-- ending"
   }
 
-  ChatProcs method initialize_nsvs {} {
+  ChatClass method initialize_nsvs {} {
     # read the last_activity information at server start into a nsv array
     db_foreach get_rooms {
       select room_id, to_char(max(creation_date),'HH24:MI:SS YYYY-MM-DD') as last_activity 
@@ -180,7 +180,7 @@ namespace eval ::xo {
       }
   }
 
-  ChatProcs method flush_messages {-chat_id:required} {
+  ChatClass method flush_messages {-chat_id:required} {
       set array "[self]-$chat_id"
       nsv_unset $array
       nsv_unset $array-seen
