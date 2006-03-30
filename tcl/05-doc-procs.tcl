@@ -17,7 +17,9 @@ package require xotcl::serializer 0.8
 # so we add the specified methods explizitely to the export list
 ::Serializer exportMethods {
   ::xotcl::Object instproc ad_proc
+  ::xotcl::Object instproc ad_forward
   ::xotcl::Class  instproc ad_instproc
+  ::xotcl::Class  instproc ad_instforward
   ::xotcl::Object instproc ad_doc
   ::xotcl::Object instproc __api_make_doc
   ::xotcl::Object instproc __api_make_forward_doc

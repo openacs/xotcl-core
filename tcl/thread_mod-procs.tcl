@@ -97,8 +97,11 @@ ad_library {
 }
 
 ################## main thread support ##################
-::xotcl::RecreationClass create ::xotcl::THREAD \
-    -instrecreate 1 \
+#::xotcl::RecreationClass create ::xotcl::THREAD \
+#    -instrecreate 1 \
+#    -parameter {{persistent 0}}
+
+Class create ::xotcl::THREAD \
     -parameter {{persistent 0}}
 
 #Class create ::xotcl::THREAD \
@@ -180,7 +183,7 @@ ad_library {
     # lazy creation of a new slave thread
 
     thread::mutex lock [my set mutex]
-    my check_blueprint
+    #my check_blueprint
     #my log "after lock"
     if {![nsv_exists [self class] [self]]} {
       set tid [::thread::create]
