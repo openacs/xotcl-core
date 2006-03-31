@@ -39,7 +39,7 @@ namespace eval ::xo {
     if { ![nsv_exists $array-login $user_id] } {
       nsv_set $array-login $user_id [clock seconds]
     }
-    nsv_set $array $msg_id [list $now [clock seconds] $user_id $msg [my set user_color]]
+    nsv_set $array $msg_id [list $now [clock seconds] $user_id $msg [my user_color $user_id]]
     nsv_set $array-seen newest $now
     nsv_set $array-seen last [clock seconds] ;#### PETER?
     nsv_set $array-last-activity $user_id $now
@@ -134,12 +134,11 @@ namespace eval ::xo {
   Chat instproc init_user_color {} {
     my instvar array user_id
     if { [nsv_exists $array-color $user_id] } {
-      my set user_color [nsv_get $array-color $user_id]
+      return
     } else {
-      [my info class] instvar colors
-      ns_log notice "getting colors of [my info class] = [info exists colors]"
+      set colors [parameter::get -parameter UserColors -default [[my info class] set colors]]
+      # ns_log notice "getting colors of [my info class] = [info exists colors]"
       set color [lindex $colors [expr { [nsv_get $array-color idx] % [llength $colors] }]]
-      my set user_color $color
       nsv_set $array-color $user_id $color
       nsv_incr $array-color idx
     }
@@ -246,8 +245,9 @@ namespace eval ::xo {
   }
 
   ChatClass method init {} {
-    my set colors [list #006400 #0000ff #b8860b #bdb76b #8b0000]
-    #ns_log notice "colors of [self] = [my set colors]"
+    # default setting is set19 from http://www.graphviz.org/doc/info/colors.html
+    # per parameter settings in the chat package are available (param UserColors)
+    my set colors [list #1b9e77 #d95f02 #7570b3 #e7298a #66a61e #e6ab02 #a6761d #666666]
   }
 }
 
