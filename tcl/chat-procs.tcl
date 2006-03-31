@@ -165,13 +165,22 @@ namespace eval ::xo {
     my get_all
   }
 
-  Chat instproc user_link { user_id {color ""} } {
+  Chat instproc user_color { user_id } {
+    my instvar array
+    if { ![nsv_exists $array-color $user_id] } {
+      my log "warning: Cannot find user color for chat ($array-color $user_id)!"
+      return [lindex [[my info class] set colors] 0]
+    }
+    return [nsv_get $array-color $user_id]
+  }
+
+  Chat instproc user_link { -user_id -color } {
     if {$user_id > 0} {
       acs_user::get -user_id $user_id -array user
       set name [expr {$user(screen_name) ne "" ? $user(screen_name) : $user(name)}]
       #set name [chat_user_name $user_id]
       set url "/shared/community-member?user%5fid=$user_id"
-      if { $color eq "" } {
+      if {![info exists color]} {
 	set color [my user_color $user_id]
       }
       set creator "<a style='color:$color;' target='_blank' href='$url'>$name</a>"
@@ -193,7 +202,10 @@ namespace eval ::xo {
       set color     [$child color]
       set timelong  [clock format [$child time]]
       set timeshort [clock format [$child time] -format {[%H:%M:%S]}]
-      append result "<p class='line'><span class='timestamp'>$timeshort</span><span class='user'>[my user_link $user_id $color]:</span><span class='message'>[my encode $msg]</span></p>\n"
+      set userlink  [my user_link -user_id $user_id -color $color]
+      append result "<p class='line'><span class='timestamp'>$timeshort</span>" \
+	  "<span class='user'>$userlink:</span>" \
+	  "<span class='message'>[my encode $msg]</span></p>\n"
     }
     return $result
   }
