@@ -138,11 +138,20 @@ namespace eval ::xo {
     } else {
       [my info class] instvar colors
       ns_log notice "getting colors of [my info class] = [info exists colors]"
-      set color [lindex $colors [expr { [nsv_get $array-color idx] % [llength $colors]-1 }]]
+      set color [lindex $colors [expr { [nsv_get $array-color idx] % [llength $colors] }]]
       my set user_color $color
       nsv_set $array-color $user_id $color
       nsv_incr $array-color idx
     }
+  }
+  
+  Chat instproc user_color { user_id } {
+    my instvar array
+    if { ![nsv_exists $array-color $user_id] } {
+        ns_log Notice "Warning: Cannot find user color for chat ($array-color $user_id)!"
+        return [lindex [[my info class] set colors] 0]
+    }
+    return [nsv_get $array-color $user_id]
   }
   
   Chat instproc login {} {
@@ -163,7 +172,7 @@ namespace eval ::xo {
       #set name [chat_user_name $user_id]
       set url "/shared/community-member?user%5fid=$user_id"
       if { $color eq "" } {
-	set color [my set user_color $user_id]
+	set color [my user_color $user_id]
       }
       set creator "<a style='color:$color;' target='_blank' href='$url'>$name</a>"
     } else {
@@ -223,7 +232,7 @@ namespace eval ::xo {
 
   ChatClass method init {} {
     my set colors [list #006400 #0000ff #b8860b #bdb76b #8b0000]
-    ns_log notice "colors of [self] = [my set colors]"
+    #ns_log notice "colors of [self] = [my set colors]"
   }
 }
 
