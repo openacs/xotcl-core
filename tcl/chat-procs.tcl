@@ -145,13 +145,16 @@ namespace eval ::xo {
     }
   }
   
-  Chat instproc user_color { user_id } {
-    my instvar array
-    if { ![nsv_exists $array-color $user_id] } {
-        ns_log Notice "Warning: Cannot find user color for chat ($array-color $user_id)!"
-        return [lindex [[my info class] set colors] 0]
-    }
-    return [nsv_get $array-color $user_id]
+  Chat instproc get_users {} {
+    set output ""
+    foreach {user_id timestamp} [my active_user_list] {
+        if {$user_id > 0} {
+            set diff [clock format [expr {[clock seconds] - $timestamp}] -format "%H:%M:%S" -gmt 1]
+            set userlink  [my user_link -user_id $user_id]
+            append output "<TR><TD class='user'>$userlink</TD><TD class='timestamp'>$diff</TD></TR>\n"
+        }
+    }      
+    return $output
   }
   
   Chat instproc login {} {
