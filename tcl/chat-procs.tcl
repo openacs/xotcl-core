@@ -9,7 +9,7 @@ ad_library {
 namespace eval ::xo {
   Class Message -parameter {time user_id msg color}
   Class Chat -superclass ::xo::OrderedComposite \
-      -parameter {chat_id user_id session_id 
+      -parameter {chat_id user_id session_id euid emsg
 	{encoder urlencode} {timewindow 600} {sweepinterval 600}
       }
 
@@ -39,12 +39,33 @@ namespace eval ::xo {
     if { ![nsv_exists $array-login $user_id] } {
       nsv_set $array-login $user_id [clock seconds]
     }
-    nsv_set $array $msg_id [list $now [clock seconds] $user_id $msg [my user_color $user_id]]
     nsv_set $array-seen newest $now
     nsv_set $array-seen last [clock seconds] ;#### PETER?
     nsv_set $array-last-activity $user_id $now
+    my check_message $user_id $msg 
+    # ns_log Notice "YY ADDING TO NSV $array $msg_id [list $now [clock seconds] [my euid] [my emsg] [my user_color $user_id]]"
+    nsv_set $array $msg_id [list $now [clock seconds] [my euid] [my emsg] [my user_color $user_id]]
     if {$get_new} {my get_new}
   }
+
+  Chat instproc current_message_valid {} {
+      if { [my exists euid] && [my set euid] == -1 } {
+          return 0
+      }
+      return 1
+  }
+  
+  Chat instproc check_message { user_id msg } {
+      set msg [ad_quotehtml $msg]
+      my set emsg $msg
+      my set euid $user_id
+      # if { [regexp {</?\w*?>} $msg] } {
+      #     ns_log Notice "YY Message ($msg) contains html!"
+      #     my set emsg "<i>[_ xotcl-core.html_is_not_allowed], [my user_name $user_id]</i>"
+      #     my set euid -1
+      # } 
+  }
+  
   Chat instproc active_user_list {} {
     nsv_array get [my set array]-login
   }
@@ -176,18 +197,23 @@ namespace eval ::xo {
     return [nsv_get $array-color $user_id]
   }
 
+  Chat instproc user_name { user_id } {
+      acs_user::get -user_id $user_id -array user
+      return [expr {$user(screen_name) ne "" ? $user(screen_name) : $user(name)}]
+  }
+  
   Chat instproc user_link { -user_id -color } {
     if {$user_id > 0} {
-      acs_user::get -user_id $user_id -array user
-      set name [expr {$user(screen_name) ne "" ? $user(screen_name) : $user(name)}]
-      #set name [chat_user_name $user_id]
+        set name [my user_name $user_id]
       set url "/shared/community-member?user%5fid=$user_id"
       if {![info exists color]} {
 	set color [my user_color $user_id]
       }
       set creator "<a style='color:$color;' target='_blank' href='$url'>$name</a>"
-    } else {
+    } elseif { $user_id == 0 } {
       set creator "Nobody"
+    } else {
+        set creator "System"
     }  
     return [my encode $creator]  
   }
