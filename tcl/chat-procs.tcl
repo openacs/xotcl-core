@@ -1,15 +1,15 @@
 ad_library {
   generic chat - chat procs
 
-    @creation-date 2006-02-02
-    @author Gustaf Neumann
-    @cvs-id $Id$  
+  @creation-date 2006-02-02
+  @author Gustaf Neumann
+  @cvs-id $Id$  
 }
 
 namespace eval ::xo {
   Class Message -parameter {time user_id msg color}
   Class Chat -superclass ::xo::OrderedComposite \
-      -parameter {chat_id user_id session_id euid emsg
+      -parameter {chat_id user_id session_id 
 	{encoder urlencode} {timewindow 600} {sweepinterval 600}
       }
 
@@ -35,35 +35,30 @@ namespace eval ::xo {
   Chat instproc add_msg {{-get_new:boolean true} -uid msg} {
     my instvar array now
     set user_id [expr {[info exists uid] ? $uid : [my set user_id]}]
+    set color   [my user_color $user_id]
+    set msg     [ad_quotehtml $msg]
+    my log "-- msg=$msg"
+    
+    if {$get_new && [info command ::thread::mutex] ne ""} { 
+      # we could use the streaming interface
+      my broadcast_msg [Message new -volatile -time [clock seconds] \
+			    -user_id $user_id -msg $msg -color $color]
+    }
+
     set msg_id $now.$user_id
     if { ![nsv_exists $array-login $user_id] } {
       nsv_set $array-login $user_id [clock seconds]
     }
+    nsv_set $array $msg_id [list $now [clock seconds] $user_id $msg $color]
     nsv_set $array-seen newest $now
-    nsv_set $array-seen last [clock seconds] ;#### PETER?
+    nsv_set $array-seen last [clock seconds]
     nsv_set $array-last-activity $user_id $now
-    my check_message $user_id $msg 
-    # ns_log Notice "YY ADDING TO NSV $array $msg_id [list $now [clock seconds] [my euid] [my emsg] [my user_color $user_id]]"
-    nsv_set $array $msg_id [list $now [clock seconds] [my euid] [my emsg] [my user_color $user_id]]
+    # this in any case a valid result, but only needed for the polling interface
     if {$get_new} {my get_new}
   }
 
   Chat instproc current_message_valid {} {
-      if { [my exists euid] && [my set euid] == -1 } {
-          return 0
-      }
-      return 1
-  }
-  
-  Chat instproc check_message { user_id msg } {
-      set msg [ad_quotehtml $msg]
-      my set emsg $msg
-      my set euid $user_id
-      # if { [regexp {</?\w*?>} $msg] } {
-      #     ns_log Notice "YY Message ($msg) contains html!"
-      #     my set emsg "<i>[_ xotcl-core.html_is_not_allowed], [my user_name $user_id]</i>"
-      #     my set euid -1
-      # } 
+    expr { [my exists user_id] && [my set user_id] != -1 }
   }
   
   Chat instproc active_user_list {} {
@@ -88,6 +83,7 @@ namespace eval ::xo {
     }
     return 1
   }
+
   Chat instproc get_new {} {
     my instvar array now session_id
     set last [expr {[nsv_exists $array-seen $session_id] ? [nsv_get $array-seen $session_id] : 0}]
@@ -108,6 +104,7 @@ namespace eval ::xo {
     }
     my render
   }
+
   Chat instproc get_all {} {
     my instvar array now session_id
     foreach {key value} [nsv_array get $array] {
@@ -130,10 +127,10 @@ namespace eval ::xo {
       ns_log Notice "YY Checking: now=$now, timestamp=$timestamp, ago=$ago"
       # was 1200
       if {$ago > 300} { 
-          my add_msg -get_new false -uid $user "auto logout" 
-          nsv_unset $array-last-activity $user 
-          nsv_unset $array-login $user
-          nsv_unset $array-color $user
+	my add_msg -get_new false -uid $user "auto logout" 
+	nsv_unset $array-last-activity $user 
+	nsv_unset $array-login $user
+	nsv_unset $array-color $user
       }
     }
     my log "-- ending"
@@ -168,12 +165,12 @@ namespace eval ::xo {
   Chat instproc get_users {} {
     set output ""
     foreach {user_id timestamp} [my active_user_list] {
-        if {$user_id > 0} {
-            set diff [clock format [expr {[clock seconds] - $timestamp}] -format "%H:%M:%S" -gmt 1]
-            set userlink  [my user_link -user_id $user_id]
-            append output "<TR><TD class='user'>$userlink</TD><TD class='timestamp'>$diff</TD></TR>\n"
-        }
-    }      
+      if {$user_id > 0} {
+	set diff [clock format [expr {[clock seconds] - $timestamp}] -format "%H:%M:%S" -gmt 1]
+	set userlink  [my user_link -user_id $user_id]
+	append output "<TR><TD class='user'>$userlink</TD><TD class='timestamp'>$diff</TD></TR>\n"
+      }
+    }     
     return $output
   }
   
@@ -213,7 +210,7 @@ namespace eval ::xo {
     } elseif { $user_id == 0 } {
       set creator "Nobody"
     } else {
-        set creator "System"
+      set creator "System"
     }  
     return [my encode $creator]  
   }
@@ -221,6 +218,38 @@ namespace eval ::xo {
   Chat instproc urlencode {string} {ns_urlencode $string}
   Chat instproc noencode  {string} {set string}
   Chat instproc encode    {string} {my [my encoder] $string}	
+
+  Chat instproc json_encode {string} {
+    string map [list \n \\n {"} {\"} ' {\'}] $string ;#"
+  }
+    
+  Chat instproc json_encode_msg {msg} {
+    set old [my encoder]
+    my encoder noencode ;# just for user_link
+    set userlink [my user_link -user_id [$msg user_id] -color [$msg color]]
+    my encoder $old
+    set timeshort [clock format [$msg time] -format {[%H:%M:%S]}]
+    set text [my json_encode [$msg msg]]
+    foreach var {userlink timeshort} {set $var [my json_encode [set $var]]}
+    return [subst -nocommands {{'messages': [
+      {'user':'$userlink', 'time': '$timeshort', 'msg':'$text'}
+    ]\n}
+    }]
+  }
+
+  Chat instproc broadcast_msg {msg} {
+    bgdelivery send_to_subscriber chat-[my chat_id] [my json_encode_msg $msg]
+  }
+
+  Chat instproc subscribe {-uid} {
+    set user_id [expr {[info exists uid] ? $uid : [my set user_id]}]
+    set color [my user_color $user_id]
+    bgdelivery subscribe chat-[my chat_id] [my json_encode_msg \
+	[Message new -volatile -time [clock seconds] \
+	     -user_id $user_id -color $color \
+	     -msg [_ xotcl-core.has_entered_the_room] ]]
+  }
+
   Chat instproc render {} {
     my orderby time
     set result ""
@@ -231,6 +260,7 @@ namespace eval ::xo {
       set timelong  [clock format [$child time]]
       set timeshort [clock format [$child time] -format {[%H:%M:%S]}]
       set userlink  [my user_link -user_id $user_id -color $color]
+
       append result "<p class='line'><span class='timestamp'>$timeshort</span>" \
 	  "<span class='user'>$userlink:</span>" \
 	  "<span class='message'>[my encode $msg]</span></p>\n"
