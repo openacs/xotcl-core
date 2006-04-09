@@ -9,7 +9,7 @@ ad_library {
 namespace eval ::xo {
   Class Message -parameter {time user_id msg color}
   Class Chat -superclass ::xo::OrderedComposite \
-      -parameter {chat_id user_id session_id 
+      -parameter {chat_id user_id session_id {mode default}
 	{encoder urlencode} {timewindow 600} {sweepinterval 600}
       }
 
@@ -237,6 +237,14 @@ namespace eval ::xo {
     }]
   }
 
+  Chat instproc js_encode_msg {msg} {
+    set json [my json_encode_msg $msg]
+    return "<script type='text/javascript' language='javascript'>
+    var data = $json;
+    parent.getData(data);
+    </script>\n"
+  }
+
   Chat instproc broadcast_msg {msg} {
     bgdelivery send_to_subscriber chat-[my chat_id] [my json_encode_msg $msg]
   }
@@ -247,7 +255,7 @@ namespace eval ::xo {
     bgdelivery subscribe chat-[my chat_id] [my json_encode_msg \
 	[Message new -volatile -time [clock seconds] \
 	     -user_id $user_id -color $color \
-	     -msg [_ xotcl-core.has_entered_the_room] ]]
+	     -msg [_ xotcl-core.has_entered_the_room] ]] [my mode]
   }
 
   Chat instproc render {} {

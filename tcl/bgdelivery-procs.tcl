@@ -36,7 +36,7 @@ ad_library {
   set ::subscription_count 0
   set ::message_count 0
 
-  ::xotcl::Class Subscriber -parameter {key channel user_id}
+  ::xotcl::Class Subscriber -parameter {key channel user_id mode}
   Subscriber proc current {-key } {
     my instvar subscriptions
     set result [list]
@@ -50,15 +50,22 @@ ad_library {
       }
     }
   }
-  Subscriber proc send {key msg} {
+
+  Subscriber proc broadcast {key msg} {
     my instvar subscriptions
-    ns_log notice "-- [self] send $key $msg subs='[array names subscriptions]' vars=[my info vars]"
     if {[info exists subscriptions($key)]} {
       set subs1 [list]
       foreach s $subscriptions($key) {
 	if {[catch {
-	  ns_log notice "-- sending to subscriber for $key $msg ch=[$s channel]"
-	  puts [$s channel] $msg
+	  if {[$s mode] eq "scripted"} {
+	    set smsg "<script type='text/javascript' language='javascript'>\nvar data = $msg;\n\
+            parent.getData(data);</script>\n"
+	  } else {
+	    set smsg $msg
+	  }
+	  my log "-- sending to subscriber for $key $smsg ch=[$s channel] \
+		mode=[$s mode], user_id [$s user_id]"
+	  puts -nonewline [$s channel] $smsg
 	  flush [$s channel]
 	} errmsg]} {
 	  ns_log notice "error in send to subscriber (key=$key): $errmsg"
@@ -75,7 +82,7 @@ ad_library {
   Subscriber instproc init {} {
     [my info class] instvar subscriptions
     lappend subscriptions([my key]) [self]
-    ns_log notice "-- Subscriber init, cl=[my info class], subscriptions([my key]) = $subscriptions([my key])"
+    #my log "-- cl=[my info class], subscriptions([my key]) = $subscriptions([my key])"
     fconfigure [my channel] -translation binary
     incr ::subscription_count
   }
@@ -127,13 +134,15 @@ ad_proc -public ad_returnfile_background {statuscode mime_type filename} {
 }
 
 #####################################
-bgdelivery proc subscribe {key {initmsg ""}} {
-  my write_headers 200 text/plain 100000
-  ns_write $initmsg
+bgdelivery proc subscribe {key {initmsg ""} {mode default} } {
+  set content_type [expr {$mode eq "scripted" ? "text/html" : "text/plain"}]
+  ns_write "HTTP/1.0 200 OK\r\nContent-type: $content_type\r\n\r\n[string repeat { } 1024]"
   set ch [ns_conn channel]
   thread::transfer [my get_tid] $ch
-  my do -async ::Subscriber new -channel $ch -key $key -user_id [ad_conn user_id]
+  my do -async ::Subscriber new -channel $ch -key $key -user_id [ad_conn user_id] -mode $mode
+  my send_to_subscriber $key $initmsg
 }
+
 bgdelivery proc send_to_subscriber {key msg} {
-  my do -async ::Subscriber send $key $msg
+  my do -async ::Subscriber broadcast $key $msg
 }
