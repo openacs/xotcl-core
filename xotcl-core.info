@@ -28,6 +28,7 @@ when components are reloaded. 0.23 contains a major overhaul of the Generic clas
         <provides url="xotcl-core" version="0.36"/>
 
         <callbacks>
+            <callback type="before-install"  proc="::xotcl::before_install_callback"/>
         </callbacks>
         <parameters>
         <!-- No version parameters -->
