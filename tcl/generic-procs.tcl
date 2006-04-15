@@ -170,6 +170,7 @@ namespace eval ::Generic {
     {-parent_id -100} 
     -package_id 
     -name
+    {-store_folder_id:boolean true}
   } {
     Get folder_id for a community id or the actual package.
     If everything fails, return -100
@@ -209,7 +210,7 @@ namespace eval ::Generic {
       return $folder_id
     }]
     
-    my require_folder_object -folder_id $folder_id -package_id $package_id
+    my require_folder_object -folder_id $folder_id -package_id $package_id -store_folder_id $store_folder_id
     return $folder_id
   }
 
@@ -738,7 +739,7 @@ namespace eval ::Generic {
   Form instproc after_submit {item_id} {
     my instvar data
     set link [my submit_link]
-    if {$link ne "." && ![string match {*[?]*} $link]} {
+    if {$link eq "view"} {
       set link [export_vars -base $link {item_id}]
     }
     ns_log notice "-- redirect to $link // [string match *\?* $link]"
