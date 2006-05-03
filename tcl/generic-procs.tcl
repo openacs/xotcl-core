@@ -71,7 +71,7 @@ namespace eval ::Generic {
   #   CrClass lappend common_query_atts object_package_id
   #}
 
-  CrClass set common_insert_atts {title description mime_type nls_language text}
+  CrClass set common_insert_atts {name title description mime_type nls_language text}
 
   CrClass instproc object_types {
     {-subtypes_first:boolean false}
@@ -263,7 +263,7 @@ namespace eval ::Generic {
   }
   
   CrClass ad_instproc lookup {
-    -title:required
+    -name:required
     -parent_id:required
   } {
     Check, whether an content item with the given title exists.
@@ -271,12 +271,8 @@ namespace eval ::Generic {
 
     @return item_id
   } {
-    my instvar table_name
-
-    if {[db_0or1row entry_exists_select "
-       select n.item_id from cr_items ci, ${table_name}i n
-       where  n.title = :title and    
-       n.[my id_column] = ci.live_revision and ci.parent_id = :parent_id"]} {
+    if {[db_0or1row entry_exists_select "\
+       select item_id from cr_items where name = :name and parent_id = :parent_id"]} {
       return $item_id
     }
     return 0
@@ -305,16 +301,16 @@ namespace eval ::Generic {
     set atts [list data]
     foreach v $raw_atts {
       catch {$object instvar $v}
-      lappend atts n.$v
+      lappend atts [expr {$v eq "name" ? "i" : "n"}].$v
     }
     if {$revision_id} {
-      db_1row note_select "
-       select [join $atts ,], i.parent_id from [my set table_name]i n, cr_items i
+      db_1row note_select "\
+       select [join $atts ,], i.parent_id from [my set table_name]i n, cr_items i \
        where  n.revision_id = :revision_id and i.item_id = n.item_id"
     } else {
-      db_1row note_select "
-       select [join $atts ,], i.parent_id from cr_items i, [my set table_name]i n
-       where  i.item_id = :item_id 
+      db_1row note_select "\
+       select [join $atts ,], i.parent_id from cr_items i, [my set table_name]i n \
+       where  i.item_id = :item_id \
        and    n.[my id_column] = i.live_revision"
     }
     $object set text $data
@@ -346,7 +342,7 @@ namespace eval ::Generic {
     Delete a content item from the content repository.
     @param item_id id of the item to be deleted
   } {
-    db_exec_plsql note_delete {
+    db_exec_plsql content_item_delete {
       select content_item__delete(:item_id)
     }
   }
@@ -374,7 +370,7 @@ namespace eval ::Generic {
     my instvar object_type_key
     if {![info exists folder_id]} {my instvar folder_id}
 
-    set attributes [list ci.item_id acs_objects.object_type] 
+    set attributes [list ci.item_id ci.name acs_objects.object_type] 
     foreach a $select_attributes {
       if {$a eq "title"} {set a cr.title}
       lappend attributes $a
@@ -491,20 +487,18 @@ namespace eval ::Generic {
   }
 
   CrItem ad_proc lookup {
-    -title:required
+    -name:required
     -parent_id:required
   } {
     Lookup CR item from  title and folder (parent_id)
     @return item_id or 0 if not successful
   } {
-    if {[db_0or1row entry_exists_select "
-	select i.item_id from cr_revisions r, cr_items i 
-	where revision_id = i.live_revision and r.title = :title 
-	and i.parent_id = :parent_id" ]} {
-      #my log "-- found $item_id for $title in folder '$parent_id'"
+    if {[db_0or1row entry_exists_select "\
+	select item_id from cr_items where name = :name and parent_id = :parent_id" ]} {
+      #my log "-- found $item_id for $name in folder '$parent_id'"
       return $item_id
     }
-    #my log "-- nothing found for $title in folder '$parent_id'"
+    #my log "-- nothing found for $name in folder '$parent_id'"
     return 0
   }
 
@@ -516,16 +510,17 @@ namespace eval ::Generic {
     set __atts [concat \
 		    [list item_id revision_id creation_user] \
 		    [[my info class] edit_atts]]
+    # "name" is not part of the *i rule, ignore it for now
+    set __p [lsearch $__atts name]
+    if {$__p > -1} {set __atts [lreplace $__atts $__p $__p]}
+
     eval my instvar $__atts 
     set creation_user [expr {[ad_conn isconnected] ? [ad_conn user_id] : ""}]
 
     db_transaction {
       set revision_id [db_nextval acs_object_id_seq]
-
-      db_dml revision_add "
-	insert into [[my info class] set table_name]i ([join $__atts ,]) 
+      db_dml revision_add "insert into [[my info class] set table_name]i ([join $__atts ,]) \
 	values (:[join $__atts ,:])"
-      
       db_exec_plsql make_live {
 	select content_item__set_live_revision(:revision_id)
       }
@@ -541,18 +536,22 @@ namespace eval ::Generic {
     my instvar parent_id item_id
 
     set __atts  [list item_id revision_id creation_user]
-    foreach __var [$__class edit_atts] {
+     foreach __var [$__class edit_atts] {
       my instvar $__var
       lappend __atts $__var
       if {![info exists $__var]} {set $__var ""}
     }
     set creation_user [expr {[ad_conn isconnected] ? [ad_conn user_id] : ""}]
 
+    # "name" is not part of the *i rule, ignore it for now
+    set __p [lsearch $__atts name]
+    if {$__p > -1} {set __atts [lreplace $__atts $__p $__p]}
+
     db_transaction {
       $__class instvar storage_type object_type
       $__class folder_type -folder_id $parent_id register
        set item_id [db_exec_plsql note_insert "
-	select content_item__new(:title,$parent_id,null,null,null,:creation_user,null,null,
+	select content_item__new(:name,$parent_id,null,null,null,:creation_user,null,null,
 				 'content_item',:object_type,:title,
 				 :description,:mime_type,
 				 :nls_language,:text,:storage_type)"]
@@ -707,7 +706,15 @@ namespace eval ::Generic {
       $data set $__var [my var $__var]
     }
     $data initialize_loaded_object
-    $data save
+    db_transaction {
+      $data save
+      set old_name [ns_set get [ns_getform] __object_name]
+      set new_name [$data set name]
+      if {$old_name ne $new_name} {
+	db_dml update_name "update cr_items set name = :new_name \
+		where item_id = [$data set item_id]"
+      }
+    }
     return [$data set item_id]
   }
   Form instproc request {privelege} {
@@ -720,6 +727,12 @@ namespace eval ::Generic {
   Form instproc new_request {} {
     my log "--- new_request ---"
     my request create
+    my instvar data
+    foreach var [[$data info class] edit_atts] {
+      if {[$data exists $var]} {
+	my var $var [list [$data set $var]]
+      }
+    }
   }
   Form instproc edit_request {item_id} {
     my instvar data
@@ -759,11 +772,14 @@ namespace eval ::Generic {
     my set $template [my name]
     my instvar data folder_id
     set object_type [[$data info class] object_type]
+    set object_name [expr {[$data exists name] ? [$data set name] : ""}]
     #my log "-- $data, cl=[$data info class] [[$data info class] object_type]"
-
+    
     my log "--e final fields [my fields]"
     ad_form -name [my name] -form [my fields] \
-	-export [list [list object_type $object_type] [list folder_id $folder_id]] 
+	-export [list [list object_type $object_type] \
+		     [list folder_id $folder_id] \
+		     [list __object_name $object_name]] 
     
     set new_data            "set item_id \[[self] new_data\]"
     set edit_data           "set item_id \[[self] edit_data\]"

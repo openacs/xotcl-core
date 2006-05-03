@@ -6,9 +6,9 @@ ad_page_contract {
   @cvs-id $Id$
 } {
   page_id:integer,notnull
-  {title ""}
+  {name ""}
 } -properties {
-  title:onevalue
+  name:onevalue
   context:onevalue
   page_id:onevalue
   revisions:multirow
@@ -27,7 +27,7 @@ template::list::create \
     -multirow revisions \
     -elements {
       version_number {label "" html {align right}}
-      title { label ""
+      name { label ""
 	display_template {
 	  <img src='/resources/acs-subsite/Zoom16.gif' \
 	      title='View Item' alt='view' \
@@ -80,11 +80,11 @@ db_multirow -unclobber -extend {
     set content_size_pretty "[lc_numeric [format %.2f [expr {$content_size/1024.0}]]] [_ file-storage.kb]"
   }
   
-  if {$title eq ""} {set title [_ file-storage.untitled]}
+  if {$name eq ""} {set name [_ file-storage.untitled]}
   set live_revision_link [export_vars -base make-live-revision \
-			      {page_id title {revision_id $version_id}}]
+			      {page_id name {revision_id $version_id}}]
   set version_delete_link [export_vars -base delete-revision \
-			       {page_id title {revision_id $version_id}}]
+			       {page_id name {revision_id $version_id}}]
   set version_link [export_vars -base view {{revision_id $version_id} {item_id $page_id}}]
   if {$version_id != $live_revision_id} {
     set live_revision "Make this Revision Current"
