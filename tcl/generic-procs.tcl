@@ -665,10 +665,10 @@ namespace eval ::Generic {
     set folder_id [$data set parent_id]
 
     if {![my exists add_page_title]} {
-      my set add_page_title "New [$class pretty_name]"
+      my set add_page_title [_ xotcl-core.create_new_type [list type [$class pretty_name]]]
     }
     if {![my exists edit_page_title]} {
-      my set edit_page_title "Edit [$class pretty_name]"
+      my set edit_page_title [_ xotcl-core.edit_type [list type [$class pretty_name]]]
     }
 
     # check, if the specified fields are available from the data source
@@ -717,11 +717,12 @@ namespace eval ::Generic {
     }
     return [$data set item_id]
   }
-  Form instproc request {privelege} {
+  Form instproc request {privilege} {
     my instvar edit_form_page_title context
     auth::require_login
-    permission::require_permission -object_id [ad_conn package_id] -privilege $privelege
-    set edit_form_page_title [my add_page_title]
+    permission::require_permission -object_id [ad_conn package_id] -privilege $privilege
+    set edit_form_page_title [expr {$privilege eq "create" ? 
+				    [my add_page_title] : [my edit_page_title]}]
     set context [list $edit_form_page_title]
   }
   Form instproc new_request {} {
