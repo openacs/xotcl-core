@@ -3,9 +3,7 @@
 
   <msg key="add">Neu: %type%</msg>
   <msg key="add_long">Neue Seite vom Type %type% erzeugen</msg>
-  <msg key="create_new_type">Erzeuge %type%</msg>
   <msg key="edit_item">Editieren</msg>
-  <msg key="edit_type">Editiere %type%</msg>
   <msg key="has_entered_the_room">has entered the room</msg>
   <msg key="live_revision">Aktuelle Version</msg>
   <msg key="revision_title">Versionen des Eintrags</msg>

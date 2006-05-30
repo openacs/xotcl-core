@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<message_catalog package_key="xotcl-core" package_version="0.38" locale="es_ES" charset="ISO-8859-1">
+
+  <msg key="add">Añadir %type%</msg>
+  <msg key="add_long">Añadir un nuevo elemento del tipo %type%</msg>
+  <msg key="edit_item">Editar elemento</msg>
+  <msg key="has_entered_the_room">ha entrado en la sala</msg>
+  <msg key="live_revision">Revisión actual</msg>
+  <msg key="revision_title">Revisiones de la entrada</msg>
+  <msg key="revisions">Revisiones</msg>
+</message_catalog>
