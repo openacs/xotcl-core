@@ -763,11 +763,13 @@ namespace eval ::Generic {
  
   Form ad_instproc generate {
     {-template "formTemplate"}
+    {-export}
   } {
     the method generate is used to actually generate the form template
     from the specifications and to set up page_title and context 
     when appropriate.
     @template is the name of the tcl variable to contain the filled in template
+    @export list of attribue value pairs to be exported to the form (nested list)
   } {
     # set form name for adp file
     my set $template [my name]
@@ -777,11 +779,12 @@ namespace eval ::Generic {
     #my log "-- $data, cl=[$data info class] [[$data info class] object_type]"
     
     my log "--e final fields [my fields]"
-    ad_form -name [my name] -form [my fields] \
-	-export [list [list object_type $object_type] \
+    set exports [list [list object_type $object_type] \
 		     [list folder_id $folder_id] \
 		     [list __object_name $object_name]] 
-    
+    if {[info exists export]} {foreach pair $export {lappend exports $pair}}
+    ad_form -name [my name] -form [my fields] -export $exports
+
     set new_data            "set item_id \[[self] new_data\]"
     set edit_data           "set item_id \[[self] edit_data\]"
     set new_request         "[self] new_request"
