@@ -3,6 +3,7 @@
 
   <msg key="add">Add %type%</msg>
   <msg key="add_long">Add new item of type %type%</msg>
+  <msg key="create_new_type">Create New %type%</msg>
   <msg key="edit_item">Edit Item</msg>
   <msg key="has_entered_the_room">has entered the room</msg>
   <msg key="live_revision">Live Revision</msg>
