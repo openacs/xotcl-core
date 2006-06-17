@@ -804,11 +804,11 @@ namespace eval ::Generic {
 	#ns_log notice "-- new data category::map_object -remove_old -object_id $item_id $category_ids"
 	db_dml insert_asc_named_object \
 	    "insert into acs_named_objects (object_id,object_name,package_id) \
-             values (:item_id, :title, :package_id)"
+             values (:item_id, :name, :package_id)"
       }
       append edit_data {
 	db_dml update_asc_named_object \
-	    "update acs_named_objects set object_name = :title, \
+	    "update acs_named_objects set object_name = :name, \
 		package_id = :package_id where object_id = :item_id"
 	#ns_log notice "-- edit data category::map_object -remove_old -object_id $item_id $category_ids"
 	category::map_object -remove_old -object_id $item_id $category_ids
