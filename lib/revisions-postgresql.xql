@@ -5,7 +5,7 @@
 
   <fullquery name="revisions_info">      
     <querytext>
-    select  n.title, n.revision_id as version_id,
+    select  ci.name, n.revision_id as version_id,
       person__name(n.creation_user) as author,
       n.creation_user as author_id,
       to_char(n.last_modified,'YYYY-MM-DD HH24:MI:SS') as last_modified_ansi,
