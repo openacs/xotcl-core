@@ -125,8 +125,8 @@ Class create ::xotcl::THREAD \
   }
   regsub -all SELF $initcmd [self] initcmd
   append initcmd \n\
-      "set ::xotcl::currentScript [info script]" \n\
-      "set ::xotcl::currentThread [self]" \n\
+      [list set ::xotcl::currentScript [info script]] \n\
+      [list set ::xotcl::currentThread [self]] \n\
       $cmd 
   my set mutex [thread::mutex create]
   ns_log notice "mutex [my set mutex] created"
