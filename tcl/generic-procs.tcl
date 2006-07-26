@@ -222,16 +222,25 @@ namespace eval ::Generic {
   } {
   }
 
-  CrClass instproc getFormClass {} {
-    set nsform [ns_getform]
-    set item_id [ns_set get $nsform item_id] ;# item_id should be be hardcoded
-    set confirmed_p [ns_set get $nsform __confirmed_p]
-    set new_p [ns_set get $nsform __new_p]
-    #my log "-- item_id '$item_id', confirmed_p '$confirmed_p', new_p '$new_p'"
-    if {$item_id ne "" && $new_p ne "1" && [my exists edit_form]} {
-      return [my edit_form]
+  CrClass instproc getFormClass {-data} {
+    if {[info exists data]} {
+      # new style. does not depend on form variables
+      if {[$data exists item_id] && [$data set item_id] != 0 && [my exists edit_form]} {
+	return [my edit_form]
+      } else {
+	return [my form]
+      }
     } else {
-      return [my form]
+      set nsform [ns_getform]
+      set item_id [ns_set get $nsform item_id] ;# item_id should be be hardcoded
+      set new_p [ns_set get $nsform __new_p]
+      my log "--F item_id '$item_id', confirmed_p new_p '$new_p' [my set item_id]"
+      if {$item_id ne "" && $new_p ne "1" && [my exists edit_form]} {
+	my log "--F use edit_form  [my edit_form]"
+	return [my edit_form]
+      } else {
+	return [my form]
+      }
     }
   }
 
@@ -307,6 +316,7 @@ namespace eval ::Generic {
       db_1row note_select "\
        select [join $atts ,], i.parent_id from [my set table_name]i n, cr_items i \
        where  n.revision_id = :revision_id and i.item_id = n.item_id"
+      $object set revision_id $revision_id
     } else {
       db_1row note_select "\
        select [join $atts ,], i.parent_id from cr_items i, [my set table_name]i n \
@@ -502,6 +512,19 @@ namespace eval ::Generic {
     return 0
   }
 
+  # provide the appropriate db_* call for the view update. Earlier versions up to 5.3.0d1 
+  # used db_dml, newer versions (around july 2006) have to use db_0or1row, when the
+  # patch for deadlocks and duplicate items is applied...
+  apm_version_get -package_key acs-content-repository -array info
+  array get info
+  CrItem set insert_view_operation \
+      [expr {[apm_version_names_compare $info(version_name) 5.3.0d1] < 1 ? "db_dml" : "db_0or1row"}]
+  array unset info
+  # uncomment the following line, if you want to force  db_0or1row for update operations
+  # (e.g. when useing the provided patch for the content repository in a 5.2 installation)
+  CrItem set insert_view_operation db_0or1row
+
+
   CrItem ad_instproc save {} {
     Updates an item in the content repository and makes
     it the live revision. We insert a new revision instead of 
@@ -516,14 +539,13 @@ namespace eval ::Generic {
 
     eval my instvar $__atts 
     set creation_user [expr {[ad_conn isconnected] ? [ad_conn user_id] : ""}]
-
+    [self class] instvar insert_view_operation
     db_transaction {
       set revision_id [db_nextval acs_object_id_seq]
-      db_dml revision_add "insert into [[my info class] set table_name]i ([join $__atts ,]) \
-	values (:[join $__atts ,:])"
-      db_exec_plsql make_live {
-	select content_item__set_live_revision(:revision_id)
-      }
+      $insert_view_operation revision_add \
+	  "insert into [[my info class] set table_name]i ([join $__atts ,]) \
+		values (:[join $__atts ,:])"
+      db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
     }
     return $item_id
   }
@@ -547,23 +569,22 @@ namespace eval ::Generic {
     set __p [lsearch $__atts name]
     if {$__p > -1} {set __atts [lreplace $__atts $__p $__p]}
 
+    [self class] instvar insert_view_operation
     db_transaction {
       $__class instvar storage_type object_type
       $__class folder_type -folder_id $parent_id register
-       set item_id [db_exec_plsql note_insert "
+      db_dml lock_objects "LOCK TABLE acs_objects IN SHARE ROW EXCLUSIVE MODE"
+      set item_id [db_string insert_item "
 	select content_item__new(:name,$parent_id,null,null,null,:creation_user,null,null,
-				 'content_item',:object_type,:title,
+				 'content_item',:object_type,null,
 				 :description,:mime_type,
-				 :nls_language,:text,:storage_type)"]
+				 :nls_language,null,:storage_type)"]
       
       set revision_id [db_nextval acs_object_id_seq]
-      db_dml revision_add "
-	insert into [$__class set table_name]i ([join $__atts ,]) 
-	values (:[join $__atts ,:])"
-      
-      db_exec_plsql make_live {
-	select content_item__set_live_revision(:revision_id)
-      }
+      $insert_view_operation revision_add \
+	  "insert into [$__class set table_name]i ([join $__atts ,]) \
+		values (:[join $__atts ,:])"
+      db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
     }
     return $item_id
   }
@@ -574,6 +595,84 @@ namespace eval ::Generic {
   } {
     # delegate deletion to the class
     [my info class] delete [my set item_id]
+  }
+
+  ::Generic::CrItem instproc revisions {} {
+
+    TableWidget t1 -volatile \
+	-columns {
+	  Field version_number -label "" -html {align right}
+	  ImageField edit -label "" -src /resources/acs-subsite/Zoom16.gif \
+	      -title "View Item" -alt  "view" \
+	      -width 16 -height 16 -border 0
+	  AnchorField author -label [_ file-storage.Author]
+	  Field content_size -label [_ file-storage.Size] -html {align right}
+	  Field last_modified_ansi -label [_ file-storage.Last_Modified]
+	  Field description -label [_ file-storage.Version_Notes] 
+	  ImageField live_revision -label [_ xotcl-core.live_revision] \
+	      -src /resources/acs-subsite/radio.gif \
+	      -width 16 -height 16 -border 0 -html {align center}
+	  ImageField_DeleteIcon version_delete -label "" -html {align center}
+	}
+
+    set user_id [ad_conn user_id]
+    set page_id [my set item_id]
+    set live_revision_id [content::item::get_live_revision -item_id $page_id]
+    my instvar package_id
+    set base [$package_id url]
+
+    db_foreach revisions_select \
+	"select  ci.name, n.revision_id as version_id,
+         person__name(n.creation_user) as author,
+         n.creation_user as author_id,
+         to_char(n.last_modified,'YYYY-MM-DD HH24:MI:SS') as last_modified_ansi,
+         n.description,
+         acs_permission__permission_p(n.revision_id,:user_id,'admin') as admin_p,
+         acs_permission__permission_p(n.revision_id,:user_id,'delete') as delete_p,
+         char_length(n.data) as content_size,
+         content_revision__get_number(n.revision_id) as version_number	
+         from cr_revisionsi n, cr_items ci
+         where ci.item_id = n.item_id and ci.item_id = :page_id
+             and exists (select 1 from acs_object_party_privilege_map m
+                         where m.object_id = n.revision_id
+                          and m.party_id = :user_id
+                          and m.privilege = 'read')
+	  order by n.revision_id desc" {
+	    
+	    if {$content_size < 1024} {
+	      if {$content_size eq ""} {set content_size 0}
+	      set content_size_pretty "[lc_numeric $content_size] [_ file-storage.bytes]"
+	    } else {
+	      set content_size_pretty "[lc_numeric [format %.2f [expr {$content_size/1024.0}]]] [_ file-storage.kb]"
+	    }
+     
+	    set last_modified_ansi [lc_time_system_to_conn $last_modified_ansi]
+
+	    if {$version_id != $live_revision_id} {
+	      set live_revision "Make this Revision Current"
+	      set live_revision_icon /resources/acs-subsite/radio.gif
+	    } else {
+	      set live_revision "Current Live Revision"
+	      set live_revision_icon /resources/acs-subsite/radiochecked.gif
+	    }
+
+	    set live_revision_link [export_vars -base $base \
+					{{m make-live-revision} {revision_id $version_id}}]
+	    t1 add \
+		-version_number $version_number: \
+		-edit.href [export_vars -base $base {{revision_id $version_id}}] \
+		-author $author \
+		-content_size $content_size_pretty \
+		-last_modified_ansi [lc_time_fmt $last_modified_ansi "%x %X"] \
+		-description $description \
+		-live_revision.src $live_revision_icon \
+		-live_revision.title $live_revision \
+		-live_revision.href $live_revision_link \
+		-version_delete.href [export_vars -base $base \
+				  {{m delete-revision} {revision_id $version_id}}] \
+		-version_delete.title [_ file-storage.Delete_Version]
+	  }
+    return [t1 asHTML]
   }
 
   #
@@ -626,7 +725,7 @@ namespace eval ::Generic {
   #
   # Form template class
   #
-  
+### FIXME: form should get a package id as parameter
   Class Form -parameter {
     fields 
     data
@@ -637,6 +736,7 @@ namespace eval ::Generic {
     {validate ""}
     {with_categories false}
     {submit_link "."}
+    {action "[ns_conn url]"}
   } -ad_doc {
     Class for the simplified generation of forms. This class was designed 
     together with the content repository class 
@@ -711,7 +811,7 @@ namespace eval ::Generic {
       set old_name [ns_set get [ns_getform] __object_name]
       set new_name [$data set name]
       if {$old_name ne $new_name} {
-	db_dml update_name "update cr_items set name = :new_name \
+	db_dml update_rename "update cr_items set name = :new_name \
 		where item_id = [$data set item_id]"
       }
     }
@@ -722,7 +822,7 @@ namespace eval ::Generic {
     auth::require_login
     permission::require_permission -object_id [ad_conn package_id] -privilege $privilege
     set edit_form_page_title [expr {$privilege eq "create" ? 
-				    [my add_page_title] : [my edit_page_title]}]
+		   [my add_page_title] : [my edit_page_title]}]
     set context [list $edit_form_page_title]
   }
   Form instproc new_request {} {
@@ -778,12 +878,14 @@ namespace eval ::Generic {
     set object_name [expr {[$data exists name] ? [$data set name] : ""}]
     #my log "-- $data, cl=[$data info class] [[$data info class] object_type]"
     
-    my log "--e final fields [my fields]"
+    #my log "--e [my name] final fields [my fields]"
     set exports [list [list object_type $object_type] \
 		     [list folder_id $folder_id] \
 		     [list __object_name $object_name]] 
     if {[info exists export]} {foreach pair $export {lappend exports $pair}}
-    ad_form -name [my name] -form [my fields] -export $exports
+    
+    ad_form -name [my name] -form [my fields] \
+	-export $exports -action [my action]
 
     set new_data            "set item_id \[[self] new_data\]"
     set edit_data           "set item_id \[[self] edit_data\]"

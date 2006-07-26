@@ -1,8 +1,8 @@
 ad_page_contract {
-  Show classed defined in the connection threads
+  Show classes defined in the connection threads
 
   @author Gustaf Neumann
-  @cvs-id $id:$
+  @cvs-id $Id$
 } -query {
   {all_classes:optional 0}
 } -properties {

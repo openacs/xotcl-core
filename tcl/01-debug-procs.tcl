@@ -12,10 +12,39 @@
 }
 
 ::xotcl::Object instproc log msg {
-  ns_log notice "[self] [self callingclass]->[self callingproc]: $msg"
+  set now [ns_time get]
+  if {[ns_conn isconnected]} {
+    set start_time [ns_conn start]
+  } else {
+    if {![info exists ::__start_time]} {set ::__start_timestamp $now}
+    set start_time $::__start_timestamp
+  }
+  set t [ns_time diff $now $start_time]
+  set ms [expr {[ns_time seconds $t]*1000 + [ns_time microseconds $t]/1000}]
+  if {[info exists ::__last_timestamp]} {
+    set t [ns_time diff $now $::__last_timestamp]
+    set dms [expr {[ns_time seconds $t]*1000 + [ns_time microseconds $t]/1000}]
+    set diff ", ${dms}ms"
+  } else {
+    set diff ""
+  }
+  ns_log notice "[self] [self callingclass]->[self callingproc]: $msg (${ms}ms$diff)"
+  set ::__last_timestamp $now
 }
+
 ::xotcl::Object instproc debug msg {
   ns_log debug "[self] [self callingclass]->[self callingproc]: $msg"
+}
+
+namespace eval ::xo {
+  Class Timestamp
+  Timestamp instproc init {} {my set time [clock clicks -milliseconds]}
+  Timestamp instproc report {{string ""}} {
+    set now [clock clicks -milliseconds]
+    set rel [expr {[my exists ltime] ? "(diff [expr {$now-[my set ltime]}]ms)" : ""}]
+    my log "--$string [expr {$now-[my set time]}]ms $rel"
+    my set ltime $now
+  }
 }
 
 # ::xotcl::Class instproc import {class pattern} {
