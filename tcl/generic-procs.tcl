@@ -570,6 +570,9 @@ namespace eval ::Generic {
     if {$__p > -1} {set __atts [lreplace $__atts $__p $__p]}
 
     [self class] instvar insert_view_operation
+    if {![info exists package_id]} {
+      set package_id [expr {[my exists package_id] ? [my set package_id] : 0}]
+    }
     db_transaction {
       $__class instvar storage_type object_type
       $__class folder_type -folder_id $parent_id register
@@ -578,8 +581,8 @@ namespace eval ::Generic {
 	select content_item__new(:name,$parent_id,null,null,null,:creation_user,null,null,
 				 'content_item',:object_type,null,
 				 :description,:mime_type,
-				 :nls_language,null,:storage_type)"]
-      
+				 :nls_language,null,null,null,'f',:storage_type, $package_id)"]
+
       set revision_id [db_nextval acs_object_id_seq]
       $insert_view_operation revision_add \
 	  "insert into [$__class set table_name]i ([join $__atts ,]) \

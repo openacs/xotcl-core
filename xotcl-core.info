@@ -8,10 +8,10 @@
     <singleton-p>t</singleton-p>
     <auto-mount>xotcl</auto-mount>
 
-    <version name="0.39" url="http://media.wu-wien.ac.at/download/xotcl-core-0.39.apm">
+    <version name="0.40" url="http://media.wu-wien.ac.at/download/xotcl-core-0.40.apm">
         <owner url="mailto:neumann@wu-wien.ac.at">Gustaf Neumann</owner>
         <summary>XOTcl library functionality (e.g. thread handling, online documentation, Generic Form and List Classes)</summary>
-        <release-date>2006-07-26</release-date>
+        <release-date>2006-07-31</release-date>
         <description format="text/html">This component contains some core functionality for OACS
 applications using XOTcl. It includes
 XOTcl thread handling for OACS (supporting persistent and
@@ -22,10 +22,10 @@ procs and instproc an be created using the methods ad_proc
 and ad_instproc. This component  provides as 
 well an XOTcl Object and Class browser, as well as
 means to control the recreation of objects and classes
-when components are reloaded. 0.23 contains a major overhaul of the Generic classes. Object preliminary object layer for content repository, oo templating. 0.36 brings caching support for cr-items. 0.38: important change: uses cr_items.name instead of cr_revision.title to label content items. This effects as well the api (lookup uses -name instead of -title).</description>
+when components are reloaded. 0.23 contains a major overhaul of the Generic classes. Object preliminary object layer for content repository, oo templating. 0.36 brings caching support for cr-items. 0.38: important change: uses cr_items.name instead of cr_revision.title to label content items. This effects as well the api (lookup uses -name instead of -title). 0.40: updating package_id in acs_objects, requires now openacs 5.2.*</description>
         <maturity>0</maturity>
 
-        <provides url="xotcl-core" version="0.39"/>
+        <provides url="xotcl-core" version="0.40"/>
 
         <callbacks>
             <callback type="before-install"  proc="::xotcl::before_install_callback"/>
