@@ -522,7 +522,7 @@ namespace eval ::Generic {
   array unset info
   # uncomment the following line, if you want to force  db_0or1row for update operations
   # (e.g. when useing the provided patch for the content repository in a 5.2 installation)
-  CrItem set insert_view_operation db_0or1row
+  #CrItem set insert_view_operation db_0or1row
 
 
   CrItem ad_instproc save {} {
