@@ -130,6 +130,18 @@ namespace eval ::xo {
       }
   
   #
+  # for the time being, just a proc
+  #
+  proc get_user_name {uid} {
+    if {$uid ne "" && $uid != 0} {
+      acs_user::get -user_id $uid -array user
+      return "$user(first_names) $user(last_name)"
+    } else {
+      return nobody
+    }
+  }
+
+  #
   # define an abstract table
   #
 

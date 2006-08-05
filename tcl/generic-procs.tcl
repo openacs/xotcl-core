@@ -522,8 +522,15 @@ namespace eval ::Generic {
   array unset info
   # uncomment the following line, if you want to force  db_0or1row for update operations
   # (e.g. when useing the provided patch for the content repository in a 5.2 installation)
-  #CrItem set insert_view_operation db_0or1row
+  CrItem set insert_view_operation db_0or1row
 
+  CrItem instproc update_content_length {storage_type revision_id} {
+    if {$storage_type eq "file"} {
+      db_dml update_content_length "update cr_revisions \
+		set content_length = [file size [my set import_file]] \
+		where revision_id = $revision_id"
+    }
+  }
 
   CrItem ad_instproc save {} {
     Updates an item in the content repository and makes
@@ -541,10 +548,16 @@ namespace eval ::Generic {
     set creation_user [expr {[ad_conn isconnected] ? [ad_conn user_id] : ""}]
     [self class] instvar insert_view_operation
     db_transaction {
+      [my info class] instvar storage_type
       set revision_id [db_nextval acs_object_id_seq]
+      if {$storage_type eq "file"} {
+	my instvar import_file
+	set text [cr_create_content_file $item_id $revision_id $import_file]
+      }
       $insert_view_operation revision_add \
 	  "insert into [[my info class] set table_name]i ([join $__atts ,]) \
 		values (:[join $__atts ,:])"
+      my update_content_length $storage_type $revision_id
       db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
     }
     return $item_id
@@ -555,10 +568,10 @@ namespace eval ::Generic {
     it the live revision. 
   } {
     set __class [my info class]
-    my instvar parent_id item_id
+    my instvar parent_id item_id import_file
 
     set __atts  [list item_id revision_id creation_user]
-     foreach __var [$__class edit_atts] {
+    foreach __var [$__class edit_atts] {
       my instvar $__var
       lappend __atts $__var
       if {![info exists $__var]} {set $__var ""}
@@ -577,18 +590,23 @@ namespace eval ::Generic {
       $__class instvar storage_type object_type
       $__class folder_type -folder_id $parent_id register
       db_dml lock_objects "LOCK TABLE acs_objects IN SHARE ROW EXCLUSIVE MODE"
-      set item_id [db_string insert_item "
-	select content_item__new(:name,$parent_id,null,null,null,:creation_user,null,null,
-				 'content_item',:object_type,null,
-				 :description,:mime_type,
-				 :nls_language,null,null,null,'f',:storage_type, $package_id)"]
+      set item_id [db_string insert_item "\
+	select content_item__new(:name,$parent_id,null,null,null,:creation_user,null,null,\
+				 'content_item',:object_type,null,:description,:mime_type,\
+				 :nls_language,null,null,null,'f',:storage_type,\
+				 $package_id)"]
 
       set revision_id [db_nextval acs_object_id_seq]
+      if {$storage_type eq "file"} {
+	set text [cr_create_content_file $item_id $revision_id $import_file]
+      }
       $insert_view_operation revision_add \
 	  "insert into [$__class set table_name]i ([join $__atts ,]) \
 		values (:[join $__atts ,:])"
+      my update_content_length $storage_type $revision_id
       db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
     }
+    my set last_modified [db_string get_last_modified {select last_modified from acs_objects where object_id = :item_id}]
     return $item_id
   }
 
@@ -632,21 +650,22 @@ namespace eval ::Generic {
          n.description,
          acs_permission__permission_p(n.revision_id,:user_id,'admin') as admin_p,
          acs_permission__permission_p(n.revision_id,:user_id,'delete') as delete_p,
-         char_length(n.data) as content_size,
+         r.content_length,
          content_revision__get_number(n.revision_id) as version_number	
-         from cr_revisionsi n, cr_items ci
+         from cr_revisionsi n, cr_items ci, cr_revisions r
          where ci.item_id = n.item_id and ci.item_id = :page_id
+             and r.revision_id = n.revision_id 
              and exists (select 1 from acs_object_party_privilege_map m
                          where m.object_id = n.revision_id
                           and m.party_id = :user_id
                           and m.privilege = 'read')
 	  order by n.revision_id desc" {
 	    
-	    if {$content_size < 1024} {
-	      if {$content_size eq ""} {set content_size 0}
-	      set content_size_pretty "[lc_numeric $content_size] [_ file-storage.bytes]"
+	    if {$content_length < 1024} {
+	      if {$content_length eq ""} {set content_length 0}
+	      set content_size_pretty "[lc_numeric $content_length] [_ file-storage.bytes]"
 	    } else {
-	      set content_size_pretty "[lc_numeric [format %.2f [expr {$content_size/1024.0}]]] [_ file-storage.kb]"
+	      set content_size_pretty "[lc_numeric [format %.2f [expr {$content_length/1024.0}]]] [_ file-storage.kb]"
 	    }
      
 	    set last_modified_ansi [lc_time_system_to_conn $last_modified_ansi]
@@ -703,7 +722,7 @@ namespace eval ::Generic {
   Class CrCache::Item
   CrCache::Item instproc save {} {
     set r [next]
-    my log "--CACHE saving [self] in cache"
+    #my log "--CACHE saving [self] in cache"
     ns_cache set xotcl_object_cache [self] \
 	[::Serializer deepSerialize [self]]
     return $r
@@ -737,6 +756,7 @@ namespace eval ::Generic {
     add_page_title
     edit_page_title
     {validate ""}
+    {html ""}
     {with_categories false}
     {submit_link "."}
     {action "[ns_conn url]"}
@@ -847,6 +867,10 @@ namespace eval ::Generic {
     }
   }
 
+  Form instproc on_submit {item_id} {
+    # dummy proc
+  }
+
   Form instproc on_validation_error {} {
     my instvar edit_form_page_title context
     my log "-- "
@@ -886,9 +910,9 @@ namespace eval ::Generic {
 		     [list folder_id $folder_id] \
 		     [list __object_name $object_name]] 
     if {[info exists export]} {foreach pair $export {lappend exports $pair}}
-    
+    my log "--F -export $exports -action [my action] -html [my html]"
     ad_form -name [my name] -form [my fields] \
-	-export $exports -action [my action]
+	-export $exports -action [my action] -html [my html]
 
     set new_data            "set item_id \[[self] new_data\]"
     set edit_data           "set item_id \[[self] edit_data\]"
@@ -896,7 +920,7 @@ namespace eval ::Generic {
     set edit_request        "[self] edit_request \$item_id"
     set after_submit        "[self] after_submit \$item_id"
     set on_validation_error "[self] on_validation_error"
-    set on_submit {}
+    set on_submit           "[self] on_submit \$item_id"
 
     if {[my with_categories]} {
       set coid [expr {[$data exists item_id] ? [$data set item_id] : ""}]
