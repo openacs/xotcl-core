@@ -7,6 +7,11 @@ ad_library {
     @cvs-id $Id$
 }
 
+if {[info command ::thread::mutex] eq ""} {
+  ns_log notice "libthread does not appear to be available, NOT loading bgdelivery"
+  return
+}
+
 ::xotcl::THREAD create bgdelivery {
   ###############
   # File delivery
