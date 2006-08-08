@@ -64,7 +64,7 @@ namespace eval ::Generic {
   }
 
   CrClass set common_query_atts {
-    item_id creation_user creation_date last_modified object_type
+    item_id revision_id creation_user creation_date last_modified object_type
     creation_user last_modified
   }
   #if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} {
@@ -310,18 +310,27 @@ namespace eval ::Generic {
     set atts [list data]
     foreach v $raw_atts {
       catch {$object instvar $v}
-      lappend atts [expr {$v eq "name" ? "i" : "n"}].$v
+      switch -- $v {
+	name          {set fq i.$v}
+	creation_date {set fq o.$v}
+	default       {set fq n.$v}
+      }
+      lappend atts $fq
     }
     if {$revision_id} {
       db_1row note_select "\
-       select [join $atts ,], i.parent_id from [my set table_name]i n, cr_items i \
-       where  n.revision_id = :revision_id and i.item_id = n.item_id"
-      $object set revision_id $revision_id
+       select [join $atts ,], i.parent_id \
+       from   [my set table_name]i n, cr_items i,acs_objects o \
+       where  n.revision_id = :revision_id \
+       and    i.item_id = n.item_id \
+       and    o.object_id = i.item_id"
     } else {
       db_1row note_select "\
-       select [join $atts ,], i.parent_id from cr_items i, [my set table_name]i n \
+       select [join $atts ,], i.parent_id \
+       from   [my set table_name]i n, cr_items i, acs_objects o \
        where  i.item_id = :item_id \
-       and    n.[my id_column] = i.live_revision"
+       and    n.[my id_column] = i.live_revision \
+       and    o.object_id = i.item_id"
     }
     $object set text $data
     $object set item_id $item_id
@@ -606,7 +615,7 @@ namespace eval ::Generic {
       my update_content_length $storage_type $revision_id
       db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
     }
-    my set last_modified [db_string get_last_modified {select last_modified from acs_objects where object_id = :item_id}]
+    my set last_modified [db_string get_last_modified {select last_modified from acs_objects where object_id = :revision_id}]
     return $item_id
   }
 
