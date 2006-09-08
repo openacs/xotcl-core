@@ -11,8 +11,6 @@ ad_library {
   @cvs-id $Id$
 }
 
-package require xotcl::serializer 0.8
-
 # Per default, the content of the ::xotcl:: namespace is not serialized;
 # so we add the specified methods explizitely to the export list
 ::Serializer exportMethods {

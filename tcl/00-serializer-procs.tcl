@@ -1,4 +1,7 @@
 # $Id$
+if {$::xotcl::version > 1.4} return
+ns_log notice "we have a version ot XOTcl older than 1.5"
+
 package require XOTcl 1.3
 package provide xotcl::serializer 0.9
 
