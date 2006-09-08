@@ -140,6 +140,7 @@ namespace eval ::xo {
     {-actual_query " "}
   } {
     if {![info exists url]} {set url [ns_conn url]}
+    #my log "--i [self args]"
 
     # create connection context if necessary
     if {$package_id == 0} {
@@ -215,8 +216,11 @@ namespace eval ::xo {
     call ::permission::permission_p but avoid multiple calls in the same
     session through caching in the connection context
   } {
+    #my log "--p [self args] [info exists party_id] "
     if {![info exists party_id]} {
       set party_id [my user_id]
+      #my log "--p party_id $party_id"
+      #::xo::show_stack
       if {$party_id == 0} {
         auth::require_login
         return 0
@@ -295,7 +299,8 @@ namespace eval ::xo {
 
     #my log "--i [self args]"
     if {$url eq "" && $init_url} {
-      set url [ns_conn url]
+      #set url [ns_conn url]
+      set url [root_of_host [ad_host]][ns_conn url]
     }
     #my log "--cc actual_query = <$actual_query>"
 
