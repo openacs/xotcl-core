@@ -12,10 +12,19 @@
   ::xotcl::nonposArgs proc optional
 }
 
-::xotcl::Object instproc contains cmds {
-  my requireNamespace
-  namespace eval [self] $cmds
+if {$::xotcl::version < 1.5} {
+  # XOTcl 1.5 comes already with a predefined, more powerful
+  # implementation of contains.
+
+  ::Serializer exportMethods {
+    ::xotcl::Object instproc contains
+  }
+  ::xotcl::Object instproc contains cmds {
+    my requireNamespace
+    namespace eval [self] $cmds
+  }
 }
+
 ::xotcl::Object instforward db_1row -objscope
 
 ::xotcl::Object instproc serialize {} {
