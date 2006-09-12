@@ -88,11 +88,19 @@ if {$::xotcl::version < 1.5} {
 namespace eval ::xo {
   Class Timestamp
   Timestamp instproc init {} {my set time [clock clicks -milliseconds]}
-  Timestamp instproc report {{string ""}} {
+  Timestamp instproc diffs {} {
     set now [clock clicks -milliseconds]
-    set rel [expr {[my exists ltime] ? "(diff [expr {$now-[my set ltime]}]ms)" : ""}]
-    my log "--$string [expr {$now-[my set time]}]ms $rel"
+    set ldiff [expr {[my exists ltime] ? [expr {$now-[my set ltime]}] : 0}]
     my set ltime $now
+    return [list [expr {$now-[my set time]}] $ldiff]
+  }
+  Timestamp instproc diff {{-start:switch}} {
+    lindex [my diffs] [expr {$start ? 0 : 1}]
+  }
+
+  Timestamp instproc report {{string ""}} {
+    foreach {start_diff last_diff} [my diffs] break
+    my log "--$string (${start_diff}ms, diff ${last_diff}ms)"
   }
 
   proc show_stack {{m 100}} {

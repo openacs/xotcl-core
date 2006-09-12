@@ -44,9 +44,9 @@ namespace eval ::xo {
     foreach v [my parameter_declaration] {
       set ([lindex [split [lindex $v 0] :] 0]) 1
     }
-    #my log "--cc actual_query = <$actual_query>"
     if {$actual_query eq " "} {
       set actual_query [ns_conn query]
+      my log "--CONN ns_conn query = <$actual_query>"
     }
 
     # get the query parameters (from the url)
@@ -64,7 +64,7 @@ namespace eval ::xo {
 
     # get the caller parameters (e.g. from the includelet call)
     if {[info exists caller_parameters]} {
-      #my log "--V caller_parameters=$caller_parameters"
+      #my log "--cc caller_parameters=$caller_parameters"
       array set caller_param $caller_parameters
     
       foreach param [array names caller_param] {
@@ -81,9 +81,9 @@ namespace eval ::xo {
       lappend parse_args $param $passed_args($param)
     }
     
-    #my log "-- calling parser eval [self] __parse $parse_args"
+    #my log "--cc calling parser eval [self] __parse $parse_args"
     eval [self] __parse $parse_args
-    #my log "--i qp [array names queryparm] // $actual_query"
+    #my log "--cc qp [array names queryparm] // $actual_query"
   }
 
 
@@ -107,8 +107,16 @@ namespace eval ::xo {
     the values from the url (second priority) and the default
     values from the signature
   } {
-    set source [expr {[my exists __caller_parameters] ? [self] : [my info parent]}]
+    set source [expr {[my exists __caller_parameters] ? 
+                      [self] : [my info parent]}]
     $source instvar __caller_parameters
+    
+    if {![my exists __including_page]} {
+      # a includelet is called from the toplevel. the actual_query might
+      # be cached, so we reset it here.
+      my actual_query [::xo::cc actual_query]
+    }
+
     if {[info exists __caller_parameters]} {
       my process_query_parameter -all_from_query false -caller_parameters $__caller_parameters
     } else {
@@ -139,7 +147,10 @@ namespace eval ::xo {
     {-user_id -1}
     {-actual_query " "}
   } {
-    if {![info exists url]} {set url [ns_conn url]}
+    if {![info exists url]} {
+      my log "--CONN ns_conn url"
+      set url [ns_conn url]
+    }
     #my log "--i [self args]"
 
     # create connection context if necessary
@@ -300,6 +311,7 @@ namespace eval ::xo {
     #my log "--i [self args]"
     if {$url eq "" && $init_url} {
       #set url [ns_conn url]
+      my log "--CONN ns_conn url"
       set url [root_of_host [ad_host]][ns_conn url]
     }
     #my log "--cc actual_query = <$actual_query>"
