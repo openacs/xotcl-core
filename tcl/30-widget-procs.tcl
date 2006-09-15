@@ -436,6 +436,7 @@ namespace eval ::xo::Table {
     }
   }
 
+  # TODO: title for anchors
   Class create TABLE::AnchorField \
       -superclass TABLE::Field \
       -instproc render-data {line} {

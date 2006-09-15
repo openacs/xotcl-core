@@ -62,6 +62,19 @@ namespace eval ::xo {
       }
     }
 
+    # get the query parameters (from the form if necessary)
+    if {[my istype ::xo::ConnectionContext]} {
+      foreach param [array names ""] {
+	#my log "--cc check $param [info exists passed_args($param)]"
+	set name [string range $param 1 end]
+	if {![info exists passed_args($param)] &&
+	    [my exists_form_parameter $name]} {
+	  my log "--cc adding passed_args(-$name) [my form_parameter $name]"
+	  set passed_args($param) [my form_parameter $name]
+	}
+      }
+    }
+    
     # get the caller parameters (e.g. from the includelet call)
     if {[info exists caller_parameters]} {
       #my log "--cc caller_parameters=$caller_parameters"
@@ -186,6 +199,12 @@ namespace eval ::xo {
     }
   }
 
+  ConnectionContext instproc returnredirect {url} {
+    my log "--rp"
+    my set __continuation [list ad_returnredirect $url]
+    return ""
+  }
+
   ConnectionContext instproc init {} {
     my instvar requestor user user_id
     my set_user_id $user_id
@@ -292,6 +311,7 @@ namespace eval ::xo {
     {-user_id -1}
     {-actual_query " "}
     {-init_url true}
+    {-form_parameter}
   } {
     Create a connection context if there is none available.
     The connection context should ne reclaimed after the request
@@ -306,7 +326,6 @@ namespace eval ::xo {
     init_url false requires the package_id to be specified and
     a call to Package instproc set_url to complete initialization
   } {
-    #::xotcl::nonposArgs mixin set ::xo::NonPosArgs
 
     #my log "--i [self args]"
     if {$url eq "" && $init_url} {
@@ -321,6 +340,9 @@ namespace eval ::xo {
 	-package_id $package_id -user_id $user_id \
 	-parameter $parameter -url $url -actual_query $actual_query
     set package_id [::xo::cc package_id]
+    if {[info exists form_parameter]} {
+      ::xo::cc array set form_parameter $form_parameter
+    }
 
     # create package object if necessary
     if {![my isobject ::$package_id]} {
@@ -347,7 +369,8 @@ namespace eval ::xo {
   Package instforward query_parameter        ::xo::cc %proc
   Package instforward exists_query_parameter ::xo::cc %proc
   Package instforward form_parameter         ::xo::cc %proc
-  Package instforward exisitsform_parameter  ::xo::cc %proc
+  Package instforward exists_form_parameter  ::xo::cc %proc
+  Package instforward returnredirect         ::xo::cc %proc
 
   Package instproc get_parameter {attribute {default ""}} {
     return [parameter::get -parameter $attribute -package_id [my id] \

@@ -179,31 +179,42 @@ namespace eval ::Generic {
     my instvar object_type table_name
     if {[info exists package_id]} {
       set cid $package_id
-    } elseif {[ad_conn isconnected]} {
-      set package_id [ad_conn package_id]
-      set cid ""
-      if {[info command dotlrn_community::get_community_id_from_url] ne ""} {
-        set cid [dotlrn_community::get_community_id_from_url -url [ad_conn url]]
-      }
-      if {$cid eq ""} {
-        set cid $package_id
-      } 
     } else {
-      set cid -100
+      if {[my isobject ::xo:cc]} {
+        set package_id [::xo:cc package_id]
+        set url [::xo:cc url]
+      } elseif {[ad_conn isconnected]} {
+        set package_id [ad_conn package_id]
+        set url [ad_conn url]
+      }
+
+      if {[info exists package_id]} {
+        set cid ""
+        if {[info command dotlrn_community::get_community_id_from_url] ne ""} {
+          set cid [dotlrn_community::get_community_id_from_url -url $url]
+        }
+        if {$cid eq ""} {
+          set cid $package_id
+        }
+      } else {
+        error "Could not determine package id or community id"
+      }
     }
     set folder_id [ns_cache eval xotcl_object_type_cache cid-$cid {
-      set fullname "$name: $cid"
+      set folder_name "$name: $cid"
       
       if {[info command content::item::get_id_by_name] eq ""} {
         set folder_id ""
         db_0or1row get_id_by_name "select item_id as folder_id from cr_items \
-         where name = :fullname and parent_id = :parent_id"
+         where name = :folder_name and parent_id = :parent_id"
       } else {
         set folder_id [content::item::get_id_by_name \
-                           -name $fullname -parent_id $parent_id]
+                           -name $folder_name -parent_id $parent_id]
       }
       if {$folder_id eq ""} {
-        set folder_id [content::folder::new -name $fullname -parent_id $parent_id \
+        set folder_id [content::folder::new \
+                           -name $folder_name \
+                           -parent_id $parent_id \
                            -package_id $package_id -context_id $cid]
       }
       return $folder_id
@@ -229,9 +240,8 @@ namespace eval ::Generic {
         return [my form]
       }
     } else {
-      set nsform [ns_getform]
-      set item_id [ns_set get $nsform item_id] ;# item_id should be be hardcoded
-      set new_p [ns_set get $nsform __new_p]
+      set item_id [::xo::cc form_parameter item_id ""] ;# item_id should be be hardcoded
+      set new_p [::xo::cc form_parameter __new_p ""]
       #my log "--F item_id '$item_id', confirmed_p new_p '$new_p' [my set item_id]"
       if {$item_id ne "" && $new_p ne "1" && [my exists edit_form]} {
         #my log "--F use edit_form  [my edit_form]"
@@ -491,7 +501,12 @@ namespace eval ::Generic {
 
   Class create Attribute -parameter {attribute_name datatype pretty_name}
 
-  Class create CrItem 
+  Class create CrItem -parameter {
+    package_id 
+    {title ""} 
+    {mime_type text/plain}
+    {nls_language en_US}
+  }
   CrItem instproc initialize_loaded_object {} {
     # dummy action, to be refined
   }
@@ -564,7 +579,13 @@ namespace eval ::Generic {
     }
   }
 
-  CrItem ad_instproc save {} {
+  CrItem instproc current_user_id {} {
+    if {[my isobject ::xo::cc]} {return [::xo::cc user_id]}
+    if {[ad_conn isconnected]}  {return [ad_conn user_id]}
+    return ""
+  }
+
+  CrItem ad_instproc save {-creation_user_id} {
     Updates an item in the content repository and makes
     it the live revision. We insert a new revision instead of 
     changing the current revision.
@@ -578,7 +599,10 @@ namespace eval ::Generic {
     if {$__p > -1} {set __atts [lreplace $__atts $__p $__p]}
 
     eval my instvar $__atts 
-    set creation_user [expr {[ad_conn isconnected] ? [ad_conn user_id] : ""}]
+    set creation_user [expr {[info exists creation_user_id] ?
+                             $get_creation_user_id :
+                             [my current_user_id]}]
+
     [self class] instvar insert_view_operation
     db_transaction {
       [my info class] instvar storage_type
@@ -596,7 +620,7 @@ namespace eval ::Generic {
     return $item_id
   }
 
-  CrItem ad_instproc save_new {-package_id} {
+  CrItem ad_instproc save_new {-package_id -creation_user_id} {
     Insert a new item to the content repository and make
     it the live revision. 
   } {
@@ -610,16 +634,20 @@ namespace eval ::Generic {
       if {![info exists $__var]} {set $__var ""}
       #my log "--V importing var $__var"
     }
-    set creation_user [expr {[ad_conn isconnected] ? [ad_conn user_id] : ""}]
+
+    set creation_user [expr {[info exists creation_user_id] ?
+                             $get_creation_user_id :
+                             [my current_user_id]}]
 
     # "name" is not part of the *i rule, ignore it for now
     set __p [lsearch $__atts name]
     if {$__p > -1} {set __atts [lreplace $__atts $__p $__p]}
 
-    [self class] instvar insert_view_operation
     if {![info exists package_id]} {
       set package_id [expr {[my exists package_id] ? [my set package_id] : 0}]
     }
+    [self class] instvar insert_view_operation
+
     db_transaction {
       $__class instvar storage_type object_type
       $__class folder_type -folder_id $parent_id register
@@ -641,6 +669,7 @@ namespace eval ::Generic {
       my update_content_length $storage_type $revision_id
       db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
     }
+    my set revision_id $revision_id
     my db_1row get_dates {select creation_date, last_modified \
                               from acs_objects where object_id = :revision_id}
     return $item_id
@@ -672,7 +701,7 @@ namespace eval ::Generic {
           ImageField_DeleteIcon version_delete -label "" -html {align center}
         }
 
-    set user_id [ad_conn user_id]
+    set user_id [my current_user_id]
     set page_id [my set item_id]
     set live_revision_id [content::item::get_live_revision -item_id $page_id]
     my instvar package_id
@@ -745,6 +774,7 @@ namespace eval ::Generic {
   } {
     set code [ns_cache eval xotcl_object_cache $object {
       set created 1
+      #my log "--CACHE new new [self]"
       set o [next]
       return [::Serializer deepSerialize $o]
     }]
@@ -753,6 +783,10 @@ namespace eval ::Generic {
       set o [eval $code]
     }
     return $object
+  }
+  CrCache instproc delete {-item_id} {
+    next
+    ns_cache flush xotcl_object_cache ::$item_id
   }
 
   Class CrCache::Item
@@ -795,7 +829,7 @@ namespace eval ::Generic {
     {html ""}
     {with_categories false}
     {submit_link "."}
-    {action "[ns_conn url]"}
+    {action "[::xo::cc url]"}
   } -ad_doc {
     Class for the simplified generation of forms. This class was designed 
     together with the content repository class 
@@ -869,7 +903,7 @@ namespace eval ::Generic {
     $data initialize_loaded_object
     db_transaction {
       $data save
-      set old_name [ns_set get [ns_getform] __object_name]
+      set old_name [::xo::cc form_parameter __object_name ""]
       set new_name [$data set name]
       if {$old_name ne $new_name} {
         db_dml update_rename "update cr_items set name = :new_name \
@@ -880,14 +914,17 @@ namespace eval ::Generic {
   }
 
   Form instproc request {privilege} {
-    my instvar edit_form_page_title context
+    my instvar edit_form_page_title context data
+    set package_id [$data package_id]
 
-    # TODO: is not needed in the xowiki context with the policy
-    auth::require_login
-    permission::require_permission \
-        -object_id [ad_conn package_id] \
-        -privilege $privilege
-
+    if {[my isobject ::$package_id] && ![::$package_id exists policy]} {
+      # not needed, if governed by a policy
+      auth::require_login
+      permission::require_permission \
+          -object_id $package_id \
+          -privilege $privilege
+    }
+      
     set edit_form_page_title [expr {$privilege eq "create" ? 
                    [my add_page_title] : [my edit_page_title]}]
     set context [list $edit_form_page_title]
@@ -971,7 +1008,7 @@ namespace eval ::Generic {
     if {[my with_categories]} {
       set coid [expr {[$data exists item_id] ? [$data set item_id] : ""}]
       category::ad_form::add_widgets -form_name [my name] \
-          -container_object_id [ad_conn package_id] \
+          -container_object_id [$data package_id] \
           -categorized_object_id $coid
 
       append new_data {
