@@ -180,9 +180,9 @@ namespace eval ::Generic {
     if {[info exists package_id]} {
       set cid $package_id
     } else {
-      if {[my isobject ::xo:cc]} {
-        set package_id [::xo:cc package_id]
-        set url [::xo:cc url]
+      if {[my isobject ::xo::cc]} {
+        set package_id [::xo::cc package_id]
+        set url [::xo::cc url]
       } elseif {[ad_conn isconnected]} {
         set package_id [ad_conn package_id]
         set url [ad_conn url]
@@ -559,16 +559,21 @@ namespace eval ::Generic {
     return 0
   }
 
-  # provide the appropriate db_* call for the view update. Earlier versions up to 5.3.0d1 
-  # used db_dml, newer versions (around july 2006) have to use db_0or1row, when the
-  # patch for deadlocks and duplicate items is applied...
+  # provide the appropriate db_* call for the view update. Earlier
+  # versions up to 5.3.0d1 used db_dml, newer versions (around july
+  # 2006) have to use db_0or1row, when the patch for deadlocks and
+  # duplicate items is applied...
+
   apm_version_get -package_key acs-content-repository -array info
   array get info
   CrItem set insert_view_operation \
       [expr {[apm_version_names_compare $info(version_name) 5.3.0d1] < 1 ? "db_dml" : "db_0or1row"}]
   array unset info
-  # uncomment the following line, if you want to force  db_0or1row for update operations
-  # (e.g. when useing the provided patch for the content repository in a 5.2 installation)
+
+  # uncomment the following line, if you want to force db_0or1row for
+  # update operations (e.g. when useing the provided patch for the
+  # content repository in a 5.2 installation)
+
   #CrItem set insert_view_operation db_0or1row
 
   CrItem instproc update_content_length {storage_type revision_id} {
