@@ -65,11 +65,11 @@ namespace eval ::Generic {
 
   CrClass set common_query_atts {
     item_id revision_id creation_user creation_date last_modified object_type
-    creation_user last_modified package_id
+    creation_user last_modified
   }
-  #if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} {
-  #   CrClass lappend common_query_atts object_package_id
-  #}
+  if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} {
+     CrClass lappend common_query_atts package_id
+  }
 
   CrClass set common_insert_atts {name title description mime_type nls_language text}
 
@@ -325,20 +325,25 @@ namespace eval ::Generic {
       lappend atts $fq
     }
     if {$revision_id} {
-      $object db_1row note_select "\
+      $object db_1row fetch_from_view_revision_id "\
        select [join $atts ,], i.parent_id \
        from   [my set table_name]i n, cr_items i,acs_objects o \
        where  n.revision_id = $revision_id \
        and    i.item_id = n.item_id \
        and    o.object_id = i.item_id"
     } else {
-      $object db_1row note_select "\
+      $object db_1row fetch_from_view_item_id "\
        select [join $atts ,], i.parent_id \
        from   [my set table_name]i n, cr_items i, acs_objects o \
        where  i.item_id = $item_id \
        and    n.[my id_column] = i.live_revision \
        and    o.object_id = i.item_id"
     }
+
+    if {[apm_version_names_compare [ad_acs_version] 5.2] <= -1} {
+      $object set package_id [db_string get_pid "select package_id from cr_folders where folder_id = [$object set parent_id]"]
+    }
+
     #my log "--AFTER FETCH\n[$object serialize]"
     $object initialize_loaded_object
     return $object
@@ -625,6 +630,25 @@ namespace eval ::Generic {
     return $item_id
   }
 
+  if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} {
+    ns_log notice "--Version 5.2 or newer [ad_acs_version]"
+    CrItem set content_item__new {
+      select content_item__new(:name,$parent_id,null,null,null,\
+           :creation_user,null,null,\
+           'content_item',:object_type,null,:description,:mime_type,\
+           :nls_language,null,null,null,'f',:storage_type, :package_id)
+    }
+  } else {
+    ns_log notice "--Version 5.1 or older [ad_acs_version]"
+    CrItem set content_item__new {
+      select content_item__new(:name,$parent_id,null,null,null,\
+	   :creation_user,null,null,\
+           'content_item',:object_type,null,\
+	   :description,:mime_type,\
+           :nls_language,null,:storage_type)
+    }
+  }
+
   CrItem ad_instproc save_new {-package_id -creation_user_id} {
     Insert a new item to the content repository and make
     it the live revision. 
@@ -657,12 +681,9 @@ namespace eval ::Generic {
       $__class instvar storage_type object_type
       $__class folder_type -folder_id $parent_id register
       db_dml lock_objects "LOCK TABLE acs_objects IN SHARE ROW EXCLUSIVE MODE"
-      set item_id [db_string insert_item "\
-        select content_item__new(:name,$parent_id,null,null,null,\
-           :creation_user,null,null,\
-           'content_item',:object_type,null,:description,:mime_type,\
-           :nls_language,null,null,null,'f',:storage_type, $package_id)"]
 
+      set item_id [db_string insert_item \
+		       [subst [[self class] set content_item__new]]]
       set revision_id [db_nextval acs_object_id_seq]
       if {$storage_type eq "file"} {
         set text [cr_create_content_file $item_id $revision_id $import_file]
