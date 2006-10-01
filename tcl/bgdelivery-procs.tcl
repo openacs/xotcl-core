@@ -12,6 +12,10 @@ if {[info command ::thread::mutex] eq ""} {
   return
 }
 
+if {[catch {ns_conn contentsentlength}]} {
+  ns_log notice "AOLserver is not patched for bgdelivery, NOT loading bgdelivery"
+}
+
 ::xotcl::THREAD create bgdelivery {
   ###############
   # File delivery
@@ -122,9 +126,12 @@ bgdelivery ad_proc returnfile {statuscode mime_type filename} {
   if {[my write_headers $statuscode $mime_type $size]} {
     set ch [ns_conn channel]
     thread::transfer [my get_tid] $ch
-    throttle get_context
+    if {![my isobject ::xo:cc]} {
+      ::xo::ConnectionContext require
+    }
+    #my log [::xo::cc serialize]
     my do -async deliver $ch $filename \
-	[list [throttle set requestor],[throttle set url] [ns_conn start]]
+	[list [::xo::cc requestor],[::xo::cc url] [ns_conn start]]
     ns_conn contentsentlength $size       ;# maybe overly optimistic
   }
 }
