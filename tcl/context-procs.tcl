@@ -46,7 +46,7 @@ namespace eval ::xo {
     }
     if {$actual_query eq " "} {
       set actual_query [ns_conn query]
-      my log "--CONN ns_conn query = <$actual_query>"
+      #my log "--CONN ns_conn query = <$actual_query>"
     }
 
     # get the query parameters (from the url)
@@ -314,10 +314,10 @@ namespace eval ::xo {
     {-form_parameter}
   } {
     Create a connection context if there is none available.
-    The connection context should ne reclaimed after the request
+    The connection context should be reclaimed after the request
     so we create it as a volatile object in the toplevel scope,
-    it will be destroyed automatically, when the global variables 
-    are reclaimed.
+    it will be destroyed automatically with destroy_on_cleanup, 
+    when the global variables are reclaimed.
     
     As a side effect this method sets in the calling context
     the query parameters and package_id as variables, using the 
@@ -330,7 +330,7 @@ namespace eval ::xo {
     #my log "--i [self args]"
     if {$url eq "" && $init_url} {
       #set url [ns_conn url]
-      my log "--CONN ns_conn url"
+      #my log "--CONN ns_conn url"
       set url [root_of_host [ad_host]][ns_conn url]
     }
     #my log "--cc actual_query = <$actual_query>"
@@ -345,7 +345,16 @@ namespace eval ::xo {
     }
 
     # create package object if necessary
+    my require -url $url $package_id
+    ::xo::cc export_vars -level 2
+  }
+
+  PackageMgr ad_instproc require {{-url ""} package_id} {
+    Create package object if needed.
+  } {
+    #my log "--R $package_id exists? [my isobject ::$package_id]"
     if {![my isobject ::$package_id]} {
+      #my log "--R we have to create ::$package_id"
       if {$url ne ""} {
         my create ::$package_id -url $url
       } else {
@@ -353,7 +362,6 @@ namespace eval ::xo {
       }
       ::$package_id destroy_on_cleanup
     }
-    ::xo::cc export_vars -level 2
   }
 
   #
@@ -372,12 +380,14 @@ namespace eval ::xo {
   Package instforward exists_form_parameter  ::xo::cc %proc
   Package instforward returnredirect         ::xo::cc %proc
 
+
   Package instproc get_parameter {attribute {default ""}} {
     return [parameter::get -parameter $attribute -package_id [my id] \
                 -default $default]
   }
  
   Package instproc init args {
+    #my log "--R creating"
     my instvar id url
     set id [namespace tail [self]]
     array set info [site_node::get_from_object_id -object_id $id]
