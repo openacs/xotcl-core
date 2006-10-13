@@ -361,6 +361,10 @@ namespace eval ::xo {
         my create ::$package_id
       }
       ::$package_id destroy_on_cleanup
+    } else {
+      if {$url ne ""} {
+        ::$package_id set_url -url $url
+      }
     }
   }
 
