@@ -652,6 +652,13 @@ namespace eval ::Generic {
     }
   }
 
+  CrItem ad_instproc set_live_revision {-revision_id:required {-publish_status "ready"}} {
+    @param revision_id
+    @param publish_status one of 'live', 'ready' or 'production'
+  } {
+    db_0or1row set_live_revision {select content_item__set_live_revision(:revision_id,:publish_status)}
+  }
+
   CrItem ad_instproc save_new {-package_id -creation_user_id {-live_p:boolean true}} {
     Insert a new item to the content repository
     @param package_id
