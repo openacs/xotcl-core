@@ -330,7 +330,7 @@ namespace eval ::Generic {
        from   [my set table_name]i n, cr_items i,acs_objects o \
        where  n.revision_id = $revision_id \
        and    i.item_id = n.item_id \
-       and    o.object_id = i.item_id"
+       and    o.object_id = $revision_id"
     } else {
       $object db_1row fetch_from_view_item_id "\
        select [join $atts ,], i.parent_id \
@@ -595,10 +595,11 @@ namespace eval ::Generic {
     return ""
   }
 
-  CrItem ad_instproc save {-creation_user_id} {
-    Updates an item in the content repository and makes
-    it the live revision. We insert a new revision instead of 
+  CrItem ad_instproc save {-creation_user_id {-live_p:boolean true}} {
+    Updates an item in the content repository. We insert a new revision instead of 
     changing the current revision.
+    @param creation_user_id
+    @param live_p make this revision the live revision
   } {
     set __atts [concat \
                     [list item_id revision_id creation_user] \
@@ -625,7 +626,9 @@ namespace eval ::Generic {
           "insert into [[my info class] set table_name]i ([join $__atts ,]) \
                 values (:[join $__atts ,:])"
       my update_content_length $storage_type $revision_id
-      db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
+      if {$live_p} {
+        db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
+      }
     }
     return $item_id
   }
@@ -649,9 +652,11 @@ namespace eval ::Generic {
     }
   }
 
-  CrItem ad_instproc save_new {-package_id -creation_user_id} {
-    Insert a new item to the content repository and make
-    it the live revision. 
+  CrItem ad_instproc save_new {-package_id -creation_user_id {-live_p:boolean true}} {
+    Insert a new item to the content repository
+    @param package_id
+    @param creation_user_id
+    @param live_p make this revision the live revision
   } {
     set __class [my info class]
     my instvar parent_id item_id import_file
@@ -693,7 +698,9 @@ namespace eval ::Generic {
           "insert into [$__class set table_name]i ([join $__atts ,]) \
                 values (:[join $__atts ,:])"
       my update_content_length $storage_type $revision_id
-      db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
+      if {$live_p} {
+        db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
+      }
     }
     my set revision_id $revision_id
     my db_1row get_dates {select creation_date, last_modified \
