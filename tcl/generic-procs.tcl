@@ -336,7 +336,7 @@ namespace eval ::Generic {
        select [join $atts ,], i.parent_id \
        from   [my set table_name]i n, cr_items i, acs_objects o \
        where  i.item_id = $item_id \
-       and    n.[my id_column] = i.live_revision \
+       and    n.[my id_column] = coalesce(i.live_revision, i.latest_revision) \
        and    o.object_id = i.item_id"
     }
 
