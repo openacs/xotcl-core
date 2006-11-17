@@ -844,7 +844,7 @@ namespace eval ::Generic {
   }
 
   Class CrCache::Item
-  CrCache::Item instproc save {} {
+  CrCache::Item instproc save args {
     set r [next]
     #my log "--CACHE saving [self] in cache"
     ns_cache set xotcl_object_cache [self] \
