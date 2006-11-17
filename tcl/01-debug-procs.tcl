@@ -1,4 +1,4 @@
-# tell serializer to export methods, although these are methods of 
+## tell serializer to export methods, although these are methods of 
 # ::xotcl::Object
 
 ::Serializer exportMethods {
@@ -131,6 +131,7 @@ namespace eval ::xo {
   #
   ::xotcl::Object instproc destroy_on_cleanup {} {
     set ::xotcl_cleanup([self]) 1
+    #my log "--A cleanup for [lsort [array names ::xotcl_cleanup]]"
     ::trace add variable ::xotcl_cleanup([self]) unset ::xo::cleanup_callback
   }
   proc ::xo::cleanup_callback {var object op} {

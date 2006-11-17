@@ -382,6 +382,7 @@ namespace eval ::Generic {
     {-order_clause ""}
     {-where_clause ""}
     {-with_subtypes:boolean true}
+    {-publish_status}
     {-count:boolean false}
     {-folder_id}
     {-page_size 20}
@@ -395,12 +396,13 @@ namespace eval ::Generic {
     @param with_subtypes return subtypes as well
     @param count return the query for counting the solutions
     @param folder_id parent_id
+    @param publish_status one of 'live', 'ready' or 'production'
     @return sql query
   } {
     my instvar object_type_key
     if {![info exists folder_id]} {my instvar folder_id}
 
-    set attributes [list ci.item_id ci.name acs_objects.object_type] 
+    set attributes [list ci.item_id ci.name ci.publish_status acs_objects.object_type] 
     foreach a $select_attributes {
       if {$a eq "title"} {set a cr.title}
       lappend attributes $a
@@ -425,13 +427,15 @@ namespace eval ::Generic {
     } else {
       set pagination ""
     }
+    set publish_clause \
+	[expr {[info exists publish_status] ? " and ci.publish_status eq '$publish_status'" : ""}]
     return "select $attribute_selection
     from acs_object_types, acs_objects, cr_items ci, cr_revisions cr 
         where $type_selection
         and acs_object_types.object_type = ci.content_type
-        and ci.live_revision = cr.revision_id 
+        and coalesce(ci.live_revision,ci.latest_revision) = cr.revision_id 
         and parent_id = $folder_id and acs_objects.object_id = cr.revision_id \
-        $where_clause $order_clause $pagination"
+        $where_clause $order_clause $publish_clause $pagination"
   }
 
   CrClass ad_instproc instantiate_all {
@@ -627,7 +631,12 @@ namespace eval ::Generic {
                 values (:[join $__atts ,:])"
       my update_content_length $storage_type $revision_id
       if {$live_p} {
-        db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
+	if {[my exists content_item.publish_status]} {
+	  db_0or1row make_live \
+	      "select content_item__set_live_revision(:revision_id,'[my set content_item.publish_status]')"
+	} else {
+	  db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
+	}
       }
     }
     return $item_id
@@ -706,7 +715,12 @@ namespace eval ::Generic {
                 values (:[join $__atts ,:])"
       my update_content_length $storage_type $revision_id
       if {$live_p} {
-        db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
+	if {[my exists content_item.publish_status]} {
+	  db_0or1row make_live \
+	      "select content_item__set_live_revision(:revision_id,'[my set content_item.publish_status]')"
+	} else {
+	  db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
+	}
       }
     }
     my set revision_id $revision_id
