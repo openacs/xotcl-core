@@ -142,7 +142,12 @@ ad_proc -public ad_returnfile_background {statuscode mime_type filename} {
   blocking a request thread. This is especially important when large files are 
   requested over slow (e.g. dial-ip) connections.
 } {
-  bgdelivery returnfile $statuscode $mime_type $filename
+    if {[catch {ns_conn contentsentlength}]} {
+	ns_returnfile $statuscode $mime_type $filename
+    } else {    
+	bgdelivery returnfile $statuscode $mime_type $filename
+    }
+
 }
 
 #####################################
