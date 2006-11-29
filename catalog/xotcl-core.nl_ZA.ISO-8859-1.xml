@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<message_catalog package_key="xotcl-core" package_version="0.38" locale="nl_ZA" charset="ISO-8859-1">
+
+  <msg key="live_revision">Aktieve revisie</msg>
+  <msg key="revision_title">Revisies van lid</msg>
+  <msg key="revisions">Revisies</msg>
+</message_catalog>
