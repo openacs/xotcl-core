@@ -14,6 +14,16 @@ if {[info command ::thread::mutex] eq ""} {
 
 if {[catch {ns_conn contentsentlength}]} {
   ns_log notice "AOLserver is not patched for bgdelivery, NOT loading bgdelivery"
+
+  ad_proc -public ad_returnfile_background {statuscode mime_type filename} {
+    Deliver the given file to the requestor in the background. This proc uses the
+    background delivery thread to send the file in an event-driven manner without
+    blocking a request thread. This is especially important when large files are 
+    requested over slow (e.g. dial-ip) connections.
+  } {
+    ns_returnfile $statuscode $mime_type $filename
+  }
+  return
 }
 
 ::xotcl::THREAD create bgdelivery {
@@ -142,12 +152,7 @@ ad_proc -public ad_returnfile_background {statuscode mime_type filename} {
   blocking a request thread. This is especially important when large files are 
   requested over slow (e.g. dial-ip) connections.
 } {
-    if {[catch {ns_conn contentsentlength}]} {
-	ns_returnfile $statuscode $mime_type $filename
-    } else {    
-	bgdelivery returnfile $statuscode $mime_type $filename
-    }
-
+  bgdelivery returnfile $statuscode $mime_type $filename
 }
 
 #####################################

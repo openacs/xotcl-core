@@ -201,7 +201,7 @@ namespace eval ::xo {
   
   Chat instproc user_link { -user_id -color } {
     if {$user_id > 0} {
-        set name [my user_name $user_id]
+      set name [my user_name $user_id]
       set url "/shared/community-member?user%5fid=$user_id"
       if {![info exists color]} {
 	set color [my user_color $user_id]
