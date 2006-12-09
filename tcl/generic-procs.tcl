@@ -580,7 +580,7 @@ namespace eval ::Generic {
   array unset info
 
   # uncomment the following line, if you want to force db_0or1row for
-  # update operations (e.g. when useing the provided patch for the
+  # update operations (e.g. when using the provided patch for the
   # content repository in a 5.2 installation)
 
   #CrItem set insert_view_operation db_0or1row
@@ -834,7 +834,11 @@ namespace eval ::Generic {
     }]
     #my log "--CACHE: [self args], created [info exists created] o [info exists o]"
     if {![info exists created]} {
-      set o [eval $code]
+      if {[my isobject $object]} {
+        my log "--!! $object exists already"
+      } else {
+        set o [eval $code]
+      }
     }
     return $object
   }
