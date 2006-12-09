@@ -745,6 +745,7 @@ namespace eval ::Generic {
           ImageField edit -label "" -src /resources/acs-subsite/Zoom16.gif \
               -title "View Item" -alt  "view" \
               -width 16 -height 16 -border 0
+          AnchorField diff -label ""
           AnchorField author -label [_ file-storage.Author]
           Field content_size -label [_ file-storage.Size] -html {align right}
           Field last_modified_ansi -label [_ file-storage.Last_Modified]
@@ -792,15 +793,21 @@ namespace eval ::Generic {
             if {$version_id != $live_revision_id} {
               set live_revision "Make this Revision Current"
               set live_revision_icon /resources/acs-subsite/radio.gif
+              set diff_label "diff"
+              set diff_link [export_vars -base $base {{m diff} {compare_revision_id $version_id}}]
             } else {
               set live_revision "Current Live Revision"
               set live_revision_icon /resources/acs-subsite/radiochecked.gif
+              set diff_label ""
+              set diff_link ""
             }
 
             set live_revision_link [export_vars -base $base \
                                         {{m make-live-revision} {revision_id $version_id}}]
             t1 add \
                 -version_number $version_number: \
+                -diff.href $diff_link \
+                -diff $diff_label \
                 -edit.href [export_vars -base $base {{revision_id $version_id}}] \
                 -author $author \
                 -content_size $content_size_pretty \
