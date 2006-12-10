@@ -617,7 +617,7 @@ namespace eval ::Generic {
     set creation_user [expr {[info exists creation_user_id] ?
                              $get_creation_user_id :
                              [my current_user_id]}]
-
+    set old_revision_id [my set revision_id]
     [self class] instvar insert_view_operation
     db_transaction {
       [my info class] instvar storage_type
@@ -637,6 +637,10 @@ namespace eval ::Generic {
 	} else {
 	  db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
 	}
+      } else {
+        # if we do not make the revision live, use the old revision_id,
+        # and let CrCache save it
+        set revision_id $old_revision_id
       }
     }
     return $item_id
