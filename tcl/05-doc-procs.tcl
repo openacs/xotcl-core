@@ -11,8 +11,6 @@ ad_library {
   @cvs-id $Id$
 }
 
-package require xotcl::serializer 0.8
-
 # Per default, the content of the ::xotcl:: namespace is not serialized;
 # so we add the specified methods explizitely to the export list
 ::Serializer exportMethods {
@@ -200,8 +198,8 @@ package require xotcl::serializer 0.8
   if {![nsv_exists api_proc_doc $proc_index]} {
     nsv_lappend api_proc_doc_scripts $doc_elements(script) $proc_index
   }
-  my log "doc_elements=[array get doc_elements]"
-  my log "SETTING api_proc_doc '$proc_index'"
+  #my log "doc_elements=[array get doc_elements]"
+  #my log "SETTING api_proc_doc '$proc_index'"
   nsv_set api_proc_doc $proc_index [array get doc_elements]
 }
 
