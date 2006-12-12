@@ -12,7 +12,10 @@ if {[info command ::thread::mutex] eq ""} {
   return
 }
 
-if {[catch {ns_conn contentsentlength}]} {
+# catch {ns_conn contentsentlength} alone does not work, since we do not have
+# a connection yet, and the bgdelivery won't be activated
+catch {ns_conn xxxxx} msg
+if {![string match *contentsentlength* $msg]} {
   ns_log notice "AOLserver is not patched for bgdelivery, NOT loading bgdelivery"
 
   ad_proc -public ad_returnfile_background {statuscode mime_type filename} {
