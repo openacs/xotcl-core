@@ -797,21 +797,15 @@ namespace eval ::Generic {
             if {$version_id != $live_revision_id} {
               set live_revision "Make this Revision Current"
               set live_revision_icon /resources/acs-subsite/radio.gif
-              set diff_label "diff"
-              set diff_link [export_vars -base $base {{m diff} {compare_revision_id $version_id}}]
             } else {
               set live_revision "Current Live Revision"
               set live_revision_icon /resources/acs-subsite/radiochecked.gif
-              set diff_label ""
-              set diff_link ""
             }
 
             set live_revision_link [export_vars -base $base \
                                         {{m make-live-revision} {revision_id $version_id}}]
             t1 add \
                 -version_number $version_number: \
-                -diff.href $diff_link \
-                -diff $diff_label \
                 -edit.href [export_vars -base $base {{revision_id $version_id}}] \
                 -author $author \
                 -content_size $content_size_pretty \
@@ -823,7 +817,27 @@ namespace eval ::Generic {
                 -version_delete.href [export_vars -base $base \
                                   {{m delete-revision} {revision_id $version_id}}] \
                 -version_delete.title [_ file-storage.Delete_Version]
+
+            [t1 last_child] set payload(revision_id) $version_id
           }
+
+    # providing diff links to the prevision versions. This can't be done in
+    # the first loop, since we have not yet the revision id of entry in the next line.
+    set lines [t1 children]
+    for {set i 0} {$i < [llength $lines]-1} {incr i} {
+      set e [lindex $lines $i]
+      set n [lindex $lines [expr {$i+1}]]
+      set revision_id [$e set payload(revision_id)]
+      set compare_revision_id [$n set payload(revision_id)]
+      $e set diff.href [export_vars -base $base {{m diff} compare_revision_id revision_id}]
+      $e set diff "diff"
+    }
+    set e [lindex $lines end]
+    if {$e ne ""} {
+      $e set diff.href ""
+      $e set diff ""
+    }
+
     return [t1 asHTML]
   }
 

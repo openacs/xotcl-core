@@ -53,6 +53,10 @@ namespace eval ::xo {
     #$obj __after_insert
   }
 
+  OrderedComposite instproc last_child {} {
+    lindex [my set __children] end
+  }
+
   OrderedComposite instproc destroy {} {
     # destroy all children of the ordered composite
     if {[my exists __children]} {
