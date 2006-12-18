@@ -25,11 +25,12 @@ if {!$isobject} {
   ad_script_abort
 }
 
+interp alias {} DO {} ::xotcl::api inscope $scope 
+
 set my_class [DO $object info class]
 set title "[::xotcl::api object_link $scope $my_class] $object"
 set isclass [::xotcl::api isclass $scope $object]
 
-interp alias {} DO {} ::xotcl::api inscope $scope 
 set s [DO Serializer new]
 
 set dimensional_slider [ad_dimensional {
