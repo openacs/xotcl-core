@@ -28,12 +28,13 @@ ad_library {
 
 ::xotcl::Object create ::xotcl::api \
     -proc isclass {scope obj} {
-      if {$scope eq ""} {
-	set isclass [::xotcl::Object isclass $obj]
-      } else {
-	set isclass [$scope do ::xotcl::Object isclass $obj]
-      }
-
+      expr {$scope eq "" ? 
+            [::xotcl::Object isclass $obj] : 
+            [$scope do ::xotcl::Object isclass $obj]}
+    } -proc isobject {scope obj} {
+      expr {$scope eq "" ? 
+            [::xotcl::Object isobject $obj] : 
+            [$scope do ::xotcl::Object isobject $obj]}
     } -proc scope {} {
       if {[info exists ::xotcl::currentThread]} {
 	# we are in an xotcl thread; the body won't be accessible directly

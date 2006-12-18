@@ -17,6 +17,16 @@ ad_page_contract {
 set context [list "XOTcl"]
 set output ""
 ::xotcl::api scope_from_object_reference scope object
+set isobject [::xotcl::api isobject $scope $object]
+
+if {!$isobject} {
+  ad_return_error "Object Error" "I was unable to access object $object. 
+	Might this be a temporary object?"
+  ad_script_abort
+}
+
+set my_class [DO $object info class]
+set title "[::xotcl::api object_link $scope $my_class] $object"
 set isclass [::xotcl::api isclass $scope $object]
 
 interp alias {} DO {} ::xotcl::api inscope $scope 
@@ -113,9 +123,9 @@ if {[nsv_exists api_library_doc $index]} {
 
   array unset doc_elements
 }
-set my_class [DO $object info class]
+
 set obj_create_source "$my_class create $object"
-set title "[::xotcl::api object_link $scope $my_class] $object"
+
 set class_references ""
 
 if {$isclass} {
