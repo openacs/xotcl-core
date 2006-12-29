@@ -1,10 +1,18 @@
+ad_library {
+  XOTcl API for low level db abstraction
+
+  @author Gustaf Neumann
+  @creation-date 2006-12-28
+  @cvs-id $Id$
+}
+
 namespace eval ::xo::db {
 
   ::xotcl::Object require
   require proc table {name definition} {
     if {![db_0or1row check-$name \
               "select 1 from pg_tables where tablename = '$name'"]} {
-      db_dml create-$name "create table $name($definition)"
+      db_dml create-$name "create table $name ($definition)"
     }
   }
 
