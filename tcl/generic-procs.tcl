@@ -139,11 +139,11 @@ namespace eval ::Generic {
       if {[my cr_attributes] ne ""} {
         set o [::xo::OrderedComposite new -volatile -contains [my cr_attributes]]
         foreach att [$o children] {
-          $att instvar attribute_name datatype pretty_name
+          $att instvar attribute_name datatype pretty_name sqltype
           db_1row create_att {
             select content_type__create_attribute(
                 :object_type,:attribute_name,:datatype,
-                :pretty_name,null,null,null,'text'
+                :pretty_name,null,null,null,:sqltype
             )
           }
         }
@@ -381,6 +381,7 @@ namespace eval ::Generic {
     {-select_attributes ""}
     {-order_clause ""}
     {-where_clause ""}
+    {-from_clause ""}
     {-with_subtypes:boolean true}
     {-publish_status}
     {-count:boolean false}
@@ -430,7 +431,7 @@ namespace eval ::Generic {
     set publish_clause \
 	[expr {[info exists publish_status] ? " and ci.publish_status eq '$publish_status'" : ""}]
     return "select $attribute_selection
-    from acs_object_types, acs_objects, cr_items ci, cr_revisions cr 
+    from acs_object_types, acs_objects, cr_items ci, cr_revisions cr $from_clause
         where $type_selection
         and acs_object_types.object_type = ci.content_type
         and coalesce(ci.live_revision,ci.latest_revision) = cr.revision_id 
@@ -508,7 +509,7 @@ namespace eval ::Generic {
     return $__result
   }
 
-  Class create Attribute -parameter {attribute_name datatype pretty_name}
+  Class create Attribute -parameter {attribute_name datatype pretty_name {sqltype "text"}}
 
   Class create CrItem -parameter {
     package_id 
@@ -1278,4 +1279,6 @@ namespace eval ::Generic {
   namespace export CrItem
 }
 namespace import -force ::Generic::*
+
+
 

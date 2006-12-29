@@ -269,6 +269,7 @@ ad_library {
       [array get doc_elements]
 
   set file_index $doc_elements(script)
+
   if {[nsv_exists api_library_doc $file_index]} {
     array set elements [nsv_get api_library_doc $file_index]
   }
