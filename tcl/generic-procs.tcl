@@ -65,7 +65,7 @@ namespace eval ::Generic {
 
   CrClass set common_query_atts {
     item_id revision_id creation_user creation_date last_modified object_type
-    creation_user last_modified
+    creation_user last_modified publish_status
   }
   if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} {
      CrClass lappend common_query_atts package_id
@@ -316,11 +316,12 @@ namespace eval ::Generic {
     set atts [list]
     foreach v $raw_atts {
       switch -- $v {
-        name          {set fq i.$v}
-        creation_date {set fq o.$v}
-        package_id    {set fq o.$v}
-        text          {set fq "n.data as text"}
-        default       {set fq n.$v}
+        name           {set fq i.$v}
+        publish_status {set fq i.$v}
+        creation_date  {set fq o.$v}
+        package_id     {set fq o.$v}
+        text           {set fq "n.data as text"}
+        default        {set fq n.$v}
       }
       lappend atts $fq
     }
@@ -632,12 +633,9 @@ namespace eval ::Generic {
                 values (:[join $__atts ,:])"
       my update_content_length $storage_type $revision_id
       if {$live_p} {
-	if {[my exists content_item.publish_status]} {
-	  db_0or1row make_live \
-	      "select content_item__set_live_revision(:revision_id,'[my set content_item.publish_status]')"
-	} else {
-	  db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
-	}
+        set publish_status [my set publish_status]
+        db_0or1row make_live \
+            {select content_item__set_live_revision(:revision_id, :publish_status)}
       } else {
         # if we do not make the revision live, use the old revision_id,
         # and let CrCache save it
@@ -720,12 +718,9 @@ namespace eval ::Generic {
                 values (:[join $__atts ,:])"
       my update_content_length $storage_type $revision_id
       if {$live_p} {
-	if {[my exists content_item.publish_status]} {
-	  db_0or1row make_live \
-	      "select content_item__set_live_revision(:revision_id,'[my set content_item.publish_status]')"
-	} else {
-	  db_0or1row make_live {select content_item__set_live_revision(:revision_id)}
-	}
+        set publish_status [my set publish_status]
+        db_0or1row make_live \
+            "select content_item__set_live_revision(:revision_id,:publish_status)"
       }
     }
     my set revision_id $revision_id
