@@ -517,6 +517,7 @@ namespace eval ::Generic {
     {title ""} 
     {mime_type text/plain}
     {nls_language en_US}
+    {publish_status ready}
   }
   CrItem instproc initialize_loaded_object {} {
     # dummy action, to be refined
