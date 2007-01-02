@@ -137,7 +137,8 @@ namespace eval ::Generic {
         )
       }
       if {[my cr_attributes] ne ""} {
-        set o [::xo::OrderedComposite new -volatile -contains [my cr_attributes]]
+        set o [::xo::OrderedComposite new -contains [my cr_attributes]]
+        $o destroy_on_cleanup
         foreach att [$o children] {
           $att instvar attribute_name datatype pretty_name sqltype
           db_1row create_att {
@@ -258,7 +259,8 @@ namespace eval ::Generic {
       my set superclass [[my info superclass] set object_type]
     }
     set sql_attribute_names [list]
-    set o [xo::OrderedComposite new -volatile -contains [my cr_attributes]]
+    set o [::xo::OrderedComposite new -contains [my cr_attributes]]
+    $o destroy_on_cleanup
     foreach att [$o children] { 
       lappend sql_attribute_names [$att attribute_name]
     }

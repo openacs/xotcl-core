@@ -63,7 +63,7 @@ namespace eval ::xo {
       #my log "--W destroying children [my set __children]"
       foreach c [my set __children] { $c destroy }
     }
-    #show_stack;my log "-- children murdered, now next, chlds=[my info children]"
+    #show_stack;my log "--W children murdered, now next, chlds=[my info children]"
     namespace eval [self] {namespace forget *}  ;# for pre 1.4.0 versions
     next
   }

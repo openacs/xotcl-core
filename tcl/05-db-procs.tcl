@@ -39,7 +39,7 @@ namespace eval ::xo::db {
 
   proc has_ltree {} {
     ns_cache eval xotcl_object_cache ::xo::has_ltree {
-      if {[catch {db_1row check_ltree "select * from pg_proc where proname = 'ltree_in'"}]} {
+      if {[db_string check_ltree "select count(*) from pg_proc where proname = 'ltree_in'"] == 0} {
         return 0
       }
       return 1
