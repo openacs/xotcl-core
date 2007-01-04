@@ -24,7 +24,7 @@ set output ""
 set title "Show Caches"
 set context [list "Cache Statistics"]
 
-if { $flush == 1 } {
+if { $flush ne "0" } {
   ns_cache flush $cache $flush
   ad_returnredirect "[ns_conn url]?cache=$cache"
   ad_script_abort
