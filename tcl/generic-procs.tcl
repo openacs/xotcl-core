@@ -485,10 +485,11 @@ namespace eval ::Generic {
     {-sql ""}
     {-full_statement_name ""}
   } {
-    Return a set of instances of folder objects. If the ...
+    Return a set of instances of folder objects. 
+    The container and contained objects are automatically 
+    destroyed on cleanup of the connection thread
   } {
-    set __result [::xo::OrderedComposite new]
-    uplevel #1 [list $__result volatile]
+    set __result [::xo::OrderedComposite new -destroy_on_cleanup]
     #$__result proc destroy {} {my log "-- "; next}
 
     db_with_handle -dbn $dbn db {
