@@ -295,7 +295,16 @@ namespace eval ::xo {
     my exists form_parameter($name)
   }
   
-
+  ConnectionContext instproc set_parameter {name value} {
+    my set perconnectionparam($name) $value
+  }
+  ConnectionContext instproc get_parameter {name {default ""}} {
+    my instvar perconnectionparam
+    return [expr {[info exists perconnectionparam($name)] ? $perconnectionparam($name) : $default}]
+  }
+  ConnectionContext instproc exists_parameter {name} {
+    my exists perconnectionparam($name)
+  }
 
 
   #
