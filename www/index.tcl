@@ -70,7 +70,7 @@ foreach cl [lsort [::xotcl::Class allinstances]] {
 
   foreach key {procs instprocs} {
     set infos ""
-    foreach i [$cl info $key] {append infos [doc_link $cl $key $i] ", "}
+    foreach i [lsort [$cl info $key]] {append infos [doc_link $cl $key $i] ", "}
     set infos [string trimright $infos ", "]
     if {$infos ne ""} {
       append output "<li><em>$key:</em> $infos</li>\n"
@@ -79,7 +79,7 @@ foreach cl [lsort [::xotcl::Class allinstances]] {
   }
 
   set infos ""
-  foreach o [$cl info instances] {append infos [::xotcl::api object_link {} $o] ", "}
+  foreach o [lsort [$cl info instances]] {append infos [::xotcl::api object_link {} $o] ", "}
   set infos [string trimright $infos ", "]
   if {$infos ne ""} {
     append output "<li><em>instances:</em> $infos</li>\n"

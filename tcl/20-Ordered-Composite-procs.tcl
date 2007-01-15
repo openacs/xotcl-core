@@ -63,7 +63,7 @@ namespace eval ::xo {
       #my log "--W destroying children [my set __children]"
       foreach c [my set __children] { $c destroy }
     }
-    #show_stack;my log "-- children murdered, now next, chlds=[my info children]"
+    #show_stack;my log "--W children murdered, now next, chlds=[my info children]"
     namespace eval [self] {namespace forget *}  ;# for pre 1.4.0 versions
     next
   }
@@ -94,4 +94,46 @@ namespace eval ::xo {
 
   Class OrderedComposite::Child -instproc __after_insert {} {;}
 
+  Class OrderedComposite::IndexCompare
+  OrderedComposite::IndexCompare instproc __compare {a b} {
+    set by [my set __orderby]
+    set x [$a set $by]
+    set y [$b set $by]
+    #my log "--value compare  $x $y] => [my __value_compare $x $y 0]"
+    return [my __value_compare $x $y 0]
+  }
+  OrderedComposite::IndexCompare instproc __value_compare {x y def} {
+    set xp [string first . $x]
+    set yp [string first . $y]
+    if {$xp == -1 && $yp == -1} {
+      if {$x < $y} {
+	return -1
+      } elseif {$x > $y} {
+	return 1
+      } else {
+	return $def
+      }
+    } elseif {$xp == -1} {
+      set yh [string range $y 0 [expr {$yp-1}]]
+      return [my __value_compare $x $yh -1]
+    } elseif {$yp == -1} {
+      set xh [string range $x 0 [expr {$xp-1}]]
+      return [my __value_compare $xh $y 1]
+    } else {
+      set xh [string range $x 0 $xp]
+      set yh [string range $y 0 $yp]
+      #puts "xh=$xh yh=$yh"
+      if {$xh < $yh} {
+	return -1
+      } elseif {$xh > $yh} {
+	return 1
+      } else {
+	incr xp 
+	incr yp
+	#puts "rest [string range $x $xp end] [string range $y $yp end]"
+	return [my __value_compare [string range $x $xp end] [string range $y $yp end] $def]
+      }
+    }
+  }
 }
+

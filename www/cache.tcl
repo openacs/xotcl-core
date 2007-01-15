@@ -1,9 +1,10 @@
 ad_page_contract {
         Cache Viewer
 } {    
-    {cache:optional 0}
-    {item:optional 0}
-    {flush:optional 0}
+  {cache:optional 0}
+  {item:optional 0}
+  {flush:optional 0}
+  {flushall:optional 0}
 } -properties {
     title:onevalue
     context:onevalue
@@ -23,8 +24,16 @@ set output ""
 set title "Show Caches"
 set context [list "Cache Statistics"]
 
-if { $flush ne 0 } {
+if { $flush ne "0" } {
   ns_cache flush $cache $flush
+  ad_returnredirect "[ns_conn url]?cache=$cache"
+  ad_script_abort
+} 
+
+if {$flushall == 1} {
+  foreach i [ns_cache names $cache] {
+    ns_cache flush $cache $i
+  }
   ad_returnredirect "[ns_conn url]?cache=$cache"
   ad_script_abort
 }
@@ -57,6 +66,8 @@ if { $cache == 0 } {
 } else {
   set item_list [ns_cache names $cache]
   set item_count [llength $item_list]
+  append output "<a href='?cache=$cache&flushall=1'>flush all</a> items of $cache"
+
   append output "<h3>Items in cache $cache ($item_count) with size [ns_cache_size $cache]</h3><ul>"
   foreach name [lsort -dictionary $item_list] {
     append output "<li><a href='?cache=$cache&item=$name'>$name</a> (<a href='?cache=$cache&flush=$name'>flush</a>)</li>"
