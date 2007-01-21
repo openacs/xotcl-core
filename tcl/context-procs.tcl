@@ -161,7 +161,7 @@ namespace eval ::xo {
     {-actual_query " "}
   } {
     if {![info exists url]} {
-      my log "--CONN ns_conn url"
+      #my log "--CONN ns_conn url"
       set url [ns_conn url]
     }
     #my log "--i [self args]"
