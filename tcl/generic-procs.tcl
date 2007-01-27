@@ -709,10 +709,14 @@ namespace eval ::Generic {
       $__class instvar storage_type object_type
       $__class folder_type -folder_id $parent_id register
       db_dml lock_objects "LOCK TABLE acs_objects IN SHARE ROW EXCLUSIVE MODE"
-
-      set item_id [db_string insert_item \
-		       [subst [[self class] set content_item__new]]]
       set revision_id [db_nextval acs_object_id_seq]
+      if {$name eq ""} {
+	# we have an anonymous item, use a unique value for the name
+	set name $revision_id
+      }
+      set item_id [db_string content_item__new \
+		       [subst [[self class] set content_item__new]]]
+
       if {$storage_type eq "file"} {
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }
@@ -1017,6 +1021,7 @@ namespace eval ::Generic {
     my log "--- new_request ---"
     my request create
     my instvar data
+    #my log "--VAR [my var item_id]"
     foreach var [[$data info class] edit_atts] {
       if {[$data exists $var]} {
         my var $var [list [$data set $var]]
