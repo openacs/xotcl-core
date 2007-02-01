@@ -246,12 +246,21 @@ namespace eval ::xo {
     call ::permission::permission_p but avoid multiple calls in the same
     session through caching in the connection context
   } {
-    #my log "--p [self args] [info exists party_id] "
     if {![info exists party_id]} {
       set party_id [my user_id]
       #my log "--p party_id $party_id"
-      #::xo::show_stack
       if {$party_id == 0} {
+        set key permission($object_id,$privilege,$party_id)
+        if {[my exists $key]} {return [my set $key]}
+        set granted [permission::permission_p -party_id $party_id \
+                         -object_id $object_id \
+                         -privilege $privilege]
+        if {$granted} {
+          my set $key $granted
+          return $granted
+        }
+        # The permission is not granted for the public.
+        # We force the user to login
         auth::require_login
         return 0
       }
