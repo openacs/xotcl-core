@@ -712,8 +712,9 @@ namespace eval ::Generic {
       set revision_id [db_nextval acs_object_id_seq]
 
       if {$name eq ""} {
-	# we have an anonymous item, use a unique value for the name
-	set name $revision_id
+	# we have an autonamed item, use a unique value for the name
+	set name [expr {[my exists __autoname_prefix] ? 
+                        "[my set __autoname_prefix]$revision_id" : $revision_id}]
       }
 
       set item_id [db_string content_item__new \
@@ -876,6 +877,7 @@ namespace eval ::Generic {
   CrCache instproc delete {-item_id} {
     next
     ns_cache flush xotcl_object_cache ::$item_id
+    # we should probably flush as well cached revisions
   }
 
   Class CrCache::Item
