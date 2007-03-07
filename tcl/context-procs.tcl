@@ -413,18 +413,27 @@ namespace eval ::xo {
     my instvar id url
     set id [namespace tail [self]]
     array set info [site_node::get_from_object_id -object_id $id]
-    my package_url $info(url)
+    set package_url $info(url)
+    # in case of of host-node map, simplify the url to avoid redirects
+    set root [root_of_host [ad_host]]
+    regexp "^${root}(.*)$" $package_url _ package_url
+    #my log "--R package_url= $package_url (was $info(url))"
+    my package_url $package_url
     my instance_name $info(instance_name)
-    if {![my exists url]} {
+    if {[my exists url]} {
+      regexp "^${root}(.*)$" $url _ url
+    } else {
+      my log "--R we have no url, use package_url"
       # if we have no more information, we use the package_url as actual url
-      set url [my package_url]
-    }
+      set url $package_url
+    } 
     my set_url -url $url
   }
  
   Package instproc set_url {-url} {
     my url $url
     my set object [string range [my url] [string length [my package_url]] end]
+    #my log "--R object set to [my set object]"
   }
 
 #   Package instproc destroy {} {
