@@ -88,7 +88,7 @@ namespace eval ::xo {
 	set c [self]::[namespace tail $class]
 	if {![my isclass $c]} continue
 	set permission [my get_permission -check_classes false $class $method]
-	break
+	if {$permission ne ""} break
       }
     }
     return $permission
@@ -162,7 +162,7 @@ namespace eval ::xo {
       }
     }
 
-    #my log "--p enforce_permissions {$object $method} ==> $allowed"
+    my log "--p enforce_permissions {$object $method} : $permission ==> $allowed"
 
     if {!$allowed} {
       ns_log notice "permission::require_permission: $user_id doesn't \
