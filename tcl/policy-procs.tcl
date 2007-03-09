@@ -15,9 +15,9 @@ namespace eval ::xo {
     expr {[my isclass $c] ? [$c array names require_permission] : [list]}
   }
 
-  Policy instproc check_privilege {{-login true} privilege object method} {
+  Policy instproc check_privilege {{-login true} -user_id -package_id privilege object method} {
     set allowed -1   ;# undecided
-    if {[acs_user::site_wide_admin_p]} {
+    if {[acs_user::site_wide_admin_p -user_id $user_id]} {
       return 1
     }
     switch $privilege {
@@ -26,7 +26,7 @@ namespace eval ::xo {
         if {$login} {
           auth::require_login; return 1
         } else {
-          return [expr {[::xo::cc user_id] != 0}]
+          return [expr {$user_id != 0}]
         }
       }
       swa   {
@@ -43,8 +43,8 @@ namespace eval ::xo {
         # <class> instproc privilege=<name> {{-login true} user_id package_id}
         #
         if {[$object info methods privilege=$privilege] ne ""} {
-          set allowed [$object privilege=$privilege \
-                           -login $login [::xo::cc user_id] [::xo::cc package_id]]
+	  if {![info exists package_id]} {set package_id [::xo::cc package_id]}
+          set allowed [$object privilege=$privilege -login $login $user_id $package_id]
         }
       }
     }
@@ -73,19 +73,28 @@ namespace eval ::xo {
     }
   }
 
-  Policy instproc get_permission {c object method} {
+  Policy instproc get_permission {{-check_classes true} object method} {
+    set permission ""
+    set o [self]::[namespace tail $object]
     set key require_permission($method)
-    if {[$c exists $key]} {
-      set permission [$c set $key]
-    } elseif {[$c exists default_permission]} {
-      set permission [$c set default_permission]
-    } else {
-      set permission ""
+    if {[my isobject $o] && [$o exists $key]} {
+      set permission [$o set $key]
+    } elseif {[my isobject $o] && [$o exists default_permission]} {
+      set permission [$o set default_permission]
+    } elseif {$check_classes} {
+      # we have no object specific policy information, check the classes
+      set c [$object info class]
+      foreach class [concat $c [$c info heritage]] {
+	set c [self]::[namespace tail $class]
+	if {![my isclass $c]} continue
+	set permission [my get_permission -check_classes false $class $method]
+	break
+      }
     }
     return $permission
   }
   
-  Policy ad_instproc check_permissions {object method} {
+  Policy ad_instproc check_permissions {-user_id -package_id object method} {
 
     This method checks whether the current user is allowed
     or not to invoke a method based on the given policy.
@@ -97,28 +106,28 @@ namespace eval ::xo {
     @return 0 or 1
     
   } {
-    foreach class [concat [$object info class] [[$object info class] info heritage]] {
-      set c [self]::[namespace tail $class]
-      if {![my isclass $c]} continue
-      set permission [my get_permission $c $object $method]
-      if {$permission ne ""} {
-        foreach {kind p} [my get_privilege $permission $object $method] break
-        switch $kind {
-          primitive {return [my check_privilege -login false $p $object $method]}
-          complex {
-            foreach {attribute privilege} $p break
-            set id [$object set $attribute]
-            my log "--p checking permission::permission_p -object_id $id -privilege $privilege"
-            return [::xo::cc permission -object_id $id -privilege $privilege \
-                        -party_id [xo::cc user_id]]
-          }
-        }
+    if {![info exists user_id]} {set user_id [::xo::cc user_id]}
+    if {![info exists package_id]} {set package_id [::xo::cc package_id]}
+
+    set permission [my get_permission $object $method]
+    if {$permission ne ""} {
+      foreach {kind p} [my get_privilege $permission $object $method] break
+      switch $kind {
+	primitive {return [my check_privilege -login false \
+			       -package_id $package_id -user_id $user_id \
+			       $p $object $method]}
+	complex {
+	  foreach {attribute privilege} $p break
+	  set id [$object set $attribute]
+	  my log "--p checking permission::permission_p -object_id $id -privilege $privilege"
+	  return [::xo::cc permission -object_id $id -privilege $privilege -party_id $user_id]
+	}
       }
     }
     return 0
   }
 
-  Policy ad_instproc enforce_permissions {object method} {
+  Policy ad_instproc enforce_permissions {-user_id -package_id object method} {
 
     This method checks whether the current user is allowed
     or not to invoke a method based on the given policy and
@@ -128,28 +137,27 @@ namespace eval ::xo {
     @return 0 or 1
     
   } {
+    if {![info exists user_id]} {set user_id [::xo::cc user_id]}
+    if {![info exists package_id]} {set package_id [::xo::cc package_id]}
+
     #my log "--p enforce_permissions {$object $method}"
     set allowed 0
-    foreach class [concat [$object info class] [[$object info class] info heritage]] {
-      set c [self]::[namespace tail $class]
-      if {![my isclass $c]} continue
-      set permission [my get_permission $c $object $method]
-      if {$permission ne ""} {
-        foreach {kind p} [my get_privilege $permission $object $method] break
-        switch $kind {
-          primitive {
-            set allowed [my check_privilege $p $object $method]
-            set privilege $p
-            break
-          }
-          complex {
-            foreach {attribute privilege} $p break
-            set id [$object set $attribute]
-            set allowed [::xo::cc permission -object_id $id \
-                             -privilege $privilege \
-                             -party_id [xo::cc user_id]]
-            break
-          }
+    set permission [my get_permission $object $method]
+    if {$permission ne ""} {
+      foreach {kind p} [my get_privilege $permission $object $method] break
+      switch $kind {
+	primitive {
+	  set allowed [my check_privilege \
+			   -user_id $user_id -package_id $package_id \
+			   $p $object $method]
+	  set privilege $p
+	}
+	complex {
+	  foreach {attribute privilege} $p break
+	  set id [$object set $attribute]
+	  set allowed [::xo::cc permission -object_id $id \
+			   -privilege $privilege \
+			   -party_id $user_id]
         }
       }
     }
@@ -157,7 +165,7 @@ namespace eval ::xo {
     #my log "--p enforce_permissions {$object $method} ==> $allowed"
 
     if {!$allowed} {
-      ns_log notice "permission::require_permission: [::xo::cc user_id] doesn't \
+      ns_log notice "permission::require_permission: $user_id doesn't \
 		have $privilege on $object"
       ad_return_forbidden  "Permission Denied"  "<blockquote>
   You don't have sufficient permissions for $method on this object ($object).
