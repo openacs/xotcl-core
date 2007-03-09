@@ -62,9 +62,8 @@ namespace eval ::xo {
       set condition [lindex $p 0]
       if {[llength $condition]>1} {
         # we have a condition
-        if {[eval $object condition $method $condition]} {
-          # the condition is true
-          #my log "--c check cond=$condition == TRUE"
+	foreach {cond value} $condition break
+        if {[$object condition=$cond $value]} {
           return [my get_privilege [lrange $p 1 end] $object $method]
         } 
       } else {
@@ -72,6 +71,18 @@ namespace eval ::xo {
         return [list [expr {[llength $p] == 1 ? "primitive" : "complex"}] $p]
       }
     }
+  }
+
+  Policy instproc get_permission {c object method} {
+    set key require_permission($method)
+    if {[$c exists $key]} {
+      set permission [$c set $key]
+    } elseif {[$c exists default_permission]} {
+      set permission [$c set default_permission]
+    } else {
+      set permission ""
+    }
+    return $permission
   }
   
   Policy ad_instproc check_permissions {object method} {
@@ -89,10 +100,8 @@ namespace eval ::xo {
     foreach class [concat [$object info class] [[$object info class] info heritage]] {
       set c [self]::[namespace tail $class]
       if {![my isclass $c]} continue
-      set key require_permission($method)
-      if {[$c exists $key]} {
-        set permission  [$c set $key]
-
+      set permission [my get_permission $c $object $method]
+      if {$permission ne ""} {
         foreach {kind p} [my get_privilege $permission $object $method] break
         switch $kind {
           primitive {return [my check_privilege -login false $p $object $method]}
@@ -124,10 +133,8 @@ namespace eval ::xo {
     foreach class [concat [$object info class] [[$object info class] info heritage]] {
       set c [self]::[namespace tail $class]
       if {![my isclass $c]} continue
-      set key require_permission($method)
-      if {[$c exists $key]} {
-        set permission [$c set $key]
-
+      set permission [my get_permission $c $object $method]
+      if {$permission ne ""} {
         foreach {kind p} [my get_privilege $permission $object $method] break
         switch $kind {
           primitive {
