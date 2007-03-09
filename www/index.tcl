@@ -64,7 +64,7 @@ foreach cl [lsort [::xotcl::Class allinstances]] {
   
   append output "<li><b><a name='$cl'>[::xotcl::api object_link {} $cl]</b> <ul>"
 
-  foreach kind {class superclass mixin instmixin} {
+  foreach kind {class superclass subclass mixin instmixin} {
     append output [info_classes $cl $kind]
   }
 

@@ -177,7 +177,7 @@ namespace eval ::xo {
   }
 
   Table instproc render_with {renderer trn_mixin} {
-    #my log "--"
+    #my log "-- renderer=$renderer"
     set cl [self class]
     [self] mixin ${cl}::$renderer 
     foreach child [$cl info classchildren] {
@@ -321,6 +321,9 @@ namespace eval ::xo::Table {
       -instproc init_renderer {} {
 	#my log "--"
 	my set __rowcount 0
+        my set css.table-class list
+        my set css.tr.even-class list-even
+        my set css.tr.odd-class list-odd
       }
 
   TABLE instproc render-actions {} {
@@ -350,7 +353,10 @@ namespace eval ::xo::Table {
       html::tr {html::td { html::t [my set no_data]}}
     } else {
       foreach line [my children] {
-	html::tr -class [expr {[my incr __rowcount]%2 ? "list-odd" : "list-even" }] {
+        #my log "--LINE vars=[my info vars] cL: [[self class] info vars] r=[my renderer]"
+	html::tr -class [expr {[my incr __rowcount]%2 ? 
+                               [my set css.tr.odd-class] : 
+                               [my set css.tr.even-class] }] {
 	  foreach field [[self]::__columns children] {
 	    html::td  [concat [list class list] [$field html]] { 
 	      $field render-data $line
@@ -363,7 +369,7 @@ namespace eval ::xo::Table {
   
   TABLE instproc render {} {
     if {![my isobject [self]::__actions]} {my actions {}}
-    html::table -class list {
+    html::table -class [my set css.table-class] {
       my render-actions
       my render-body
     }
@@ -475,7 +481,7 @@ namespace eval ::xo::Table {
 	html::div  {
 	  my render-actions
 	  html::div -class table {
-	    html::table -class list {my render-body}
+	    html::table -class [my set css.table-class] {my render-body}
 	  }
 	}
       }
@@ -484,7 +490,20 @@ namespace eval ::xo::Table {
   Class create TABLE2::Field -superclass TABLE::Field
   Class create TABLE2::AnchorField -superclass TABLE::AnchorField
   Class create TABLE2::ImageField -superclass TABLE::ImageField
-  
+
+  Class TABLE3 \
+      -superclass TABLE2 \
+      -instproc init_renderer {} {
+        next 
+        my set css.table-class list-tiny
+        my set css.tr.even-class even
+        my set css.tr.odd-class odd
+      }
+
+  Class create TABLE3::Action -superclass TABLE::Action
+  Class create TABLE3::Field -superclass TABLE::Field
+  Class create TABLE3::AnchorField -superclass TABLE::AnchorField
+  Class create TABLE3::ImageField -superclass TABLE::ImageField
 }
 
 Class TableWidget \

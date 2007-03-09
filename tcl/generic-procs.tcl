@@ -848,6 +848,38 @@ namespace eval ::Generic {
     return [t1 asHTML]
   }
 
+
+  #
+  # Object specific privilege to be used with policies
+  #
+
+  CrItem ad_instproc privilege=creator {
+    {-login true} user_id package_id
+  } {
+
+    Define an object specific privilege to be used in the policies.
+    Grant access to a content item for the creator (creation_user)
+    of the item, and for the package admin.
+
+  } {
+    set allowed 0
+    my log "--checking privilege [self args]"
+    if {[my exists creation_user]} {
+      if {$user_id == 0 && $login} {
+        auth::require_login
+      } elseif {[my set creation_user] == $user_id} {
+        set allowed 1
+      } else {
+        # allow the package admin always access
+        set allowed [::xo::cc permission \
+                         -object_id $package_id \
+                         -party_id $user_id \
+                         -privilege admin]
+      }
+    }
+    return $allowed
+  }
+
   #
   # Form template class
   #

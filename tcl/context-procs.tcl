@@ -50,6 +50,7 @@ namespace eval ::xo {
     }
 
     # get the query parameters (from the url)
+    #my log "--P processing actual query $actual_query"
     foreach querypart [split $actual_query &] {
       set name_value_pair [split $querypart =]
       set att_name  [ns_urldecode [lindex $name_value_pair 0]]
