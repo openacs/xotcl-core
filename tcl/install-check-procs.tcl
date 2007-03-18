@@ -1,3 +1,5 @@
+namespace eval ::xotcl {}
+
 ad_proc ::xotcl::before_install_callback {} {
   
   Callback for checking whether xotcl is installed for OpenACS
