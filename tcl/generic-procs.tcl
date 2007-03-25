@@ -53,10 +53,8 @@ namespace eval ::Generic {
   }
 
   proc package_id_from_package_key { key } {
-    set id [apm_version_id_from_package_key $key]
-    set mount_url [site_node::get_children -all -package_key $key -node_id $id]
-    array set site_node [site_node::get -url $mount_url]
-    return $site_node(package_id)
+    return [db_string get_package_id_from_key \
+                {select package_id from apm_packages where package_key = :key}]
   }
 
   CrClass instproc unknown { obj args } {
