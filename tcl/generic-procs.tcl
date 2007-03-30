@@ -852,7 +852,7 @@ namespace eval ::Generic {
   #
 
   CrItem ad_instproc privilege=creator {
-    {-login true} user_id package_id
+    {-login true} user_id package_id method
   } {
 
     Define an object specific privilege to be used in the policies.

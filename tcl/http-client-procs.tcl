@@ -15,13 +15,13 @@ namespace eval ::xo {
         {user_agent xohttp/0.1}
       }
 
-  HttpRequest instproc url {url} {
-    my instvar host url path
+  HttpRequest instproc parse_url {} {
+    my instvar url host port path
     if {[regexp {http://([^/]*)(/.*)} $url _ host path]} {
       set port 80
       regexp {^([^:]+):(.*)$} $host _ host port
     } else {
-      error "unsupported or invalid url '[my url]'"
+      error "unsupported or invalid url '$url'"
     }
   }
 
@@ -29,6 +29,7 @@ namespace eval ::xo {
     my instvar S post_data host port
     my set meta [list]
     my set data ""
+    if {[my exists url]} {my parse_url}
     
     if {[catch {set S [socket $host $port]} err]} {
       my cancel "error socket $host $port: $err"

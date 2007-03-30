@@ -40,11 +40,11 @@ namespace eval ::xo {
       default {
         # try object specific privileges. These have the signature:
         # 
-        # <class> instproc privilege=<name> {{-login true} user_id package_id}
+        # <class> instproc privilege=<name> {{-login true} user_id package_id method}
         #
         if {[$object info methods privilege=$privilege] ne ""} {
 	  if {![info exists package_id]} {set package_id [::xo::cc package_id]}
-          set allowed [$object privilege=$privilege -login $login $user_id $package_id]
+          set allowed [$object privilege=$privilege -login $login $user_id $package_id method]
         }
       }
     }

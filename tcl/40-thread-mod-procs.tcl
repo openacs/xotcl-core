@@ -12,7 +12,7 @@ ad_library {
    When an instance of THREAD is created (e.g. t1), 
    an init-command is provided. e.g.:
   <pre>
-    THREAD create t1 {
+    ::xotcl::THREAD create t1 {
       Class Counter -parameter {{value 1}}
       Counter instproc ++ {} {my incr value}
       Counter c1
@@ -52,7 +52,7 @@ ad_library {
    creates a Proxy for an object c1 in thread t1.
    After this, c1 can be used like an local object.
   <pre>
-    THREAD::Proxy c1 -attach t1
+    ::xotcl::THREAD::Proxy c1 -attach t1
     set x [c1 ++]
   </pre>
   The Proxy forwards all commands to the 
@@ -117,8 +117,20 @@ Class create ::xotcl::THREAD \
 }
 
 ::xotcl::THREAD instproc init cmd {
-  my instvar initcmd
-  set initcmd {
+  my instvar initcmd 
+  if {![ns_ictl epoch]} {
+    #ns_log notice "--THREAD init [self] no epoch"
+
+    # We are during initialization. For some unknown reasons, XOTcl 
+    # is not available in newly created threads, so we have to care for it.
+    # We need only a partial initialization, to allow the exit handler 
+    # to be defined.
+    set initcmd {
+      package req XOTcl
+      namespace import -force ::xotcl::*
+    }
+  } 
+  append initcmd {
     ::xotcl::Object setExitHandler {
       #my log "EXITHANDLER of slave thread SELF [pid]"
     }
@@ -161,7 +173,7 @@ Class create ::xotcl::THREAD \
       my log "thread terminated"
       nsv_unset [self class] [self]
       thread::mutex destroy [my set mutex]
-      ns_log notice "mutex [my set mutex] destroyed"
+      my log "+++ mutex [my set mutex] destroyed"
     }
   }
   next
@@ -189,11 +201,25 @@ Class create ::xotcl::THREAD \
       set tid [::thread::create]
       nsv_set [self class] [self] $tid
       if {[my persistent]} {
-	my log "created new persistent [self class] as $tid pid=[pid]"
+	my log "--created new persistent [self class] as $tid pid=[pid]"
       } else {
-	my log "created new [self class] as $tid pid=[pid]"
+	my log "--created new [self class] as $tid pid=[pid]"
       }
-      ::thread::send $tid [my set initcmd]
+      #my log "--THREAD DO send [self] epoch = [ns_ictl epoch]"
+      if {![ns_ictl epoch]} {
+	#ns_log notice "--THREAD send [self] no epoch"
+	# We are during initialization. For some unknown reasons, XOTcl 
+	# is not available in newly created threads, so we have to care 
+	# for full initialization, including xotcl blueprint.
+	set initcmd {
+	  package req XOTcl
+	  namespace import -force ::xotcl::*
+	}
+	append initcmd [::Serializer all]
+      }
+      append initcmd [my set initcmd]
+    
+      ::thread::send $tid $initcmd
     } else {
       set tid [nsv_get [self class] [self]]
     }
@@ -223,7 +249,7 @@ Class create ::xotcl::THREAD \
 
 # create a sample persistent thread that can be acessed 
 # via request threads
-#THREAD create t0 {
+#::xotcl::THREAD create t0 {
 #  Class Counter -parameter {{value 1}}
 #  Counter instproc ++ {} {my incr value}
 #  
