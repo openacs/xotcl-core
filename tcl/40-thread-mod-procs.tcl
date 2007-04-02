@@ -211,11 +211,8 @@ Class create ::xotcl::THREAD \
 	# We are during initialization. For some unknown reasons, XOTcl 
 	# is not available in newly created threads, so we have to care 
 	# for full initialization, including xotcl blueprint.
-	set initcmd {
-	  package req XOTcl
-	  namespace import -force ::xotcl::*
-	}
-	append initcmd [::Serializer all]
+	_ns_savenamespaces
+	set initcmd [ns_ictl get]
       }
       append initcmd [my set initcmd]
     
