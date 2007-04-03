@@ -144,9 +144,11 @@ namespace eval ::xo {
   #
   # define an abstract table
   #
-
   Class Table -superclass OrderedComposite \
-      -parameter {{no_data  "No Data"} {renderer TABLE2}}
+      -parameter [expr {[apm_version_names_compare [ad_acs_version] 5.3.0] == 1 ? 
+			{{no_data  "No Data"} {renderer TABLE3}} :
+			{{no_data  "No Data"} {renderer TABLE2}} 
+		      }]
   
   Table instproc destroy {} {
     #my log "-- "
@@ -495,7 +497,7 @@ namespace eval ::xo::Table {
       -superclass TABLE2 \
       -instproc init_renderer {} {
         next 
-        my set css.table-class list-tiny
+        my set css.table-class list-table
         my set css.tr.even-class even
         my set css.tr.odd-class odd
       }
