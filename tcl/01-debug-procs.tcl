@@ -3,6 +3,8 @@
 
 ::Serializer exportMethods {
   ::xotcl::Object instproc log 
+  ::xotcl::Object instproc msg
+  ::xotcl::Object instproc __timediff
   ::xotcl::Object instproc debug
   ::xotcl::Object instproc contains
   ::xotcl::Object instproc serialize
