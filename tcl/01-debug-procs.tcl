@@ -60,7 +60,7 @@ if {$::xotcl::version < 1.5} {
   ;
 }
 
-::xotcl::Object instproc log msg {
+::xotcl::Object instproc __timediff {} {
   set now [ns_time get]
   if {[ns_conn isconnected]} {
     set start_time [ns_conn start]
@@ -77,12 +77,19 @@ if {$::xotcl::version < 1.5} {
   } else {
     set diff ""
   }
-  ns_log notice "$msg, [self] [self callingclass]->[self callingproc] (${ms}ms$diff)"
   set ::__last_timestamp $now
+  return "${ms}ms$diff"
+}
+
+::xotcl::Object instproc log msg {
+  ns_log notice "$msg, [self] [self callingclass]->[self callingproc] ([my __timediff])"
 }
 
 ::xotcl::Object instproc debug msg {
   ns_log debug "[self] [self callingclass]->[self callingproc]: $msg"
+}
+::xotcl::Object instproc msg msg {
+  util_user_message -message "$msg, [self] [self callingclass]->[self callingproc] ([my __timediff])"
 }
 
 namespace eval ::xo {
