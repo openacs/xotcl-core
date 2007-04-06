@@ -61,6 +61,71 @@ namespace eval ::Generic {
     my log "unknown called with $obj $args"
   }
 
+ #
+  # The following methods are used for the type hierarchies
+  #
+  if {[db_driverkey ""] eq "postgresql"} {
+    #
+    # Postgres
+    #
+    CrClass instproc object_types {
+      {-subtypes_first:boolean false}
+    } {
+      my instvar object_type_key
+      set order_clause [expr {$subtypes_first ? "order by tree_sortkey desc":""}]
+      return [db_list get_object_types "
+        select object_type from acs_object_types where 
+        tree_sortkey between :object_type_key and tree_right(:object_type_key)
+        $order_clause
+      "]
+    }
+    CrClass instproc init_type_hierarchy {} {
+      my instvar object_type
+      my set object_type_key [db_list get_tree_sortkey {
+        select tree_sortkey from acs_object_types 
+        where object_type = :object_type
+      }]
+    }
+    CrClass instproc type_selection {-with_subtypes:boolean} {
+      my instvar object_type_key
+      return [expr {$with_subtypes ? 
+              "where acs_object_types.tree_sortkey between \
+               '$object_type_key' and tree_right('$object_type_key') and" :
+              "where acs_object_types.tree_sortkey = '$object_type_key' and"}]
+    }
+    CrClass instproc lock {tablename mode} {
+      db_dml lock_objects "LOCK TABLE $tablename IN $mode MODE"
+    }
+  } else {
+    #
+    # Oracle
+    #
+    CrClass instproc object_types {
+      {-subtypes_first:boolean false}
+    } {
+      my instvar object_type
+      set order_clause [expr {$subtypes_first ? "order by level desc":""}]
+      return [db_list get_object_types "
+        select object_type from acs_object_types 
+        start with object_type = :object_type
+        connect by prior supertype = object_type
+      "]
+    }
+    CrClass instproc init_type_hierarchy {} {
+      my set object_type_key {}
+    }
+    CrClass instproc type_selection {-with_subtypes:boolean} {
+      my instvar object_type
+      return [expr {$with_subtypes ? 
+           "start with object_type = :object_type
+            connect by supertype = prior object_type where" :
+           "where acs_object_types.object_type = :object_type and"}]
+    }
+    CrClass instproc lock {tablename mode} {
+      # no locking in Oracle
+    }
+  }
+
   CrClass set common_query_atts {
     item_id revision_id creation_user creation_date last_modified object_type
     creation_user last_modified publish_status
@@ -71,19 +136,7 @@ namespace eval ::Generic {
 
   CrClass set common_insert_atts {name title description mime_type nls_language text}
 
-  CrClass instproc object_types {
-    {-subtypes_first:boolean false}
-  } {
-    my instvar object_type_key
-    set order_clause [expr {$subtypes_first ? "order by tree_sortkey desc":""}]
-    return [db_list get_object_types "
-      select object_type from acs_object_types where 
-      tree_sortkey between :object_type_key and tree_right(:object_type_key)
-      $order_clause
-    "]
-  }
-
-  CrClass instproc edit_atts {} {
+   CrClass instproc edit_atts {} {
     concat [[self class] set common_insert_atts] [my sql_attribute_names]
   }
 
@@ -102,7 +155,8 @@ namespace eval ::Generic {
     register the current object type for folder_id. If folder_id 
     is not specified, use the instvar of the class instead.
   } {
-    if {$operation ne "register" && $operation ne "unregister"} {
+    set operation [string toupper $operation]
+    if {$operation ne "REGISTER" && $operation ne "UNREGISTER"} {
       error "[self] operation for folder_type must be '\
         register' or 'unregister'"
     }
@@ -110,8 +164,12 @@ namespace eval ::Generic {
     if {![info exists folder_id]} {
       my instvar folder_id
     }
-    db_1row register_type "select content_folder__${operation}_content_type(\
-        $folder_id,:object_type,'t')"
+    #::xo::db::call psql content_folder ${operation}_content_type {
+    #  folder_id {content_type $object_type} {include_subtypes t}
+    #}
+    ::xo::db::CONTENT_FOLDER ${operation}_content_type {
+      folder_id {content_type $object_type} {include_subtypes t}
+    }
   }
 
   CrClass ad_instproc create_object_type {} {
@@ -128,23 +186,27 @@ namespace eval ::Generic {
     }
 
     db_transaction {
-      db_1row create_type {
-        select content_type__create_type(
-           :object_type,:supertype,:pretty_name, :pretty_plural,
-           :table_name, :id_column, :name_method
-        )
+      #::xo::db::call psql content_type create_type {
+#	{content_type $object_type} supertype pretty_name pretty_plural
+#	table_name id_column name_method
+#      }
+      ::xo::db::CONTENT_TYPE CREATE_TYPE {
+	{content_type $object_type} supertype pretty_name pretty_plural
+	table_name id_column name_method
       }
       if {[my cr_attributes] ne ""} {
         set o [::xo::OrderedComposite new -contains [my cr_attributes]]
         $o destroy_on_cleanup
         foreach att [$o children] {
           $att instvar attribute_name datatype pretty_name sqltype
-          db_1row create_att {
-            select content_type__create_attribute(
-                :object_type,:attribute_name,:datatype,
-                :pretty_name,null,null,null,:sqltype
-            )
-          }
+# 	  ::xo::db::call psql content_type create_attribute {
+# 	    {content_type $object_type} attribute_name datatype
+# 	    pretty_name {column_spec sqltype}
+# 	  }
+	  ::xo::db::CONTENT_TYPE CREATE_ATTRIBUTE {
+	    {content_type $object_type} attribute_name datatype
+	    pretty_name {column_spec sqltype}
+	  }
         }
       }
       my folder_type register
@@ -159,8 +221,11 @@ namespace eval ::Generic {
     my instvar object_type table_name
     db_transaction {
       my folder_type unregister
-      db_1row drop_type {
-        select content_type__drop_type(:object_type,'t','t')
+#       ::xo::db::call psql content_type drop_type {
+# 	{content_type $object_type} {drop_children_p t} {drop_table_p t}
+#       }
+      ::xo::db::CONTENT_TYPE DROP_TYPE {
+	{content_type $object_type} {drop_children_p t} {drop_table_p t}
       }
     }
   }
@@ -251,11 +316,13 @@ namespace eval ::Generic {
     }
   }
 
+
   CrClass instproc init {} {
     my instvar object_type sql_attribute_names
     if {[my info superclass] ne "::Generic::CrItem"} {
       my set superclass [[my info superclass] set object_type]
     }
+    my init_type_hierarchy
     set sql_attribute_names [list]
     set o [::xo::OrderedComposite new -contains [my cr_attributes]]
     $o destroy_on_cleanup
@@ -272,10 +339,7 @@ namespace eval ::Generic {
     if {![my object_type_exists]} {
       my create_object_type
     }
-    my set object_type_key [db_list get_tree_sortkey {
-      select tree_sortkey from acs_object_types 
-      where object_type = :object_type
-    }]
+ 
     next
   }
   
@@ -373,9 +437,8 @@ namespace eval ::Generic {
     Delete a content item from the content repository.
     @param item_id id of the item to be deleted
   } {
-    db_exec_plsql content_item_delete {
-      select content_item__delete(:item_id)
-    }
+    #::xo::db::call psql content_item delete {item_id}
+    ::xo::db::CONTENT_ITEM DELETE {item_id}
   }
 
   CrClass ad_instproc instance_select_query {
@@ -401,7 +464,6 @@ namespace eval ::Generic {
     @param publish_status one of 'live', 'ready' or 'production'
     @return sql query
   } {
-    my instvar object_type_key
     if {![info exists folder_id]} {my instvar folder_id}
 
     set attributes [list ci.item_id ci.name ci.publish_status acs_objects.object_type] 
@@ -409,10 +471,7 @@ namespace eval ::Generic {
       if {$a eq "title"} {set a cr.title}
       lappend attributes $a
     }
-    set type_selection [expr {$with_subtypes ? 
-              "acs_object_types.tree_sortkey between \
-               '$object_type_key' and tree_right('$object_type_key')" :
-              "acs_object_types.tree_sortkey = '$object_type_key'"}]
+    set type_selection [my type_selection -with_subtypes $with_subtypes]
     if {$count} {
       set attribute_selection "count(*)"
       set order_clause ""      ;# no need to order when we count
@@ -433,8 +492,7 @@ namespace eval ::Generic {
 	[expr {[info exists publish_status] ? " and ci.publish_status eq '$publish_status'" : ""}]
     return "select $attribute_selection
     from acs_object_types, acs_objects, cr_items ci, cr_revisions cr $from_clause
-        where $type_selection
-        and acs_object_types.object_type = ci.content_type
+        $type_selection acs_object_types.object_type = ci.content_type
         and coalesce(ci.live_revision,ci.latest_revision) = cr.revision_id 
         and parent_id = $folder_id and acs_objects.object_id = cr.revision_id \
         $where_clause $order_clause $publish_clause $pagination"
@@ -636,8 +694,8 @@ namespace eval ::Generic {
       my update_content_length $storage_type $revision_id
       if {$live_p} {
         set publish_status [my set publish_status]
-        db_0or1row make_live \
-            {select content_item__set_live_revision(:revision_id, :publish_status)}
+	#::xo::db::call psql content_item set_live_revision {revision_id publish_status}
+	::xo::db::CONTENT_ITEM SET_LIVE_REVISION {revision_id publish_status}
       } else {
         # if we do not make the revision live, use the old revision_id,
         # and let CrCache save it
@@ -649,20 +707,15 @@ namespace eval ::Generic {
 
   if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} {
     ns_log notice "--Version 5.2 or newer [ad_acs_version]"
-    CrItem set content_item__new {
-      select content_item__new(:name,$parent_id,null,null,null,\
-           :creation_user,null,null,\
-           'content_item',:object_type,null,:description,:mime_type,\
-           :nls_language,null,null,null,'f',:storage_type, :package_id)
+    CrItem set content_item__new_args {
+      name parent_id creation_user {item_subtype "content_item"} {content_type $object_type} 
+      description mime_type nls_language {is_live f} storage_type package_id 
     }
   } else {
     ns_log notice "--Version 5.1 or older [ad_acs_version]"
-    CrItem set content_item__new {
-      select content_item__new(:name,$parent_id,null,null,null,\
-	   :creation_user,null,null,\
-           'content_item',:object_type,null,\
-	   :description,:mime_type,\
-           :nls_language,null,:storage_type)
+    CrItem set content_item__new_args {
+      name parent_id creation_user {item_subtype "content_item"} {content_type $object_type} 
+      description mime_type nls_language {is_live f} storage_type
     }
   }
 
@@ -670,7 +723,8 @@ namespace eval ::Generic {
     @param revision_id
     @param publish_status one of 'live', 'ready' or 'production'
   } {
-    db_0or1row set_live_revision {select content_item__set_live_revision(:revision_id,:publish_status)}
+    #::xo::db::call psql content_item set_live_revision {revision_id publish_status}
+    ::xo::db::CONTENT_ITEM SET_LIVE_REVISION {revision_id publish_status}
   }
 
   CrItem ad_instproc save_new {-package_id -creation_user_id {-live_p:boolean true}} {
@@ -706,7 +760,7 @@ namespace eval ::Generic {
     db_transaction {
       $__class instvar storage_type object_type
       $__class folder_type -folder_id $parent_id register
-      db_dml lock_objects "LOCK TABLE acs_objects IN SHARE ROW EXCLUSIVE MODE"
+      my lock acs_objects "SHARE ROW EXCLUSIVE"
       set revision_id [db_nextval acs_object_id_seq]
 
       if {$name eq ""} {
@@ -714,10 +768,9 @@ namespace eval ::Generic {
 	set name [expr {[my exists __autoname_prefix] ? 
                         "[my set __autoname_prefix]$revision_id" : $revision_id}]
       }
-
-      set item_id [db_string content_item__new \
-		       [subst [[self class] set content_item__new]]]
-
+#       set item_id [::xo::db::call psql -f content_item new \
+# 		       [[self class] set content_item__new_args]]
+      set item_id [::xo::db::CONTENT_ITEM NEW [[self class] set content_item__new_args]]
       if {$storage_type eq "file"} {
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }
@@ -728,8 +781,8 @@ namespace eval ::Generic {
       my update_content_length $storage_type $revision_id
       if {$live_p} {
         set publish_status [my set publish_status]
-        db_0or1row make_live \
-            "select content_item__set_live_revision(:revision_id,:publish_status)"
+	#::xo::db::call psql content_item set_live_revision {revision_id publish_status}
+	::xo::db::CONTENT_ITEM SET_LIVE_REVISION {revision_id publish_status}
       }
     }
     my set revision_id $revision_id
@@ -771,8 +824,7 @@ namespace eval ::Generic {
     my instvar package_id
     set base [$package_id url]
 
-    db_foreach revisions_select \
-        "select  ci.name, n.revision_id as version_id,
+    set sql "select  ci.name, n.revision_id as version_id,
          person__name(n.creation_user) as author,
          n.creation_user as author_id,
          to_char(n.last_modified,'YYYY-MM-DD HH24:MI:SS') as last_modified_ansi,
@@ -788,44 +840,47 @@ namespace eval ::Generic {
                          where m.object_id = n.revision_id
                           and m.party_id = :user_id
                           and m.privilege = 'read')
-          order by n.revision_id desc" {
-            
-            if {$content_length < 1024} {
-              if {$content_length eq ""} {set content_length 0}
-              set content_size_pretty "[lc_numeric $content_length] [_ file-storage.bytes]"
-            } else {
-              set content_size_pretty "[lc_numeric [format %.2f [expr {$content_length/1024.0}]]] [_ file-storage.kb]"
-            }
-     
-            set last_modified_ansi [lc_time_system_to_conn $last_modified_ansi]
+          order by n.revision_id desc"
+    
+    if {[db_driverkey ""] eq "oracle"} {set sql [string map "__" .]}
 
-            if {$version_id != $live_revision_id} {
-              set live_revision "Make this Revision Current"
-              set live_revision_icon /resources/acs-subsite/radio.gif
-            } else {
-              set live_revision "Current Live Revision"
-              set live_revision_icon /resources/acs-subsite/radiochecked.gif
-            }
-
-            set live_revision_link [export_vars -base $base \
-                                        {{m make-live-revision} {revision_id $version_id}}]
-            t1 add \
-                -version_number $version_number: \
-                -edit.href [export_vars -base $base {{revision_id $version_id}}] \
-                -author $author \
-                -content_size $content_size_pretty \
-                -last_modified_ansi [lc_time_fmt $last_modified_ansi "%x %X"] \
-                -description $description \
-                -live_revision.src $live_revision_icon \
-                -live_revision.title $live_revision \
-                -live_revision.href $live_revision_link \
-                -version_delete.href [export_vars -base $base \
-                                  {{m delete-revision} {revision_id $version_id}}] \
-                -version_delete.title [_ file-storage.Delete_Version]
-
-            [t1 last_child] set payload(revision_id) $version_id
-          }
-
+    db_foreach revisions_select $sql {
+      if {$content_length < 1024} {
+	if {$content_length eq ""} {set content_length 0}
+	set content_size_pretty "[lc_numeric $content_length] [_ file-storage.bytes]"
+      } else {
+	set content_size_pretty "[lc_numeric [format %.2f [expr {$content_length/1024.0}]]] [_ file-storage.kb]"
+      }
+      
+      set last_modified_ansi [lc_time_system_to_conn $last_modified_ansi]
+      
+      if {$version_id != $live_revision_id} {
+	set live_revision "Make this Revision Current"
+	set live_revision_icon /resources/acs-subsite/radio.gif
+      } else {
+	set live_revision "Current Live Revision"
+	set live_revision_icon /resources/acs-subsite/radiochecked.gif
+      }
+      
+      set live_revision_link [export_vars -base $base \
+				  {{m make-live-revision} {revision_id $version_id}}]
+      t1 add \
+	  -version_number $version_number: \
+	  -edit.href [export_vars -base $base {{revision_id $version_id}}] \
+	  -author $author \
+	  -content_size $content_size_pretty \
+	  -last_modified_ansi [lc_time_fmt $last_modified_ansi "%x %X"] \
+	  -description $description \
+	  -live_revision.src $live_revision_icon \
+	  -live_revision.title $live_revision \
+	  -live_revision.href $live_revision_link \
+	  -version_delete.href [export_vars -base $base \
+				    {{m delete-revision} {revision_id $version_id}}] \
+	  -version_delete.title [_ file-storage.Delete_Version]
+      
+      [t1 last_child] set payload(revision_id) $version_id
+    }
+    
     # providing diff links to the prevision versions. This can't be done in
     # the first loop, since we have not yet the revision id of entry in the next line.
     set lines [t1 children]

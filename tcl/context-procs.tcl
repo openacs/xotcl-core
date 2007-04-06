@@ -151,7 +151,6 @@ namespace eval ::xo {
     url
   }
   
-  # TODO code (in xinha, + css)
   # TODO edit revision loop
 
   ConnectionContext proc require {
@@ -345,8 +344,8 @@ namespace eval ::xo {
     init_url false requires the package_id to be specified and
     a call to Package instproc set_url to complete initialization
   } {
+    #my log "--i [self args], URL=$url, init_url=$init_url"
 
-    #my log "--i [self args]"
     if {$url eq "" && $init_url} {
       #set url [ns_conn url]
       #my log "--CONN ns_conn url"
@@ -373,7 +372,7 @@ namespace eval ::xo {
   } {
     #my log "--R $package_id exists? [my isobject ::$package_id]"
     if {![my isobject ::$package_id]} {
-      #my log "--R we have to create ::$package_id"
+      #my log "--R we have to create ::$package_id //url='$url'"
       if {$url ne ""} {
         my create ::$package_id -url $url
       } else {
@@ -415,9 +414,12 @@ namespace eval ::xo {
     set id [namespace tail [self]]
     array set info [site_node::get_from_object_id -object_id $id]
     set package_url $info(url)
-    # in case of of host-node map, simplify the url to avoid redirects
-    set root [root_of_host [ad_host]]
-    regexp "^${root}(.*)$" $package_url _ package_url
+    if {[ns_conn isconnected]} {
+      # in case of of host-node map, simplify the url to avoid redirects
+      # .... but ad_host works only, when we are connected.... TODO: solution for syndication
+      set root [root_of_host [ad_host]]
+      regexp "^${root}(.*)$" $package_url _ package_url
+    }
     #my log "--R package_url= $package_url (was $info(url))"
     my package_url $package_url
     my instance_name $info(instance_name)
