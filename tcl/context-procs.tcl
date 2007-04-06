@@ -178,8 +178,8 @@ namespace eval ::xo {
 	  -user_id $user_id \
 	  -actual_query $actual_query \
           -url $url
-      #my log "--cc ::xo::cc created $url"
-      ::xo::cc destroy_on_cleanup 
+      #my msg "--cc ::xo::cc created $url [::xo::cc serialize]"
+      ::xo::cc destroy_on_cleanup
     } else {
       #my log "--cc ::xo::cc reused $url"
       ::xo::cc configure \

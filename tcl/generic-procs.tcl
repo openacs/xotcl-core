@@ -167,7 +167,7 @@ namespace eval ::Generic {
     #::xo::db::call psql content_folder ${operation}_content_type {
     #  folder_id {content_type $object_type} {include_subtypes t}
     #}
-    ::xo::db::CONTENT_FOLDER ${operation}_content_type {
+    ::xo::db::CONTENT_FOLDER ${operation}_CONTENT_TYPE {
       folder_id {content_type $object_type} {include_subtypes t}
     }
   }
@@ -201,11 +201,11 @@ namespace eval ::Generic {
           $att instvar attribute_name datatype pretty_name sqltype
 # 	  ::xo::db::call psql content_type create_attribute {
 # 	    {content_type $object_type} attribute_name datatype
-# 	    pretty_name {column_spec sqltype}
+# 	    pretty_name {column_spec $sqltype}
 # 	  }
 	  ::xo::db::CONTENT_TYPE CREATE_ATTRIBUTE {
 	    {content_type $object_type} attribute_name datatype
-	    pretty_name {column_spec sqltype}
+	    pretty_name {column_spec $sqltype}
 	  }
         }
       }
@@ -760,7 +760,7 @@ namespace eval ::Generic {
     db_transaction {
       $__class instvar storage_type object_type
       $__class folder_type -folder_id $parent_id register
-      my lock acs_objects "SHARE ROW EXCLUSIVE"
+      [self class] lock acs_objects "SHARE ROW EXCLUSIVE"
       set revision_id [db_nextval acs_object_id_seq]
 
       if {$name eq ""} {

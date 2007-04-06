@@ -97,14 +97,14 @@ namespace eval ::xo::db {
       if {$n} {
         my log "sql=$sql_command"
       } else {
-        #my log "sql=$sql_command"
+        my log "sql=$sql_command"
         eval $sql_command
       }
     }]
   }
 
   DbPackage instproc unknown {m args} {
-    my log "Error: unknown database method $m"
+    error "Error: unknown database method $m for dbpackage [self]"
   }
  
   DbPackage proc create_all_functions {} {
