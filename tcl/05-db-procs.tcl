@@ -33,6 +33,7 @@ namespace eval ::xo::db {
 	select args.arg_name
         from acs_function_args args
         where args.function = upper(:package_name) || '__' || upper(:object_name)
+        order by function, arg_seq
   }
   call set oracle_all_package_functions {
     select distinct package_name, object_name
