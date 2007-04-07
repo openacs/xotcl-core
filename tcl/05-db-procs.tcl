@@ -73,9 +73,11 @@ namespace eval ::xo::db {
 
     set psql_args [join $psql_args ", "]
     set driver [db_driverkey ""]_[expr {$f ? "func" : "proc"}]
-    set sql_command [list db_exec_plsql exec_${package_name}-${object_name} [subst [call set $driver]]]
+    set sql_command [list db_exec_plsql -dbn \$dbn \
+                         exec_${package_name}-${object_name} \
+                         [subst [call set $driver]]]
 
-    my proc $object_name {{-n:switch false} arglist} [subst -novariables {
+    my proc $object_name {{-n:switch false} {-dbn ""} arglist} [subst -novariables {
       array set defined [list [array get defined]]
 
       foreach var $arglist {
