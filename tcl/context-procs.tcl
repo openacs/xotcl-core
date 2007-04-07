@@ -174,7 +174,7 @@ namespace eval ::xo {
     if {![my isobject ::xo::cc]} {
       my create ::xo::cc \
           -package_id $package_id \
-          -parameter_declaration $parameter \
+          [list -parameter_declaration $parameter] \
 	  -user_id $user_id \
 	  -actual_query $actual_query \
           -url $url
