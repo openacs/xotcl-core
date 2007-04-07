@@ -28,6 +28,7 @@ namespace eval ::xo::db {
         where args.position > 0
 	  and args.object_name = upper(:object_name)
 	  and args.package_name = upper(:package_name)
+        order by args.position
   }
   call set postgresql_get_params {
 	select args.arg_name
