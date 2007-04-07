@@ -1129,7 +1129,10 @@ namespace eval ::Generic {
   }
 
   Form instproc on_submit {item_id} {
-    # dummy proc
+    # The content of this proc is strictly speaking not necessary.
+    # However, on redirects after a submit to the same page, it
+    # ensures the setting of edit_form_page_title and context
+    my request write
   }
 
   Form instproc on_validation_error {} {
