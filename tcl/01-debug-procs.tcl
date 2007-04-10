@@ -6,6 +6,7 @@
   ::xotcl::Object instproc msg
   ::xotcl::Object instproc __timediff
   ::xotcl::Object instproc debug
+  ::xotcl::Object instproc qn
   ::xotcl::Object instproc contains
   ::xotcl::Object instproc serialize
   ::xotcl::Object instforward db_1row
@@ -93,7 +94,10 @@ if {$::xotcl::version < 1.5} {
 ::xotcl::Object instproc msg msg {
   util_user_message -message "$msg, [self] [self callingclass]->[self callingproc] ([my __timediff])"
 }
-
+::xotcl::Object instproc qn query_name {
+  set qn "dbqd.[my uplevel self class]-[my uplevel self proc].$query_name"
+  return $qn
+}
 namespace eval ::xo {
   Class Timestamp
   Timestamp instproc init {} {my set time [clock clicks -milliseconds]}

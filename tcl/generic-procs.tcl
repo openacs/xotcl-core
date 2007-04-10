@@ -164,9 +164,6 @@ namespace eval ::Generic {
     if {![info exists folder_id]} {
       my instvar folder_id
     }
-    #::xo::db::call psql content_folder ${operation}_content_type {
-    #  folder_id {content_type $object_type} {include_subtypes t}
-    #}
     ::xo::db::CONTENT_FOLDER ${operation}_CONTENT_TYPE {
       folder_id {content_type $object_type} {include_subtypes t}
     }
@@ -186,10 +183,6 @@ namespace eval ::Generic {
     }
 
     db_transaction {
-      #::xo::db::call psql content_type create_type {
-#	{content_type $object_type} supertype pretty_name pretty_plural
-#	table_name id_column name_method
-#      }
       ::xo::db::CONTENT_TYPE CREATE_TYPE {
 	{content_type $object_type} supertype pretty_name pretty_plural
 	table_name id_column name_method
@@ -199,10 +192,6 @@ namespace eval ::Generic {
         $o destroy_on_cleanup
         foreach att [$o children] {
           $att instvar attribute_name datatype pretty_name sqltype
-# 	  ::xo::db::call psql content_type create_attribute {
-# 	    {content_type $object_type} attribute_name datatype
-# 	    pretty_name {column_spec $sqltype}
-# 	  }
 	  ::xo::db::CONTENT_TYPE CREATE_ATTRIBUTE {
 	    {content_type $object_type} attribute_name datatype
 	    pretty_name {column_spec $sqltype}
@@ -221,9 +210,6 @@ namespace eval ::Generic {
     my instvar object_type table_name
     db_transaction {
       my folder_type unregister
-#       ::xo::db::call psql content_type drop_type {
-# 	{content_type $object_type} {drop_children_p t} {drop_table_p t}
-#       }
       ::xo::db::CONTENT_TYPE DROP_TYPE {
 	{content_type $object_type} {drop_children_p t} {drop_table_p t}
       }
@@ -437,7 +423,6 @@ namespace eval ::Generic {
     Delete a content item from the content repository.
     @param item_id id of the item to be deleted
   } {
-    #::xo::db::call psql content_item delete {item_id}
     ::xo::db::CONTENT_ITEM DELETE {item_id}
   }
 
@@ -694,8 +679,8 @@ namespace eval ::Generic {
       my update_content_length $storage_type $revision_id
       if {$live_p} {
         set publish_status [my set publish_status]
-	#::xo::db::call psql content_item set_live_revision {revision_id publish_status}
 	::xo::db::CONTENT_ITEM SET_LIVE_REVISION {revision_id publish_status}
+        
       } else {
         # if we do not make the revision live, use the old revision_id,
         # and let CrCache save it
@@ -723,7 +708,6 @@ namespace eval ::Generic {
     @param revision_id
     @param publish_status one of 'live', 'ready' or 'production'
   } {
-    #::xo::db::call psql content_item set_live_revision {revision_id publish_status}
     ::xo::db::CONTENT_ITEM SET_LIVE_REVISION {revision_id publish_status}
   }
 
@@ -768,8 +752,6 @@ namespace eval ::Generic {
 	set name [expr {[my exists __autoname_prefix] ? 
                         "[my set __autoname_prefix]$revision_id" : $revision_id}]
       }
-#       set item_id [::xo::db::call psql -f content_item new \
-# 		       [[self class] set content_item__new_args]]
       set item_id [::xo::db::CONTENT_ITEM NEW [[self class] set content_item__new_args]]
       if {$storage_type eq "file"} {
         set text [cr_create_content_file $item_id $revision_id $import_file]
@@ -781,7 +763,6 @@ namespace eval ::Generic {
       my update_content_length $storage_type $revision_id
       if {$live_p} {
         set publish_status [my set publish_status]
-	#::xo::db::call psql content_item set_live_revision {revision_id publish_status}
 	::xo::db::CONTENT_ITEM SET_LIVE_REVISION {revision_id publish_status}
       }
     }
