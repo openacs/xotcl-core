@@ -119,7 +119,7 @@ namespace eval ::xo {
 	complex {
 	  foreach {attribute privilege} $p break
 	  set id [$object set $attribute]
-	  my log "--p checking permission::permission_p -object_id $id -privilege $privilege"
+	  #my log "--p checking permission::permission_p -object_id $id -privilege $privilege"
 	  return [::xo::cc permission -object_id $id -privilege $privilege -party_id $user_id]
 	}
       }
@@ -162,7 +162,7 @@ namespace eval ::xo {
       }
     }
 
-    my log "--p enforce_permissions {$object $method} : $permission ==> $allowed"
+    #my log "--p enforce_permissions {$object $method} : $permission ==> $allowed"
 
     if {!$allowed} {
       ns_log notice "permission::require_permission: $user_id doesn't \

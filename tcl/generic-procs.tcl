@@ -73,7 +73,7 @@ namespace eval ::Generic {
     } {
       my instvar object_type_key
       set order_clause [expr {$subtypes_first ? "order by tree_sortkey desc":""}]
-      return [db_list get_object_types "
+      return [db_list [my qn get_object_types] "
         select object_type from acs_object_types where 
         tree_sortkey between :object_type_key and tree_right(:object_type_key)
         $order_clause
@@ -81,7 +81,7 @@ namespace eval ::Generic {
     }
     CrClass instproc init_type_hierarchy {} {
       my instvar object_type
-      my set object_type_key [db_list get_tree_sortkey {
+      my set object_type_key [db_list [my qn get_tree_sortkey] {
         select tree_sortkey from acs_object_types 
         where object_type = :object_type
       }]
@@ -94,7 +94,7 @@ namespace eval ::Generic {
               "where acs_object_types.tree_sortkey = '$object_type_key' and"}]
     }
     CrClass instproc lock {tablename mode} {
-      db_dml lock_objects "LOCK TABLE $tablename IN $mode MODE"
+      db_dml [my qn lock_objects] "LOCK TABLE $tablename IN $mode MODE"
     }
   } else {
     #
@@ -105,7 +105,7 @@ namespace eval ::Generic {
     } {
       my instvar object_type
       set order_clause [expr {$subtypes_first ? "order by level desc":""}]
-      return [db_list get_object_types "
+      return [db_list [my qn get_object_types] "
         select object_type from acs_object_types 
         start with object_type = :object_type
         connect by prior supertype = object_type
@@ -142,7 +142,7 @@ namespace eval ::Generic {
 
   CrClass instproc object_type_exists {} {
     my instvar object_type
-    expr {$object_type eq [db_list select_type {
+    expr {$object_type eq [db_list [my qn select_type] {
       select object_type from acs_object_types where 
       object_type = :object_type
     }]}
@@ -255,7 +255,7 @@ namespace eval ::Generic {
       
       if {[info command content::item::get_id_by_name] eq ""} {
         set folder_id ""
-        db_0or1row get_id_by_name "select item_id as folder_id from cr_items \
+        db_0or1row [my qn get_id_by_name] "select item_id as folder_id from cr_items \
          where name = :folder_name and parent_id = :parent_id"
       } else {
         set folder_id [content::item::get_id_by_name \
@@ -338,7 +338,7 @@ namespace eval ::Generic {
 
     @return item_id
   } {
-    if {[db_0or1row entry_exists_select "\
+    if {[db_0or1row [my qn entry_exists_select] "\
        select item_id from cr_items where name = :name and parent_id = :parent_id"]} {
       return $item_id
     }
@@ -376,14 +376,14 @@ namespace eval ::Generic {
       lappend atts $fq
     }
     if {$revision_id} {
-      $object db_1row fetch_from_view_revision_id "\
+      $object db_1row [my qn fetch_from_view_revision_id] "\
        select [join $atts ,], i.parent_id \
        from   [my set table_name]i n, cr_items i,acs_objects o \
        where  n.revision_id = $revision_id \
        and    i.item_id = n.item_id \
        and    o.object_id = $revision_id"
     } else {
-      $object db_1row fetch_from_view_item_id "\
+      $object db_1row [my qn fetch_from_view_item_id] "\
        select [join $atts ,], i.parent_id \
        from   [my set table_name]i n, cr_items i, acs_objects o \
        where  i.item_id = $item_id \
@@ -392,7 +392,8 @@ namespace eval ::Generic {
     }
 
     if {[apm_version_names_compare [ad_acs_version] 5.2] <= -1} {
-      $object set package_id [db_string get_pid "select package_id from cr_folders where folder_id = [$object set parent_id]"]
+      $object set package_id [db_string [my qn get_pid] \
+                   "select package_id from cr_folders where folder_id = [$object set parent_id]"]
     }
 
     #my log "--AFTER FETCH\n[$object serialize]"
@@ -578,9 +579,9 @@ namespace eval ::Generic {
     set object_type [ns_cache eval xotcl_object_type_cache \
                          [expr {$item_id ? $item_id : $revision_id}] {
       if {$item_id} {
-        db_1row get_class "select content_type as object_type from cr_items where item_id=$item_id"
+        db_1row [my qn get_class] "select content_type as object_type from cr_items where item_id=$item_id"
       } else {
-        db_1row get_class "select object_type from acs_objects where object_id=$revision_id"
+        db_1row [my qn get_class] "select object_type from acs_objects where object_id=$revision_id"
       }
       return $object_type
     }]
@@ -594,7 +595,7 @@ namespace eval ::Generic {
   } {
     Delete a CrItem in the database
   } {
-    db_1row get_class_and_folder \
+    db_1row [my qn get_class_and_folder] \
         "select content_type as object_type from cr_items where item_id = $item_id"
     $object_type delete -item_id $item_id
   }
@@ -606,7 +607,7 @@ namespace eval ::Generic {
     Lookup CR item from  title and folder (parent_id)
     @return item_id or 0 if not successful
   } {
-    if {[db_0or1row entry_exists_select "\
+    if {[db_0or1row [my qn entry_exists_select] "\
         select item_id from cr_items where name = :name and parent_id = :parent_id" ]} {
       #my log "-- found $item_id for $name in folder '$parent_id'"
       return $item_id
@@ -634,7 +635,7 @@ namespace eval ::Generic {
 
   CrItem instproc update_content_length {storage_type revision_id} {
     if {$storage_type eq "file"} {
-      db_dml update_content_length "update cr_revisions \
+      db_dml [my qn update_content_length] "update cr_revisions \
                 set content_length = [file size [my set import_file]] \
                 where revision_id = $revision_id"
     }
@@ -673,7 +674,7 @@ namespace eval ::Generic {
         my instvar import_file
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }
-      $insert_view_operation revision_add \
+      $insert_view_operation [my qn revision_add] \
           "insert into [[my info class] set table_name]i ([join $__atts ,]) \
                 values (:[join $__atts ,:])"
       my update_content_length $storage_type $revision_id
@@ -805,7 +806,7 @@ namespace eval ::Generic {
     my instvar package_id
     set base [$package_id url]
 
-    set sql "select  ci.name, n.revision_id as version_id,
+    set sql [xo::db::map "select  ci.name, n.revision_id as version_id,
          person__name(n.creation_user) as author,
          n.creation_user as author_id,
          to_char(n.last_modified,'YYYY-MM-DD HH24:MI:SS') as last_modified_ansi,
@@ -821,10 +822,8 @@ namespace eval ::Generic {
                          where m.object_id = n.revision_id
                           and m.party_id = :user_id
                           and m.privilege = 'read')
-          order by n.revision_id desc"
+          order by n.revision_id desc"]
     
-    if {[db_driverkey ""] eq "oracle"} {set sql [string map "__" .]}
-
     db_foreach revisions_select $sql {
       if {$content_length < 1024} {
 	if {$content_length eq ""} {set content_length 0}
@@ -1063,7 +1062,7 @@ namespace eval ::Generic {
       set old_name [::xo::cc form_parameter __object_name ""]
       set new_name [$data set name]
       if {$old_name ne $new_name} {
-        db_dml update_rename "update cr_items set name = :new_name \
+        db_dml [my qn update_rename] "update cr_items set name = :new_name \
                 where item_id = [$data set item_id]"
       }
     }
@@ -1175,12 +1174,12 @@ namespace eval ::Generic {
       append new_data {
         category::map_object -remove_old -object_id $item_id $category_ids
         #ns_log notice "-- new data category::map_object -remove_old -object_id $item_id $category_ids"
-        db_dml insert_asc_named_object \
+        db_dml [my qn insert_asc_named_object] \
             "insert into acs_named_objects (object_id,object_name,package_id) \
              values (:item_id, :name, :package_id)"
       }
       append edit_data {
-        db_dml update_asc_named_object \
+        db_dml [my qn update_asc_named_object] \
             "update acs_named_objects set object_name = :name, \
                 package_id = :package_id where object_id = :item_id"
         #ns_log notice "-- edit data category::map_object -remove_old -object_id $item_id $category_ids"

@@ -22,6 +22,10 @@ namespace eval ::xo::db {
     from acs_function_args
   }
 
+  proc map {sql} {
+    if {[db_driverkey ""] eq "oracle"} {return [string map [list "__" .] $sql]}
+    return $sql
+  }
 
   Class DbPackage
   DbPackage instproc sql-arguments {sql package_name object_name} {
