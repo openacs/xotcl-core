@@ -155,18 +155,22 @@ namespace eval ::Generic {
     register the current object type for folder_id. If folder_id 
     is not specified, use the instvar of the class instead.
   } {
-    set operation [string toupper $operation]
-    if {$operation ne "REGISTER" && $operation ne "UNREGISTER"} {
-      error "[self] operation for folder_type must be '\
-        register' or 'unregister'"
+    #set operation [string toupper $operation]
+    #if {$operation ne "REGISTER" && $operation ne "UNREGISTER"}
+    if {$operation ne "register" && $operation ne "unregister"} {
+      error "[self] operation for folder_type must be 'register' or 'unregister'"
     }
     my instvar object_type
     if {![info exists folder_id]} {
       my instvar folder_id
     }
-    ::xo::db::CONTENT_FOLDER ${operation}_CONTENT_TYPE {
-      folder_id {content_type $object_type} {include_subtypes t}
-    }
+    ::xo::db::content_folder ${operation}_content_type \
+        -folder_id $folder_id \
+        -content_type $object_type \
+        -include_subtypes t
+#     ::xo::db::CONTENT_FOLDER ${operation}_CONTENT_TYPE {
+#       folder_id {content_type $object_type} {include_subtypes t}
+#     }
   }
 
   CrClass ad_instproc create_object_type {} {
@@ -183,19 +187,36 @@ namespace eval ::Generic {
     }
 
     db_transaction {
-      ::xo::db::CONTENT_TYPE CREATE_TYPE {
-	{content_type $object_type} supertype pretty_name pretty_plural
-	table_name id_column name_method
-      }
+#       ::xo::db::CONTENT_TYPE CREATE_TYPE {
+# 	{content_type $object_type} supertype pretty_name pretty_plural
+# 	table_name id_column name_method
+#       }
+      ::xo::db::content_type create_type \
+          -content_type $object_type \
+          -supertype $super_type \
+          -pretty_name $pretty_name \
+          -pretty_plural $pretty_plural \
+          -table_name $table_name \
+          -id_column $id_column \
+          -name_method $name_method
+      
       if {[my cr_attributes] ne ""} {
         set o [::xo::OrderedComposite new -contains [my cr_attributes]]
         $o destroy_on_cleanup
         foreach att [$o children] {
           $att instvar attribute_name datatype pretty_name sqltype
-	  ::xo::db::CONTENT_TYPE CREATE_ATTRIBUTE {
-	    {content_type $object_type} attribute_name datatype
-	    pretty_name {column_spec $sqltype}
-	  }
+
+	  ::xo::db::content_type create_attribute \
+              -content_type $object_type \
+              -attribute_name $attribute_name \
+              -datatype $datatype \
+              -pretty_name $pretty_name \
+              -column_spec $sqltype
+
+# 	  ::xo::db::CONTENT_TYPE CREATE_ATTRIBUTE {
+# 	    {content_type $object_type} attribute_name datatype
+# 	    pretty_name {column_spec $sqltype}
+# 	  }
         }
       }
       my folder_type register
@@ -210,9 +231,13 @@ namespace eval ::Generic {
     my instvar object_type table_name
     db_transaction {
       my folder_type unregister
-      ::xo::db::CONTENT_TYPE DROP_TYPE {
-	{content_type $object_type} {drop_children_p t} {drop_table_p t}
-      }
+      ::xo::db::content_type drop_type \
+          -content_type $object_type \
+          -drop_children_p t \
+          -drop_table_p t
+#       ::xo::db::CONTENT_TYPE DROP_TYPE {
+# 	{content_type $object_type} {drop_children_p t} {drop_table_p t}
+#       }
     }
   }
 
@@ -424,7 +449,8 @@ namespace eval ::Generic {
     Delete a content item from the content repository.
     @param item_id id of the item to be deleted
   } {
-    ::xo::db::CONTENT_ITEM DELETE {item_id}
+    #::xo::db::CONTENT_ITEM DELETE {item_id}
+    ::xo::db::content_item delete -item_id $item_id
   }
 
   CrClass ad_instproc instance_select_query {
@@ -679,9 +705,11 @@ namespace eval ::Generic {
                 values (:[join $__atts ,:])"
       my update_content_length $storage_type $revision_id
       if {$live_p} {
-        set publish_status [my set publish_status]
-	::xo::db::CONTENT_ITEM SET_LIVE_REVISION {revision_id publish_status}
-        
+        #set publish_status [my set publish_status]
+	#::xo::db::CONTENT_ITEM SET_LIVE_REVISION {revision_id publish_status}
+        ::xo::db::content_item set_live_revision \
+            -revision_id $revision_id \
+            -publish_status [my set publish_status]
       } else {
         # if we do not make the revision live, use the old revision_id,
         # and let CrCache save it
@@ -693,15 +721,27 @@ namespace eval ::Generic {
 
   if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} {
     ns_log notice "--Version 5.2 or newer [ad_acs_version]"
+#     CrItem set content_item__new_args {
+#       name parent_id creation_user {item_subtype "content_item"} {content_type $object_type} 
+#       description mime_type nls_language {is_live f} storage_type package_id 
+#     }
     CrItem set content_item__new_args {
-      name parent_id creation_user {item_subtype "content_item"} {content_type $object_type} 
-      description mime_type nls_language {is_live f} storage_type package_id 
+      -name $name -parent_id $parent_id -creation_user $creation_user \
+        -item_subtype "content_item" -content_type $object_type \
+        -description $description -mime_type $mime_type -nls_language $nls_language \
+        -is_live f -storage_type $storage_type -package_id $package_id
     }
   } else {
     ns_log notice "--Version 5.1 or older [ad_acs_version]"
+#     CrItem set content_item__new_args {
+#       name parent_id creation_user {item_subtype "content_item"} {content_type $object_type} 
+#       description mime_type nls_language {is_live f} storage_type
+#     }
     CrItem set content_item__new_args {
-      name parent_id creation_user {item_subtype "content_item"} {content_type $object_type} 
-      description mime_type nls_language {is_live f} storage_type
+      -name $name -parent_id $parent_id -creation_user $creation_user \
+        -item_subtype "content_item" -content_type $object_type \
+        -description $description -mime_type $mime_type -nls_language $nls_language \
+        -is_live f -storage_type $storage_type
     }
   }
 
@@ -709,7 +749,10 @@ namespace eval ::Generic {
     @param revision_id
     @param publish_status one of 'live', 'ready' or 'production'
   } {
-    ::xo::db::CONTENT_ITEM SET_LIVE_REVISION {revision_id publish_status}
+    ::xo::db::content_item set_live_revision \
+        -revision_id $revision_id \
+        -publish_status $publish_status
+    #::xo::db::CONTENT_ITEM SET_LIVE_REVISION {revision_id publish_status}
   }
 
   CrItem ad_instproc save_new {-package_id -creation_user_id {-live_p:boolean true}} {
@@ -753,7 +796,8 @@ namespace eval ::Generic {
 	set name [expr {[my exists __autoname_prefix] ? 
                         "[my set __autoname_prefix]$revision_id" : $revision_id}]
       }
-      set item_id [::xo::db::CONTENT_ITEM NEW [[self class] set content_item__new_args]]
+      #set item_id [::xo::db::CONTENT_ITEM NEW [[self class] set content_item__new_args]]
+      set item_id [eval ::xo::db::content_item new [[self class] set content_item__new_args]]
       if {$storage_type eq "file"} {
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }
@@ -763,8 +807,11 @@ namespace eval ::Generic {
                 values (:[join $__atts ,:])"
       my update_content_length $storage_type $revision_id
       if {$live_p} {
-        set publish_status [my set publish_status]
-	::xo::db::CONTENT_ITEM SET_LIVE_REVISION {revision_id publish_status}
+        ::xo::db::content_item set_live_revision \
+            -revision_id $revision_id \
+            -publish_status [my set publish_status] 
+        #set publish_status [my set publish_status]
+	#::xo::db::CONTENT_ITEM SET_LIVE_REVISION {revision_id publish_status}
       }
     }
     my set revision_id $revision_id

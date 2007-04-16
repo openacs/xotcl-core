@@ -134,7 +134,11 @@ namespace eval ::xo {
   #
   proc get_user_name {uid} {
     if {$uid ne "" && $uid != 0} {
-      acs_user::get -user_id $uid -array user
+      if {[catch {acs_user::get -user_id $uid -array user}]} {
+        # we saw some strange cases, where after a regression,
+        # a user_id was present, which was already deleted...
+        return nobody
+      }
       return "$user(first_names) $user(last_name)"
     } else {
       return nobody

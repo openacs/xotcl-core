@@ -29,18 +29,29 @@ namespace eval ::xo::db {
 
   Class DbPackage
   DbPackage instproc sql-arguments {sql package_name object_name} {
-    set psql_args [list]
     my array unset defined
-    my set function_args [db_list [my qn get_function_params] $sql]
+    my set function_args [db_list_of_lists [my qn get_function_params] $sql]
+    set psql_args [list]  
+    my set arg_order [list]
     foreach arg [my set function_args] {
-      lappend psql_args \$_$arg
-      my set defined($arg) 1
+      foreach {arg_name default_value} $arg break
+      lappend psql_args \$_$arg_name
+      my lappend arg_order $arg_name
+      my set defined($arg_name) $default_value
+    }
+    if {"$package_name-$object_name" eq "CONTENT_ITEM-NEW"} {
+      # content_item__new does currently not define null default values.
+      # This ugly - temporary - hack is used to keep the :required passing and to allow 
+      # the xowiki regression test to run. The correct fix is to define in
+      # correct default values in the database with define_function_args()
+      my array set defined {RELATION_TAG null DESCRIPTION null TEXT null CREATION_IP null NLS_LANGUAGE null LOCALE null CONTEXT_ID null DATA null TITLE null ITEM_ID null 
+      }
     }
     return [join $psql_args ", "]
   }
   DbPackage instproc psql-postgresql {package_name object_name full_statement_name} {
     set psql_args [my sql-arguments {
-	select args.arg_name
+	select args.arg_name, args.arg_default
         from acs_function_args args
         where args.function = upper(:package_name) || '__' || upper(:object_name)
         order by function, arg_seq
@@ -62,7 +73,7 @@ namespace eval ::xo::db {
 		       and position = 0)
     }]
     set psql_args [my sql-arguments {
-	select args.argument_name
+	select args.argument_name, args.default_value
         from user_arguments args
         where args.position > 0
 	  and args.object_name = upper(:object_name)
@@ -78,13 +89,15 @@ namespace eval ::xo::db {
     }
   }
 
-  DbPackage instproc dbproc {{-f:switch false} object_name} {
+  DbPackage instproc dbproc_exportvars {object_name} {
     #
-    # This method compiles a stored procedure into a xotcl method.
+    # This method compiles a stored procedure into a xotcl method using
+    # a export_vars style interface.
+    #
     # The current implementation should work on postgres and oracle (not tested)
     # but will not work, when a single openacs instance want to talk to 
     # postgres and oracle simultaneously. Not sure, how important this is...
-
+    #
     set package_name   [namespace tail [self]]
     set statement_name [my qn $package_name-$object_name]
     set sql_command    [my psql-[db_driverkey ""] $package_name $object_name $statement_name] 
@@ -106,7 +119,8 @@ namespace eval ::xo::db {
           my log "ERROR: $attribute not defined in ${package_name}.${object_name}"
         }
       }
-      foreach arg [list [my set function_args]] {
+      foreach {_arg} [list [my set function_args]] {
+        foreach {arg default_value} $_arg break
         set _$arg \[expr {\[info exists $arg\] ? ":$arg" : "null"}\]
       }
       set sql \[list "[my set sql]"\]
@@ -122,6 +136,49 @@ namespace eval ::xo::db {
     }]
   }
 
+  DbPackage instproc dbproc_nonposargs {object_name} {
+    #
+    # This method compiles a stored procedure into a xotcl method 
+    # using a classic nonpositional argument style interface.
+    #
+    # The current implementation should work on postgres and oracle (not tested)
+    # but will not work, when a single openacs instance want to talk to 
+    # postgres and oracle simultaneously. Not sure, how important this is...
+    #
+    set package_name   [namespace tail [self]]
+    set statement_name [my qn $package_name-$object_name]
+    set sql_command    [my psql-[db_driverkey ""] $package_name $object_name $statement_name] 
+
+    set nonposarg_list [list [list -dbn ""]]
+    foreach arg_name [my set arg_order] {
+      set default_value [my set defined($arg_name)]
+      set required [expr {$default_value eq "" ? ":required" : ""}]
+      set nonposarg_name [expr {$arg_name eq "DBN" ? "DBN" : [string tolower $arg_name]}]
+      lappend nonposarg_list -$nonposarg_name$required
+    }
+
+    my ad_proc $object_name $nonposarg_list {} [subst -novariables {
+      #defined: [my array get defined]
+
+      foreach var \[list [my set arg_order]\]  {
+        set varname \[string tolower $var\]
+        if {\[info exists $varname\]} {
+          set $var \[set $varname\]
+          set _$var :$var
+        } else {
+          set _$var null
+        }
+      }
+
+      set sql \[list "[my set sql]"\]
+      db_with_handle -dbn $dbn db {
+        #my log "sql=$sql, sql_command=[set sql_command]"
+        set selection \[eval [set sql_command]\]
+        return \[ns_set value $selection 0\]
+      }
+    }]
+  }
+
   DbPackage instproc unknown {m args} {
     error "Error: unknown database method $m for dbpackage [self]"
   }
@@ -129,7 +186,10 @@ namespace eval ::xo::db {
   DbPackage proc create_all_functions {} {
     db_foreach [my qn ""] [call set [db_driverkey ""]_all_package_functions] {
       if {![my isobject $package_name]} { DbPackage create $package_name }
-      $package_name dbproc $object_name
+      $package_name dbproc_exportvars $object_name
+      set class_name [string tolower $package_name] 
+      if {![my isobject $class_name]} { DbPackage create $class_name }
+      $class_name dbproc_nonposargs [string tolower $object_name]
     }
   }
   DbPackage create_all_functions
@@ -174,9 +234,9 @@ namespace eval ::xo::db {
     ns_cache eval xotcl_object_cache ::xo::has_ltree {
       if {[db_driverkey ""] eq "postgresql" && 
           [db_0or1row check_ltree "select count(*) from pg_proc where proname = 'ltree_in'"]} {
-        return 0
+        return 1
       }
-      return 1
+      return 0
     }
   }
 
