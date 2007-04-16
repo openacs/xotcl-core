@@ -28,6 +28,22 @@ namespace eval ::xo::db {
   }
 
   Class DbPackage
+
+  # Some stored procs kike content_item__new do currently not define null default values.
+  # Therefore, we need - temporary - this ugly hack is used to keep
+  # :required passing and to allow  the xowiki regression test to run. 
+  # The correct fix is to define the correct default values in the 
+  # database with define_function_args()
+  DbPackage array set defaults {
+    "content_item__new" {RELATION_TAG null DESCRIPTION null TEXT null 
+      CREATION_IP null NLS_LANGUAGE null LOCALE null CONTEXT_ID null 
+      DATA null TITLE null ITEM_ID null
+    }
+    "content_type__create_attribute" {
+      DEFAULT_VALUE null SORT_ORDER null PRETTY_PLURAL null
+    }
+  }
+
   DbPackage instproc sql-arguments {sql package_name object_name} {
     my array unset defined
     my set function_args [db_list_of_lists [my qn get_function_params] $sql]
@@ -39,13 +55,8 @@ namespace eval ::xo::db {
       my lappend arg_order $arg_name
       my set defined($arg_name) $default_value
     }
-    if {"$package_name-$object_name" eq "CONTENT_ITEM-NEW"} {
-      # content_item__new does currently not define null default values.
-      # This ugly - temporary - hack is used to keep the :required passing and to allow 
-      # the xowiki regression test to run. The correct fix is to define in
-      # correct default values in the database with define_function_args()
-      my array set defined {RELATION_TAG null DESCRIPTION null TEXT null CREATION_IP null NLS_LANGUAGE null LOCALE null CONTEXT_ID null DATA null TITLE null ITEM_ID null 
-      }
+    if {[[self class] exists defaults(${package_name}__$object_name)]} {
+      my array set defined [[self class] set defaults(${package_name}__$object_name)]
     }
     return [join $psql_args ", "]
   }
@@ -153,6 +164,7 @@ namespace eval ::xo::db {
     foreach arg_name [my set arg_order] {
       set default_value [my set defined($arg_name)]
       set required [expr {$default_value eq "" ? ":required" : ""}]
+      # special rule for DBN ... todo: proc has to handle this as well
       set nonposarg_name [expr {$arg_name eq "DBN" ? "DBN" : [string tolower $arg_name]}]
       lappend nonposarg_list -$nonposarg_name$required
     }
@@ -233,7 +245,7 @@ namespace eval ::xo::db {
   } {
     ns_cache eval xotcl_object_cache ::xo::has_ltree {
       if {[db_driverkey ""] eq "postgresql" && 
-          [db_0or1row check_ltree "select count(*) from pg_proc where proname = 'ltree_in'"]} {
+          [db_string check_ltree "select count(*) from pg_proc where proname = 'ltree_in'"]} {
         return 1
       }
       return 0

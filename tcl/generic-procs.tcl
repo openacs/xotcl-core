@@ -193,7 +193,7 @@ namespace eval ::Generic {
 #       }
       ::xo::db::content_type create_type \
           -content_type $object_type \
-          -supertype $super_type \
+          -supertype $supertype \
           -pretty_name $pretty_name \
           -pretty_plural $pretty_plural \
           -table_name $table_name \
