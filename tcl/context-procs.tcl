@@ -423,7 +423,7 @@ namespace eval ::xo {
     #my log "--R package_url= $package_url (was $info(url))"
     my package_url $package_url
     my instance_name $info(instance_name)
-    if {[my exists url]} {
+    if {[my exists url] && [info exists root]} {
       regexp "^${root}(.*)$" $url _ url
     } else {
       my log "--R we have no url, use package_url"

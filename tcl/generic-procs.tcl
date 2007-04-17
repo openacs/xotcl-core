@@ -61,9 +61,13 @@ namespace eval ::Generic {
     my log "unknown called with $obj $args"
   }
 
- #
-  # The following methods are used for the type hierarchies
   #
+  # The following methods are used oracle, postgres specific code (locking,
+  # for the type hierarchies, ...
+  #
+  CrClass instproc lock {tablename mode} {
+    # no locking by default
+  }
   if {[db_driverkey ""] eq "postgresql"} {
     #
     # Postgres
@@ -93,8 +97,14 @@ namespace eval ::Generic {
                '$object_type_key' and tree_right('$object_type_key') and" :
               "where acs_object_types.tree_sortkey = '$object_type_key' and"}]
     }
-    CrClass instproc lock {tablename mode} {
-      db_dml [my qn lock_objects] "LOCK TABLE $tablename IN $mode MODE"
+    set pg_version [db_string qn.null.get_version {
+      select substring(version() from 'PostgreSQL #"[0-9]+.[0-9+]#".%' for '#')   }]
+    ns_log notice "--Postgres Version $pg_version"      
+    if {$pg_version < 8.2} {
+      ns_log notice "--Postgres Version $pg_version older than 8.2, use locks"      
+      CrClass instproc lock {tablename mode} {
+        db_dml [my qn lock_objects] "LOCK TABLE $tablename IN $mode MODE"
+      }
     }
   } else {
     #
@@ -121,11 +131,8 @@ namespace eval ::Generic {
             connect by supertype = prior object_type where" :
            "where acs_object_types.object_type = :object_type and"}]
     }
-    CrClass instproc lock {tablename mode} {
-      # no locking in Oracle
-    }
   }
-
+  
   CrClass set common_query_atts {
     item_id revision_id creation_user creation_date last_modified object_type
     creation_user last_modified publish_status
@@ -720,7 +727,7 @@ namespace eval ::Generic {
   }
 
   if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} {
-    ns_log notice "--Version 5.2 or newer [ad_acs_version]"
+    ns_log notice "--OpenACS Version 5.2 or newer [ad_acs_version]"
 #     CrItem set content_item__new_args {
 #       name parent_id creation_user {item_subtype "content_item"} {content_type $object_type} 
 #       description mime_type nls_language {is_live f} storage_type package_id 
@@ -732,7 +739,7 @@ namespace eval ::Generic {
         -is_live f -storage_type $storage_type -package_id $package_id
     }
   } else {
-    ns_log notice "--Version 5.1 or older [ad_acs_version]"
+    ns_log notice "--OpenACS Version 5.1 or older [ad_acs_version]"
 #     CrItem set content_item__new_args {
 #       name parent_id creation_user {item_subtype "content_item"} {content_type $object_type} 
 #       description mime_type nls_language {is_live f} storage_type
@@ -802,7 +809,7 @@ namespace eval ::Generic {
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }
       #my log "--V atts=([join $__atts ,])\nvalues=(:[join $__atts ,:])"
-      $insert_view_operation revision_add \
+      $insert_view_operation  [my qn revision_add] \
           "insert into [$__class set table_name]i ([join $__atts ,]) \
                 values (:[join $__atts ,:])"
       my update_content_length $storage_type $revision_id
@@ -815,8 +822,10 @@ namespace eval ::Generic {
       }
     }
     my set revision_id $revision_id
-    my db_1row get_dates {select creation_date, last_modified \
-                              from acs_objects where object_id = :revision_id}
+    my db_1row  [my qn get_dates] {
+      select creation_date, last_modified 
+      from acs_objects where object_id = :revision_id
+    }
     return $item_id
   }
 
