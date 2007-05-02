@@ -200,7 +200,7 @@ namespace eval ::xo {
   }
 
   ConnectionContext instproc returnredirect {url} {
-    my log "--rp"
+    #my log "--rp"
     my set __continuation [list ad_returnredirect $url]
     return ""
   }
@@ -394,6 +394,7 @@ namespace eval ::xo {
     id
     url 
     package_url
+    package_key
     instance_name
   }
   Package instforward query_parameter        ::xo::cc %proc
@@ -422,6 +423,7 @@ namespace eval ::xo {
     }
     #my log "--R package_url= $package_url (was $info(url))"
     my package_url $package_url
+    my package_key $info(package_key)
     my instance_name $info(instance_name)
     if {[my exists url] && [info exists root]} {
       regexp "^${root}(.*)$" $url _ url
@@ -436,7 +438,7 @@ namespace eval ::xo {
   Package instproc set_url {-url} {
     my url $url
     my set object [string range [my url] [string length [my package_url]] end]
-    #my log "--R object set to [my set object]"
+    #my log "--R object set to [my set object], [my serialize]"
   }
 
 #   Package instproc destroy {} {

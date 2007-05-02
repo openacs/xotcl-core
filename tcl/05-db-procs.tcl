@@ -156,6 +156,10 @@ namespace eval ::xo::db {
     # but will not work, when a single openacs instance want to talk to 
     # postgres and oracle simultaneously. Not sure, how important this is...
     #
+    if {$object_name eq "set"} {
+      my log "We cannot handle object_name = '$object_name' in this version"  
+      return
+    }
     set package_name   [namespace tail [self]]
     set statement_name [my qn $package_name-$object_name]
     set sql_command    [my psql-[db_driverkey ""] $package_name $object_name $statement_name] 
@@ -168,6 +172,7 @@ namespace eval ::xo::db {
       set nonposarg_name [expr {$arg_name eq "DBN" ? "DBN" : [string tolower $arg_name]}]
       lappend nonposarg_list -$nonposarg_name$required
     }
+    #my log "-- define $object_name $nonposarg_list"
 
     my ad_proc $object_name $nonposarg_list {} [subst -novariables {
       #defined: [my array get defined]
@@ -237,6 +242,15 @@ namespace eval ::xo::db {
       set using [expr {$using ne "" ? "using $using" : ""}]
       db_dml [my qn create-index-$name] \
           "create $uniquepart index $name ON $table $using ($col)"
+    }
+  }
+
+  require proc package name {
+    if {[info command ::${name}::*] eq ""} {
+      set dir [ns_info tcllib]/../packages/$name
+      foreach file [glob $dir/tcl/*-procs.tcl] {
+        uplevel #1 source $file
+      }
     }
   }
 
