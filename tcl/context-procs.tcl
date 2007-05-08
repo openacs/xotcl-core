@@ -54,8 +54,11 @@ namespace eval ::xo {
     foreach querypart [split $actual_query &] {
       set name_value_pair [split $querypart =]
       set att_name  [ns_urldecode [lindex $name_value_pair 0]]
-      set att_value [expr {[llength $name_value_pair] == 1 ? 1 :
-                           [ns_urldecode [lindex $name_value_pair 1]]  }]
+      if {[llength $name_value_pair] == 1} { 
+        set att_value 1 
+      }  else {
+        set att_value [ns_urldecode [lindex $name_value_pair 1]]
+      }
       if {[info exists (-$att_name)]} {
         set passed_args(-$att_name) $att_value
       } elseif {$all_from_query} {
