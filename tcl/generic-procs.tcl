@@ -194,9 +194,10 @@ namespace eval ::Generic {
 	if {![info exists default]} {
 	  set default ""
 	}
-	lappend parameters [list $attribute_name default]
+	lappend parameters [list $attribute_name $default]
 	unset default
       }
+      #my log "--parameter [self] parameter [list $parameters]"
       my parameter $parameters
     }
   }
@@ -810,6 +811,7 @@ namespace eval ::Generic {
 	# we have an autonamed item, use a unique value for the name
 	set name [expr {[my exists __autoname_prefix] ? 
                         "[my set __autoname_prefix]$revision_id" : $revision_id}]
+        if {$title eq ""} {set title $name}
       }
       #set item_id [::xo::db::CONTENT_ITEM NEW [[self class] set content_item__new_args]]
       set item_id [eval ::xo::db::content_item new [[self class] set content_item__new_args]]
