@@ -78,7 +78,7 @@ namespace eval ::xo::db {
     #
     set is_function [db_0or1row [my qn is_function] {
        select 1 from dual
-       where exists (select 1 from user_arguments
+       where exists (select 1 from user_arguments where
 		       package_name = upper(:package_name)
 		       and object_name = upper(:object_name)
 		       and position = 0)
