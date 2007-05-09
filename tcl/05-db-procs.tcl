@@ -13,7 +13,7 @@ namespace eval ::xo::db {
   call set oracle_all_package_functions {
     select distinct package_name, object_name
         from user_arguments args
-        where args.position > 0
+        where args.position > 0 and package_name is not null
   }
   call set postgresql_all_package_functions {
     select distinct 
