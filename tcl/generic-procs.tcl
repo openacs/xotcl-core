@@ -162,8 +162,6 @@ namespace eval ::Generic {
     register the current object type for folder_id. If folder_id 
     is not specified, use the instvar of the class instead.
   } {
-    #set operation [string toupper $operation]
-    #if {$operation ne "REGISTER" && $operation ne "UNREGISTER"}
     if {$operation ne "register" && $operation ne "unregister"} {
       error "[self] operation for folder_type must be 'register' or 'unregister'"
     }
@@ -175,9 +173,32 @@ namespace eval ::Generic {
         -folder_id $folder_id \
         -content_type $object_type \
         -include_subtypes t
-#     ::xo::db::CONTENT_FOLDER ${operation}_CONTENT_TYPE {
-#       folder_id {content_type $object_type} {include_subtypes t}
-#     }
+  }
+
+  CrClass instproc create_attributes {} {
+    if {[my cr_attributes] ne ""} {
+      my instvar object_type
+      set o [::xo::OrderedComposite new -contains [my cr_attributes]]
+      $o destroy_on_cleanup
+      set parameters [list]
+      foreach att [$o children] {
+	$att instvar attribute_name datatype pretty_name sqltype default
+	if {![attribute::exists_p $object_type $attribute_name]} {
+	  ::xo::db::content_type create_attribute \
+	      -content_type $object_type \
+	      -attribute_name $attribute_name \
+	      -datatype $datatype \
+	      -pretty_name $pretty_name \
+	      -column_spec $sqltype
+	}
+	if {![info exists default]} {
+	  set default ""
+	}
+	lappend parameters [list $attribute_name default]
+	unset default
+      }
+      my parameter $parameters
+    }
   }
 
   CrClass ad_instproc create_object_type {} {
@@ -194,10 +215,6 @@ namespace eval ::Generic {
     }
 
     db_transaction {
-#       ::xo::db::CONTENT_TYPE CREATE_TYPE {
-# 	{content_type $object_type} supertype pretty_name pretty_plural
-# 	table_name id_column name_method
-#       }
       ::xo::db::content_type create_type \
           -content_type $object_type \
           -supertype $supertype \
@@ -207,28 +224,12 @@ namespace eval ::Generic {
           -id_column $id_column \
           -name_method $name_method
       
-      if {[my cr_attributes] ne ""} {
-        set o [::xo::OrderedComposite new -contains [my cr_attributes]]
-        $o destroy_on_cleanup
-        foreach att [$o children] {
-          $att instvar attribute_name datatype pretty_name sqltype
-
-	  ::xo::db::content_type create_attribute \
-              -content_type $object_type \
-              -attribute_name $attribute_name \
-              -datatype $datatype \
-              -pretty_name $pretty_name \
-              -column_spec $sqltype
-
-# 	  ::xo::db::CONTENT_TYPE CREATE_ATTRIBUTE {
-# 	    {content_type $object_type} attribute_name datatype
-# 	    pretty_name {column_spec $sqltype}
-# 	  }
-        }
-      }
+      my create_attributes
       my folder_type register
     }
   }
+
+
 
   CrClass ad_instproc drop_object_type {} {
     Delete the object type and remove the table for the attributes.
@@ -356,6 +357,10 @@ namespace eval ::Generic {
 
     if {![my object_type_exists]} {
       my create_object_type
+    } else {
+      db_transaction {
+	my create_attributes
+      }
     }
  
     next
@@ -588,7 +593,10 @@ namespace eval ::Generic {
     return $__result
   }
 
-  Class create Attribute -parameter {attribute_name datatype pretty_name {sqltype "text"}}
+  Class create Attribute -parameter {
+    attribute_name datatype pretty_name {sqltype "text"}
+    default
+  }
 
   Class create CrItem -parameter {
     package_id 
