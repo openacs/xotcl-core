@@ -29,7 +29,7 @@ namespace eval ::xo::db {
 
   Class DbPackage
 
-  # Some stored procs kike content_item__new do currently not define null default values.
+  # Some stored procs like content_item__new do currently not define null default values.
   # Therefore, we need - temporary - this ugly hack is used to keep
   # :required passing and to allow  the xowiki regression test to run. 
   # The correct fix is to define the correct default values in the 
@@ -92,11 +92,11 @@ namespace eval ::xo::db {
         order by args.position
     } $package_name $object_name]
     if {$is_function} {
-      my set sql [subst {BEGIN; :1 := ${package_name}.${object_name}($psql_args); END;}]
+      my set sql [subst {BEGIN :1 := ${package_name}.${object_name}($psql_args); END;}]
       return [subst {db_exec exec_plsql_bind \$db $full_statement_name \$sql 2 1 ""}]
     } else {
-      my set sql [subst {BEGIN; ${package_name}.${object_name}($psql_args); END;}]
-      return [subst {db_exec dml \$db $full_statement_name \$sql}]
+      my set sql [subst {BEGIN ${package_name}.${object_name}($psql_args); END;}]
+      return [subst {ns_ora dml \$db \$sql}]
     }
   }
 
@@ -134,13 +134,13 @@ namespace eval ::xo::db {
         foreach {arg default_value} $_arg break
         set _$arg \[expr {\[info exists $arg\] ? ":$arg" : "null"}\]
       }
-      set sql \[list "[my set sql]"\]
+      set sql "[my set sql]"
       if {$n} {
         my log "sql=$sql"
       } else {
         db_with_handle -dbn $dbn db {
           #my log "sql=$sql, sql_command=[set sql_command]"
-          set selection \[eval [set sql_command]\]
+          set selection \[ [set sql_command]\]
           return \[ns_set value $selection 0\]
         }
       }
@@ -187,10 +187,10 @@ namespace eval ::xo::db {
         }
       }
 
-      set sql \[list "[my set sql]"\]
+      set sql "[my set sql]"
       db_with_handle -dbn $dbn db {
         #my log "sql=$sql, sql_command=[set sql_command]"
-        set selection \[eval [set sql_command]\]
+        set selection \[ [set sql_command] \]
         return \[ns_set value $selection 0\]
       }
     }]
