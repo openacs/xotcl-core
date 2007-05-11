@@ -566,7 +566,10 @@ namespace eval ::Generic {
     {-sql ""}
     {-full_statement_name ""}
   } {
-    Return a set of instances of folder objects. 
+    Return a set of instances of objects. It creates plain objects
+    of type ::xotcl::Object just containing the variables that
+    the sql query returns.
+
     The container and contained objects are automatically 
     destroyed on cleanup of the connection thread
   } {
@@ -578,7 +581,7 @@ namespace eval ::Generic {
       while {1} {
         set continue [ns_db getrow $db $selection]
         if {!$continue} break
-        set o [Object new]
+        set o [::xotcl::Object new]
         foreach {att val} [ns_set array $selection] {$o set $att $val}
 
         if {[$o exists object_type]} {
@@ -680,6 +683,15 @@ namespace eval ::Generic {
       db_dml [my qn update_content_length] "update cr_revisions \
                 set content_length = [file size [my set import_file]] \
                 where revision_id = $revision_id"
+    }
+  }
+  CrItem instproc update_content {revision_id content} {
+    [my info class] instvar storage_type 
+    if {$storage_type eq "file"} {
+      my log "--update_content not implemented for type file"
+    } else {
+      db_dml [my qn update_content] "update cr_revisions \
+                set content = :content where revision_id = $revision_id"
     }
   }
 
