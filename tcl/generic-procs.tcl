@@ -432,6 +432,12 @@ namespace eval ::Generic {
        and    i.item_id = n.item_id \
        and    o.object_id = $revision_id"
     } else {
+      my log "select [join $atts ,], i.parent_id \
+       from   [my set table_name]i n, cr_items i, acs_objects o \
+       where  i.item_id = $item_id \
+       and    n.[my id_column] = coalesce(i.live_revision, i.latest_revision) \
+       and    o.object_id = i.item_id"
+
       $object db_1row [my qn fetch_from_view_item_id] "\
        select [join $atts ,], i.parent_id \
        from   [my set table_name]i n, cr_items i, acs_objects o \
@@ -672,17 +678,22 @@ namespace eval ::Generic {
     return 0
   }
 
-  # provide the appropriate db_* call for the view update. Earlier
-  # versions up to 5.3.0d1 used db_dml, newer versions (around july
-  # 2006) have to use db_0or1row, when the patch for deadlocks and
-  # duplicate items is applied...
+  if {[db_driverkey ""] eq "postgresql"} {
 
-  apm_version_get -package_key acs-content-repository -array info
-  array get info
-  CrItem set insert_view_operation \
-      [expr {[apm_version_names_compare $info(version_name) 5.3.0d1] < 1 ? "db_dml" : "db_0or1row"}]
-  array unset info
-
+    # provide the appropriate db_* call for the view update. Earlier
+    # versions up to 5.3.0d1 used db_dml, newer versions (around july
+    # 2006) have to use db_0or1row, when the patch for deadlocks and
+    # duplicate items is applied...
+    
+    apm_version_get -package_key acs-content-repository -array info
+    array get info
+    CrItem set insert_view_operation \
+        [expr {[apm_version_names_compare $info(version_name) 5.3.0d1] < 1 ? "db_dml" : "db_0or1row"}]
+    array unset info
+  } else { ;# Oracle
+    CrItem set insert_view_operation db_dml
+  }
+  
   # uncomment the following line, if you want to force db_0or1row for
   # update operations (e.g. when using the provided patch for the
   # content repository in a 5.2 installation)

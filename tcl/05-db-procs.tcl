@@ -97,10 +97,10 @@ namespace eval ::xo::db {
         order by args.position
     } $package_name $object_name]
     if {$is_function} {
-      my set sql [subst {BEGIN :1 := ${package_name}.${object_name}($psql_args); END;}]
+      my set sql [subst {BEGIN :1 := ${package_name}.${object_name}(\$sql_args); END;}]
       return {ns_ora exec_plsql_bind $db $sql 1 ""}
     } else {
-      my set sql [subst {BEGIN ${package_name}.${object_name}($psql_args); END;}]
+      my set sql [subst {BEGIN ${package_name}.${object_name}(\$sql_args); END;}]
       #return {ns_set value [ns_ora select $db $sql] 0}
       return {ns_ora dml $db $sql}
     }
@@ -128,14 +128,14 @@ namespace eval ::xo::db {
   DbPackage instproc proc_body-oracle {} {
     return {
       #defined: [my array get defined]
-      set sql_args [list]
+      set sql_args \[list\]
       foreach var \[list [my set arg_order]\]  {
         set varname \[string tolower $var\]
         if {\[info exists $varname\]} {
           lappend sql_args "$varname => :$varname"
         } 
       }
-      set sql_args [join $sql_args ,]
+      set sql_args \[join $sql_args ,\]
       set sql "[my set sql]"
       db_with_handle -dbn $dbn db {
         #my log "sql=$sql, sql_command=[set sql_command]"
@@ -190,6 +190,24 @@ namespace eval ::xo::db {
     }
   }
   DbPackage create_all_functions
+
+  ::xotcl::Object create sql
+  if {[db_driverkey ""] eq "postgresql"} {
+    sql proc limit_select {-limit:required -sql:required {-order ""}} {
+      set order_clause [expr {$order ne "" ? "ORDER BY $order" : ""}]
+      return "SELECT $sql $order_clause LIMIT $limit"
+    }
+  } else { ;# Oracle
+    sql proc limit_select {-limit:required -sql:required {-order ""}} {
+      if {$order ne ""} {
+        set sql "SELECT * FROM (SELECT $sql) WHERE ROWNUM <= $limit ORDER BY $order"
+      } else {
+        set sql "SELECT * FROM (SELECT $sql) WHERE ROWNUM <= $limit"
+      }
+      my log "--returned sql = $sql"
+      return $sql
+    }
+  }
 
   ::xotcl::Object create require
 
