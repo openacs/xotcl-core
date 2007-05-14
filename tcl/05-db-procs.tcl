@@ -60,6 +60,7 @@ namespace eval ::xo::db {
     }
     return [join $psql_args ", "]
   }
+
   DbPackage instproc psql-postgresql {package_name object_name full_statement_name} {
     set psql_args [my sql-arguments {
 	select args.arg_name, args.arg_default
@@ -70,7 +71,8 @@ namespace eval ::xo::db {
     my set sql [subst {
       select ${package_name}__${object_name}($psql_args)
     }]
-    return {ns_pg_bind 0or1row $db $sql}
+    #return {ns_pg_bind 0or1row $db $sql}
+    return {ns_set value [ns_pg_bind 0or1row $db $sql] 0}
   }
   DbPackage instproc psql-oracle {package_name object_name full_statement_name} {
     # 
@@ -83,8 +85,11 @@ namespace eval ::xo::db {
 		       and object_name = upper(:object_name)
 		       and position = 0)
     }]
+    # In Oracle, args.default_value appears to be defunct and useless.
+    # for now, we simply return "null" as a constant, otherwise the
+    # argument would be required
     set psql_args [my sql-arguments {
-	select args.argument_name, args.default_value
+	select args.argument_name, 'unknown'
         from user_arguments args
         where args.position > 0
 	  and args.object_name = upper(:object_name)
@@ -93,59 +98,52 @@ namespace eval ::xo::db {
     } $package_name $object_name]
     if {$is_function} {
       my set sql [subst {BEGIN :1 := ${package_name}.${object_name}($psql_args); END;}]
-      return [subst {db_exec exec_plsql_bind \$db $full_statement_name \$sql 2 1 ""}]
+      return {ns_ora exec_plsql_bind $db $sql 1 ""}
     } else {
       my set sql [subst {BEGIN ${package_name}.${object_name}($psql_args); END;}]
-      return [subst {ns_ora dml \$db \$sql}]
+      #return {ns_set value [ns_ora select $db $sql] 0}
+      return {ns_ora dml $db $sql}
     }
   }
 
-  DbPackage instproc dbproc_exportvars {object_name} {
-    #
-    # This method compiles a stored procedure into a xotcl method using
-    # a export_vars style interface.
-    #
-    # The current implementation should work on postgres and oracle (not tested)
-    # but will not work, when a single openacs instance want to talk to 
-    # postgres and oracle simultaneously. Not sure, how important this is...
-    #
-    set package_name   [namespace tail [self]]
-    set statement_name [my qn $package_name-$object_name]
-    set sql_command    [my psql-[db_driverkey ""] $package_name $object_name $statement_name] 
-
-    my proc $object_name {{-n:switch false} {-dbn ""} arglist} [subst -novariables {
-      array set defined [list [my array get defined]]
-
-      foreach var $arglist {
-        if {\[llength $var\]>1} {
-          foreach {var value} $var break
-          set attribute \[string toupper $var\]
-          set $attribute \[uplevel subst $value\]
-          #my log "ATT set $attribute \[uplevel subst $value\]"
+  DbPackage instproc proc_body-postgresql {} {
+    return {
+      #defined: [my array get defined]
+     foreach var \[list [my set arg_order]\]  {
+        set varname \[string tolower $var\]
+        if {\[info exists $varname\]} {
+          set $var \[set $varname\]
+          set _$var :$var
         } else {
-          set attribute \[string toupper $var\]
-          my upvar $var $attribute
+          set _$var null
         }
-        if {!\[info exists defined($attribute)\]} {
-          my log "ERROR: $attribute not defined in ${package_name}.${object_name}"
-        }
-      }
-      foreach {_arg} [list [my set function_args]] {
-        foreach {arg default_value} $_arg break
-        set _$arg \[expr {\[info exists $arg\] ? ":$arg" : "null"}\]
       }
       set sql "[my set sql]"
-      if {$n} {
-        my log "sql=$sql"
-      } else {
-        db_with_handle -dbn $dbn db {
-          #my log "sql=$sql, sql_command=[set sql_command]"
-          set selection \[ [set sql_command]\]
-          return \[ns_set value $selection 0\]
-        }
+      db_with_handle -dbn $dbn db {
+        #my log "sql=$sql, sql_command=[set sql_command]"
+        return \[ [set sql_command] \]
       }
-    }]
+    }
   }
+  DbPackage instproc proc_body-oracle {} {
+    return {
+      #defined: [my array get defined]
+      set sql_args [list]
+      foreach var \[list [my set arg_order]\]  {
+        set varname \[string tolower $var\]
+        if {\[info exists $varname\]} {
+          lappend sql_args "$varname => :$varname"
+        } 
+      }
+      set sql_args [join $sql_args ,]
+      set sql "[my set sql]"
+      db_with_handle -dbn $dbn db {
+        #my log "sql=$sql, sql_command=[set sql_command]"
+        return \[ [set sql_command] \]
+      }
+    }
+  }
+
 
   DbPackage instproc dbproc_nonposargs {object_name} {
     #
@@ -163,6 +161,7 @@ namespace eval ::xo::db {
     set package_name   [namespace tail [self]]
     set statement_name [my qn $package_name-$object_name]
     set sql_command    [my psql-[db_driverkey ""] $package_name $object_name $statement_name] 
+    set proc_body      [my proc_body-[db_driverkey ""]] 
 
     set nonposarg_list [list [list -dbn ""]]
     foreach arg_name [my set arg_order] {
@@ -174,26 +173,7 @@ namespace eval ::xo::db {
     }
     #my log "-- define $object_name $nonposarg_list"
 
-    my ad_proc $object_name $nonposarg_list {} [subst -novariables {
-      #defined: [my array get defined]
-
-      foreach var \[list [my set arg_order]\]  {
-        set varname \[string tolower $var\]
-        if {\[info exists $varname\]} {
-          set $var \[set $varname\]
-          set _$var :$var
-        } else {
-          set _$var null
-        }
-      }
-
-      set sql "[my set sql]"
-      db_with_handle -dbn $dbn db {
-        #my log "sql=$sql, sql_command=[set sql_command]"
-        set selection \[ [set sql_command] \]
-        return \[ns_set value $selection 0\]
-      }
-    }]
+    my ad_proc $object_name $nonposarg_list {} [subst -novariables $proc_body]
   }
 
   DbPackage instproc unknown {m args} {
@@ -202,8 +182,8 @@ namespace eval ::xo::db {
  
   DbPackage proc create_all_functions {} {
     db_foreach [my qn ""] [call set [db_driverkey ""]_all_package_functions] {
-      if {![my isobject $package_name]} { DbPackage create $package_name }
-      $package_name dbproc_exportvars $object_name
+      #if {![my isobject $package_name]} { DbPackage create $package_name }
+      #$package_name dbproc_exportvars $object_name
       set class_name [string tolower $package_name] 
       if {![my isobject $class_name]} { DbPackage create $class_name }
       $class_name dbproc_nonposargs [string tolower $object_name]
@@ -221,12 +201,15 @@ namespace eval ::xo::db {
   require set oracle_index_exists     {select 1 from all_indexes where index_name = '$name'}
 
   require proc table {name definition} {
+    if {[db_driverkey ""] eq "oracle"} {set name [string toupper $name]}
     if {![db_0or1row [my qn ""] [subst [my set [db_driverkey ""]_table_exists]]]} {
+      #my log "--table $name does not exist, creating with $definition"
       db_dml [my qn create-table-$name] "create table $name ($definition)"
     }
   }
 
   require proc view {name definition} {
+    if {[db_driverkey ""] eq "oracle"} {set name [string toupper $name]}
     if {![db_0or1row [my qn ""] [subst [my set [db_driverkey ""]_view_exists]]]} {
       db_dml [my qn create-view-$name] "create view $name AS $definition"
     }
@@ -238,6 +221,13 @@ namespace eval ::xo::db {
     set suffix [expr {$unique ? "un_idx" : "idx"}]
     set uniquepart [expr {$unique ? "UNIQUE" : ""}]
     set name ${table}_${colpart}_$suffix
+    if {[string length $name]>30} {
+      if {[db_driverkey ""] eq "oracle"} {
+        set sl [string length $suffix]
+        set name [string range ${table}_${colpart}  0 [expr {28 - $sl}]]_$suffix
+      }
+    }
+    if {[db_driverkey ""] eq "oracle"} {set name [string toupper $name]}
     if {![db_0or1row [my qn ""] [subst [my set [db_driverkey ""]_index_exists]]]} {
       set using [expr {$using ne "" ? "using $using" : ""}]
       db_dml [my qn create-index-$name] \
