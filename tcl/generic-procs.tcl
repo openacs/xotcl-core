@@ -92,10 +92,11 @@ namespace eval ::Generic {
     }
     CrClass instproc type_selection {-with_subtypes:boolean} {
       my instvar object_type_key
-      return [expr {$with_subtypes ? 
-              "where acs_object_types.tree_sortkey between \
-               '$object_type_key' and tree_right('$object_type_key') and" :
-              "where acs_object_types.tree_sortkey = '$object_type_key' and"}]
+      if {$with_subtypes} {
+        return [list "" "acs_object_types.tree_sortkey between '$object_type_key' and tree_right('$object_type_key')"]
+      } else {
+        return [list "" "acs_object_types.tree_sortkey = '$object_type_key'"]
+      }
     }
     set pg_version [db_string qn.null.get_version {
       select substring(version() from 'PostgreSQL #"[0-9]+.[0-9+]#".%' for '#')   }]
@@ -118,7 +119,7 @@ namespace eval ::Generic {
       return [db_list [my qn get_object_types] "
         select object_type from acs_object_types 
         start with object_type = :object_type
-        connect by prior supertype = object_type
+        connect by prior supertype = object_type $order_clause
       "]
     }
     CrClass instproc init_type_hierarchy {} {
@@ -126,10 +127,11 @@ namespace eval ::Generic {
     }
     CrClass instproc type_selection {-with_subtypes:boolean} {
       my instvar object_type
-      return [expr {$with_subtypes ? 
-           "start with object_type = :object_type
-            connect by supertype = prior object_type where" :
-           "where acs_object_types.object_type = :object_type and"}]
+      if {$with_subtypes} {
+        return [list "start with object_type = :object_type connect by prior supertype = object_type" ""]
+      } else {
+        return [list "" "acs_object_types.object_type = :object_type"]
+      }
     }
   }
   
@@ -485,7 +487,7 @@ namespace eval ::Generic {
 
   CrClass ad_instproc instance_select_query {
     {-select_attributes ""}
-    {-order_clause ""}
+    {-orderby ""}
     {-where_clause ""}
     {-from_clause ""}
     {-with_subtypes:boolean true}
@@ -498,7 +500,7 @@ namespace eval ::Generic {
     returns the SQL-query to select the CrItems of the specified object_type
     @select_attributes attributes for the sql query to be retrieved, in addion
       to ci.item_id acs_objects.object_type, which are always returned
-    @param order_clause clause for ordering the solution set
+    @param orderby for ordering the solution set
     @param where_clause clause for restricting the answer set
     @param with_subtypes return subtypes as well
     @param count return the query for counting the solutions
@@ -513,36 +515,43 @@ namespace eval ::Generic {
       if {$a eq "title"} {set a cr.title}
       lappend attributes $a
     }
-    set type_selection [my type_selection -with_subtypes $with_subtypes]
+    foreach {start_clause type_selection} [my type_selection -with_subtypes $with_subtypes] break
     if {$count} {
       set attribute_selection "count(*)"
-      set order_clause ""      ;# no need to order when we count
+      set orderby ""      ;# no need to order when we count
       set page_number  ""      ;# no pagination when count is used
     } else {
       set attribute_selection [join $attributes ,]
     }
-
-    if {$where_clause ne ""} {
-      set where_clause "and $where_clause"
-    }
-    if {$page_number ne ""} {
-      set pagination "offset [expr {$page_size*($page_number-1)}] limit $page_size"
-    } else {
-      set pagination ""
-    }
-    set publish_clause \
-	[expr {[info exists publish_status] ? " and ci.publish_status eq '$publish_status'" : ""}]
-    return "select $attribute_selection
-    from acs_object_types, acs_objects, cr_items ci, cr_revisions cr $from_clause
-        $type_selection acs_object_types.object_type = ci.content_type
+    
+    set cond [list]
+    if {$type_selection ne ""} {lappend cond $type_selection}
+    if {$where_clause   ne ""} {lappend cond $where_clause}
+    if {[info exists publish_status]} {lappend cond "ci.publish_status eq '$publish_status'"}
+    lappend cond "acs_object_types.object_type = ci.content_type
         and coalesce(ci.live_revision,ci.latest_revision) = cr.revision_id 
-        and parent_id = $folder_id and acs_objects.object_id = cr.revision_id \
-        $where_clause $order_clause $publish_clause $pagination"
+        and parent_id = $folder_id and acs_objects.object_id = cr.revision_id"
+
+    if {$page_number ne ""} {
+      set limit $page_size
+      set offset [expr {$page_size*($page_number-1)}]
+    } else {
+      set limit ""
+      set offset ""
+    }
+
+    return [::xo::db::sql select \
+                -vars $attribute_selection \
+                -from "acs_object_types, acs_objects, cr_items ci, cr_revisions cr $from_clause" \
+                -where [join $cond " and "] \
+                -orderby $orderby \
+                -start $start_clause \
+                -limit $limit -offset $offset]
   }
 
   CrClass ad_instproc instantiate_all {
     {-select_attributes ""}
-    {-order_clause ""}
+    {-orderby ""}
     {-where_clause ""}
     {-with_subtypes:boolean true}
     {-folder_id}
@@ -568,7 +577,7 @@ namespace eval ::Generic {
              -select_attributes $select_attributes \
              -with_subtypes $with_subtypes \
              -where_clause $where_clause \
-             -order_clause $order_clause \
+             -orderby $orderby \
              -page_size $page_size -page_number $page_number] {
                set __o [$object_type create ${__result}::$item_id]
                $__result add $__o
@@ -1274,14 +1283,14 @@ namespace eval ::Generic {
       append new_data {
         category::map_object -remove_old -object_id $item_id $category_ids
         #ns_log notice "-- new data category::map_object -remove_old -object_id $item_id $category_ids"
-        db_dml [my qn insert_asc_named_object] \
-            "insert into acs_named_objects (object_id,object_name,package_id) \
-             values (:item_id, :name, :package_id)"
+        #db_dml [my qn insert_asc_named_object] \
+        #    "insert into acs_named_objects (object_id,object_name,package_id) \
+        #     values (:item_id, :name, :package_id)"
       }
       append edit_data {
-        db_dml [my qn update_asc_named_object] \
-            "update acs_named_objects set object_name = :name, \
-                package_id = :package_id where object_id = :item_id"
+        #db_dml [my qn update_asc_named_object] \
+        #    "update acs_named_objects set object_name = :name, \
+        #        package_id = :package_id where object_id = :item_id"
         #ns_log notice "-- edit data category::map_object -remove_old -object_id $item_id $category_ids"
         category::map_object -remove_old -object_id $item_id $category_ids
       }
@@ -1407,7 +1416,7 @@ namespace eval ::Generic {
 
 
   List ad_instproc generate {
-    -order_by
+    {-orderby ""}
     -template
   } {
     the method generate is used to actually generate the list template
@@ -1418,7 +1427,6 @@ namespace eval ::Generic {
   } {
     my instvar object_type with_subtypes
     
-    set order_clause [expr {[info exists order_by] ? "order by $order_by":""}]
     if {![info exists template]} {
       set template [my name]
     }
@@ -1445,7 +1453,7 @@ namespace eval ::Generic {
               -folder_id [my folder_id] \
               -select_attributes $select_attributes \
               -with_subtypes $with_subtypes \
-              -order_clause $order_clause] {
+              -orderby $orderby] {
         set view_url [export_vars -base [my view_link] {item_id}]
         set edit_url [export_vars -base [my edit_link] {item_id}]
         set delete_url [export_vars -base [my delete_link] {item_id}]

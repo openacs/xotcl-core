@@ -193,22 +193,58 @@ namespace eval ::xo::db {
 
   ::xotcl::Object create sql
   if {[db_driverkey ""] eq "postgresql"} {
-    sql proc limit_select {-limit:required -sql:required {-order ""}} {
-      set order_clause [expr {$order ne "" ? "ORDER BY $order" : ""}]
-      return "SELECT $sql $order_clause LIMIT $limit"
+    sql proc select {
+      -vars:required 
+      -from:required 
+      -where:required 
+      {-groupby ""} 
+      {-limit ""} 
+      {-offset ""} 
+      {-start ""}
+      {-orderby ""}
+    } {
+      set offset_clause [expr {$offset  ne "" ? "OFFSET $offset" : ""}]
+      set limit_clause  [expr {$limit   ne "" ? "LIMIT $limit" : ""}]
+      set order_clause  [expr {$orderby ne "" ? "ORDER BY $orderby" : ""}]
+      set group_clause  [expr {$groupby ne "" ? "GROUP BY $groupby" : ""}]
+      return "SELECT $vars FROM $from WHERE $where $group_clause $order_clause $limit_clause"
     }
   } else { ;# Oracle
-    sql proc limit_select {-limit:required -sql:required {-order ""}} {
-      if {$order ne ""} {
-        set sql "SELECT * FROM (SELECT $sql) WHERE ROWNUM <= $limit ORDER BY $order"
+    sql proc select {
+      -vars:required 
+      -from:required 
+      -where:required 
+      {-groupby ""} 
+      {-limit ""} 
+      {-offset ""} 
+      {-start ""}
+      {-orderby ""}
+    } {
+      set order_clause [expr {$orderby ne "" ? "ORDER BY $orderby" : ""}]
+      set group_clause [expr {$groupby ne "" ? "GROUP BY $groupby" : ""}]
+      set sql "SELECT $vars FROM $from $start WHERE $where $group_clause"
+      if {$limit ne "" || $offset ne ""} {
+        if {$offset eq ""} {
+          set limit_clause "ROWNUM <= $limit"
+        } else {$limit eq ""} {
+          set limit_clause "ROWNUM >= $offset"
+        } else {
+          set limit_clause "ROWNUM BETWEEN $offset and [expr {$offset+$limit}]"
+        }
+        # for pagination, we will need an "inner" sort, such as 
+        # SELECT * FROM (SELECT ...., ROW_NUMBER() OVER (ORDER BY ...) R FROM table) WHERE R BETWEEN 0 and 100 
+        set sql "SELECT * FROM (SELECT $sql) WHERE ROWNUM <= $limit_clause $order_clause"
       } else {
-        set sql "SELECT * FROM (SELECT $sql) WHERE ROWNUM <= $limit"
+        append sql " " $order_clause
       }
       my log "--returned sql = $sql"
       return $sql
     }
   }
-
+  sql proc since_interval_condition {var interval} {
+    set since [clock format [clock scan "-$interval"] -format "%Y-%m-%d %T"]
+    return "$var > TO_TIMESTAMP('$since','YYYY-MM-DD HH24:MI:SS')"
+  }
   ::xotcl::Object create require
 
   require set postgresql_table_exists {select 1 from pg_tables   where tablename  = '$name'}
