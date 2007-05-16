@@ -44,7 +44,7 @@ namespace eval ::xo {
         #
         if {[$object info methods privilege=$privilege] ne ""} {
 	  if {![info exists package_id]} {set package_id [::xo::cc package_id]}
-          set allowed [$object privilege=$privilege -login $login $user_id $package_id method]
+          set allowed [$object privilege=$privilege -login $login $user_id $package_id $method]
         }
       }
     }
