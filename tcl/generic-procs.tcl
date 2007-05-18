@@ -328,24 +328,11 @@ namespace eval ::Generic {
   } {
   }
 
-  CrClass instproc getFormClass {-data} {
-    if {[info exists data]} {
-      # new style. does not depend on form variables
-      if {[$data exists item_id] && [$data set item_id] != 0 && [my exists edit_form]} {
-        return [my edit_form]
-      } else {
-        return [my form]
-      }
+  CrClass instproc getFormClass {-data:required} {
+    if {[$data exists item_id] && [$data set item_id] != 0 && [my exists edit_form]} {
+      return [my edit_form]
     } else {
-      set item_id [::xo::cc form_parameter item_id ""] ;# item_id should be be hardcoded
-      set new_p [::xo::cc form_parameter __new_p ""]
-      #my log "--F item_id '$item_id', confirmed_p new_p '$new_p' [my set item_id]"
-      if {$item_id ne "" && $new_p ne "1" && [my exists edit_form]} {
-        #my log "--F use edit_form  [my edit_form]"
-        return [my edit_form]
-      } else {
-        return [my form]
-      }
+      return [my form]
     }
   }
 
@@ -471,8 +458,12 @@ namespace eval ::Generic {
     @param item_id id of the item to be retrieved.
     @param revision_id revision-id of the item to be retrieved.
   } {
-    my fetch_object -object ::[expr {$revision_id ? $revision_id : $item_id}] \
-        -item_id $item_id -revision_id $revision_id
+    set object ::[expr {$revision_id ? $revision_id : $item_id}]
+    if {![my isobject $object]} {
+      my fetch_object -object $object \
+          -item_id $item_id -revision_id $revision_id
+    }
+    return $object
   }
 
   CrClass ad_instproc delete {
@@ -540,13 +531,15 @@ namespace eval ::Generic {
       set offset ""
     }
 
-    return [::xo::db::sql select \
+    set sql [::xo::db::sql select \
                 -vars $attribute_selection \
                 -from "acs_object_types, acs_objects, cr_items ci, cr_revisions cr $from_clause" \
                 -where [join $cond " and "] \
                 -orderby $orderby \
                 -start $start_clause \
                 -limit $limit -offset $offset]
+    #my log "--sql=$sql"
+    return $sql
   }
 
   CrClass ad_instproc instantiate_all {

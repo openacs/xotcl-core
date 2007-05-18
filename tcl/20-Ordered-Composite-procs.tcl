@@ -135,5 +135,19 @@ namespace eval ::xo {
       }
     }
   }
+
+  Class OrderedComposite::MethodCompare
+  OrderedComposite::MethodCompare instproc __compare {a b} {
+    set by [my set __orderby]
+    set x [$a $by]
+    set y [$b $by]
+    if {$x < $y} {
+      return -1
+    } elseif {$x > $y} {
+      return 1
+    } else {
+      return 0
+    }
+  }
 }
 
