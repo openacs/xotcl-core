@@ -1153,7 +1153,7 @@ namespace eval ::Generic {
     return [$data set item_id]
   }
   Form instproc edit_data {} {
-    my log "--- edit_data ---"
+    #my log "--- edit_data --- setting form vars=[my form_vars]"
     my instvar data
     foreach __var [my form_vars] {
       $data set $__var [my var $__var]
