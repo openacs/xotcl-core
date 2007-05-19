@@ -22,7 +22,7 @@ namespace eval ::xo::db {
     from acs_function_args
   }
 
-  proc map {sql} {
+  proc function_name {sql} {
     if {[db_driverkey ""] eq "oracle"} {return [string map [list "__" .] $sql]}
     return $sql
   }
@@ -202,6 +202,7 @@ namespace eval ::xo::db {
       {-offset ""} 
       {-start ""}
       {-orderby ""}
+      {-map_function_names false}
     } {
       set offset_clause [expr {$offset  ne "" ? "OFFSET $offset" : ""}]
       set limit_clause  [expr {$limit   ne "" ? "LIMIT $limit" : ""}]
@@ -219,9 +220,11 @@ namespace eval ::xo::db {
       {-offset ""} 
       {-start ""}
       {-orderby ""}
+      {-map_function_names false}
     } {
       set order_clause [expr {$orderby ne "" ? "ORDER BY $orderby" : ""}]
       set group_clause [expr {$groupby ne "" ? "GROUP BY $groupby" : ""}]
+      if {$map_function_calls} {set vars [::xo::db::function_name $vars]}
       set sql "SELECT $vars FROM $from $start WHERE $where $group_clause"
       if {$limit ne "" || $offset ne ""} {
         if {$offset eq ""} {
