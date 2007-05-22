@@ -1,13 +1,14 @@
 ## tell serializer to export methods, although these are methods of 
 # ::xotcl::Object
 
+package require xotcl::serializer
+
 ::Serializer exportMethods {
   ::xotcl::Object instproc log 
   ::xotcl::Object instproc msg
   ::xotcl::Object instproc __timediff
   ::xotcl::Object instproc debug
   ::xotcl::Object instproc qn
-  ::xotcl::Object instproc contains
   ::xotcl::Object instproc serialize
   ::xotcl::Object instforward db_1row
   ::xotcl::Object instproc destroy_on_cleanup
@@ -140,22 +141,11 @@ namespace eval ::xo {
 
   #
   # a simple calback for cleanup of per connection objects
-  # ns_atclose is a little to early for us...
   #
   ::xotcl::Object instproc destroy_on_cleanup {} {
-    set ::xotcl_cleanup([self]) 1
-    #my log "--A cleanup for [lsort [array names ::xotcl_cleanup]]"
-    ::trace add variable ::xotcl_cleanup([self]) unset ::xo::cleanup_callback
+    set ::xotcl_cleanup([self]) [list [self] destroy]
   }
-  proc ::xo::cleanup_callback {var object op} {
-    if {![::xotcl::Object isobject $object]} {
-      #ns_log notice "--D $object already destroyed, nothing to do"
-      $object destroy
-    } else {
-      #ns_log notice "--D $object destroy"
-      $object destroy
-    }
-  }
+
 }
 
 # ::xotcl::Class instproc import {class pattern} {
@@ -181,3 +171,60 @@ namespace eval ::xo {
 #  ns_log notice "--T [ns_ictl get]"
 #}
 
+namespace eval ::xo {
+  #
+  # In earlier versions of xotcl-core, we used variable traces
+  # to trigger deletion of objects. This had two kind of problems:
+  #   1) there was no way to control the order of the deletions
+  #   2) the global variables used for managing db handles might
+  #      be deleted already
+  #   3) the traces are executed at a time when the connection 
+  #      is already closed
+  # aolserver 4.5 supports a trace for freeconn. we can register
+  # a callback to be executed before the connection is closed,
+  # therefore, we have still information from ns_conn available.
+  # For aolserver 4.5 we use oncleanup, which is at least before
+  # the cleanup of variables.
+  #
+  if {[catch {set registered [ns_ictl gettraces freeconn]}]} {
+    ns_log notice "*** you should really upgrade to Aolserver 4.5"
+    ns_ictl oncleanup ::xo::cleanup
+  } else {
+    if {[lsearch $registered ::xo::cleanup] == -1} {
+      ns_ictl trace freeconn ::xo::cleanup
+    }
+  }
+  proc cleanup {} {
+    ns_log notice "*** start of cleanup"
+    set at_end ""
+    foreach {name cmd} [array get ::xotcl_cleanup] {
+      if {![::xotcl::Object isobject $name]} {
+        ns_log notice "--D $name already destroyed, nothing to do"
+        continue
+      }
+      if {$name eq "::xo::cc"} {
+        append at_end $cmd\n
+        continue
+      }
+      if {[catch {eval $cmd} errorMsg]} {
+        set obj [lindex $cmd 0]
+        ns_log notice "Error during ::xo::cleanup: $errorMsg $::errorInfo"
+        catch {
+          ns_log notice "... analyze: cmd = $cmd"
+          ns_log notice "... analyze: $obj is_object? [::xotcl::Object isobject $obj]"
+          ns_log notice "... analyze: class [$obj info class]"
+          ns_log notice "... analyze: precedence [$obj info precedence]"
+          ns_log notice "... analyze: methods [lsort [$obj info methods]]"
+        }
+      }
+    }
+    if {[catch {eval $at_end} errorMsg]} {
+      ns_log notice "Error during ::xo::cleanup: $errorMsg $::errorInfo"
+    }
+    ns_log notice "*** end of cleanup"
+  }
+}
+
+#ns_log notice "*** FREECONN? [ns_ictl gettraces freeconn]"
+#ns_ictl trace freeconn {ns_log notice "*** FREECONN  isconnected=[ns_conn isconnected]"}
+#ns_ictl oncleanup {ns_log notice "*** ONCLEANUP isconnected=[ns_conn isconnected]"}
