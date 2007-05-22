@@ -908,11 +908,11 @@ namespace eval ::Generic {
     set sql [::xo::db::sql select \
 		 -map_function_names true \
 		 -vars "ci.name, n.revision_id as version_id,\
-                        person__name(n.creation_user)] as author, \
+                        person__name(n.creation_user) as author, \
                         n.creation_user as author_id, \
                         to_char(n.last_modified,'YYYY-MM-DD HH24:MI:SS') as last_modified_ansi,\
                         n.description,\
-                        acs_permission__permission_p(n.revision_id,:user_id,'admin')] as admin_p,\
+                        acs_permission__permission_p(n.revision_id,:user_id,'admin') as admin_p,\
                         acs_permission__permission_p(n.revision_id,:user_id,'delete') as delete_p,\
                         r.content_length,\
                         content_revision__get_number(n.revision_id) as version_number " \
