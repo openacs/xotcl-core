@@ -193,6 +193,8 @@ namespace eval ::xo::db {
 
   ::xotcl::Object create sql
   if {[db_driverkey ""] eq "postgresql"} {
+    proc map_sql_datatype {type} {return $type}
+
     sql proc select {
       -vars:required 
       -from:required 
@@ -211,6 +213,13 @@ namespace eval ::xo::db {
       return "SELECT $vars FROM $from WHERE $where $group_clause $order_clause $limit_clause"
     }
   } else { ;# Oracle
+    proc map_sql_datatype {type} {
+      switch $type {
+        text {set type varchar(64000)}
+      }
+      return $type
+    }
+
     sql proc select {
       -vars:required 
       -from:required 

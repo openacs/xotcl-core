@@ -177,17 +177,6 @@ namespace eval ::Generic {
         -include_subtypes t
   }
 
-  if {[db_driverkey ""] eq "postgresql"} {
-    CrClass instproc map_sql_datatype {type} {return $type}
-  } else { ;# Oracle
-    CrClass instproc map_sql_datatype {type} {
-      switch $type {
-        text {set type varchar(2000)}
-      }
-      return $type
-    }
-  }
-
   CrClass instproc create_attributes {} {
     if {[my cr_attributes] ne ""} {
       my instvar object_type
@@ -202,7 +191,7 @@ namespace eval ::Generic {
 	      -attribute_name $attribute_name \
 	      -datatype $datatype \
 	      -pretty_name $pretty_name \
-	      -column_spec [my map_sql_datatype $sqltype]
+	      -column_spec [::xo::db::map_sql_datatype $sqltype]
 	}
 	if {![info exists default]} {
 	  set default ""
