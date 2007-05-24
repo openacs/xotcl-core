@@ -72,16 +72,14 @@ namespace eval ::Generic {
     #
     # Postgres
     #
-    CrClass instproc object_types {
+    CrClass instproc object_types_query {
       {-subtypes_first:boolean false}
     } {
       my instvar object_type_key
       set order_clause [expr {$subtypes_first ? "order by tree_sortkey desc":""}]
-      return [db_list [my qn get_object_types] "
-        select object_type from acs_object_types where 
-        tree_sortkey between :object_type_key and tree_right(:object_type_key)
-        $order_clause
-      "]
+      return "select object_type from acs_object_types where 
+        tree_sortkey between '$object_type_key' and tree_right('$object_type_key')
+        $order_clause"
     }
     CrClass instproc init_type_hierarchy {} {
       my instvar object_type
@@ -91,11 +89,14 @@ namespace eval ::Generic {
       }]
     }
     CrClass instproc type_selection {-with_subtypes:boolean} {
-      my instvar object_type_key
+      my instvar object_type_key object_type
       if {$with_subtypes} {
-        return [list "" "acs_object_types.tree_sortkey between '$object_type_key' and tree_right('$object_type_key')"]
+        #return "acs_object_types.tree_sortkey between '$object_type_key' and tree_right('$object_type_key')"
+        #return "ci.content_type in ('[join [my object_types] ',']')"
+        return "ci.content_type in ([my object_types_query])"
       } else {
-        return [list "" "acs_object_types.tree_sortkey = '$object_type_key'"]
+        return "ci.content_type = '$object_type'"
+        #return "acs_object_types.tree_sortkey = '$object_type_key'"
       }
     }
     set pg_version [db_string qn.null.get_version {
@@ -111,16 +112,14 @@ namespace eval ::Generic {
     #
     # Oracle
     #
-    CrClass instproc object_types {
+    CrClass instproc object_types_query {
       {-subtypes_first:boolean false}
     } {
       my instvar object_type
-      set order_clause [expr {$subtypes_first ? "order by level desc":""}]
-      return [db_list [my qn get_object_types] "
-        select object_type from acs_object_types 
-        start with object_type = :object_type
-        connect by prior supertype = object_type $order_clause
-      "]
+      set order_clause [expr {$subtypes_first ? "order by LEVEL desc":""}]
+      return "select object_type from acs_object_types 
+        start with object_type = '$object_type' 
+        connect by prior object_type = supertype $order_clause"
     }
     CrClass instproc init_type_hierarchy {} {
       my set object_type_key {}
@@ -128,9 +127,9 @@ namespace eval ::Generic {
     CrClass instproc type_selection {-with_subtypes:boolean} {
       my instvar object_type
       if {$with_subtypes} {
-        return [list "start with object_type = :object_type connect by prior supertype = object_type" ""]
+        return "acs_objects.object_type in ([my object_types_query])"
       } else {
-        return [list "" "acs_object_types.object_type = :object_type"]
+        return "acs_objects.object_type = '$object_type'"
       }
     }
   }
@@ -465,6 +464,13 @@ namespace eval ::Generic {
     ::xo::db::content_item delete -item_id $item_id
   }
 
+  CrClass instproc object_types {
+    {-subtypes_first:boolean false}
+   } {
+     return [db_list [my qn get_object_types] \
+		 [my object_types_query -subtypes_first $subtypes_first]]
+  }
+
   CrClass ad_instproc instance_select_query {
     {-select_attributes ""}
     {-orderby ""}
@@ -495,7 +501,8 @@ namespace eval ::Generic {
       if {$a eq "title"} {set a cr.title}
       lappend attributes $a
     }
-    foreach {start_clause type_selection} [my type_selection -with_subtypes $with_subtypes] break
+    set type_selection [my type_selection -with_subtypes $with_subtypes]
+    #my log "type_selection -with_subtypes $with_subtypes returns $type_selection"
     if {$count} {
       set attribute_selection "count(*)"
       set orderby ""      ;# no need to order when we count
@@ -508,8 +515,7 @@ namespace eval ::Generic {
     if {$type_selection ne ""} {lappend cond $type_selection}
     if {$where_clause   ne ""} {lappend cond $where_clause}
     if {[info exists publish_status]} {lappend cond "ci.publish_status eq '$publish_status'"}
-    lappend cond "acs_object_types.object_type = ci.content_type
-        and coalesce(ci.live_revision,ci.latest_revision) = cr.revision_id 
+    lappend cond "coalesce(ci.live_revision,ci.latest_revision) = cr.revision_id 
         and parent_id = $folder_id and acs_objects.object_id = cr.revision_id"
 
     if {$page_number ne ""} {
@@ -522,10 +528,9 @@ namespace eval ::Generic {
 
     set sql [::xo::db::sql select \
                 -vars $attribute_selection \
-                -from "acs_object_types, acs_objects, cr_items ci, cr_revisions cr $from_clause" \
+                -from "acs_objects, cr_items ci, cr_revisions cr $from_clause" \
                 -where [join $cond " and "] \
                 -orderby $orderby \
-                -start $start_clause \
                 -limit $limit -offset $offset]
     #my log "--sql=$sql"
     return $sql

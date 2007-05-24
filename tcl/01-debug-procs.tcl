@@ -139,13 +139,6 @@ namespace eval ::xo {
     }
   }
 
-  #
-  # a simple calback for cleanup of per connection objects
-  #
-  ::xotcl::Object instproc destroy_on_cleanup {} {
-    set ::xotcl_cleanup([self]) [list [self] destroy]
-  }
-
 }
 
 # ::xotcl::Class instproc import {class pattern} {
@@ -188,14 +181,28 @@ namespace eval ::xo {
   #
   if {[catch {set registered [ns_ictl gettraces freeconn]}]} {
     ns_log notice "*** you should really upgrade to Aolserver 4.5"
-    ns_ictl oncleanup ::xo::cleanup
+    # "ns_ictl oncleanup" is called after variables are deleted
+    # ns_ictl oncleanup "ns_log notice --oncleanup"
+
+    ::xotcl::Object instproc destroy_on_cleanup {} {
+      #my log "--cleanup adding ::xotcl_cleanup([self]) [list [self] destroy]"
+      if {![array exists ::xotcl_cleanup]} {
+	ns_atclose ::xo::cleanup
+      }
+      set ::xotcl_cleanup([self]) [list [self] destroy]
+
+    }
   } else {
+    ::xotcl::Object instproc destroy_on_cleanup {} {
+      set ::xotcl_cleanup([self]) [list [self] destroy]
+    }
+    # register only once
     if {[lsearch $registered ::xo::cleanup] == -1} {
       ns_ictl trace freeconn ::xo::cleanup
     }
   }
   proc cleanup {} {
-    ns_log notice "*** start of cleanup"
+    #ns_log notice "*** start of cleanup ([array get ::xotcl_cleanup])"
     set at_end ""
     foreach {name cmd} [array get ::xotcl_cleanup] {
       if {![::xotcl::Object isobject $name]} {
@@ -221,7 +228,7 @@ namespace eval ::xo {
     if {[catch {eval $at_end} errorMsg]} {
       ns_log notice "Error during ::xo::cleanup: $errorMsg $::errorInfo"
     }
-    ns_log notice "*** end of cleanup"
+    #ns_log notice "*** end of cleanup (at_end $at_end)"
   }
 }
 

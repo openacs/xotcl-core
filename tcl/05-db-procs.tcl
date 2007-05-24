@@ -215,7 +215,7 @@ namespace eval ::xo::db {
   } else { ;# Oracle
     proc map_sql_datatype {type} {
       switch $type {
-        text {set type varchar(64000)}
+        text {set type varchar2(4000)}
       }
       return $type
     }
@@ -231,21 +231,22 @@ namespace eval ::xo::db {
       {-orderby ""}
       {-map_function_names false}
     } {
+      # "-start" not used so far
       set order_clause [expr {$orderby ne "" ? "ORDER BY $orderby" : ""}]
       set group_clause [expr {$groupby ne "" ? "GROUP BY $groupby" : ""}]
-      if {$map_function_calls} {set vars [::xo::db::function_name $vars]}
-      set sql "SELECT $vars FROM $from $start WHERE $where $group_clause"
+      if {$map_function_names} {set vars [::xo::db::function_name $vars]}
+      set sql "SELECT $vars FROM $from WHERE $where $group_clause"
       if {$limit ne "" || $offset ne ""} {
         if {$offset eq ""} {
           set limit_clause "ROWNUM <= $limit"
-        } else {$limit eq ""} {
+        } elseif {$limit eq ""} {
           set limit_clause "ROWNUM >= $offset"
         } else {
           set limit_clause "ROWNUM BETWEEN $offset and [expr {$offset+$limit}]"
         }
         # for pagination, we will need an "inner" sort, such as 
         # SELECT * FROM (SELECT ...., ROW_NUMBER() OVER (ORDER BY ...) R FROM table) WHERE R BETWEEN 0 and 100 
-        set sql "SELECT * FROM (SELECT $sql) WHERE ROWNUM <= $limit_clause $order_clause"
+        set sql "SELECT * FROM ($sql) WHERE $limit_clause $order_clause"
       } else {
         append sql " " $order_clause
       }
