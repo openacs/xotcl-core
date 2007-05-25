@@ -189,7 +189,7 @@ namespace eval ::xo {
           -package_id $package_id \
           -url $url \
 	  -actual_query $actual_query \
-          -parameter_declaration $parameter
+          [list -parameter_declaration $parameter]
       ::xo::cc set_user_id $user_id
       ::xo::cc process_query_parameter
     }
