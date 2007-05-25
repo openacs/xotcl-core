@@ -262,10 +262,10 @@ namespace eval ::xo::db {
       return $sql
     }
     sql proc date_trunc {field date} {
-      return "to_char(trunc(to_date($date,'YYYY-MM-DD'),'$field'), 'YYYY-MM-DD HH24:MI:SS')"
+      return "to_char(trunc($date,'$field'), 'YYYY-MM-DD HH24:MI:SS')"
     }
     sql proc date_trunc_expression {field date date_string} {
-      return "trunc('$date,'$field') = trunc(to_date('$string','YYYY-MM-DD'),'$field')"
+      return "trunc($date,'$field') = trunc(to_date('$date_string','YYYY-MM-DD'),'$field')"
     }
   }
   sql proc since_interval_condition {var interval} {
