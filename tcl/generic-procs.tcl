@@ -460,8 +460,8 @@ namespace eval ::Generic {
     Delete a content item from the content repository.
     @param item_id id of the item to be deleted
   } {
-    #::xo::db::CONTENT_ITEM DELETE {item_id}
-    ::xo::db::content_item delete -item_id $item_id
+    #::xo::db::content_item delete -item_id $item_id
+    ::xo::db::content_item del -item_id $item_id
   }
 
   CrClass instproc object_types {

@@ -212,6 +212,14 @@ namespace eval ::xo::db {
       set group_clause  [expr {$groupby ne "" ? "GROUP BY $groupby" : ""}]
       return "SELECT $vars FROM $from WHERE $where $group_clause $order_clause $limit_clause"
     }
+
+    sql proc date_trunc {field date} {
+      return "date_trunc('$field',$date)"
+    }
+    sql proc date_trunc_expression {field date date_string} {
+      return "date_trunc('$field',$date) = '$date_string'"
+    }
+
   } else { ;# Oracle
     proc map_sql_datatype {type} {
       switch $type {
@@ -252,6 +260,12 @@ namespace eval ::xo::db {
       }
       my log "--returned sql = $sql"
       return $sql
+    }
+    sql proc date_trunc {field date} {
+      return "to_char(trunc(to_date($date,'YYYY-MM-DD'),'$field'), 'YYYY-MM-DD HH24:MI:SS')"
+    }
+    sql proc date_trunc_expression {field date date_string} {
+      return "trunc('$date,'$field') = trunc(to_date('$string','YYYY-MM-DD'),'$field')"
     }
   }
   sql proc since_interval_condition {var interval} {
