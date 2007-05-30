@@ -185,12 +185,21 @@ namespace eval ::xo {
     # ns_ictl oncleanup "ns_log notice --oncleanup"
 
     ::xotcl::Object instproc destroy_on_cleanup {} {
-      #my log "--cleanup adding ::xotcl_cleanup([self]) [list [self] destroy]"
-      if {![array exists ::xotcl_cleanup]} {
-	ns_atclose ::xo::cleanup
-      }
+      my log "--cleanup adding ::xotcl_cleanup([self]) [list [self] destroy]"
       set ::xotcl_cleanup([self]) [list [self] destroy]
+      ::trace add variable ::xotcl_cleanup([self]) unset ::xo::trace_cleanup
+      #ns_atclose ::xo::cleanup
+    }
 
+    # there seems no way around using traces for aolserver 4.0.10.
+    # a possible chance might be namespaced variables....
+    proc trace_cleanup {args} {
+      set name [lindex $args 1]
+      #ns_log notice "*** cleanup <$args> '$name'"
+      if {[::xotcl::Object isobject $name]} {
+	ns_log notice "*** cleanup $name destroy"
+	$name destroy
+      }
     }
   } else {
     ::xotcl::Object instproc destroy_on_cleanup {} {
@@ -201,10 +210,12 @@ namespace eval ::xo {
       ns_ictl trace freeconn ::xo::cleanup
     }
   }
-  proc cleanup {} {
-    #ns_log notice "*** start of cleanup ([array get ::xotcl_cleanup])"
+
+  proc cleanup {args} {
+    ns_log notice "*** start of cleanup <$args> ([array get ::xotcl_cleanup])"
     set at_end ""
     foreach {name cmd} [array get ::xotcl_cleanup] {
+      #::trace remove variable ::xotcl_cleanup($name) unset ::xo::cleanup
       if {![::xotcl::Object isobject $name]} {
         ns_log notice "--D $name already destroyed, nothing to do"
         continue
@@ -213,6 +224,7 @@ namespace eval ::xo {
         append at_end $cmd\n
         continue
       }
+      ns_log notice "*** cleanup $cmd"
       if {[catch {eval $cmd} errorMsg]} {
         set obj [lindex $cmd 0]
         ns_log notice "Error during ::xo::cleanup: $errorMsg $::errorInfo"
@@ -225,10 +237,11 @@ namespace eval ::xo {
         }
       }
     }
+    ns_log notice "*** at_end $at_end"
     if {[catch {eval $at_end} errorMsg]} {
       ns_log notice "Error during ::xo::cleanup: $errorMsg $::errorInfo"
     }
-    #ns_log notice "*** end of cleanup (at_end $at_end)"
+    ns_log notice "*** end of cleanup"
   }
 }
 
