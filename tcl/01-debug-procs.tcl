@@ -173,48 +173,66 @@ namespace eval ::xo {
   #      be deleted already
   #   3) the traces are executed at a time when the connection 
   #      is already closed
-  # aolserver 4.5 supports a trace for freeconn. we can register
-  # a callback to be executed before the connection is closed,
+  # Aolserver 4.5 supports a trace for freeconn. We can register
+  # a callback to be executed before the connection is freed,
   # therefore, we have still information from ns_conn available.
   # For aolserver 4.5 we use oncleanup, which is at least before
   # the cleanup of variables.
   #
+  # In contrary, in 4.0.10, on cleanup is called after the global
+  # variables of a connection thread are deleted. Therefore
+  # the triggered calls should not use database handles,
+  # since these are as well managed via global variables,
+  # the will be deleted as well at this time,.
+  # 
+  # To come up with an approach working for 4.5 and 4.0.10, we
+  # distinguish between a at_cleanup and at_close, so connection
+  # related info can still be obtained. 
+  #
   if {[catch {set registered [ns_ictl gettraces freeconn]}]} {
     ns_log notice "*** you should really upgrade to Aolserver 4.5"
     # "ns_ictl oncleanup" is called after variables are deleted
-    # ns_ictl oncleanup "ns_log notice --oncleanup"
-
-    ::xotcl::Object instproc destroy_on_cleanup {} {
-      my log "--cleanup adding ::xotcl_cleanup([self]) [list [self] destroy]"
-      set ::xotcl_cleanup([self]) [list [self] destroy]
-      ::trace add variable ::xotcl_cleanup([self]) unset ::xo::trace_cleanup
-      #ns_atclose ::xo::cleanup
+    if {[ns_ictl epoch] == 0} {
+      ns_ictl oncleanup ::xo::at_cleanup
+      ns_ictl oncleanup ::xo::at_init
     }
-
-    # there seems no way around using traces for aolserver 4.0.10.
-    # a possible chance might be namespaced variables....
-    proc trace_cleanup {args} {
-      set name [lindex $args 1]
-      #ns_log notice "*** cleanup <$args> '$name'"
-      if {[::xotcl::Object isobject $name]} {
-	ns_log notice "*** cleanup $name destroy"
-	$name destroy
-      }
+    proc ::xo::at_init {} {
+      ns_atclose ::xo::at_close
     }
+    
+#     proc trace_cleanup {args} {
+#       set name [lindex $args 1]
+#       #ns_log notice "*** cleanup <$args> '$name'"
+#       if {[::xotcl::Object isobject $name]} {
+# 	ns_log notice "*** cleanup $name destroy"
+# 	$name destroy
+#       }
+#     }
   } else {
-    ::xotcl::Object instproc destroy_on_cleanup {} {
-      set ::xotcl_cleanup([self]) [list [self] destroy]
-    }
+
     # register only once
     if {[lsearch $registered ::xo::cleanup] == -1} {
-      ns_ictl trace freeconn ::xo::cleanup
+      ns_ictl trace freeconn ::xo::freeconn
+    }
+
+    proc ::xo::freeconn {} {
+      catch {::xo::at_close}
+      catch {::xo::at_cleanup}
     }
   }
 
-  proc cleanup {args} {
-    ns_log notice "*** start of cleanup <$args> ([array get ::xotcl_cleanup])"
+  ::xotcl::Object instproc destroy_on_cleanup {} {
+    #my log "--cleanup adding ::xo::cleanup([self]) [list [self] destroy]"
+    set ::xo::cleanup([self]) [list [self] destroy]
+  }
+
+  proc at_close {args} {
+  }
+
+  proc at_cleanup {args} {
+    #ns_log notice "*** start of cleanup <$args> ([array get ::xo::cleanup])"
     set at_end ""
-    foreach {name cmd} [array get ::xotcl_cleanup] {
+    foreach {name cmd} [array get ::xo::cleanup] {
       #::trace remove variable ::xotcl_cleanup($name) unset ::xo::cleanup
       if {![::xotcl::Object isobject $name]} {
         ns_log notice "--D $name already destroyed, nothing to do"
@@ -224,7 +242,7 @@ namespace eval ::xo {
         append at_end $cmd\n
         continue
       }
-      ns_log notice "*** cleanup $cmd"
+      #ns_log notice "*** cleanup $cmd"
       if {[catch {eval $cmd} errorMsg]} {
         set obj [lindex $cmd 0]
         ns_log notice "Error during ::xo::cleanup: $errorMsg $::errorInfo"
@@ -237,11 +255,12 @@ namespace eval ::xo {
         }
       }
     }
-    ns_log notice "*** at_end $at_end"
+    #ns_log notice "*** at_end $at_end"
     if {[catch {eval $at_end} errorMsg]} {
       ns_log notice "Error during ::xo::cleanup: $errorMsg $::errorInfo"
     }
-    ns_log notice "*** end of cleanup"
+    array unset ::xo::cleanup
+    #ns_log notice "*** end of cleanup"
   }
 }
 
