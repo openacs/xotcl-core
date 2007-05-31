@@ -61,7 +61,9 @@ namespace eval ::xo {
     # destroy all children of the ordered composite
     if {[my exists __children]} {
       #my log "--W destroying children [my set __children]"
-      foreach c [my set __children] { $c destroy }
+      foreach c [my set __children] { 
+	if {[my isobject $c]} {$c destroy}
+      }
     }
     #show_stack;my log "--W children murdered, now next, chlds=[my info children]"
     namespace eval [self] {namespace forget *}  ;# for pre 1.4.0 versions

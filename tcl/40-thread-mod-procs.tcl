@@ -85,9 +85,9 @@ ad_library {
 
 ::xotcl::Object setExitHandler {
   #my log "EXITHANDLER of request thread [pid]"
-  if {[catch {Proxy detachAll} m]} {
-    #my log "EXITHANDLER error in detachAll $m"
-  }
+  #if {[catch {::xotcl::THREAD::Proxy detachAll} m]} {
+  #  #my log "EXITHANDLER error in detachAll $m"
+  #}
 }
 
 ::Serializer exportObjects {
