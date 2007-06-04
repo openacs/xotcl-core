@@ -60,7 +60,7 @@ namespace eval ::xo {
         set att_value [ns_urldecode [lindex $name_value_pair 1]]
       }
       if {[info exists (-$att_name)]} {
-        set passed_args(-$att_name) $att_value
+        lappend passed_args(-$att_name) $att_value
       } elseif {$all_from_query} {
         set queryparm($att_name) $att_value
       }
@@ -290,11 +290,17 @@ namespace eval ::xo {
     #my log "--qp my exists $name => [my exists queryparm($name)]"
     my exists queryparm($name)
   }
-
+  ConnectionContext instproc get_all_form_parameter {} {
+    my instvar form_parameter
+    #array set form_parameter [ns_set array [ns_getform]]
+    foreach {att value} [ns_set array [ns_getform]] {
+      lappend form_parameter($att) $value
+    }
+  }
   ConnectionContext instproc form_parameter {name {default ""}} {
     my instvar form_parameter
     if {![info exists form_parameter]} {
-      array set form_parameter [ns_set array [ns_getform]]
+      my get_all_form_parameter
     }
     return [expr {[info exists form_parameter($name)] ? 
                   $form_parameter($name) : $default}]
@@ -302,7 +308,7 @@ namespace eval ::xo {
   ConnectionContext instproc exists_form_parameter {name} {
     my instvar form_parameter
     if {![info exists form_parameter]} {
-      array set form_parameter [ns_set array [ns_getform]]
+      my get_all_form_parameter
     }
     my exists form_parameter($name)
   }
