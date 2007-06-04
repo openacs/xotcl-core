@@ -156,7 +156,7 @@ namespace eval ::xo {
   
   Table instproc destroy {} {
     #my log "-- "
-    foreach c {__actions __columns} {
+    foreach c {:__bulkactions __actions __columns} {
       #my log "-- namespace eval [self]::$c {namespace forget *}"
       namespace eval [self]::$c {namespace forget *}
     }
@@ -164,6 +164,11 @@ namespace eval ::xo {
   }
   Table instproc actions {cmd} {
     set M [OrderedComposite create [self]::__actions]
+    namespace eval $M {namespace import -force [self class]::*}
+    $M contains $cmd
+  }
+  Table instproc __bulkactions {cmd} {
+    set M [OrderedComposite create [self]::__bulkactions]
     namespace eval $M {namespace import -force [self class]::*}
     $M contains $cmd
   }
@@ -259,6 +264,23 @@ namespace eval ::xo {
 	  return -[my name]
 	}
 
+    Class BulkAction \
+	-superclass ::xo::OrderedComposite::Child \
+	-parameter {name id {html {}}} \
+        -instproc actions {cmd} {
+          my init
+          set grandParent [[my info parent] info parent]
+          if {![my exists name]} {my set name [namespace tail [self]]}
+          set M [::xo::OrderedComposite create ${grandParent}::__bulkactions]
+          namespace eval $M {namespace import -force ::xo::Table::*}
+          $M contains $cmd
+          $M set __belongs_to [self]
+          $M set __identifier [my set name]
+        } \
+        -instproc get-slots {} {
+          ;
+        }
+
     Class AnchorField \
 	-superclass ::xo::Table::Field \
 	-instproc get-slots {} {
@@ -312,7 +334,8 @@ namespace eval ::xo {
     
     # export table elements
     namespace export Field AnchorField  Action ImageField \
-	ImageField_EditIcon ImageField_ViewIcon ImageField_DeleteIcon ImageField_AddIcon
+	ImageField_EditIcon ImageField_ViewIcon ImageField_DeleteIcon ImageField_AddIcon \
+        BulkAction
   }
   
 }
@@ -348,6 +371,27 @@ namespace eval ::xo::Table {
     }
   }
   
+  TABLE instproc render-bulkactions {} {
+    set bulkactions [[self]::__bulkactions children]
+    html::div -class "list-button-bar-bottom" {
+      html::t "Bulk-Actions:"
+      set bulkaction_container [[lindex $bulkactions 0] set __parent]
+      set name [$bulkaction_container set __identifier]
+
+      html::ul -class compact {
+        foreach ba $bulkactions {
+          html::li {
+            html::a -title [$ba tooltip] -class button -href # \
+                -onclick "acs_ListBulkActionClick('$name','[$ba url]'); return false;" \
+                {
+                  html::t [$ba label]
+                }
+          }
+        }
+      }
+    }
+  }
+
   TABLE instproc render-body {} {
     html::tr -class list-header {
       foreach o [[self]::__columns children] {
@@ -375,9 +419,22 @@ namespace eval ::xo::Table {
   
   TABLE instproc render {} {
     if {![my isobject [self]::__actions]} {my actions {}}
-    html::table -class [my set css.table-class] {
-      my render-actions
-      my render-body
+    if {![my isobject [self]::__bulkactions]} {my bulkactions {}}
+    set bulkactions [[self]::__bulkactions children]
+    if {$bulkactions eq ""} {
+      html::table -class [my set css.table-class] {
+        my render-actions
+        my render-body
+      }
+    } else {
+      set name [[self]::__bulkactions set __identifier]
+      html::form -name $name { 
+        html::table -class [my set css.table-class] {
+          my render-actions
+          my render-body
+        }
+        my render-bulkactions
+      }
     }
   }
 
@@ -471,6 +528,25 @@ namespace eval ::xo::Table {
 	$line render_localizer
       }
 
+  Class create TABLE::BulkAction -superclass ::xo::Drawable 
+  TABLE::BulkAction instproc render {} {
+    set name [my name]
+    #my msg [my serialize]
+    html::th -class list { 
+      html::input -type checkbox -name __bulkaction \
+          -onclick "acs_ListCheckAll('$name', this.checked)" \
+          -title "Mark/Unmark all rows"
+    }
+  }
+  TABLE::BulkAction instproc render-data {line} {
+    #my msg [my serialize]
+    set name [my name]
+    set value [$line set [my id]]
+    html::input -type checkbox -name $name -value $value \
+        -id "$name,$value" \
+        -title "Mark/Unmark this row"
+  }
+
   Class TABLE2 \
       -superclass TABLE \
       -instproc render-actions {} {
@@ -484,18 +560,32 @@ namespace eval ::xo::Table {
       } \
       -instproc render {} {
 	if {![my isobject [self]::__actions]} {my actions {}}
+	if {![my isobject [self]::__bulkactions]} {my __bulkactions {}}
+        set bulkactions [[self]::__bulkactions children]
 	html::div  {
 	  my render-actions
-	  html::div -class table {
-	    html::table -class [my set css.table-class] {my render-body}
-	  }
+          if {$bulkactions eq ""} {
+            html::div -class table {
+              html::table -class [my set css.table-class] {my render-body}
+            }
+          } else {
+            set name [[self]::__bulkactions set __identifier]
+            html::form -name $name {
+              html::div -class table {
+                html::table -class [my set css.table-class] {my render-body}
+                my render-bulkactions
+              }
+            }
+          }
 	}
       }
+
 
   Class create TABLE2::Action -superclass TABLE::Action
   Class create TABLE2::Field -superclass TABLE::Field
   Class create TABLE2::AnchorField -superclass TABLE::AnchorField
   Class create TABLE2::ImageField -superclass TABLE::ImageField
+  Class create TABLE2::BulkAction -superclass TABLE::BulkAction
 
   Class TABLE3 \
       -superclass TABLE2 \
@@ -510,6 +600,7 @@ namespace eval ::xo::Table {
   Class create TABLE3::Field -superclass TABLE::Field
   Class create TABLE3::AnchorField -superclass TABLE::AnchorField
   Class create TABLE3::ImageField -superclass TABLE::ImageField
+  Class create TABLE3::BulkAction -superclass TABLE::BulkAction
 }
 
 Class TableWidget \
