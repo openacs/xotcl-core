@@ -170,7 +170,7 @@ namespace eval ::Generic {
     if {![info exists folder_id]} {
       my instvar folder_id
     }
-    ::xo::db::content_folder ${operation}_content_type \
+    ::xo::db::sql::content_folder ${operation}_content_type \
         -folder_id $folder_id \
         -content_type $object_type \
         -include_subtypes t
@@ -184,13 +184,18 @@ namespace eval ::Generic {
       set parameters [list]
       foreach att [$o children] {
 	$att instvar attribute_name datatype pretty_name sqltype default
+        set column_spec [::xo::db::sql map_datatype $sqltype] 
+        if {[info exists default]} {append column_spec " default '$default'" }
+        append column_spec " " \
+            [::xo::db::sql datatype_constraint $sqltype [my table_name] $attribute_name]
+
 	if {![attribute::exists_p $object_type $attribute_name]} {
-	  ::xo::db::content_type create_attribute \
+	  ::xo::db::sql::content_type create_attribute \
 	      -content_type $object_type \
 	      -attribute_name $attribute_name \
 	      -datatype $datatype \
 	      -pretty_name $pretty_name \
-	      -column_spec [::xo::db::map_sql_datatype $sqltype]
+	      -column_spec [string trim $column_spec]
 	}
 	if {![info exists default]} {
 	  set default ""
@@ -217,7 +222,7 @@ namespace eval ::Generic {
     }
 
     db_transaction {
-      ::xo::db::content_type create_type \
+      ::xo::db::sql::content_type create_type \
           -content_type $object_type \
           -supertype $supertype \
           -pretty_name $pretty_name \
@@ -241,13 +246,10 @@ namespace eval ::Generic {
     my instvar object_type table_name
     db_transaction {
       my folder_type unregister
-      ::xo::db::content_type drop_type \
+      ::xo::db::sql::content_type drop_type \
           -content_type $object_type \
           -drop_children_p t \
           -drop_table_p t
-#       ::xo::db::CONTENT_TYPE DROP_TYPE {
-# 	{content_type $object_type} {drop_children_p t} {drop_table_p t}
-#       }
     }
   }
 
@@ -460,8 +462,7 @@ namespace eval ::Generic {
     Delete a content item from the content repository.
     @param item_id id of the item to be deleted
   } {
-    #::xo::db::content_item delete -item_id $item_id
-    ::xo::db::content_item del -item_id $item_id
+    ::xo::db::sql::content_item del -item_id $item_id
   }
 
   CrClass instproc object_types {
@@ -751,7 +752,7 @@ namespace eval ::Generic {
                 values (:[join $__atts ,:])"
       my update_content_length $storage_type $revision_id
       if {$live_p} {
-        ::xo::db::content_item set_live_revision \
+        ::xo::db::sql::content_item set_live_revision \
             -revision_id $revision_id \
             -publish_status [my set publish_status]
       } else {
@@ -793,10 +794,9 @@ namespace eval ::Generic {
     @param revision_id
     @param publish_status one of 'live', 'ready' or 'production'
   } {
-    ::xo::db::content_item set_live_revision \
+    ::xo::db::sql::content_item set_live_revision \
         -revision_id $revision_id \
         -publish_status $publish_status
-    #::xo::db::CONTENT_ITEM SET_LIVE_REVISION {revision_id publish_status}
   }
 
   CrItem ad_instproc save_new {-package_id -creation_user_id {-live_p:boolean true}} {
@@ -841,8 +841,7 @@ namespace eval ::Generic {
                         "[my set __autoname_prefix]$revision_id" : $revision_id}]
         if {$title eq ""} {set title $name}
       }
-      #set item_id [::xo::db::CONTENT_ITEM NEW [[self class] set content_item__new_args]]
-      set item_id [eval ::xo::db::content_item new [[self class] set content_item__new_args]]
+      set item_id [eval ::xo::db::sql::content_item new [[self class] set content_item__new_args]]
       if {$storage_type eq "file"} {
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }
@@ -852,11 +851,9 @@ namespace eval ::Generic {
                 values (:[join $__atts ,:])"
       my update_content_length $storage_type $revision_id
       if {$live_p} {
-        ::xo::db::content_item set_live_revision \
+        ::xo::db::sql::content_item set_live_revision \
             -revision_id $revision_id \
             -publish_status [my set publish_status] 
-        #set publish_status [my set publish_status]
-	#::xo::db::CONTENT_ITEM SET_LIVE_REVISION {revision_id publish_status}
       }
     }
     my set revision_id $revision_id

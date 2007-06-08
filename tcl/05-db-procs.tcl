@@ -6,7 +6,7 @@ ad_library {
   @cvs-id $Id$
 }
 
-namespace eval ::xo::db {
+namespace eval ::xo::db::sql {
 
   Object call
   # during load, we do not have "package_plsql_args" available yet, so we do it by hand
@@ -190,10 +190,18 @@ namespace eval ::xo::db {
     }
   }
   DbPackage create_all_functions
+}
 
+
+namespace eval ::xo::db {
+  # we create for the previously created namespace ::xo::db::sql 
+  # a few methods via the object ::xo::db::sql
   ::xotcl::Object create sql
+
   if {[db_driverkey ""] eq "postgresql"} {
-    proc map_sql_datatype {type} {return $type}
+
+    sql proc map_datatype {type} {return $type}
+    sql proc datatype_constraint {type table att} {return ""}
 
     sql proc select {
       -vars:required 
@@ -221,11 +229,21 @@ namespace eval ::xo::db {
     }
 
   } else { ;# Oracle
-    proc map_sql_datatype {type} {
+    sql proc map_datatype {type} {
       switch $type {
         text {set type varchar2(4000)}
+        boolean {set type char(1)}
       }
       return $type
+    }
+    sql proc datatype_constraint {type table att} {
+      set constraint ""
+      switch $type {
+        boolean {
+          set cname [::xo::db::mk_sql_constraint_name $table $att $ck]
+          set constraint "constraint $cname check ($att in ('t','f'))"}
+      }
+      return $constraint
     }
 
     sql proc select {
@@ -272,6 +290,10 @@ namespace eval ::xo::db {
     set since [clock format [clock scan "-$interval"] -format "%Y-%m-%d %T"]
     return "$var > TO_TIMESTAMP('$since','YYYY-MM-DD HH24:MI:SS')"
   }
+}
+
+
+namespace eval ::xo::db {
   ::xotcl::Object create require
 
   require set postgresql_table_exists {select 1 from pg_tables   where tablename  = '$name'}
@@ -296,19 +318,28 @@ namespace eval ::xo::db {
     }
   }
 
+  if {[db_driverkey ""] eq "oracle"} {
+    proc mk_sql_constraint_name {table att suffix} {
+      set name ${table}_${att}_$suffix
+      if {[string length $name]>30} {
+        set sl [string length $suffix]
+        set name [string range ${table}_${att}  0 [expr {28 - $sl}]]_$suffix
+      }
+      return [string toupper $name]
+    }
+  } else {
+    proc mk_sql_constraint_name {table att suffix} {
+      set name ${table}_${att}_$suffix
+      return $name
+    }
+  }
+
   require proc index {-table -col {-using ""} {-unique false}} {
     set colpart $col
     regsub -all ", *" $colpart _ colpart
     set suffix [expr {$unique ? "un_idx" : "idx"}]
     set uniquepart [expr {$unique ? "UNIQUE" : ""}]
-    set name ${table}_${colpart}_$suffix
-    if {[string length $name]>30} {
-      if {[db_driverkey ""] eq "oracle"} {
-        set sl [string length $suffix]
-        set name [string range ${table}_${colpart}  0 [expr {28 - $sl}]]_$suffix
-      }
-    }
-    if {[db_driverkey ""] eq "oracle"} {set name [string toupper $name]}
+    set name [::xo::db::mk_sql_constraint_name $table $colpart $suffix]
     if {![db_0or1row [my qn ""] [subst [my set [db_driverkey ""]_index_exists]]]} {
       set using [expr {$using ne "" ? "using $using" : ""}]
       db_dml [my qn create-index-$name] \
