@@ -198,10 +198,7 @@ namespace eval ::xo {
     # "ns_ictl oncleanup" is called after variables are deleted
     if {[ns_ictl epoch] == 0} {
       ns_ictl oncleanup ::xo::at_cleanup
-      ns_ictl oninit ::xo::at_init
-    }
-    proc ::xo::at_init {} {
-      ns_atclose ::xo::at_close
+      ns_ictl oninit [list ns_atclose ::xo::at_close]
     }
     
 #     proc trace_cleanup {args} {
