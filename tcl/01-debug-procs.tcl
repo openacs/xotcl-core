@@ -35,25 +35,28 @@ if {$::xotcl::version < 1.5} {
   ::Serializer deepSerialize [self]
 }
 
+namespace eval ::xo {
+  ::xotcl::Class create ::xo::InstanceManager \
+      -instproc alloc args {
+        set r [next]
+        set key blueprint($r)
+        if {![ns_conn isconnected]} {
+          [self class] set $key 1
+        } elseif {![[self class] exists $key]} {
+          [self class] set connectionobject($r) 1
+        }
+        return $r
+      } \
+      -instproc destroy args {
+        next
+        ns_log notice "--unset -nocomplain [self class]::blueprint([self])"
+        [self class] unset -nocomplain blueprint([self])
+        [self class] unset -nocomplain connectionobject([self])
+      }
 
-# Currently, xotcl's serializer does not export ::xotcl::* commands,
-# except methods for ::xotcl::Object and ::xotcl::Core, so we use the
-# mixin instead of te direct defintion... should be changed in the future
-# namespace eval ::xo {
-#   Class create ::xo::NonPosArgs \
-#     -instproc integer args {
-#       if {[llength $args] < 2} return
-#       foreach {name value} $args break
-#       if {![string is integer $value]} {
-#         error "value '$value' of $name not an integer"
-#       }
-#     } \
-#     -instproc optional {name args} {
-#       ;
-#     }
-# }
-# ::xotcl::nonposArgs proc integer
-#  ::xotcl::nonposArgs proc optional
+  # deactivate for now
+  #::xotcl::Object instmixin add ::xo::InstanceManager
+}
 
 ::xotcl::nonposArgs proc integer args {
   if {[llength $args] < 2} return
@@ -141,6 +144,7 @@ namespace eval ::xo {
 
 }
 
+
 # ::xotcl::Class instproc import {class pattern} {
 #   namespace eval [self] [list \
 #   namespace import [list import [$class self]]::$pattern;
@@ -194,7 +198,7 @@ namespace eval ::xo {
     # "ns_ictl oncleanup" is called after variables are deleted
     if {[ns_ictl epoch] == 0} {
       ns_ictl oncleanup ::xo::at_cleanup
-      ns_ictl oncleanup ::xo::at_init
+      ns_ictl oninit ::xo::at_init
     }
     proc ::xo::at_init {} {
       ns_atclose ::xo::at_close
@@ -220,6 +224,16 @@ namespace eval ::xo {
       catch {::xo::at_cleanup}
     }
   }
+
+  #proc ::xo::at_create {} {
+  #  ns_log notice "--at_create *********"
+  #  foreach i [::xo::InstanceManager array names blueprint] {
+  #    if {![::xotcl::Object isobject $i]} {
+  #      ::xo::InstanceManager unset blueprint($i)
+  #      ns_log notice "--at_create no such object: $i"
+  #    }
+  #  }
+  #}
 
   ::xotcl::Object instproc destroy_on_cleanup {} {
     #my log "--cleanup adding ::xo::cleanup([self]) [list [self] destroy]"
