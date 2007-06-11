@@ -39,7 +39,8 @@ namespace eval ::xo {
 
   set ::xo::acs_lang_url [apm_package_url_from_key acs-lang]admin
 
-  proc localize text {
+  proc localize {text {inline 0}} {
+    #ns_log notice "--local $text $inline"
     if {![my exists __localizer]} {
       my set __localizer [list]
     }
@@ -47,8 +48,18 @@ namespace eval ::xo {
       return $text
     } else {
       set return_text ""
+      if {$inline} {
+        # Attempt to move all message keys outside of tags
+        while { [regsub -all {(<[^>]*)(\x002\(\x001[^\x001]*\x001\)\x002)([^>]*>)} $text {\2\1\3} text] } {}
+        
+        # Attempt to move all message keys outside of <select>...</select> statements
+        regsub -all -nocase {(<option\s[^>]*>[^<]*)(\x002\(\x001[^\x001]*\x001\)\x002)([^<]*</option[^>]*>)} $text {\2\1\3} text
+        
+        while { [regsub -all -nocase {(<select[^>]*>[^<]*)(\x002\(\x001[^\x001]*\x001\)\x002)} $text {\2\1} text] } {}
+      }
+
       while {[regexp {^([^\x002]*)\x002\(\x001([^\x001]*)\x001\)\x002(.*)$} $text _ \
-		  before key text]} {
+                  before key text]} {
 	append return_text $before
 	foreach {package_key message_key} [split $key .] break
 	set url [export_vars -base $::xo::acs_lang_url/edit-localized-message {
@@ -67,7 +78,12 @@ namespace eval ::xo {
 	  }]
 	  set type missing
 	}
-	my lappend __localizer [::xo::Localizer new -type $type -key $key -url $url]
+        if {!$inline} {
+          my lappend __localizer [::xo::Localizer new -type $type -key $key -url $url]
+        } else {
+          set l [::xo::Localizer new -type $type -key $key -url $url]
+          append return_text [$l asHTML]
+        }
       }
       append return_text $text
       return $return_text
