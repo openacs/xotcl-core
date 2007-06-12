@@ -180,7 +180,7 @@ namespace eval ::xo::db {
         }
         # for pagination, we will need an "inner" sort, such as 
         # SELECT * FROM (SELECT ...., ROW_NUMBER() OVER (ORDER BY ...) R FROM table) WHERE R BETWEEN 0 and 100 
-        set sql "SELECT * FROM ($sql) WHERE $limit_clause $order_clause"
+        set sql "SELECT * FROM ($sql $order_clause) WHERE $limit_clause"
       } else {
         append sql " " $order_clause
       }
