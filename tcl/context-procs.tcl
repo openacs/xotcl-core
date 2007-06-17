@@ -294,16 +294,26 @@ namespace eval ::xo {
     my instvar form_parameter
     #array set form_parameter [ns_set array [ns_getform]]
     foreach {att value} [ns_set array [ns_getform]] {
+      if {[info exists form_parameter($att)]} {
+        my set form_parameter_multiple($att) 1
+      }
       lappend form_parameter($att) $value
     }
   }
   ConnectionContext instproc form_parameter {name {default ""}} {
-    my instvar form_parameter
+    my instvar form_parameter form_parameter_multiple
     if {![info exists form_parameter]} {
       my get_all_form_parameter
     }
-    return [expr {[info exists form_parameter($name)] ? 
-                  $form_parameter($name) : $default}]
+    if {[info exists form_parameter($name)]} {
+      if {[info exists form_parameter_multiple($name)]} {
+        return $form_parameter($name)
+      } else {
+        return [lindex $form_parameter($name) 0]
+      }
+    } else {
+      return $default
+    }
   }
   ConnectionContext instproc exists_form_parameter {name} {
     my instvar form_parameter
