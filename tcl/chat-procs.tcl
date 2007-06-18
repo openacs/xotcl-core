@@ -39,7 +39,9 @@ namespace eval ::xo {
     set msg     [ad_quotehtml $msg]
     my log "-- msg=$msg"
     
-    if {$get_new && [info command ::thread::mutex] ne ""} { 
+    if {$get_new 
+	&& [info command ::thread::mutex] ne "" 
+	&& [info command ::bgdelivery] ne ""} { 
       # we could use the streaming interface
       my broadcast_msg [Message new -volatile -time [clock seconds] \
 			    -user_id $user_id -msg $msg -color $color]
