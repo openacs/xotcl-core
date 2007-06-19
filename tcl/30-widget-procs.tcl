@@ -538,10 +538,13 @@ namespace eval ::xo::Table {
   Class create TABLE::ImageField \
       -superclass TABLE::Field \
       -instproc render-data {line} {
-	html::a -href [$line set [my name].href] -style "border-bottom: none;" {
-	  html::img [$line attlist [my name] {src width height border title alt}] {}
-	}
-	$line render_localizer
+        set href [$line set [my name].href]
+        if {$href ne ""} {
+          html::a -href $href -style "border-bottom: none;" {
+            html::img [$line attlist [my name] {src width height border title alt}] {}
+          }
+          $line render_localizer
+        }
       }
 
   Class create TABLE::BulkAction -superclass ::xo::Drawable 

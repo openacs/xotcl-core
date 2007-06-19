@@ -103,6 +103,17 @@ namespace eval ::xo {
     #my log "--cc qp [array names queryparm] // $actual_query"
   }
 
+  Context instproc query_parameter {name {default ""}} {
+    my instvar queryparm
+    return [expr {[info exists queryparm($name)] ? $queryparm($name) : $default}]
+  }
+  Context instproc exists_query_parameter {name} {
+    #my log "--qp my exists $name => [my exists queryparm($name)]"
+    my exists queryparm($name)
+  }
+  Context instproc get_all_query_parameter {} {
+    return [my array get queryparm]
+  }
 
   Context ad_instproc export_vars {{-level 1}} {
     Export the query variables
@@ -282,14 +293,7 @@ namespace eval ::xo {
 #     next
 #   }
 
-  ConnectionContext instproc query_parameter {name {default ""}} {
-    my instvar queryparm
-    return [expr {[info exists queryparm($name)] ? $queryparm($name) : $default}]
-  }
-  ConnectionContext instproc exists_query_parameter {name} {
-    #my log "--qp my exists $name => [my exists queryparm($name)]"
-    my exists queryparm($name)
-  }
+
   ConnectionContext instproc get_all_form_parameter {} {
     my instvar form_parameter
     #array set form_parameter [ns_set array [ns_getform]]

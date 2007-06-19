@@ -52,7 +52,7 @@ namespace eval ::xo {
     return $allowed
   }
 
-  Policy instproc get_privilege {permission object method} {
+  Policy instproc get_privilege {{-query_context "::xo::cc"} permission object method} {
     # the privilege might by primitive (one word privilege)
     # or it might be complex (attribute + privilege)
     # or it might be conditional (primitive or complex) in a list of privilges
@@ -63,7 +63,7 @@ namespace eval ::xo {
       if {[llength $condition]>1} {
         # we have a condition
 	foreach {cond value} $condition break
-        if {[$object condition=$cond $value]} {
+        if {[$object condition=$cond $query_context $value]} {
           return [my get_privilege [lrange $p 1 end] $object $method]
         } 
       } else {
@@ -94,7 +94,7 @@ namespace eval ::xo {
     return $permission
   }
   
-  Policy ad_instproc check_permissions {-user_id -package_id object method} {
+  Policy ad_instproc check_permissions {-user_id -package_id {-link ""} object method} {
 
     This method checks whether the current user is allowed
     or not to invoke a method based on the given policy.
@@ -109,9 +109,18 @@ namespace eval ::xo {
     if {![info exists user_id]} {set user_id [::xo::cc user_id]}
     if {![info exists package_id]} {set package_id [::xo::cc package_id]}
 
+    set ctx ""
+    if {$link ne ""} {
+      set query [lindex [split $link ?] 1]
+      set ctx [::xo::Context new -destroy_on_cleanup -actual_query $query]
+      $ctx  process_query_parameter
+    }
+
     set permission [my get_permission $object $method]
+    #my log "--permission for o=$object, m=$method => $permission"
     if {$permission ne ""} {
-      foreach {kind p} [my get_privilege $permission $object $method] break
+      foreach {kind p} [my get_privilege -query_context $ctx $permission $object $method] break
+      #my log "--privilege = $p kind = $kind"
       switch $kind {
 	primitive {return [my check_privilege -login false \
 			       -package_id $package_id -user_id $user_id \
