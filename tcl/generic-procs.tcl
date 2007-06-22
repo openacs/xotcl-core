@@ -179,9 +179,13 @@ namespace eval ::Generic {
   CrClass instproc create_attributes {} {
     if {[my cr_attributes] ne ""} {
       my instvar object_type
+      set slot [self]::slot
+      if {[info command $slot] eq ""} {
+        ::xotcl::Object create $slot
+      }
       set o [::xo::OrderedComposite new -contains [my cr_attributes]]
       $o destroy_on_cleanup
-      set parameters [list]
+
       foreach att [$o children] {
 	$att instvar attribute_name datatype pretty_name sqltype default
         set column_spec [::xo::db::sql map_datatype $sqltype] 
@@ -197,14 +201,34 @@ namespace eval ::Generic {
 	      -pretty_name $pretty_name \
 	      -column_spec [string trim $column_spec]
 	}
+	#if {![info exists default]} {
+	#  set default ""
+	#}
+	#lappend parameters [list $attribute_name $default]
+	#unset default
+      }
+      #my log "--parameter [self] parameter [list $parameters]"
+      #my parameter $parameters
+
+      # TODO the following will not be needed, when we enforce xotcl 1.5.0+
+      set parameters [list]
+      foreach att [$o children] {
+	$att instvar attribute_name datatype pretty_name sqltype default
+        set slot_obj [self]::slot::$attribute_name
+        my log "--cr ::xo::Attribute create $slot_obj"
+        ::xo::Attribute create $slot_obj
 	if {![info exists default]} {
 	  set default ""
 	}
+        $slot_obj datatype $datatype
+        $slot_obj pretty_name $pretty_name
+	$slot_obj default $default 
 	lappend parameters [list $attribute_name $default]
 	unset default
       }
-      #my log "--parameter [self] parameter [list $parameters]"
-      my parameter $parameters
+      if {$::xotcl::version < 1.5} {
+        my parameter $parameters
+      }
     }
   }
 
@@ -623,6 +647,7 @@ namespace eval ::Generic {
     {nls_language en_US}
     {publish_status ready}
   }
+
   CrItem instproc initialize_loaded_object {} {
     # dummy action, to be refined
   }
@@ -839,7 +864,10 @@ namespace eval ::Generic {
 	# we have an autonamed item, use a unique value for the name
 	set name [expr {[my exists __autoname_prefix] ? 
                         "[my set __autoname_prefix]$revision_id" : $revision_id}]
-        if {$title eq ""} {set title $name}
+        if {$title eq ""} {
+          set title [expr {[my exists __title_prefix] ? 
+                          "[my set __title_prefix] ($name)" : $name}]
+        }
       }
       set item_id [eval ::xo::db::sql::content_item new [[self class] set content_item__new_args]]
       if {$storage_type eq "file"} {
@@ -1241,7 +1269,7 @@ namespace eval ::Generic {
     set object_name [expr {[$data exists name] ? [$data set name] : ""}]
     #my log "-- $data, cl=[$data info class] [[$data info class] object_type]"
     
-    #my log "--e [my name] final fields [my fields]"
+    my log "--e [my name] final fields [my fields]"
     set exports [list [list object_type $object_type] \
                      [list folder_id $folder_id] \
                      [list __object_name $object_name]] 

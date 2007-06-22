@@ -27,6 +27,39 @@ if {$::xotcl::version < 1.5} {
     my requireNamespace
     namespace eval [self] $cmds
   }
+  namespace eval ::xo {
+    Class create ::xo::Attribute \
+      -parameter {
+        {name "[namespace tail [::xotcl::self]]"}
+        {domain "[lindex [regexp -inline {^(.*)::slot::[^:]+$} [::xotcl::self]] 1]"}
+        {multivalued false}
+        {required false}
+        default 
+        type
+        spec
+        pretty_name 
+        {pretty_plural ""}
+        {datatype "text"} 
+        {sqltype "text"} 
+        {min_n_values 1} 
+        {max_n_values 1}
+      }
+
+  }
+} else {
+  namespace eval ::xo {
+    Class create ::xo::Attribute \
+        -superclass ::xotcl::Attribute \
+        -parameter {
+          spec
+          pretty_name 
+          {pretty_plural ""}
+          {datatype "text"} 
+          {sqltype "text"} 
+          {min_n_values 1} 
+          {max_n_values 1}
+        }
+  }
 }
 
 ::xotcl::Object instforward db_1row -objscope

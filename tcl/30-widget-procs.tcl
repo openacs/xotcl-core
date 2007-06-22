@@ -313,7 +313,6 @@ namespace eval ::xo {
 	-instproc get-slots {} {
 	  set slots [list -[my name]]
 	  lappend slots [list -[my name].src [my src]]
-	  lappend slots [list -[my name].href ""]
 	  foreach att {width height border title alt} {
 	    if {[my exists $att]} {
 	      lappend slots [list -[my name].$att [my $att]]
@@ -324,32 +323,38 @@ namespace eval ::xo {
 	  return $slots
 	}
 
+    Class ImageAnchorField \
+	-superclass ::xo::Table::ImageField \
+	-instproc get-slots {} {
+          return [concat [next]  -[my name].href ""]
+	}
+
     Class ImageField_EditIcon \
-	-superclass ImageField -parameter {
+	-superclass ImageAnchorField -parameter {
 	  {src /resources/acs-subsite/Edit16.gif} {width 16} {height 16} {border 0} 
 	  {title "[_ xotcl-core.edit_item]"} {alt "edit"}
 	}
     # for xotcl 1.4.0:  {title [_ xotcl-core.edit_item]} {alt "edit"}
     
     Class ImageField_AddIcon \
-	-superclass ImageField -parameter {
+	-superclass ImageAnchorField -parameter {
 	  {src /resources/acs-subsite/Add16.gif} {width 16} {height 16} {border 0} 
 	  {title "Add Item"} {alt "add"}
 	}
 
     Class ImageField_ViewIcon \
-	-superclass ImageField -parameter {
+	-superclass ImageAnchorField -parameter {
 	  {src /resources/acs-subsite/Zoom16.gif} {width 16} {height 16} {border 0} 
 	  {title "View Item"} {alt "view"}
 	}
     Class ImageField_DeleteIcon \
-	-superclass ImageField -parameter {
+	-superclass ImageAnchorField -parameter {
 	  {src /resources/acs-subsite/Delete16.gif} {width 16} {height 16} {border 0} 
 	  {title "Delete Item"} {alt "delete"}
 	}
     
     # export table elements
-    namespace export Field AnchorField  Action ImageField \
+    namespace export Field AnchorField  Action ImageField ImageAnchorField \
 	ImageField_EditIcon ImageField_ViewIcon ImageField_DeleteIcon ImageField_AddIcon \
         BulkAction
   }
@@ -538,6 +543,15 @@ namespace eval ::xo::Table {
   Class create TABLE::ImageField \
       -superclass TABLE::Field \
       -instproc render-data {line} {
+        html::a -href $href -style "border-bottom: none;" {
+          html::img [$line attlist [my name] {src width height border title alt}] {}
+        }
+        $line render_localizer
+      }
+
+  Class create TABLE::ImageAnchorField \
+      -superclass TABLE::Field \
+      -instproc render-data {line} {
         set href [$line set [my name].href]
         if {$href ne ""} {
           html::a -href $href -style "border-bottom: none;" {
@@ -604,6 +618,7 @@ namespace eval ::xo::Table {
   Class create TABLE2::Field -superclass TABLE::Field
   Class create TABLE2::AnchorField -superclass TABLE::AnchorField
   Class create TABLE2::ImageField -superclass TABLE::ImageField
+  Class create TABLE2::ImageAnchorField -superclass TABLE::ImageAnchorField
   Class create TABLE2::BulkAction -superclass TABLE::BulkAction
 
   Class TABLE3 \
@@ -619,6 +634,7 @@ namespace eval ::xo::Table {
   Class create TABLE3::Field -superclass TABLE::Field
   Class create TABLE3::AnchorField -superclass TABLE::AnchorField
   Class create TABLE3::ImageField -superclass TABLE::ImageField
+  Class create TABLE3::ImageAnchorField -superclass TABLE::ImageAnchorField
   Class create TABLE3::BulkAction -superclass TABLE::BulkAction
 }
 
