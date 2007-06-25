@@ -188,7 +188,13 @@ namespace eval ::Generic {
 
       foreach att [$o children] {
 	$att instvar attribute_name datatype pretty_name sqltype default
+        # provide a default pretty name for the attribute based on message keys
+        if {![info exists pretty_name]} {
+          set pretty_name "#xowiki.[namespace tail [self]]-$attribute_name#"
+        }
+
         set column_spec [::xo::db::sql map_datatype $sqltype] 
+        #my log "--SQL $attribute_name datatype=$datatype, sqltype=$sqltype, column_spec=$column_spec"
         if {[info exists default]} {append column_spec " default '$default'" }
         append column_spec " " \
             [::xo::db::sql datatype_constraint $sqltype [my table_name] $attribute_name]
@@ -213,16 +219,19 @@ namespace eval ::Generic {
       # TODO the following will not be needed, when we enforce xotcl 1.5.0+
       set parameters [list]
       foreach att [$o children] {
-	$att instvar attribute_name datatype pretty_name sqltype default
+	$att instvar attribute_name datatype pretty_name sqltype default help_text spec
         set slot_obj [self]::slot::$attribute_name
-        my log "--cr ::xo::Attribute create $slot_obj"
+        #my log "--cr ::xo::Attribute create $slot_obj"
         ::xo::Attribute create $slot_obj
 	if {![info exists default]} {
 	  set default ""
 	}
+	if {[info exists help_text]} {$slot_obj help_text $help_text}
+	if {[info exists spec]} {$slot_obj spec $spec}
         $slot_obj datatype $datatype
         $slot_obj pretty_name $pretty_name
 	$slot_obj default $default 
+        $slot_obj sqltype $sqltype
 	lappend parameters [list $attribute_name $default]
 	unset default
       }
@@ -637,7 +646,7 @@ namespace eval ::Generic {
 
   Class create Attribute -parameter {
     attribute_name datatype pretty_name {sqltype "text"}
-    default
+    default help_text spec
   }
 
   Class create CrItem -parameter {
@@ -905,7 +914,7 @@ namespace eval ::Generic {
     TableWidget t1 -volatile \
         -columns {
           Field version_number -label "" -html {align right}
-          ImageField edit -label "" -src /resources/acs-subsite/Zoom16.gif \
+          ImageAnchorField edit -label "" -src /resources/acs-subsite/Zoom16.gif \
               -title "View Item" -alt  "view" \
               -width 16 -height 16 -border 0
           AnchorField diff -label ""
@@ -913,7 +922,7 @@ namespace eval ::Generic {
           Field content_size -label [_ file-storage.Size] -html {align right}
           Field last_modified_ansi -label [_ file-storage.Last_Modified]
           Field description -label [_ file-storage.Version_Notes] 
-          ImageField live_revision -label [_ xotcl-core.live_revision] \
+          ImageAnchorField live_revision -label [_ xotcl-core.live_revision] \
               -src /resources/acs-subsite/radio.gif \
               -width 16 -height 16 -border 0 -html {align center}
           ImageField_DeleteIcon version_delete -label "" -html {align center}

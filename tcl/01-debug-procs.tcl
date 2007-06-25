@@ -43,6 +43,7 @@ if {$::xotcl::version < 1.5} {
         {sqltype "text"} 
         {min_n_values 1} 
         {max_n_values 1}
+        help_text 
       }
 
   }
@@ -52,12 +53,14 @@ if {$::xotcl::version < 1.5} {
         -superclass ::xotcl::Attribute \
         -parameter {
           spec
+          {required false}
           pretty_name 
           {pretty_plural ""}
-          {datatype "text"} 
-          {sqltype "text"} 
+          {datatype "text"}
+          {sqltype "text"}
           {min_n_values 1} 
           {max_n_values 1}
+          help_text 
         }
   }
 }
