@@ -543,7 +543,7 @@ namespace eval ::xo::Table {
   Class create TABLE::ImageField \
       -superclass TABLE::Field \
       -instproc render-data {line} {
-        html::a -href $href -style "border-bottom: none;" {
+        html::a -style "border-bottom: none;" {
           html::img [$line attlist [my name] {src width height border title alt}] {}
         }
         $line render_localizer
