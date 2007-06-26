@@ -418,7 +418,7 @@ namespace eval ::Generic {
 
     @return cr item object
   } {
-    my log "-- [self args]"
+    #my log "-- [self args]"
     if {![::xotcl::Object isobject $object]} {
       # if the object does not yet exist, we have to create it
       my create $object
@@ -444,12 +444,6 @@ namespace eval ::Generic {
        and    i.item_id = n.item_id \
        and    o.object_id = $revision_id"
     } else {
-      my log "select [join $atts ,], i.parent_id \
-       from   [my set table_name]i n, cr_items i, acs_objects o \
-       where  i.item_id = $item_id \
-       and    n.[my id_column] = coalesce(i.live_revision, i.latest_revision) \
-       and    o.object_id = i.item_id"
-
       $object db_1row [my qn fetch_from_view_item_id] "\
        select [join $atts ,], i.parent_id \
        from   [my set table_name]i n, cr_items i, acs_objects o \
@@ -1025,7 +1019,7 @@ namespace eval ::Generic {
 
   } {
     set allowed 0
-    my log "--checking privilege [self args]"
+    #my log "--checking privilege [self args]"
     if {[my exists creation_user]} {
       if {$user_id == 0 && $login} {
         auth::require_login
@@ -1171,7 +1165,7 @@ namespace eval ::Generic {
   }
   Form instproc new_data {} {
     my instvar data
-    my log "--- new_data ---"
+    #my log "--- new_data ---"
     foreach __var [my form_vars] {
       $data set $__var [my var $__var]
     }
@@ -1216,7 +1210,7 @@ namespace eval ::Generic {
   }
 
   Form instproc new_request {} {
-    my log "--- new_request ---"
+    #my log "--- new_request ---"
     my request create
     my instvar data
     #my log "--VAR [my var item_id]"
@@ -1228,7 +1222,7 @@ namespace eval ::Generic {
   }
   Form instproc edit_request {item_id} {
     my instvar data
-    my log "--- edit_request ---"
+    #my log "--- edit_request ---"
     my request write
     foreach var [[$data info class] edit_atts] {
       if {[$data exists $var]} {
@@ -1246,7 +1240,7 @@ namespace eval ::Generic {
 
   Form instproc on_validation_error {} {
     my instvar edit_form_page_title context
-    my log "-- "
+    #my log "-- "
     set edit_form_page_title [my edit_page_title]
     set context [list $edit_form_page_title]
   }
