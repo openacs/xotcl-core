@@ -416,15 +416,16 @@ namespace eval ::xo {
   PackageMgr create Package -parameter {
     id
     url 
+    {context ::xo::cc}
     package_url
     package_key
     instance_name
   }
-  Package instforward query_parameter        ::xo::cc %proc
-  Package instforward exists_query_parameter ::xo::cc %proc
-  Package instforward form_parameter         ::xo::cc %proc
-  Package instforward exists_form_parameter  ::xo::cc %proc
-  Package instforward returnredirect         ::xo::cc %proc
+  Package instforward query_parameter        {%my set context} %proc
+  Package instforward exists_query_parameter {%my set context} %proc
+  Package instforward form_parameter         {%my set context} %proc
+  Package instforward exists_form_parameter  {%my set context} %proc
+  Package instforward returnredirect         {%my set context} %proc
 
 
   Package instproc get_parameter {attribute {default ""}} {
