@@ -44,6 +44,7 @@ if {$::xotcl::version < 1.5} {
         {min_n_values 1} 
         {max_n_values 1}
         help_text 
+        validator
       }
 
   }
@@ -61,6 +62,7 @@ if {$::xotcl::version < 1.5} {
           {min_n_values 1} 
           {max_n_values 1}
           help_text 
+          validator
         }
   }
 }

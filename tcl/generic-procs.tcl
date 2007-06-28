@@ -219,7 +219,7 @@ namespace eval ::Generic {
       # TODO the following will not be needed, when we enforce xotcl 1.5.0+
       set parameters [list]
       foreach att [$o children] {
-	$att instvar attribute_name datatype pretty_name sqltype default help_text spec
+	$att instvar attribute_name datatype pretty_name sqltype default help_text spec validator
         set slot_obj [self]::slot::$attribute_name
         #my log "--cr ::xo::Attribute create $slot_obj"
         ::xo::Attribute create $slot_obj
@@ -227,6 +227,7 @@ namespace eval ::Generic {
 	  set default ""
 	}
 	if {[info exists help_text]} {$slot_obj help_text $help_text}
+	if {[info exists validator]} {$slot_obj validator $validator}
 	if {[info exists spec]} {$slot_obj spec $spec}
         $slot_obj datatype $datatype
         $slot_obj pretty_name $pretty_name
@@ -640,7 +641,7 @@ namespace eval ::Generic {
 
   Class create Attribute -parameter {
     attribute_name datatype pretty_name {sqltype "text"}
-    default help_text spec
+    default help_text spec validator
   }
 
   Class create CrItem -parameter {
