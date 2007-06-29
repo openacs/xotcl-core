@@ -157,12 +157,36 @@ namespace eval ::Generic {
     }]}
   }
 
+  CrClass ad_instproc folder_type_unregister_all {
+    {-include_sub_types t}
+  } {
+    Unregister the object type from all folders on the system
+
+    @param include_sub_types Boolean value (t/f) to flag whether the 
+    operation should be applied on subtypes as well
+  } {
+    my instvar object_type
+    db_foreach all_folders { 
+      select folder_id from cr_folder_type_map 
+      where content_type = :object_type
+    } {
+      ::xo::db::sql::content_folder unregister_content_type \
+	  -folder_id $folder_id \
+	  -content_type $object_type \
+	  -include_subtypes $include_subtypes
+      }
+  }
+
   CrClass ad_instproc folder_type {
+    {-include_sub_types t}
     -folder_id
     operation
   } {
     register the current object type for folder_id. If folder_id 
     is not specified, use the instvar of the class instead.
+
+    @param include_sub_types Boolean value (t/f) to flag whether the 
+    operation should be applied on subtypes as well
   } {
     if {$operation ne "register" && $operation ne "unregister"} {
       error "[self] operation for folder_type must be 'register' or 'unregister'"
@@ -172,9 +196,9 @@ namespace eval ::Generic {
       my instvar folder_id
     }
     ::xo::db::sql::content_folder ${operation}_content_type \
-        -folder_id $folder_id \
-        -content_type $object_type \
-        -include_subtypes t
+	-folder_id $folder_id \
+	-content_type $object_type \
+	-include_subtypes $include_subtypes
   }
 
   CrClass instproc create_attributes {} {
@@ -290,6 +314,7 @@ namespace eval ::Generic {
 
   CrClass ad_instproc require_folder {
     {-parent_id -100} 
+    {-content_types content_revision}
     -package_id 
     -name
   } {
@@ -322,7 +347,7 @@ namespace eval ::Generic {
         error "Could not determine package id or community id"
       }
     }
-    set folder_id [ns_cache eval xotcl_object_type_cache cid-$cid {
+    set folder_id [ns_cache eval xotcl_object_type_cache root_folder-$cid {
       set folder_name "$name: $cid"
       
       if {[info command content::item::get_id_by_name] eq ""} {
@@ -338,6 +363,15 @@ namespace eval ::Generic {
                            -name $folder_name \
                            -parent_id $parent_id \
                            -package_id $package_id -context_id $cid]
+      }
+      # register all specified content types
+      foreach content_type $content_types {
+	# if a content_type ends with a *, include subtypes
+	set with_subtypes [expr {[regexp {^(.*)[*]$} $content_type _ content_type] ? "t" : "f"}]
+	::xo::db::sql::content_folder register_content_type \
+	    -folder_id $folder_id \
+	    -content_type $content_type \
+	    -include_subtypes $with_subtypes
       }
       return $folder_id
     }]
@@ -861,7 +895,7 @@ namespace eval ::Generic {
 
     db_transaction {
       $__class instvar storage_type object_type
-      $__class folder_type -folder_id $parent_id register
+      #$__class folder_type -folder_id $parent_id register
       [self class] lock acs_objects "SHARE ROW EXCLUSIVE"
       set revision_id [db_nextval acs_object_id_seq]
 
