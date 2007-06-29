@@ -135,8 +135,9 @@ namespace eval ::Generic {
   }
   
   CrClass set common_query_atts {
-    item_id revision_id creation_user creation_date last_modified object_type
-    creation_user last_modified publish_status
+    object_type item_id revision_id 
+    creation_user creation_date creation_user 
+    publish_status last_modified 
   }
   if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} {
      CrClass lappend common_query_atts package_id
