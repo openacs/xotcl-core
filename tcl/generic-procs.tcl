@@ -158,11 +158,11 @@ namespace eval ::Generic {
   }
 
   CrClass ad_instproc folder_type_unregister_all {
-    {-include_sub_types t}
+    {-include_subtypes t}
   } {
     Unregister the object type from all folders on the system
 
-    @param include_sub_types Boolean value (t/f) to flag whether the 
+    @param include_subtypes Boolean value (t/f) to flag whether the 
     operation should be applied on subtypes as well
   } {
     my instvar object_type
@@ -178,14 +178,14 @@ namespace eval ::Generic {
   }
 
   CrClass ad_instproc folder_type {
-    {-include_sub_types t}
+    {-include_subtypes t}
     -folder_id
     operation
   } {
     register the current object type for folder_id. If folder_id 
     is not specified, use the instvar of the class instead.
 
-    @param include_sub_types Boolean value (t/f) to flag whether the 
+    @param include_subtypes Boolean value (t/f) to flag whether the 
     operation should be applied on subtypes as well
   } {
     if {$operation ne "register" && $operation ne "unregister"} {
