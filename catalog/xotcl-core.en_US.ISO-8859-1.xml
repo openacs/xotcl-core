@@ -8,6 +8,9 @@
   <msg key="edit_type">Edit %type%</msg>
   <msg key="has_entered_the_room">has entered the room</msg>
   <msg key="live_revision">Live Revision</msg>
+  <msg key="policy-error-insufficient_permissions">&lt;blockquote&gt;
+You don't have sufficient permissions for performing method %method% on object %object%.
+&lt;/blockquote&gt;&quot;</msg>
   <msg key="revision_title">Revisions of Entry</msg>
   <msg key="revisions">Revisions</msg>
 </message_catalog>
