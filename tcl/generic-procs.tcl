@@ -262,7 +262,7 @@ namespace eval ::Generic {
 	unset default
       }
       if {$::xotcl::version < 1.5} {
-        my parameter $parameters
+        my parameter [concat [my info parameter] $parameters]
       }
     }
   }
