@@ -936,7 +936,7 @@ namespace eval ::Generic {
     instance variable.
   } {
     # delegate deletion to the class
-    [my info class] delete [my set item_id]
+    [my info class] delete -item_id [my set item_id]
   }
 
   ::Generic::CrItem instproc revisions {} {
