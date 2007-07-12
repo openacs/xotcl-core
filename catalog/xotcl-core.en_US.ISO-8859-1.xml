@@ -10,7 +10,7 @@
   <msg key="live_revision">Live Revision</msg>
   <msg key="policy-error-insufficient_permissions">&lt;blockquote&gt;
 You don't have sufficient permissions for performing method %method% on object %object%.
-&lt;/blockquote&gt;&quot;</msg>
+&lt;/blockquote&gt;</msg>
   <msg key="revision_title">Revisions of Entry</msg>
   <msg key="revisions">Revisions</msg>
 </message_catalog>
