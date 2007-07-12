@@ -174,8 +174,13 @@ namespace eval ::xo {
     #my log "--p enforce_permissions {$object $method} : $permission ==> $allowed"
 
     if {!$allowed} {
-      ns_log notice "permission::require_permission: $user_id doesn't \
+      if {$permission eq ""} {
+	ns_log notice "permission::require_permission: no permission for " \
+	    "$object->$method defined"
+      } else {
+	ns_log notice "permission::require_permission: $user_id doesn't \
 		have $privilege on $object"
+      }
       ad_return_forbidden  "Permission Denied" [_ xotcl-core.policy-error-insufficient_permissions]
       ad_script_abort
     }
