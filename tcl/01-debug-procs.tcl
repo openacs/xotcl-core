@@ -134,7 +134,7 @@ namespace eval ::xo {
   ns_log debug "[self] [self callingclass]->[self callingproc]: $msg"
 }
 ::xotcl::Object instproc msg msg {
-  util_user_message -message "$msg, [self] [self callingclass]->[self callingproc] ([my __timediff])"
+  util_user_message -message "$msg  ([self] [self callingclass]->[self callingproc])"
 }
 ::xotcl::Object instproc qn query_name {
   set qn "dbqd.[my uplevel self class]-[my uplevel self proc].$query_name"
@@ -284,7 +284,7 @@ namespace eval ::xo {
     foreach {name cmd} [array get ::xo::cleanup] {
       #::trace remove variable ::xotcl_cleanup($name) unset ::xo::cleanup
       if {![::xotcl::Object isobject $name]} {
-        ns_log notice "--D $name already destroyed, nothing to do"
+        #ns_log notice "--D $name already destroyed, nothing to do"
         continue
       }
       if {$name eq "::xo::cc"} {
