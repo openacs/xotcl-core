@@ -102,7 +102,7 @@ ad_library {
 #    -parameter {{persistent 0}}
 
 Class create ::xotcl::THREAD \
-    -parameter {{persistent 0}}
+    -parameter {{persistent 0} {lightweight 0}}
 
 #Class create ::xotcl::THREAD \
 #    -parameter {{persistent 0}}
@@ -198,7 +198,12 @@ Class create ::xotcl::THREAD \
     #my check_blueprint
     #my log "after lock"
     if {![nsv_exists [self class] [self]]} {
-      set tid [::thread::create]
+      if {[my lightweight]} {
+        my log "CREATE lightweight thread"
+        set tid [::thread::create -thin]
+      } else {
+        set tid [::thread::create]
+      }
       nsv_set [self class] [self] $tid
       if {[my persistent]} {
 	my log "--created new persistent [self class] as $tid pid=[pid]"
@@ -206,7 +211,8 @@ Class create ::xotcl::THREAD \
 	my log "--created new [self class] as $tid pid=[pid]"
       }
       #my log "--THREAD DO send [self] epoch = [ns_ictl epoch]"
-      if {![ns_ictl epoch]} {
+      if {[my lightweight]} {
+      } elseif {![ns_ictl epoch]} {
 	#ns_log notice "--THREAD send [self] no epoch"
 	# We are during initialization. For some unknown reasons, XOTcl 
 	# is not available in newly created threads, so we have to care 
@@ -215,7 +221,7 @@ Class create ::xotcl::THREAD \
 	set initcmd [ns_ictl get]
       }
       append initcmd [my set initcmd]
-    
+      ns_log notice "INIT $initcmd"
       ::thread::send $tid $initcmd
     } else {
       set tid [nsv_get [self class] [self]]
