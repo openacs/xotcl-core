@@ -101,7 +101,12 @@ namespace eval ::xo::db {
        from acs_function_args
     }
 
-    sql proc map_datatype {type} {return $type}
+    sql proc map_datatype {type} {
+      switch -- $type {
+        long_text { set type text }
+      }
+      return $type
+    }
     sql proc datatype_constraint {type table att} {return ""}
 
     sql proc select {
@@ -138,9 +143,10 @@ namespace eval ::xo::db {
     }
 
     sql proc map_datatype {type} {
-      switch $type {
-        text {set type varchar2(4000)}
-        boolean {set type char(1)}
+      switch -- $type {
+        text      { set type varchar2(4000) }
+        long_text { set type clob }
+        boolean   { set type char(1) }
       }
       return $type
     }
@@ -204,8 +210,8 @@ namespace eval ::xo::db {
   Class create DbPackage
 
   # Some stored procs like content_item__new do currently not define null default values.
-  # Therefore, we need - temporary - this ugly hack is used to keep
-  # :required passing and to allow  the xowiki regression test to run. 
+  # Therefore, we need - temporary - this ugly redundancy to keep
+  # :required passing and to allow the xowiki regression test to run. 
   # The correct fix is to define the correct default values in the 
   # database with define_function_args()
   DbPackage array set defaults {
@@ -215,6 +221,9 @@ namespace eval ::xo::db {
     }
     "content_type__create_attribute" {
       DEFAULT_VALUE null SORT_ORDER null PRETTY_PLURAL null
+    }
+    "content_type__drop_type" {
+      DROP_CHILDREN_P f DROP_TABLE_P f DROP_OBJECTS_P f
     }
   }
   
@@ -230,7 +239,14 @@ namespace eval ::xo::db {
       my set defined($arg_name) $default_value
     }
     if {[[self class] exists defaults(${package_name}__$object_name)]} {
-      my array set defined [[self class] set defaults(${package_name}__$object_name)]
+      set prototype_args [[self class] set defaults(${package_name}__$object_name)]
+      foreach {arg_name default_value} $prototype_args {
+        if {![my exists defined($arg_name)]} {
+          lappend psql_args \$_$arg_name
+          my lappend arg_order $arg_name
+        }
+      }
+      my array set defined $prototype_args
     }
     return [join $psql_args ", "]
   }

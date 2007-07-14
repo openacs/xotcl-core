@@ -11,6 +11,7 @@ if {[info command ::thread::mutex] eq ""} {
   ns_log notice "libthread does not appear to be available, NOT loading bgdelivery"
   return
 }
+#return ;# DONT COMMIT
 
 # catch {ns_conn contentsentlength} alone does not work, since we do not have
 # a connection yet, and the bgdelivery won't be activated
@@ -180,7 +181,7 @@ if {![string match *contentsentlength* $msg]} {
 	  -timeout [my timeout] -post_data $post_data -request_manager [self]
     }
   }
-} -persistent 1
+} -persistent 1 ;# -lightweight 1
 
 bgdelivery ad_forward running {
   Interface to the background delivery thread to query the currently running deliveries.
