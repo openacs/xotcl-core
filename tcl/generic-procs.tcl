@@ -1308,7 +1308,7 @@ namespace eval ::Generic {
     set object_name [expr {[$data exists name] ? [$data set name] : ""}]
     #my log "-- $data, cl=[$data info class] [[$data info class] object_type]"
     
-    my log "--e [my name] final fields [my fields]"
+    #my log "--e [my name] final fields [my fields]"
     set exports [list [list object_type $object_type] \
                      [list folder_id $folder_id] \
                      [list __object_name $object_name]] 

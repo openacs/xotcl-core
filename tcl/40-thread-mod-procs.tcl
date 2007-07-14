@@ -221,7 +221,7 @@ Class create ::xotcl::THREAD \
 	set initcmd [ns_ictl get]
       }
       append initcmd [my set initcmd]
-      ns_log notice "INIT $initcmd"
+      #ns_log notice "INIT $initcmd"
       ::thread::send $tid $initcmd
     } else {
       set tid [nsv_get [self class] [self]]
