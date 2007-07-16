@@ -53,7 +53,7 @@ namespace eval ::Generic {
   }
 
   proc package_id_from_package_key { key } {
-    return [db_string get_package_id_from_key \
+    return [db_string dbqd.null.get_package_id_from_key \
                 {select package_id from apm_packages where package_key = :key}]
   }
 
@@ -99,7 +99,7 @@ namespace eval ::Generic {
         #return "acs_object_types.tree_sortkey = '$object_type_key'"
       }
     }
-    set pg_version [db_string qn.null.get_version {
+    set pg_version [db_string dbqd.null.get_version {
       select substring(version() from 'PostgreSQL #"[0-9]+.[0-9+]#".%' for '#')   }]
     ns_log notice "--Postgres Version $pg_version"      
     if {$pg_version < 8.2} {
@@ -166,7 +166,7 @@ namespace eval ::Generic {
     operation should be applied on subtypes as well
   } {
     my instvar object_type
-    db_foreach all_folders { 
+    db_foreach [my qn all_folders] { 
       select folder_id from cr_folder_type_map 
       where content_type = :object_type
     } {
@@ -983,7 +983,7 @@ namespace eval ::Generic {
                           and m.privilege = 'read')" \
 		 -orderby "n.revision_id desc"]
     
-    db_foreach revisions_select $sql {
+    db_foreach [my qn revisions_select] $sql {
       if {$content_length < 1024} {
 	if {$content_length eq ""} {set content_length 0}
 	set content_size_pretty "[lc_numeric $content_length] [_ file-storage.bytes]"
