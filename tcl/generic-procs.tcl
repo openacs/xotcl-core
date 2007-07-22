@@ -212,7 +212,7 @@ namespace eval ::Generic {
       $o destroy_on_cleanup
 
       foreach att [$o children] {
-	$att instvar attribute_name datatype pretty_name sqltype default
+	$att instvar attribute_name datatype pretty_name sqltype references default
         # provide a default pretty name for the attribute based on message keys
         if {![info exists pretty_name]} {
           set pretty_name "#xowiki.[namespace tail [self]]-$attribute_name#"
@@ -220,7 +220,8 @@ namespace eval ::Generic {
 
         set column_spec [::xo::db::sql map_datatype $sqltype] 
         #my log "--SQL $attribute_name datatype=$datatype, sqltype=$sqltype, column_spec=$column_spec"
-        if {[info exists default]} {append column_spec " default '$default'" }
+        if {[info exists references]} {append column_spec " references $references" }
+        if {[info exists default]}    {append column_spec " default '$default'" }
         append column_spec " " \
             [::xo::db::sql datatype_constraint $sqltype [my table_name] $attribute_name]
 
@@ -480,6 +481,11 @@ namespace eval ::Generic {
        and    i.item_id = n.item_id \
        and    o.object_id = $revision_id"
     } else {
+my log  "select [join $atts ,], i.parent_id \
+       from   [my set table_name]i n, cr_items i, acs_objects o \
+       where  i.item_id = $item_id \
+       and    n.[my id_column] = coalesce(i.live_revision, i.latest_revision) \
+       and    o.object_id = i.item_id"
       $object db_1row [my qn fetch_from_view_item_id] "\
        select [join $atts ,], i.parent_id \
        from   [my set table_name]i n, cr_items i, acs_objects o \
@@ -675,7 +681,7 @@ namespace eval ::Generic {
   }
 
   Class create Attribute -parameter {
-    attribute_name datatype pretty_name {sqltype "text"}
+    attribute_name datatype pretty_name {sqltype "text"} references
     default help_text spec validator
   }
 
@@ -691,14 +697,14 @@ namespace eval ::Generic {
     # dummy action, to be refined
   }
 
-  CrItem ad_proc instantiate {
+  CrItem ad_proc get_object_type {
     -item_id
     {-revision_id 0}
   } {
-    Instantiate the live revision or the specified revision of an 
-    CrItem. 
-    @return object containing the attributes of the CrItem
-  } { 
+    Return the object type for an item_id or revision_id.
+
+    @retun object_type typically an XOTcl class
+  } {
     set object_type [ns_cache eval xotcl_object_type_cache \
                          [expr {$item_id ? $item_id : $revision_id}] {
       if {$item_id} {
@@ -708,6 +714,17 @@ namespace eval ::Generic {
       }
       return $object_type
     }]
+  }
+
+  CrItem ad_proc instantiate {
+    -item_id
+    {-revision_id 0}
+  } {
+    Instantiate the live revision or the specified revision of an 
+    CrItem. 
+    @return object containing the attributes of the CrItem
+  } { 
+    set object_type [my get_object_type -item_id $item_id -revision_id $revision_id]
     #if {![string match "::*" $object_type]} {set object_type ::$object_type}
     return [$object_type instantiate -item_id $item_id -revision_id $revision_id]
   }
@@ -718,8 +735,7 @@ namespace eval ::Generic {
   } {
     Delete a CrItem in the database
   } {
-    db_1row [my qn get_class_and_folder] \
-        "select content_type as object_type from cr_items where item_id = $item_id"
+    set object_type [my get_object_type -item_id $item_id]
     $object_type delete -item_id $item_id
   }
 

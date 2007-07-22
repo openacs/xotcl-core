@@ -522,7 +522,7 @@ namespace eval ::xo::Table {
     set href [export_vars -base [ad_conn url] $query]
     html::a -href $href -title $title {
       html::t [my _ label]
-      html::img -src $img -alt ""
+      html::img -src $img -alt "" -border 0
     }
   }
 
