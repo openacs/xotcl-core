@@ -586,7 +586,7 @@ my log  "select [join $atts ,], i.parent_id \
     if {$where_clause   ne ""} {lappend cond $where_clause}
     if {[info exists publish_status]} {lappend cond "ci.publish_status eq '$publish_status'"}
     lappend cond "coalesce(ci.live_revision,ci.latest_revision) = cr.revision_id 
-        and parent_id = $folder_id and acs_objects.object_id = cr.revision_id"
+        and ci.parent_id = $folder_id and acs_objects.object_id = cr.revision_id"
 
     if {$page_number ne ""} {
       set limit $page_size
@@ -602,13 +602,14 @@ my log  "select [join $atts ,], i.parent_id \
                 -where [join $cond " and "] \
                 -orderby $orderby \
                 -limit $limit -offset $offset]
-    #my log "--sql=$sql"
+    my log "--sql=$sql"
     return $sql
   }
 
   CrClass ad_instproc instantiate_all {
     {-select_attributes ""}
     {-orderby ""}
+    {-from_clause ""}
     {-where_clause ""}
     {-with_subtypes:boolean true}
     {-folder_id}
@@ -633,6 +634,7 @@ my log  "select [join $atts ,], i.parent_id \
              -folder_id $folder_id \
              -select_attributes $select_attributes \
              -with_subtypes $with_subtypes \
+             -from_clause $from_clause \
              -where_clause $where_clause \
              -orderby $orderby \
              -page_size $page_size -page_number $page_number] {

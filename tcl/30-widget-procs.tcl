@@ -481,7 +481,11 @@ namespace eval ::xo::Table {
 
   Class create TABLE::Field -superclass ::xo::Drawable 
   TABLE::Field instproc render-data {line} {
-    html::t [$line set [my name]] 
+    if {[$line exists [my name].richtext]} {
+      html::t -disableOutputEscaping [$line set [my name]]
+    } else {
+      html::t [$line set [my name]] 
+    }
   }
 
   TABLE::Field instproc render {} {

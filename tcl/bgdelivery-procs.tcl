@@ -118,7 +118,7 @@ if {![string match *contentsentlength* $msg]} {
     my set queue [list]
   }
   ::HttpSpooler instproc all_done {} {
-    catch {close [my channel]} 
+    catch {close [my channel]}
     my log ""
     my destroy
   }

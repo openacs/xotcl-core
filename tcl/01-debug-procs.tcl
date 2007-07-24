@@ -134,7 +134,9 @@ namespace eval ::xo {
   ns_log debug "[self] [self callingclass]->[self callingproc]: $msg"
 }
 ::xotcl::Object instproc msg msg {
-  util_user_message -message "$msg  ([self] [self callingclass]->[self callingproc])"
+  if {[ns_conn isconnected]} {
+    util_user_message -message "$msg  ([self] [self callingclass]->[self callingproc])"
+  }
 }
 ::xotcl::Object instproc qn query_name {
   set qn "dbqd.[my uplevel self class]-[my uplevel self proc].$query_name"
