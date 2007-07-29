@@ -978,7 +978,7 @@ my log  "select [join $atts ,], i.parent_id \
 
     set user_id [my current_user_id]
     set page_id [my set item_id]
-    set live_revision_id [content::item::get_live_revision -item_id $page_id]
+    set live_revision_id [::xo::db::sql::content_item get_live_revision -item_id $page_id]
     my instvar package_id
     set base [$package_id url]
     set sql [::xo::db::sql select \
