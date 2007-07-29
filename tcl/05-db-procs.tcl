@@ -382,6 +382,16 @@ namespace eval ::xo::db {
   }
   
   DbPackage create_all_functions
+
+  ad_proc tcl_date {timestamp tz_var} {
+    Convert the time stamp (coming from the database) into a format, which
+    can be passed to Tcl's "clock scan".
+  } {
+    upvar $tz_var tz
+    set tz 00
+    regexp {^([^.]+)[.][0-9]+(.*)$} $timestamp _ timestamp tz
+    return $timestamp
+  }
 }
 
 
