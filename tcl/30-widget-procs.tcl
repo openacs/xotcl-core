@@ -226,19 +226,25 @@ namespace eval ::xo {
   Table instproc write_csv {} {
     set output ""
     set line [list]
+    my msg columns=[[self]::__columns children]
     foreach column [[self]::__columns children] {
-      set value [string map {\" \\\"} [$column name]]
+      set label [$column label]
+      if {[regexp {^#(.*)#$} $label _ message_key]} {
+        set label [_ $message_key]
+      }
+      set value [string map {\" \\\"} $label]
       lappend line \"$value\"
     }
     append output [join $line ,] \n
     foreach row [my children] {
       set line [list]
       foreach column [[self]::__columns children] {
-	set value [string map {\" \\\"} [$row set [$column name]]]
+	set value [string map {\" \\\"} [$row set [$column set name]]]
 	lappend line \"$value\"
       }
       append output [join $line ,] \n
     }
+    #ns_return 200 text/plain $output
     ns_return 200 text/csv $output
   }
 
