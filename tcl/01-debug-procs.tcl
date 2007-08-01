@@ -1,10 +1,14 @@
 ## tell serializer to export methods, although these are methods of 
 # ::xotcl::Object
 
+package require xotcl::serializer
+
 ::Serializer exportMethods {
   ::xotcl::Object instproc log 
+  ::xotcl::Object instproc msg
+  ::xotcl::Object instproc __timediff
   ::xotcl::Object instproc debug
-  ::xotcl::Object instproc contains
+  ::xotcl::Object instproc qn
   ::xotcl::Object instproc serialize
   ::xotcl::Object instforward db_1row
   ::xotcl::Object instproc destroy_on_cleanup
@@ -23,6 +27,44 @@ if {$::xotcl::version < 1.5} {
     my requireNamespace
     namespace eval [self] $cmds
   }
+  namespace eval ::xo {
+    Class create ::xo::Attribute \
+      -parameter {
+        {name "[namespace tail [::xotcl::self]]"}
+        {domain "[lindex [regexp -inline {^(.*)::slot::[^:]+$} [::xotcl::self]] 1]"}
+        {multivalued false}
+        {required false}
+        default 
+        type
+        spec
+        pretty_name 
+        {pretty_plural ""}
+        {datatype "text"} 
+        {sqltype "text"} 
+        {min_n_values 1} 
+        {max_n_values 1}
+        help_text 
+        validator
+      }
+
+  }
+} else {
+  namespace eval ::xo {
+    Class create ::xo::Attribute \
+        -superclass ::xotcl::Attribute \
+        -parameter {
+          spec
+          {required false}
+          pretty_name 
+          {pretty_plural ""}
+          {datatype "text"}
+          {sqltype "text"}
+          {min_n_values 1} 
+          {max_n_values 1}
+          help_text 
+          validator
+        }
+  }
 }
 
 ::xotcl::Object instforward db_1row -objscope
@@ -31,25 +73,28 @@ if {$::xotcl::version < 1.5} {
   ::Serializer deepSerialize [self]
 }
 
+namespace eval ::xo {
+  ::xotcl::Class create ::xo::InstanceManager \
+      -instproc alloc args {
+        set r [next]
+        set key blueprint($r)
+        if {![ns_conn isconnected]} {
+          [self class] set $key 1
+        } elseif {![[self class] exists $key]} {
+          [self class] set connectionobject($r) 1
+        }
+        return $r
+      } \
+      -instproc destroy args {
+        next
+        ns_log notice "--unset -nocomplain [self class]::blueprint([self])"
+        [self class] unset -nocomplain blueprint([self])
+        [self class] unset -nocomplain connectionobject([self])
+      }
 
-# Currently, xotcl's serializer does not export ::xotcl::* commands,
-# except methods for ::xotcl::Object and ::xotcl::Core, so we use the
-# mixin instead of te direct defintion... should be changed in the future
-# namespace eval ::xo {
-#   Class create ::xo::NonPosArgs \
-#     -instproc integer args {
-#       if {[llength $args] < 2} return
-#       foreach {name value} $args break
-#       if {![string is integer $value]} {
-#         error "value '$value' of $name not an integer"
-#       }
-#     } \
-#     -instproc optional {name args} {
-#       ;
-#     }
-# }
-# ::xotcl::nonposArgs proc integer
-#  ::xotcl::nonposArgs proc optional
+  # deactivate for now
+  #::xotcl::Object instmixin add ::xo::InstanceManager
+}
 
 ::xotcl::nonposArgs proc integer args {
   if {[llength $args] < 2} return
@@ -60,7 +105,7 @@ if {$::xotcl::version < 1.5} {
   ;
 }
 
-::xotcl::Object instproc log msg {
+::xotcl::Object instproc __timediff {} {
   set now [ns_time get]
   if {[ns_conn isconnected]} {
     set start_time [ns_conn start]
@@ -77,14 +122,26 @@ if {$::xotcl::version < 1.5} {
   } else {
     set diff ""
   }
-  ns_log notice "$msg, [self] [self callingclass]->[self callingproc] (${ms}ms$diff)"
   set ::__last_timestamp $now
+  return "${ms}ms$diff"
+}
+
+::xotcl::Object instproc log msg {
+  ns_log notice "$msg, [self] [self callingclass]->[self callingproc] ([my __timediff])"
 }
 
 ::xotcl::Object instproc debug msg {
   ns_log debug "[self] [self callingclass]->[self callingproc]: $msg"
 }
-
+::xotcl::Object instproc msg msg {
+  if {[ns_conn isconnected]} {
+    util_user_message -message "$msg  ([self] [self callingclass]->[self callingproc])"
+  }
+}
+::xotcl::Object instproc qn query_name {
+  set qn "dbqd.[my uplevel self class]-[my uplevel self proc].$query_name"
+  return $qn
+}
 namespace eval ::xo {
   Class Timestamp
   Timestamp instproc init {} {my set time [clock clicks -milliseconds]}
@@ -125,25 +182,8 @@ namespace eval ::xo {
     }
   }
 
-  #
-  # a simple calback for cleanup of per connection objects
-  # ns_atclose is a little to early for us...
-  #
-  ::xotcl::Object instproc destroy_on_cleanup {} {
-    set ::xotcl_cleanup([self]) 1
-    #my log "--A cleanup for [lsort [array names ::xotcl_cleanup]]"
-    ::trace add variable ::xotcl_cleanup([self]) unset ::xo::cleanup_callback
-  }
-  proc ::xo::cleanup_callback {var object op} {
-    if {![::xotcl::Object isobject $object]} {
-      #ns_log notice "--D $object already destroyed, nothing to do"
-      $object destroy
-    } else {
-      #ns_log notice "--D $object destroy"
-      $object destroy
-    }
-  }
 }
+
 
 # ::xotcl::Class instproc import {class pattern} {
 #   namespace eval [self] [list \
@@ -168,3 +208,113 @@ namespace eval ::xo {
 #  ns_log notice "--T [ns_ictl get]"
 #}
 
+namespace eval ::xo {
+  #
+  # In earlier versions of xotcl-core, we used variable traces
+  # to trigger deletion of objects. This had two kind of problems:
+  #   1) there was no way to control the order of the deletions
+  #   2) the global variables used for managing db handles might
+  #      be deleted already
+  #   3) the traces are executed at a time when the connection 
+  #      is already closed
+  # Aolserver 4.5 supports a trace for freeconn. We can register
+  # a callback to be executed before the connection is freed,
+  # therefore, we have still information from ns_conn available.
+  # For aolserver 4.5 we use oncleanup, which is at least before
+  # the cleanup of variables.
+  #
+  # In contrary, in 4.0.10, on cleanup is called after the global
+  # variables of a connection thread are deleted. Therefore
+  # the triggered calls should not use database handles,
+  # since these are as well managed via global variables,
+  # the will be deleted as well at this time,.
+  # 
+  # To come up with an approach working for 4.5 and 4.0.10, we
+  # distinguish between a at_cleanup and at_close, so connection
+  # related info can still be obtained. 
+  #
+  if {[catch {set registered [ns_ictl gettraces freeconn]}]} {
+    ns_log notice "*** you should really upgrade to Aolserver 4.5"
+    # "ns_ictl oncleanup" is called after variables are deleted
+    if {[ns_ictl epoch] == 0} {
+      ns_ictl oncleanup ::xo::at_cleanup
+      ns_ictl oninit [list ns_atclose ::xo::at_close]
+    }
+    
+#     proc trace_cleanup {args} {
+#       set name [lindex $args 1]
+#       #ns_log notice "*** cleanup <$args> '$name'"
+#       if {[::xotcl::Object isobject $name]} {
+# 	ns_log notice "*** cleanup $name destroy"
+# 	$name destroy
+#       }
+#     }
+  } else {
+
+    # register only once
+    if {[lsearch $registered ::xo::cleanup] == -1} {
+      ns_ictl trace freeconn ::xo::freeconn
+    }
+
+    proc ::xo::freeconn {} {
+      catch {::xo::at_close}
+      catch {::xo::at_cleanup}
+    }
+  }
+
+  #proc ::xo::at_create {} {
+  #  ns_log notice "--at_create *********"
+  #  foreach i [::xo::InstanceManager array names blueprint] {
+  #    if {![::xotcl::Object isobject $i]} {
+  #      ::xo::InstanceManager unset blueprint($i)
+  #      ns_log notice "--at_create no such object: $i"
+  #    }
+  #  }
+  #}
+
+  ::xotcl::Object instproc destroy_on_cleanup {} {
+    #my log "--cleanup adding ::xo::cleanup([self]) [list [self] destroy]"
+    set ::xo::cleanup([self]) [list [self] destroy]
+  }
+
+  proc at_close {args} {
+  }
+
+  proc at_cleanup {args} {
+    #ns_log notice "*** start of cleanup <$args> ([array get ::xo::cleanup])"
+    set at_end ""
+    foreach {name cmd} [array get ::xo::cleanup] {
+      #::trace remove variable ::xotcl_cleanup($name) unset ::xo::cleanup
+      if {![::xotcl::Object isobject $name]} {
+        #ns_log notice "--D $name already destroyed, nothing to do"
+        continue
+      }
+      if {$name eq "::xo::cc"} {
+        append at_end $cmd\n
+        continue
+      }
+      #ns_log notice "*** cleanup $cmd"
+      if {[catch {eval $cmd} errorMsg]} {
+        set obj [lindex $cmd 0]
+        ns_log notice "Error during ::xo::cleanup: $errorMsg $::errorInfo"
+        catch {
+          ns_log notice "... analyze: cmd = $cmd"
+          ns_log notice "... analyze: $obj is_object? [::xotcl::Object isobject $obj]"
+          ns_log notice "... analyze: class [$obj info class]"
+          ns_log notice "... analyze: precedence [$obj info precedence]"
+          ns_log notice "... analyze: methods [lsort [$obj info methods]]"
+        }
+      }
+    }
+    #ns_log notice "*** at_end $at_end"
+    if {[catch {eval $at_end} errorMsg]} {
+      ns_log notice "Error during ::xo::cleanup: $errorMsg $::errorInfo"
+    }
+    array unset ::xo::cleanup
+    #ns_log notice "*** end of cleanup"
+  }
+}
+
+#ns_log notice "*** FREECONN? [ns_ictl gettraces freeconn]"
+#ns_ictl trace freeconn {ns_log notice "*** FREECONN  isconnected=[ns_conn isconnected]"}
+#ns_ictl oncleanup {ns_log notice "*** ONCLEANUP isconnected=[ns_conn isconnected]"}

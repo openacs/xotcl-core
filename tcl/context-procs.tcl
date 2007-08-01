@@ -50,13 +50,17 @@ namespace eval ::xo {
     }
 
     # get the query parameters (from the url)
+    #my log "--P processing actual query $actual_query"
     foreach querypart [split $actual_query &] {
       set name_value_pair [split $querypart =]
       set att_name  [ns_urldecode [lindex $name_value_pair 0]]
-      set att_value [expr {[llength $name_value_pair] == 1 ? 1 :
-                           [ns_urldecode [lindex $name_value_pair 1]]  }]
+      if {[llength $name_value_pair] == 1} { 
+        set att_value 1 
+      }  else {
+        set att_value [ns_urldecode [lindex $name_value_pair 1]]
+      }
       if {[info exists (-$att_name)]} {
-        set passed_args(-$att_name) $att_value
+        lappend passed_args(-$att_name) $att_value
       } elseif {$all_from_query} {
         set queryparm($att_name) $att_value
       }
@@ -99,6 +103,17 @@ namespace eval ::xo {
     #my log "--cc qp [array names queryparm] // $actual_query"
   }
 
+  Context instproc query_parameter {name {default ""}} {
+    my instvar queryparm
+    return [expr {[info exists queryparm($name)] ? $queryparm($name) : $default}]
+  }
+  Context instproc exists_query_parameter {name} {
+    #my log "--qp my exists $name => [my exists queryparm($name)]"
+    my exists queryparm($name)
+  }
+  Context instproc get_all_query_parameter {} {
+    return [my array get queryparm]
+  }
 
   Context ad_instproc export_vars {{-level 1}} {
     Export the query variables
@@ -150,7 +165,6 @@ namespace eval ::xo {
     url
   }
   
-  # TODO code (in xinha, + css)
   # TODO edit revision loop
 
   ConnectionContext proc require {
@@ -161,7 +175,7 @@ namespace eval ::xo {
     {-actual_query " "}
   } {
     if {![info exists url]} {
-      my log "--CONN ns_conn url"
+      #my log "--CONN ns_conn url"
       set url [ns_conn url]
     }
     #my log "--i [self args]"
@@ -174,19 +188,19 @@ namespace eval ::xo {
     if {![my isobject ::xo::cc]} {
       my create ::xo::cc \
           -package_id $package_id \
-          -parameter_declaration $parameter \
+          [list -parameter_declaration $parameter] \
 	  -user_id $user_id \
 	  -actual_query $actual_query \
           -url $url
-      #my log "--cc ::xo::cc created $url"
-      ::xo::cc destroy_on_cleanup 
+      #my msg "--cc ::xo::cc created $url [::xo::cc serialize]"
+      ::xo::cc destroy_on_cleanup
     } else {
       #my log "--cc ::xo::cc reused $url"
       ::xo::cc configure \
           -package_id $package_id \
           -url $url \
 	  -actual_query $actual_query \
-          -parameter_declaration $parameter
+          [list -parameter_declaration $parameter]
       ::xo::cc set_user_id $user_id
       ::xo::cc process_query_parameter
     }
@@ -200,7 +214,7 @@ namespace eval ::xo {
   }
 
   ConnectionContext instproc returnredirect {url} {
-    my log "--rp"
+    #my log "--rp"
     my set __continuation [list ad_returnredirect $url]
     return ""
   }
@@ -246,12 +260,21 @@ namespace eval ::xo {
     call ::permission::permission_p but avoid multiple calls in the same
     session through caching in the connection context
   } {
-    #my log "--p [self args] [info exists party_id] "
     if {![info exists party_id]} {
       set party_id [my user_id]
       #my log "--p party_id $party_id"
-      #::xo::show_stack
       if {$party_id == 0} {
+        set key permission($object_id,$privilege,$party_id)
+        if {[my exists $key]} {return [my set $key]}
+        set granted [permission::permission_p -party_id $party_id \
+                         -object_id $object_id \
+                         -privilege $privilege]
+        if {$granted} {
+          my set $key $granted
+          return $granted
+        }
+        # The permission is not granted for the public.
+        # We force the user to login
         auth::require_login
         return 0
       }
@@ -270,27 +293,36 @@ namespace eval ::xo {
 #     next
 #   }
 
-  ConnectionContext instproc query_parameter {name {default ""}} {
-    my instvar queryparm
-    return [expr {[info exists queryparm($name)] ? $queryparm($name) : $default}]
-  }
-  ConnectionContext instproc exists_query_parameter {name} {
-    #my log "--qp my exists $name => [my exists queryparm($name)]"
-    my exists queryparm($name)
-  }
 
-  ConnectionContext instproc form_parameter {name {default ""}} {
+  ConnectionContext instproc get_all_form_parameter {} {
     my instvar form_parameter
-    if {![info exists form_parameter]} {
-      array set form_parameter [ns_set array [ns_getform]]
+    #array set form_parameter [ns_set array [ns_getform]]
+    foreach {att value} [ns_set array [ns_getform]] {
+      if {[info exists form_parameter($att)]} {
+        my set form_parameter_multiple($att) 1
+      }
+      lappend form_parameter($att) $value
     }
-    return [expr {[info exists form_parameter($name)] ? 
-                  $form_parameter($name) : $default}]
+  }
+  ConnectionContext instproc form_parameter {name {default ""}} {
+    my instvar form_parameter form_parameter_multiple
+    if {![info exists form_parameter]} {
+      my get_all_form_parameter
+    }
+    if {[info exists form_parameter($name)]} {
+      if {[info exists form_parameter_multiple($name)]} {
+        return $form_parameter($name)
+      } else {
+        return [lindex $form_parameter($name) 0]
+      }
+    } else {
+      return $default
+    }
   }
   ConnectionContext instproc exists_form_parameter {name} {
     my instvar form_parameter
     if {![info exists form_parameter]} {
-      array set form_parameter [ns_set array [ns_getform]]
+      my get_all_form_parameter
     }
     my exists form_parameter($name)
   }
@@ -335,8 +367,8 @@ namespace eval ::xo {
     init_url false requires the package_id to be specified and
     a call to Package instproc set_url to complete initialization
   } {
+    #my log "--i [self args], URL=$url, init_url=$init_url"
 
-    #my log "--i [self args]"
     if {$url eq "" && $init_url} {
       #set url [ns_conn url]
       #my log "--CONN ns_conn url"
@@ -363,7 +395,7 @@ namespace eval ::xo {
   } {
     #my log "--R $package_id exists? [my isobject ::$package_id]"
     if {![my isobject ::$package_id]} {
-      #my log "--R we have to create ::$package_id"
+      #my log "--R we have to create ::$package_id //url='$url'"
       if {$url ne ""} {
         my create ::$package_id -url $url
       } else {
@@ -384,14 +416,16 @@ namespace eval ::xo {
   PackageMgr create Package -parameter {
     id
     url 
+    {context ::xo::cc}
     package_url
+    package_key
     instance_name
   }
-  Package instforward query_parameter        ::xo::cc %proc
-  Package instforward exists_query_parameter ::xo::cc %proc
-  Package instforward form_parameter         ::xo::cc %proc
-  Package instforward exists_form_parameter  ::xo::cc %proc
-  Package instforward returnredirect         ::xo::cc %proc
+  Package instforward query_parameter        {%my set context} %proc
+  Package instforward exists_query_parameter {%my set context} %proc
+  Package instforward form_parameter         {%my set context} %proc
+  Package instforward exists_form_parameter  {%my set context} %proc
+  Package instforward returnredirect         {%my set context} %proc
 
 
   Package instproc get_parameter {attribute {default ""}} {
@@ -404,18 +438,31 @@ namespace eval ::xo {
     my instvar id url
     set id [namespace tail [self]]
     array set info [site_node::get_from_object_id -object_id $id]
-    my package_url $info(url)
-    my instance_name $info(instance_name)
-    if {![my exists url]} {
-      # if we have no more information, we use the package_url as actual url
-      set url [my package_url]
+    set package_url $info(url)
+    if {[ns_conn isconnected]} {
+      # in case of of host-node map, simplify the url to avoid redirects
+      # .... but ad_host works only, when we are connected.... TODO: solution for syndication
+      set root [root_of_host [ad_host]]
+      regexp "^${root}(.*)$" $package_url _ package_url
     }
+    #my log "--R package_url= $package_url (was $info(url))"
+    my package_url $package_url
+    my package_key $info(package_key)
+    my instance_name $info(instance_name)
+    if {[my exists url] && [info exists root]} {
+      regexp "^${root}(.*)$" $url _ url
+    } else {
+      my log "--R we have no url, use package_url"
+      # if we have no more information, we use the package_url as actual url
+      set url $package_url
+    } 
     my set_url -url $url
   }
  
   Package instproc set_url {-url} {
     my url $url
     my set object [string range [my url] [string length [my package_url]] end]
+    #my log "--R object set to [my set object], [my serialize]"
   }
 
 #   Package instproc destroy {} {

@@ -11,6 +11,7 @@ if {[info command ::thread::mutex] eq ""} {
   ns_log notice "libthread does not appear to be available, NOT loading bgdelivery"
   return
 }
+#return ;# DONT COMMIT
 
 # catch {ns_conn contentsentlength} alone does not work, since we do not have
 # a connection yet, and the bgdelivery won't be activated
@@ -108,7 +109,79 @@ if {![string match *contentsentlength* $msg]} {
     fconfigure [my channel] -translation binary
     incr ::subscription_count
   }
-} -persistent 1
+  
+  Class ::HttpSpooler -parameter {channel {timeout 10000} {counter 0}}
+  ::HttpSpooler instproc init {} {
+    my set running 0
+    my set release 0
+    my set spooling 0
+    my set queue [list]
+  }
+  ::HttpSpooler instproc all_done {} {
+    catch {close [my channel]}
+    my log ""
+    my destroy
+  }
+  ::HttpSpooler instproc release {} {
+    # release indicates the when running becomes 0, the spooler is finished
+    my set release 1
+    if {[my set running] == 0} {my all_done}
+  }
+  ::HttpSpooler instproc done {reason request} {
+    my instvar running release
+    incr running -1
+    my log "--running $running"
+    $request destroy
+    if {$running == 0 && $release} {my all_done}
+  }
+  ::HttpSpooler instproc deliver {data request} {
+    my instvar spooling 
+    my log "-- spooling $spooling"
+    if {$spooling} {
+      my log "--enqueue"
+      my lappend queue $data $request
+    } else {
+      #my log "--send"
+      set spooling 1
+      # puts -nonewline [my channel] $data
+      # my done
+      set filename [ns_tmpnam]
+      set fd [open $filename w]
+      fconfigure $fd -translation binary
+      puts -nonewline $fd $data
+      close $fd
+      set fd [open $filename]
+      fconfigure $fd -translation binary
+      fconfigure [my channel] -translation binary
+      fcopy $fd [my channel] -command \
+	  [list [self] end-delivery $filename $fd [my channel] $request]
+    }
+  }
+  ::HttpSpooler instproc end-delivery {filename fd ch request bytes args} {
+    my instvar queue
+    my log "--- end of delivery of $filename, $bytes bytes written $args"
+    if {[catch {close $fd} e]} {ns_log notice "httpspool, closing file $filename, error: $e"}
+    my set spooling 0
+    if {[llength $queue]>0} {
+      my log "--dequeue"
+      set data [lindex $queue 0]
+      set req  [lindex $queue 1]
+      set queue [lreplace $queue 0 1]
+      my deliver $data $req
+    }
+    my done delivered $request
+  }
+  ::HttpSpooler instproc add {-request {-post_data ""}} {
+    if {[regexp {http://([^/]*)(/.*)} $request _ host path]} {
+      set port 80
+      regexp {^([^:]+):(.*)$} $host _ host port
+      my incr running
+      xo::AsyncHttpRequest [self]::[my incr counter] \
+	  -host $host -port $port -path $path \
+	  -timeout [my timeout] -post_data $post_data -request_manager [self]
+    }
+  }
+} -persistent 1 ;# -lightweight 1
 
 bgdelivery ad_forward running {
   Interface to the background delivery thread to query the currently running deliveries.
@@ -170,4 +243,19 @@ bgdelivery proc subscribe {key {initmsg ""} {mode default} } {
 
 bgdelivery proc send_to_subscriber {key msg} {
   my do -async ::Subscriber broadcast $key $msg
+}
+#####################################
+bgdelivery proc create_spooler {{-content_type text/plain} {-timeout 10000}} {
+  ns_write "HTTP/1.0 200 OK\r\nContent-type: $content_type\r\n\r\n"
+  set ch [ns_conn channel]
+  thread::transfer [my get_tid] $ch
+  my do ::HttpSpooler new -channel $ch -timeout $timeout
+}
+
+bgdelivery proc spooler_add_request {spooler request {post_data ""}} {
+  my log "-- do -async $spooler add -request $request"
+  my do -async $spooler add -request $request -post_data $post_data
+}
+bgdelivery proc spooler_release {spooler} {
+  my do -async $spooler release
 }
