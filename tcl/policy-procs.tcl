@@ -17,10 +17,11 @@ namespace eval ::xo {
 
   Policy instproc check_privilege {{-login true} -user_id -package_id privilege object method} {
     set allowed -1   ;# undecided
-    if {[acs_user::site_wide_admin_p -user_id $user_id]} {
+    if {[acs_user::site_wide_admin_p -user_id $user_id] && $privilege ne "nobody"} {
       return 1
     }
     switch $privilege {
+      nobody {return 0}
       none  {return 1}
       login {
         if {$login} {
