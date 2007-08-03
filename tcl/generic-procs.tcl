@@ -481,11 +481,6 @@ namespace eval ::Generic {
        and    i.item_id = n.item_id \
        and    o.object_id = $revision_id"
     } else {
-my log  "select [join $atts ,], i.parent_id \
-       from   [my set table_name]i n, cr_items i, acs_objects o \
-       where  i.item_id = $item_id \
-       and    n.[my id_column] = coalesce(i.live_revision, i.latest_revision) \
-       and    o.object_id = i.item_id"
       $object db_1row [my qn fetch_from_view_item_id] "\
        select [join $atts ,], i.parent_id \
        from   [my set table_name]i n, cr_items i, acs_objects o \

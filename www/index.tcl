@@ -43,10 +43,14 @@ proc doc_link {obj kind method} {
   }
 }
 
-proc info_classes {cl key} {
+proc info_classes {cl key {dosort 0}} {
   upvar all_classes all_classes
   set infos ""
-  foreach s [$cl info $key] {
+  set classes [$cl info $key]
+  if {$dosort} {
+    set classes [lsort $classes]
+  }
+  foreach s $classes {
     append infos [local_link $s] ", "
   }
   set infos [string trimright $infos ", "]
@@ -64,9 +68,10 @@ foreach cl [lsort [::xotcl::Class allinstances]] {
   
   append output "<li><b><a name='$cl'>[::xotcl::api object_link {} $cl]</b> <ul>"
 
-  foreach kind {class superclass subclass mixin instmixin} {
-    append output [info_classes $cl $kind]
-  }
+  append output [info_classes $cl superclass]
+  append output [info_classes $cl subclass 1]
+  append output [info_classes $cl mixin]
+  append output [info_classes $cl instmixin]
 
   foreach key {procs instprocs} {
     set infos ""

@@ -77,7 +77,11 @@ proc api_documentation {scope object kind method} {
 
 proc info_option {scope object kind {dosort 0}} {
   upvar class_references class_references
-  set list [DO $object info $kind]
+  if {$dosort} {
+    set list [lsort [DO $object info $kind]]
+  } else {
+    set list [DO $object info $kind]
+  }
   set refs [list]
   foreach e $list {
     if {[DO $object isclass $e]} {
@@ -132,9 +136,9 @@ set class_references ""
 if {$isclass} {
   append obj_create_source \
       [info_option $scope $object superclass] \
-      [info_option $scope $object parameter] \
+      [info_option $scope $object parameter 1] \
       [info_option $scope $object instmixin] 
-  info_option $scope $object subclass
+  info_option $scope $object subclass 1
 }
 
 append obj_create_source \
