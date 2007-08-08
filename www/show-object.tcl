@@ -142,7 +142,7 @@ proc class_summary {c scope} {
     }
   }
   if {[llength $pretty]>0} {
-    append result "<dt><em>Methods to be applied on the class:</em></dt> <dd>[join $pretty {, }]</dd>"
+    append result "<dt><em>Methods to be applied on the class (in addition to the methods provided by the meta-class):</em></dt> <dd>[join $pretty {, }]</dd>"
   }
 
   if {$result ne ""} {
