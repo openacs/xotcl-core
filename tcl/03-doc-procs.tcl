@@ -33,7 +33,11 @@ ad_library {
       if {[nsv_exists api_proc_doc $proc_index]} {
         return "<a href='/api-doc/proc-view?proc=[ns_urlencode $proc_index]'>$method</a>"
       } else {
-        return $method
+        if {[$obj info ${kind}s $method] eq ""} {
+          return $method<SUP>C</SUP>
+        } else {
+          return $method
+        }
       }
     } \
     -proc isclass {scope obj} {

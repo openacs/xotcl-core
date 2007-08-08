@@ -129,7 +129,8 @@ proc class_summary {c scope} {
   set pretty [list]
   foreach m $methods {
     if {[info exists param($m)]} continue
-    lappend pretty [::xotcl::api method_link $c instproc $m]
+    set entry [::xotcl::api method_link $c instproc $m]
+    lappend pretty $entry
   }
   if {[llength $pretty]>0} {
     append result "<dt><em>Methods for instances:</em></dt> <dd>[join $pretty {, }]</dd>"
@@ -143,6 +144,8 @@ proc class_summary {c scope} {
   }
   if {[llength $pretty]>0} {
     append result "<dt><em>Methods to be applied on the class (in addition to the methods provided by the meta-class):</em></dt> <dd>[join $pretty {, }]</dd>"
+  } else {
+    append result "<dt><em>Methods to be applied on the class:</em></dt><dd>Methods provided by the meta-class</dd>"
   }
 
   if {$result ne ""} {
