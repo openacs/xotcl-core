@@ -33,16 +33,6 @@ proc local_link cl {
   }
 }
 
-proc doc_link {obj kind method} {
-  set kind [string trimright $kind s]
-  set proc_index [::xotcl::api proc_index "" $obj $kind $method]
-  if {[nsv_exists api_proc_doc $proc_index]} {
-    return "<a href='/api-doc/proc-view?proc=[ns_urlencode $proc_index]'>$method</a>"
-  } else {
-    return $method
-  }
-}
-
 proc info_classes {cl key {dosort 0}} {
   upvar all_classes all_classes
   set infos ""
@@ -75,7 +65,7 @@ foreach cl [lsort [::xotcl::Class allinstances]] {
 
   foreach key {procs instprocs} {
     set infos ""
-    foreach i [lsort [$cl info $key]] {append infos [doc_link $cl $key $i] ", "}
+    foreach i [lsort [$cl info $key]] {append infos [::xotcl::api method_link $cl $key $i] ", "}
     set infos [string trimright $infos ", "]
     if {$infos ne ""} {
       append output "<li><em>$key:</em> $infos</li>\n"

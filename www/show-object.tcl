@@ -88,21 +88,95 @@ proc info_option {scope object kind {dosort 0}} {
       lappend refs [::xotcl::api object_link $scope $e]
     }
   }
-  if {[llength $refs]>0 && $list ne "::xotcl::Object"} {
+  if {[llength $refs]>0 && $list ne ""} {
     append class_references "<li>$kind: [join $refs {, }]</li>\n"
   }
-  if {[llength $list]>0 && $list ne "::xotcl::Object"} {
+  if {[llength $list]>0 && $list ne ""} {
     return " \\\n     -$kind [list $list]"
   }
   return ""
 }
 
+proc draw_as_tree {nodes} {
+  if {$nodes eq ""} return ""
+  set tail [draw_as_tree [lrange $nodes 1 end]]
+  if {$tail eq ""} {
+    set style "style = 'border: 1px solid; padding: 5px; background-color: #fbfbfb;'"
+  } else {
+    set style "style = 'border: 1px solid; margin: 3px; padding: 5px; background-color: #fefefe; color: #555555;'"
+  }
+  append output <ul> "<li $style>" [lindex $nodes 0]</li> $tail </ul>
+}
+
+proc class_summary {c scope} {
+  set result ""
+  set parameters [lsort [$c info parameter]]
+  append result "<dt><em>Meta-class:</em></dt> <dd>[::xotcl::api object_link $scope [$c info class]]</dd>\n"
+  if {$parameters ne ""} { 
+    set pretty [list]
+    foreach p $parameters {
+      if {[llength $p]>1} {
+        foreach {p default} $p break
+        lappend pretty "$p (default <span style='color: green; font-style: italic'>\"$default\"</span>)"
+      } else {
+        lappend pretty "$p"
+      }
+      set param($p) 1
+    }
+    append result "<dt><em>Parameter for instances:</em></dt> <dd>[join $pretty {, }]</dd>\n" 
+  }
+  set methods [lsort [$c info instcommands]]
+  set pretty [list]
+  foreach m $methods {
+    if {[info exists param($m)]} continue
+    lappend pretty [::xotcl::api method_link $c instproc $m]
+  }
+  if {[llength $pretty]>0} {
+    append result "<dt><em>Methods for instances:</em></dt> <dd>[join $pretty {, }]</dd>"
+  }
+  set methods [lsort [$c info commands]]
+  set pretty [list]
+  foreach m $methods {
+    if {![::xotcl::Object isobject ${c}::$m]} {
+      lappend pretty [::xotcl::api method_link $c proc $m]
+    }
+  }
+  if {[llength $pretty]>0} {
+    append result "<dt><em>Methods to be applied on the class:</em></dt> <dd>[join $pretty {, }]</dd>"
+  }
+
+  if {$result ne ""} {
+    set result <dl>$result</dl>
+  }
+  return "<strong> [::xotcl::api object_link $scope $c] </strong> $result"
+}
+
+proc reverse list {
+  set result [list]
+  for {set i [expr {[llength $list] - 1}]} {$i >= 0} {incr i -1}      {
+    lappend result [lindex $list $i]
+  }
+  return $result
+}
+proc superclass_hierarchy {cl scope} {
+  set l [list]
+  foreach c [reverse [concat $cl [$cl info heritage]]] {
+    lappend s [class_summary $c $scope]
+  }
+  return $s
+}
 
 #
 # document the class or the object"
 #
 set index [::xotcl::api object_index $scope $object]
 append output "<blockquote>\n"
+
+if {$isclass} {
+  append output "<h4>Class Hierarchy of $object</h4>"
+  #append output [superclass_hierarchy $object]
+  append output [draw_as_tree [superclass_hierarchy $object $scope]]
+}
 
 if {[nsv_exists api_library_doc $index]} {
   array set doc_elements [nsv_get api_library_doc $index]

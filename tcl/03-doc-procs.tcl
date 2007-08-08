@@ -27,6 +27,15 @@ ad_library {
 }
 
 ::xotcl::Object create ::xotcl::api \
+    -proc method_link {obj kind method} {
+      set kind [string trimright $kind s]
+      set proc_index [::xotcl::api proc_index "" $obj $kind $method]
+      if {[nsv_exists api_proc_doc $proc_index]} {
+        return "<a href='/api-doc/proc-view?proc=[ns_urlencode $proc_index]'>$method</a>"
+      } else {
+        return $method
+      }
+    } \
     -proc isclass {scope obj} {
       expr {$scope eq "" ? 
             [::xotcl::Object isclass $obj] : 
