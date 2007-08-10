@@ -621,7 +621,7 @@ namespace eval ::Generic {
     set __attributes [list] 
     foreach a [concat [list ci.item_id acs_objects.object_type] \
                    $select_attributes] {
-      lappend __attributes [lindex [split $a .] end]
+      lappend __attributes [lindex [split [lindex $a end] .] end]
     }
 
     db_foreach instance_select \
@@ -921,7 +921,9 @@ namespace eval ::Generic {
                           "[my set __title_prefix] ($name)" : $name}]
         }
       }
-      set item_id [eval ::xo::db::sql::content_item new [[self class] set content_item__new_args]]
+      #my msg --[subst [[self class] set content_item__new_args]]
+      set item_id [eval ::xo::db::sql::content_item new \
+		       [[self class] set content_item__new_args]]
       if {$storage_type eq "file"} {
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }

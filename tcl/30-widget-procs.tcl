@@ -278,7 +278,7 @@ namespace eval ::xo {
 
     Class Field \
 	-superclass ::xo::OrderedComposite::Child \
-	-parameter {label {html {}} {orderby ""} name} \
+	-parameter {label {html {}} {orderby ""} name {richtext false}} \
 	-instproc init {} {
 	  my set name [namespace tail [self]]
 	} \
@@ -487,7 +487,7 @@ namespace eval ::xo::Table {
 
   Class create TABLE::Field -superclass ::xo::Drawable 
   TABLE::Field instproc render-data {line} {
-    if {[$line exists [my name].richtext]} {
+    if {[my richtext]} {
       html::t -disableOutputEscaping [$line set [my name]]
     } else {
       html::t [$line set [my name]] 
