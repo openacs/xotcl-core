@@ -133,7 +133,42 @@ namespace eval ::Generic {
       }
     }
   }
-  
+
+  #
+  # temporary solution for CLOB inserts 
+  # TODO: make it more general, based on slots
+  #
+  CrClass instproc insert_statement {atts} {
+    return "insert into [my set table_name]i ([join $atts ,]) \
+                values (:[join $atts ,:])"
+  }
+
+#   if {[db_driverkey ""] ne "postgresql"} {
+#     #
+#     # Oracle
+#     #
+
+#     # redefine for the time being the insert statement
+#     CrClass instproc insert_statement {atts} {
+#       set values [list]
+#       set suffix ""
+#       foreach a $atts {
+#         if {$a eq "text"} {
+#           lappend values empty_clob()
+#           set suffix " returning $a into :$a" 
+#         } else {
+#           lappend values :$a
+#         }
+#       }
+#       return "insert into [my set table_name]i ([join $atts ,]) \
+#                 values ([join $values ,])$suffix"
+#     }
+#   }
+
+
+  #
+  # datbase verison (Oracle/PG) independent code
+  #
   CrClass set common_query_atts {
     object_type item_id revision_id 
     creation_user creation_date creation_user 
@@ -825,8 +860,7 @@ namespace eval ::Generic {
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }
       $insert_view_operation [my qn revision_add] \
-          "insert into [[my info class] set table_name]i ([join $__atts ,]) \
-                values (:[join $__atts ,:])"
+          [[my info class] insert_statement $__atts]
       my update_content_length $storage_type $revision_id
       if {$live_p} {
         ::xo::db::sql::content_item set_live_revision \
@@ -928,9 +962,8 @@ namespace eval ::Generic {
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }
       #my log "--V atts=([join $__atts ,])\nvalues=(:[join $__atts ,:])"
-      $insert_view_operation  [my qn revision_add] \
-          "insert into [$__class set table_name]i ([join $__atts ,]) \
-                values (:[join $__atts ,:])"
+      $insert_view_operation [my qn revision_add] \
+          [[my info class] insert_statement $__atts]
       my update_content_length $storage_type $revision_id
       if {$live_p} {
         ::xo::db::sql::content_item set_live_revision \
