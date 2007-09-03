@@ -114,14 +114,14 @@ namespace eval ::xo {
     if {$link ne ""} {
       set query [lindex [split $link ?] 1]
       set ctx [::xo::Context new -destroy_on_cleanup -actual_query $query]
-      $ctx  process_query_parameter
+      $ctx process_query_parameter
     }
 
     set permission [my get_permission $object $method]
-    #my log "--permission for o=$object, m=$method => $permission"
+    #my msg "--permission for o=$object, m=$method => $permission"
     if {$permission ne ""} {
       foreach {kind p} [my get_privilege -query_context $ctx $permission $object $method] break
-      #my log "--privilege = $p kind = $kind"
+      #my msg "--privilege = $p kind = $kind"
       switch $kind {
 	primitive {return [my check_privilege -login false \
 			       -package_id $package_id -user_id $user_id \
@@ -129,7 +129,7 @@ namespace eval ::xo {
 	complex {
 	  foreach {attribute privilege} $p break
 	  set id [$object set $attribute]
-	  #my log "--p checking permission::permission_p -object_id $id -privilege $privilege"
+	  #my msg "--p checking permission::permission_p -object_id $id -privilege $privilege"
 	  return [::xo::cc permission -object_id $id -privilege $privilege -party_id $user_id]
 	}
       }

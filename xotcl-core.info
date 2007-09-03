@@ -8,10 +8,11 @@
     <singleton-p>t</singleton-p>
     <auto-mount>xotcl</auto-mount>
 
-    <version name="0.57" url="http://media.wu-wien.ac.at/download/xotcl-core-0.57.apm">
+    <version name="0.70" url="http://media.wu-wien.ac.at/download/xotcl-core-0.70.apm">
         <owner url="mailto:neumann@wu-wien.ac.at">Gustaf Neumann</owner>
         <summary>XOTcl library functionality (e.g. thread handling, online documentation, Generic Form and List Classes)</summary>
-        <release-date>2007-08-10</release-date>
+        <release-date>2007-09-03</release-date>
+        <vendor>Gustaf Neumann</vendor>
         <description format="text/html">This component contains some core functionality for OACS
 applications using XOTcl. It includes
 XOTcl thread handling for OACS (supporting persistent and
@@ -35,11 +36,12 @@ when components are reloaded.
 0.49: stored procedures object proxies (postgres and Oracle)
 0.51: require package
 0.52: distinguish between ImageField and ImageAnchorField, start using slots, multivalued form entries, bulk-actions, improved localization, improved sql layer (:.xo::db::sql)
+0.70: oo interface to acs-object, acs-object-types and cr-items/revisions based on xotcl slots 
 </description>
         <license>BSD-Style</license>
         <maturity>0</maturity>
 
-        <provides url="xotcl-core" version="0.57"/>
+        <provides url="xotcl-core" version="0.70"/>
 
         <callbacks>
             <callback type="before-install"  proc="::xotcl::before_install_callback"/>

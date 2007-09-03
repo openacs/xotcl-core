@@ -27,6 +27,8 @@ if {$::xotcl::version < 1.5} {
     my requireNamespace
     namespace eval [self] $cmds
   }
+  # XOTcl 1.5 or newer supports slots. Here we have to 
+  # emulate slots up to a certain point
   namespace eval ::xo {
     Class create ::xo::Attribute \
       -parameter {
@@ -40,16 +42,13 @@ if {$::xotcl::version < 1.5} {
         pretty_name 
         {pretty_plural ""}
         {datatype "text"} 
-        {sqltype "text"} 
-        {min_n_values 1} 
-        {max_n_values 1}
         help_text 
         validator
       }
-
   }
 } else {
   namespace eval ::xo {
+    # create xo::Attribute as a subclass of the slot ::xotcl::Attribute
     Class create ::xo::Attribute \
         -superclass ::xotcl::Attribute \
         -parameter {
@@ -58,12 +57,28 @@ if {$::xotcl::version < 1.5} {
           pretty_name 
           {pretty_plural ""}
           {datatype "text"}
-          {sqltype "text"}
-          {min_n_values 1} 
-          {max_n_values 1}
           help_text 
           validator
         }
+  }
+}
+
+namespace eval ::xo {
+  ::xo::Attribute instproc init {} {
+    my instvar name pretty_name
+    next
+    # provide a default pretty name for the attribute based on message keys
+    if {![info exists pretty_name]} {
+      set object_type [my domain] 
+      if {[regexp {^::([^:]+)::} $object_type _ head]} {
+	set tail [namespace tail $object_type]
+	set pretty_name "#$head.$tail-$name#"
+	my log "--created pretty_name = $pretty_name"
+      } else {
+	error "Cannot determine automatically message key for pretty name. \
+		Use namespaces for classes"
+      }
+    }
   }
 }
 
@@ -74,6 +89,20 @@ if {$::xotcl::version < 1.5} {
 }
 
 namespace eval ::xo {
+  proc slotobjects cl {
+    set so [list]
+    array set names ""
+    foreach c [concat $cl [$cl info heritage]] {
+      foreach s [$c info slots] {
+	set n [namespace tail $s]
+	if {![info exists names($n)]} {
+	  lappend so $s
+	  set names($n) $s
+	}
+      }
+    }
+    return $so
+  }
   ::xotcl::Class create ::xo::InstanceManager \
       -instproc alloc args {
         set r [next]
