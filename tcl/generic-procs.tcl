@@ -133,7 +133,43 @@ namespace eval ::Generic {
       }
     }
   }
+
+
+  #
+  # temporary solution for CLOB inserts 
+  # TODO: make it more general, based on slots
+  #
+  CrClass instproc insert_statement {atts} {
+    return "insert into [my set table_name]i ([join $atts ,]) \
+                values (:[join $atts ,:])"
+  }
   
+  if {[db_driverkey ""] ne "postgresql"} {
+    #
+    # Oracle
+    #
+
+    # redefine for the time being the insert statement
+    CrClass instproc insert_statement {atts} {
+      # Don't insert the attribute text, which is added in Oracle
+      # via a separate statement.
+      set values [list]
+      set attributes [list]
+      foreach a $atts {
+        if {$a ne "text"} {
+          lappend attributes $a
+          lappend values :$a
+        }
+      }
+      return "insert into [my set table_name]i ([join $attributes ,]) \
+                values ([join $values ,])"
+    }
+  }
+
+
+  #
+  # database version (Oracle/PG) independent code
+  #
   CrClass set common_query_atts {
     object_type item_id revision_id 
     creation_user creation_date creation_user 
@@ -779,20 +815,53 @@ my log  "select [join $atts ,], i.parent_id \
 
   #CrItem set insert_view_operation db_0or1row
 
-  CrItem instproc update_content_length {storage_type revision_id} {
-    if {$storage_type eq "file"} {
-      db_dml [my qn update_content_length] "update cr_revisions \
+  if {[db_driverkey ""] eq "postgresql"} {
+    CrItem instproc fix_content {revision_id content} {
+      [my info class] instvar storage_type 
+      if {$storage_type eq "file"} {
+        db_dml [my qn update_content_length] "update cr_revisions \
                 set content_length = [file size [my set import_file]] \
                 where revision_id = $revision_id"
+      }
     }
-  }
-  CrItem instproc update_content {revision_id content} {
-    [my info class] instvar storage_type 
-    if {$storage_type eq "file"} {
-      my log "--update_content not implemented for type file"
-    } else {
-      db_dml [my qn update_content] "update cr_revisions \
-                set content = :content where revision_id = $revision_id"
+    CrItem instproc update_content {revision_id content} {
+      [my info class] instvar storage_type 
+      if {$storage_type eq "file"} {
+        my log "--update_content not implemented for type file"
+      } else {
+        db_dml [my qn update_content] "update cr_revisions \
+                set content = :content \
+		where revision_id = $revision_id"
+      }
+    }
+  } else {
+    #
+    # Oracle
+    #
+    CrItem instproc fix_content {revision_id content} {
+      [my info class] instvar storage_type
+      if {$storage_type eq "file"} {
+        db_dml [my qn update_content_length] "update cr_revisions \
+                set content_length = [file size [my set import_file]] \
+                where revision_id = $revision_id"
+      } elseif {$storage_type eq "text"} {
+        db_dml [my qn fix_content] "update cr_revisions \
+               set    content = empty_blob(), content_length = [string length $content] \
+               where  revision_id = $revision_id \
+               returning content into :1" -blobs [list $content]
+      }
+    }
+
+    CrItem instproc update_content {revision_id content} {
+      [my info class] instvar storage_type
+      if {$storage_type eq "file"} {
+        my log "--update_content not implemented for type file"
+      } else {
+        db_dml [my qn update_content] "update cr_revisions \
+               set    content = empty_blob(), content_length = [string length $content] \
+               where  revision_id = $revision_id \
+               returning content into :1" -blobs [list $content]
+      }
     }
   }
 
@@ -830,9 +899,8 @@ my log  "select [join $atts ,], i.parent_id \
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }
       $insert_view_operation [my qn revision_add] \
-          "insert into [[my info class] set table_name]i ([join $__atts ,]) \
-                values (:[join $__atts ,:])"
-      my update_content_length $storage_type $revision_id
+          [[my info class] insert_statement $__atts]
+      my fix_content $revision_id $text
       if {$live_p} {
         ::xo::db::sql::content_item set_live_revision \
             -revision_id $revision_id \
@@ -931,10 +999,9 @@ my log  "select [join $atts ,], i.parent_id \
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }
       #my log "--V atts=([join $__atts ,])\nvalues=(:[join $__atts ,:])"
-      $insert_view_operation  [my qn revision_add] \
-          "insert into [$__class set table_name]i ([join $__atts ,]) \
-                values (:[join $__atts ,:])"
-      my update_content_length $storage_type $revision_id
+      $insert_view_operation [my qn revision_add] \
+          [[my info class] insert_statement $__atts]
+      my fix_content $revision_id $text
       if {$live_p} {
         ::xo::db::sql::content_item set_live_revision \
             -revision_id $revision_id \
