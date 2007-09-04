@@ -85,11 +85,12 @@ namespace eval ::xo::db {
   }
 
   require proc package name {
-    if {[info command ::${name}::*] eq ""} {
+    if {![my exists required_package($name)]} {
       set dir [ns_info tcllib]/../packages/$name
       foreach file [glob $dir/tcl/*-procs.tcl] {
         uplevel #1 source $file
       }
+      my set required_package($name) 1
     }
   }
 
@@ -754,9 +755,9 @@ namespace eval ::xo::db {
     # First get all ::xo::db::Attribute slots and check later, 
     # if we have to add the id_column automatically.
     #
-    my log "--setting db_slot all=[my info slots]"
+    #my log "--setting db_slot all=[my info slots]"
     foreach att [my info slots] {
-      my log "--checking $att [$att istype ::xo::db::Attribute] [$att info class]"
+      #my log "--checking $att [$att istype ::xo::db::Attribute] [$att info class]"
       if {![$att istype ::xo::db::Attribute]} continue
       set db_slot([$att name]) $att
     }
@@ -772,7 +773,7 @@ namespace eval ::xo::db {
 	set db_slot($id_column) [self]::slot::$id_column
       }
     }
-    my log "--setting db_slot of [self] to [array names db_slot]"
+    #my log "--setting db_slot of [self] to [array names db_slot]"
   }
 
   ::xo::db::Class instproc table_definition {} {
