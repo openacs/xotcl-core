@@ -123,11 +123,6 @@ namespace eval ::xo::db {
     my log "unknown called with $obj $args"
   }
 
-  # TODO this should go into 01-debug procs, or at least into the ::xo namespace
-  proc package_id_from_package_key { key } {
-    return [db_string dbqd.null.get_package_id_from_key \
-                {select package_id from apm_packages where package_key = :key}]
-  }
 
   #
   # The following methods are used oracle, postgres specific code (locking,
@@ -459,7 +454,8 @@ namespace eval ::xo::db {
       my create $object
     }
     set raw_atts [::xo::db::CrClass set common_query_atts]
-    my log "-- raw_atts = '$raw_atts'"
+    #my log "-- raw_atts = '$raw_atts'"
+
     set atts [list]
     foreach v $raw_atts {
       switch -glob -- $v {

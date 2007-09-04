@@ -80,6 +80,11 @@ namespace eval ::xo {
       }
     }
   }
+
+  proc package_id_from_package_key { key } {
+    return [db_string dbqd.null.get_package_id_from_key \
+                {select package_id from apm_packages where package_key = :key}]
+  }
 }
 
 ::xotcl::Object instforward db_1row -objscope

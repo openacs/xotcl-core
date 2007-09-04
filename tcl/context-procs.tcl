@@ -343,7 +343,24 @@ namespace eval ::xo {
   # Meta-Class for Application Package Classes
   #
 
-  Class PackageMgr -superclass Class
+  Class PackageMgr -superclass Class -parameter {
+    package_key
+  }
+
+  PackageMgr ad_instproc instances {{-include_unmounted false}} {
+    @return list of package_ids of xowiki instances
+  } {
+    my instvar package_key
+    if {$include_unmounted} {
+      return [db_list [my qn get_xowiki_packages] {select package_id \
+        from apm_packages where package_key = :package_key}]
+    } else {
+      return [db_list [my qn get_mounted_packages] {select package_id \
+        from apm_packages p, site_nodes s  \
+        where package_key = :package_key and s.object_id = p.package_id}]
+    }
+  }
+
   PackageMgr ad_instproc initialize {
     -ad_doc
     {-parameter ""}
@@ -426,7 +443,6 @@ namespace eval ::xo {
   Package instforward form_parameter         {%my set context} %proc
   Package instforward exists_form_parameter  {%my set context} %proc
   Package instforward returnredirect         {%my set context} %proc
-
 
   Package instproc get_parameter {attribute {default ""}} {
     return [parameter::get -parameter $attribute -package_id [my id] \

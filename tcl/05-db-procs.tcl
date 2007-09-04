@@ -624,8 +624,6 @@ namespace eval ::xo::db {
  
   ::xo::db::Class proc create_all_functions {} {
     db_foreach [my qn ""] [::xo::db::sql set all_package_functions] {
-      #if {![my isobject $package_name]} { ::xo::db::Class create $package_name }
-      #$package_name dbproc_exportvars $object_name
       set class_name ::xo::db::sql::[string tolower $package_name] 
       if {![my isobject $class_name]} { ::xo::db::Class create $class_name }
       $class_name dbproc_nonposargs [string tolower $object_name]
@@ -768,7 +766,8 @@ namespace eval ::xo::db {
 	my slots [subst {
 	  ::xo::db::Attribute create $id_column \
 	      -pretty_name "ID" \
-	      -datatype integer 
+	      -datatype integer \
+              -create_acs_attribute false
 	}]
 	set db_slot($id_column) [self]::slot::$id_column
       }
@@ -1197,9 +1196,12 @@ namespace eval ::xo::db {
         {references ""}
         {min_n_values 1} 
         {max_n_values 1}
+	{create_acs_attribute true}
       }
 
   ::xo::db::Attribute instproc create_attribute {} {
+    if {![my create_acs_attribute]} return
+
     my instvar name datatype pretty_name min_n_values max_n_values domain
     set object_type [$domain object_type]
     if {[db_string dbqd..check_att {select 0 from acs_attributes where 
@@ -1271,10 +1273,7 @@ namespace eval ::xo::db {
   ::xo::db::Class create ::xo::db::CrAttribute \
       -superclass {::xo::db::Attribute} \
       -pretty_name "Cr Attribute" \
-      -with_table false \
-      -parameter {
-	{create_acs_attribute true}
-      }
+      -with_table false 
 
   ::xo::db::CrAttribute instproc create_attribute {} {
     # do nothing, if create_acs_attribute is set to false
