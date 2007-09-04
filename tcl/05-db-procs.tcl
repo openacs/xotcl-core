@@ -84,16 +84,76 @@ namespace eval ::xo::db {
     }
   }
 
-  require proc package name {
-    if {![my exists required_package($name)]} {
-      set dir [ns_info tcllib]/../packages/$name
-      foreach file [glob $dir/tcl/*-procs.tcl] {
-        uplevel #1 source $file
+  require proc package {package_key} {
+    if {![my exists required_package($package_key)]} {
+      foreach path [apm_get_package_files \
+			-package_key $package_key \
+			-file_types tcl_procs] {
+	uplevel #1 source "[acs_root_dir]/packages/$package_key/$path"
       }
-      my set required_package($name) 1
+      my set required_package($package_key) 1
     }
   }
 
+  require ad_proc function_args {
+    -kernel_older_than
+    -package_key_and_version_older_than
+    -check_function 
+    sql_file 
+  } {
+    Load the sql file, if the the kernel is older than the 
+    specified version, and the version of the specified package is older,
+    and the check_function does not exist in function_args.
+    <p>
+    Sample usage: <tt>
+    ::xo::db::require function_args \<br>
+    &nbsp;&nbsp;-kernel_older_than 5.5.0 \<br>
+    &nbsp;&nbsp;-older_than_package_key_and_version "xowiki 0.50" \<br>
+    &nbsp;&nbsp;-check_function "acs_object_type__create_type" \<br>
+    &nbsp;&nbsp;[acs_package_root_dir xotcl-request-broker]/patches/funcs-1.sql</tt>
+  } {
+    if {[db_driverkey ""] eq "postgresql"} {
+      # only necessary with postgres
+      if {[info exists kernel_older_than]} {
+	if {[apm_version_names_compare \
+		 $kernel_older_than [ad_acs_version]] < 1} {
+	  # nothing to do
+	  return
+	}
+      }
+      if {[info exists package_key_and_version_older_than]} {
+	set p [split $package_key_and_version_older_than]
+	if {[llength $p] != 2} {
+	  error "package_key_and_version_older_than should be\
+		of the form 'package_key version'"
+	}
+	foreach {package_key version} $p break
+	set installed_version [apm_highest_version_name $package_key]
+	if {[apm_version_names_compare $installed_version $version] > -1} {
+	  # nothing to do
+	  return
+	}
+      }
+      if {[info exists check_function]} {
+	set check_function [string toupper $check_function]
+	set function_exists [db_string query_version {
+	  select 1 from acs_function_args where function = :check_function 
+	  limit 1
+	} -default 0]
+	if {$function_exists} {
+	  # nothing to do
+	  return
+	}
+      }
+
+      if {[file readable $sql_file]} {
+	my log "Sourcing '$sql_file'"
+	db_source_sql_file $sql_file
+      } else {
+	my log "Could not source '$sql_file'"
+      }
+    }
+  }
   ##########################################################
   #
   # ::xo::db::sql is used for interfacing with the database
