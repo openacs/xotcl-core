@@ -117,11 +117,9 @@ namespace eval ::Generic {
           -object_id $package_id \
           -privilege $privilege
     }
-    if {$privilege eq "create"} {
-      set edit_form_page_title [my add_page_title]
-    } {
-      set edit_form_page_title [my edit_page_title]
-    }
+    set edit_form_page_title [if {$privilege eq "create"} \
+		 {my add_page_title} {my edit_page_title}]
+
     set context [list $edit_form_page_title]
   }
 
