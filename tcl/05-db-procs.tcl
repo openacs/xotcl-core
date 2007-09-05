@@ -149,10 +149,13 @@ namespace eval ::xo::db {
       if {[file readable $sql_file]} {
 	my log "Sourcing '$sql_file'"
 	db_source_sql_file $sql_file
+	::xo::db::Class create_all_functions
+	return 1
       } else {
 	my log "Could not source '$sql_file'"
       }
     }
+    return 0
   }
   ##########################################################
   #
