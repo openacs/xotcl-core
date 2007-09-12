@@ -213,7 +213,7 @@ namespace eval ::xo::db {
       set limit_clause  [expr {$limit   ne "" ? "LIMIT $limit" : ""}]
       set order_clause  [expr {$orderby ne "" ? "ORDER BY $orderby" : ""}]
       set group_clause  [expr {$groupby ne "" ? "GROUP BY $groupby" : ""}]
-      return "SELECT $vars FROM $from $where_clause $group_clause $order_clause $limit_clause"
+      return "SELECT $vars FROM $from $where_clause $group_clause $order_clause $limit_clause $offset_clause"
     }
 
     sql proc date_trunc {field date} {
