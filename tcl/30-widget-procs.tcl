@@ -593,12 +593,13 @@ namespace eval ::xo::Table {
   Class TABLE2 \
       -superclass TABLE \
       -instproc render-actions {} {
-	html::div -id "actions" -style "float: left" {
-	  html::ul -style "list-style:none; padding: 10px;" {
-	    foreach o [[self]::__actions children] {
-	      html::li -class "button" {$o render}
-	    }
-	  }
+        set actions [[self]::__actions children]
+        if {[llength $actions] > 0} {
+          html::div -class "actions" -style "float: left;" {
+            html::ul -style "list-style:none; padding: 10px;" {
+              foreach o $actions { html::li -class "button" {$o render} }
+            }
+          }
 	}
       } \
       -instproc render {} {
