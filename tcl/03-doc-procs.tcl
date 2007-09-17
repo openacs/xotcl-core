@@ -156,6 +156,7 @@ ad_library {
   set doc_elements(public_p) $public
   set doc_elements(private_p) $private
   set doc_elements(deprecated_p) $deprecated
+  set doc_elements(warn_p) $deprecated
   set doc_elements(varargs_p) [expr {[lsearch args [my info ${inst}args $proc_name]]>-1}] 
   set doc_elements(flags) [list]
   set doc_elements(switches) [list]
@@ -200,6 +201,7 @@ ad_library {
   set doc_elements(public_p) $public
   set doc_elements(private_p) $private
   set doc_elements(deprecated_p) $deprecated
+  set doc_elements(warn_p) $deprecated
   set doc_elements(varargs_p) false
   set doc_elements(flags) [list]
   set doc_elements(switches) [list]
@@ -272,6 +274,7 @@ ad_library {
   set doc_elements(private_p) false
   set doc_elements(varargs_p) false
   set doc_elements(deprecated_p) false
+  set doc_elements(warn_p) false
   set doc_elements(default_values) ""
   set doc_elements(switches) ""
   set doc_elements(positionals) ""

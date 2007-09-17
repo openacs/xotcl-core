@@ -573,13 +573,13 @@ namespace eval ::xo::db {
       where args.function = upper(:package_name) || '__' || upper(:object_name)
       order by function, arg_seq
     } $package_name $object_name]
+    #ns_log notice "-- psql-args=$psql_args"
     my set sql [subst {
       select ${package_name}__${object_name}($psql_args)
     }]
-    #return {ns_pg_bind 0or1row $db $sql}
     return {ns_set value [ns_pg_bind 0or1row $db $sql] 0}
   }
-  
+ 
   ::xo::db::Class instproc psql-oracle {package_name object_name full_statement_name} {
     # 
     # in Oracle, we have to distinguish between functions and procs
@@ -626,7 +626,7 @@ namespace eval ::xo::db {
       }
       set sql "[my set sql]"
       db_with_handle -dbn $dbn db {
-        #my log "sql=$sql, sql_command=[set sql_command]"
+        #ns_log notice "--sql=$sql"
         return \[ [set sql_command] \]
       }
     }
@@ -671,15 +671,27 @@ namespace eval ::xo::db {
 
     set nonposarg_list [list [list -dbn ""]]
     foreach arg_name [my set arg_order] {
-      set default_value [my set defined($arg_name)]
-      set required [expr {$default_value eq "" ? ":required" : ""}]
       # special rule for DBN ... todo: proc has to handle this as well
       set nonposarg_name [expr {$arg_name eq "DBN" ? "DBN" : [string tolower $arg_name]}]
-      lappend nonposarg_list -$nonposarg_name$required
+      #
+      # handling of default values:
+      #  - no value ("") --> the attribute is required
+      #  - value different from NULL --> make it default
+      #  - otherwise: non-required argument
+      #
+      set default_value [my set defined($arg_name)]
+      if {$default_value eq ""} {
+        set arg -$nonposarg_name:required
+      } elseif {[string tolower $default_value] ne "null"} {
+        set arg [list -$nonposarg_name $default_value]
+      } else {
+        set arg -$nonposarg_name
+      }
+      lappend nonposarg_list $arg
     }
     #my log "-- define $object_name $nonposarg_list"
 
-    my ad_proc $object_name $nonposarg_list {} [subst -novariables $proc_body]
+    my ad_proc $object_name $nonposarg_list {Automatically generated method} [subst -novariables $proc_body]
   }
 
   ::xo::db::Class instproc unknown {m args} {
@@ -1250,10 +1262,8 @@ namespace eval ::xo::db {
   }
 
   ##############
-  ::xo::db::Class create ::xo::db::Attribute \
+  ::xotcl::Class create ::xo::db::Attribute \
       -superclass {::xo::Attribute} \
-      -pretty_name "Attribute" \
-      -with_table false \
       -parameter {
         {sqltype} 
         {column_name} 
@@ -1266,10 +1276,10 @@ namespace eval ::xo::db {
   ::xo::db::Attribute instproc create_attribute {} {
     if {![my create_acs_attribute]} return
 
-    my instvar name datatype pretty_name min_n_values max_n_values domain
+    my instvar datatype pretty_name min_n_values max_n_values domain column_name
     set object_type [$domain object_type]
     if {[db_string dbqd..check_att {select 0 from acs_attributes where 
-      attribute_name = :name and object_type = :object_type} -default 1]} {
+      attribute_name = :column_name and object_type = :object_type} -default 1]} {
 
       if {![::xo::db::Class object_type_exists_in_db -object_type $object_type]} {
 	$domain create_object_type
@@ -1277,11 +1287,11 @@ namespace eval ::xo::db {
 
       ::xo::db::sql::acs_attribute create_attribute \
           -object_type $object_type \
-          -attribute_name $name \
+          -attribute_name $column_name \
           -datatype $datatype \
           -pretty_name $pretty_name \
           -min_n_values $min_n_values \
-          -max_n_values $max_n_values
+          -max_n_values $max_n_values 
       #my save
     }
   }
@@ -1296,7 +1306,7 @@ namespace eval ::xo::db {
   }
   
   ::xo::db::Attribute instproc column_spec {{-id_column false}} {
-    my instvar sqltype name references default
+    my instvar sqltype name references default 
     set column_spec ""
     append column_spec " " [::xo::db::sql map_datatype $sqltype]
     if {[info exists default]} {append column_spec " DEFAULT '$default'" }
@@ -1334,10 +1344,8 @@ namespace eval ::xo::db {
   }
 
   ##############
-  ::xo::db::Class create ::xo::db::CrAttribute \
+  ::xotcl::Class create ::xo::db::CrAttribute \
       -superclass {::xo::db::Attribute} \
-      -pretty_name "Cr Attribute" \
-      -with_table false 
 
   ::xo::db::CrAttribute instproc create_attribute {} {
     # do nothing, if create_acs_attribute is set to false
@@ -1347,7 +1355,7 @@ namespace eval ::xo::db {
     set object_type [$domain object_type]
 
     if {[db_string dbqd..check_att {select 0 from acs_attributes where 
-      attribute_name = :name and object_type = :object_type} -default 1]} {
+      attribute_name = :column_name and object_type = :object_type} -default 1]} {
 
       if {![::xo::db::Class object_type_exists_in_db -object_type $object_type]} {
 	$domain create_object_type
@@ -1365,7 +1373,7 @@ namespace eval ::xo::db {
 
   ##############
   ::xo::db::Object slots {
-    ::xo::db::Attribute create object_id    -pretty_name "Object ID" -sqltype integer
+    ::xo::db::Attribute create object_id    -pretty_name "Object ID" -datatype integer
     #::xo::db::Attribute create object_type  -pretty_name "Object Type"
     ::xo::db::Attribute create object_title -pretty_name "Object Title" -column_name title
   }
