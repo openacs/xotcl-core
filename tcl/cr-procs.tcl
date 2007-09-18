@@ -150,12 +150,25 @@ namespace eval ::xo::db {
     #
   }
 
-  CrClass instproc type_selection_clause {{-with_subtypes:boolean false}} {
+  #
+  # Generic part (independet of Postgres/Oracle)
+  #
+
+  CrClass instproc type_selection_clause {{-base_table cr_revisions} {-with_subtypes:boolean false}} {
     my instvar object_type
     if {$with_subtypes} {
-      return "acs_objects.object_type in ([my object_types_query])"
+      if {$base_table eq "cr_revisions"} {
+        # do type selection manually
+        return "acs_objects.object_type in ([my object_types_query])"
+      }
+      # the base-table defines contains the subtypes
+      return ""
     } else {
-      return "acs_objects.object_type = '$object_type'"
+      if {$base_table eq "cr_revisions"} {
+        return "acs_objects.object_type = '$object_type'"
+      } else {
+        return "bt.object_type = '$object_type'"
+      }
     }
   }
   
@@ -577,26 +590,32 @@ namespace eval ::xo::db {
     {-folder_id}
     {-page_size 20}
     {-page_number ""}
+    {-base_table "cr_revisions"}
   } {
     returns the SQL-query to select the CrItems of the specified object_type
-    @select_attributes attributes for the sql query to be retrieved, in addion
-      to ci.item_id acs_objects.object_type, which are always returned
+    @select_attributes attributes for the sql query to be retrieved, in addition
+      to item_id and object_type, which are always returned
     @param orderby for ordering the solution set
     @param where_clause clause for restricting the answer set
     @param with_subtypes return subtypes as well
     @param count return the query for counting the solutions
     @param folder_id parent_id
     @param publish_status one of 'live', 'ready' or 'production'
+    @param base_table typically automatic view, must contain title and revision_id
     @return sql query
   } {
     if {![info exists folder_id]} {my instvar folder_id}
 
-    set attributes [list ci.item_id ci.name ci.publish_status acs_objects.object_type] 
+    if {$base_table eq "cr_revisions"} {
+      set attributes [list ci.item_id ci.name ci.publish_status acs_objects.object_type] 
+    } else {
+      set attributes [list bt.item_id ci.name ci.publish_status bt.object_type] 
+    }
     foreach a $select_attributes {
-      if {$a eq "title"} {set a cr.title}
+      if {$a eq "title"} {set a bt.title}
       lappend attributes $a
     }
-    set type_selection_clause [my type_selection_clause -with_subtypes $with_subtypes]
+    set type_selection_clause [my type_selection_clause -base_table $base_table -with_subtypes $with_subtypes]
     #my log "type_selection_clause -with_subtypes $with_subtypes returns $type_selection_clause"
     if {$count} {
       set attribute_selection "count(*)"
@@ -608,10 +627,17 @@ namespace eval ::xo::db {
     
     set cond [list]
     if {$type_selection_clause ne ""} {lappend cond $type_selection_clause}
-    if {$where_clause ne ""} {lappend cond $where_clause}
+    if {$where_clause ne ""}          {lappend cond $where_clause}
     if {[info exists publish_status]} {lappend cond "ci.publish_status eq '$publish_status'"}
-    lappend cond "coalesce(ci.live_revision,ci.latest_revision) = cr.revision_id 
-        and ci.parent_id = $folder_id and acs_objects.object_id = cr.revision_id"
+    if {$base_table eq "cr_revisions"} {
+      lappend cond "coalesce(ci.live_revision,ci.latest_revision) = bt.revision_id"
+      lappend cond "acs_objects.object_id = bt.revision_id"
+      set acs_objects_table "acs_objects, "
+    } else {
+      lappend cond "ci.item_id = bt.item_id"
+      set acs_objects_table ""
+    }
+    lappend cond "ci.parent_id = $folder_id"
 
     if {$page_number ne ""} {
       set limit $page_size
@@ -623,7 +649,7 @@ namespace eval ::xo::db {
 
     set sql [::xo::db::sql select \
                 -vars $attribute_selection \
-                -from "acs_objects, cr_items ci, cr_revisions cr $from_clause" \
+                -from "$acs_objects_table cr_items ci, $base_table bt $from_clause" \
                 -where [join $cond " and "] \
                 -orderby $orderby \
                 -limit $limit -offset $offset]
@@ -640,6 +666,7 @@ namespace eval ::xo::db {
     {-folder_id}
     {-page_size 20}
     {-page_number ""}
+    {-base_table "cr_revisions"}
   } {
     Returns a set (ordered composite) of the answer tuples of 
     an 'instance_select_query' with the same attributes.
@@ -656,6 +683,7 @@ namespace eval ::xo::db {
 		    -folder_id $folder_id \
 		    -page_size $page_size \
 		    -page_number $page_number \
+		    -base_table $base_table \
 		   ]]
     return $s
   }
