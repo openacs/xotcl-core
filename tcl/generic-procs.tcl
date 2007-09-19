@@ -139,7 +139,18 @@ namespace eval ::Generic {
   # temporary solution for CLOB inserts 
   # TODO: make it more general, based on slots
   #
-  CrClass instproc insert_statement {atts} {
+  CrClass instproc insert_statement {atts postponed_vars} {
+    my log "-- insert_statement: sql_long_text_attributes [my set sql_long_text_attributes]"
+    ### todo: do be removed
+    my upvar $postponed_vars still_to_do
+    array set clob_vars [my set sql_long_text_attributes]
+    foreach a $atts {
+      set key clob_vars($a)
+      if {[info exists $key]} {
+        lappend still_to_do $a [set $key] [my uplevel "set $a"]
+      }
+    }
+    ####
     return "insert into [my set table_name]i ([join $atts ,]) \
                 values (:[join $atts ,:])"
   }
@@ -150,13 +161,19 @@ namespace eval ::Generic {
     #
 
     # redefine for the time being the insert statement
-    CrClass instproc insert_statement {atts} {
-      # Don't insert the attribute text, which is added in Oracle
-      # via a separate statement.
+    CrClass instproc insert_statement {atts postponed_vars} {
+      my upvar $postponed_vars still_to_do
       set values [list]
       set attributes [list]
+      array set clob_vars [my set sql_long_text_attributes]
       foreach a $atts {
-        if {$a ne "text"} {
+        # Don't insert the attribute text, which is added in Oracle
+        # via a separate statement.
+        if {$a eq "text"} continue
+        set key clob_vars($a)
+        if {[info exists $key]} {
+          lappend still_to_do $a [set $key] [my uplevel "set $a"]
+        } else {
           lappend attributes $a
           lappend values :$a
         }
@@ -434,23 +451,29 @@ namespace eval ::Generic {
 
 
   CrClass instproc init {} {
-    my instvar object_type sql_attribute_names
+    my instvar object_type sql_attribute_names sql_long_text_attributes
     if {[my info superclass] ne "::Generic::CrItem"} {
       my set superclass [[my info superclass] set object_type]
     }
     my init_type_hierarchy
     set sql_attribute_names [list]
+    set sql_long_text_attributes [list]
     set o [::xo::OrderedComposite new -contains [my cr_attributes]]
     $o destroy_on_cleanup
     foreach att [$o children] { 
       lappend sql_attribute_names [$att attribute_name]
+      if {[$att sqltype] eq "long_text"} {
+        lappend sql_long_text_attributes [$att attribute_name] [self]
+      }
     }
     set sc [my info superclass]
     if {[$sc exists sql_attribute_names]} {
       # my log "-- inherited attribute_names <[$sc set sql_attribute_names]>"
       foreach n [$sc set sql_attribute_names] {lappend sql_attribute_names $n}
+      foreach n [$sc set sql_long_text_attributes] {lappend sql_long_text_attributes $n}
     }
     #my log "-- attribute_names <$sql_attribute_names> [$o info children]"
+    my log "-- sql_long_text_attributes <$sql_long_text_attributes>"
 
     if {![my object_type_exists]} {
       my create_object_type
@@ -517,11 +540,6 @@ namespace eval ::Generic {
        and    i.item_id = n.item_id \
        and    o.object_id = $revision_id"
     } else {
-my log  "select [join $atts ,], i.parent_id \
-       from   [my set table_name]i n, cr_items i, acs_objects o \
-       where  i.item_id = $item_id \
-       and    n.[my id_column] = coalesce(i.live_revision, i.latest_revision) \
-       and    o.object_id = i.item_id"
       $object db_1row [my qn fetch_from_view_item_id] "\
        select [join $atts ,], i.parent_id \
        from   [my set table_name]i n, cr_items i, acs_objects o \
@@ -638,7 +656,7 @@ my log  "select [join $atts ,], i.parent_id \
                 -where [join $cond " and "] \
                 -orderby $orderby \
                 -limit $limit -offset $offset]
-    my log "--sql=$sql"
+    #my log "--sql=$sql"
     return $sql
   }
 
@@ -816,8 +834,12 @@ my log  "select [join $atts ,], i.parent_id \
   #CrItem set insert_view_operation db_0or1row
 
   if {[db_driverkey ""] eq "postgresql"} {
-    CrItem instproc fix_content {revision_id content} {
+    CrItem instproc fix_content {revision_id content postponed_vars} {
       [my info class] instvar storage_type 
+      #my msg "--fix postponed_vars nr: [llength $postponed_vars]"
+      #foreach {att cls content} $postponed_vars {
+      #  my msg "$att [$cls table_name] [$cls id_column] length=[string length $content]"
+      #}
       if {$storage_type eq "file"} {
         db_dml [my qn update_content_length] "update cr_revisions \
                 set content_length = [file size [my set import_file]] \
@@ -825,6 +847,11 @@ my log  "select [join $atts ,], i.parent_id \
       }
     }
     CrItem instproc update_content {revision_id content} {
+      #
+      # This method can be use to update the content field (only this) of 
+      # an content item without creating a new revision. This works
+      # currently only for storage_type == "text".
+      #
       [my info class] instvar storage_type 
       if {$storage_type eq "file"} {
         my log "--update_content not implemented for type file"
@@ -838,7 +865,7 @@ my log  "select [join $atts ,], i.parent_id \
     #
     # Oracle
     #
-    CrItem instproc fix_content {revision_id content} {
+    CrItem instproc fix_content {revision_id content postponed_vars} {
       [my info class] instvar storage_type
       if {$storage_type eq "file"} {
         db_dml [my qn update_content_length] "update cr_revisions \
@@ -850,17 +877,27 @@ my log  "select [join $atts ,], i.parent_id \
                where  revision_id = $revision_id \
                returning content into :1" -blobs [list $content]
       }
+      my msg "--fix postponed_vars nr: [llength $postponed_vars]"
+      foreach {att cls content} $postponed_vars {
+        my msg "$att [$cls table_name] [$cls id_column] length=[string length $content]"
+        db_dml [my qn att-$att] "update [$cls table_name] \
+               set    $att = empty_blob() \
+               where  [$cls id_column] = $revision_id \
+               returning $att into :1" -blobs [list $content]
+      }
     }
 
     CrItem instproc update_content {revision_id content} {
+      #
+      # This method can be used to update the content field (only this) of 
+      # an content item without creating a new revision. This works
+      # currently only for storage_type == "text".
+      #
       [my info class] instvar storage_type
       if {$storage_type eq "file"} {
         my log "--update_content not implemented for type file"
       } else {
-        db_dml [my qn update_content] "update cr_revisions \
-               set    content = empty_blob(), content_length = [string length $content] \
-               where  revision_id = $revision_id \
-               returning content into :1" -blobs [list $content]
+        my fix_content $revision_id $content {}
       }
     }
   }
@@ -898,9 +935,10 @@ my log  "select [join $atts ,], i.parent_id \
         my instvar import_file
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }
+      set __postponed_vars [list]
       $insert_view_operation [my qn revision_add] \
-          [[my info class] insert_statement $__atts]
-      my fix_content $revision_id $text
+          [[my info class] insert_statement $__atts __postponed_vars]
+      my fix_content $revision_id $text $__postponed_vars
       if {$live_p} {
         ::xo::db::sql::content_item set_live_revision \
             -revision_id $revision_id \
@@ -999,9 +1037,11 @@ my log  "select [join $atts ,], i.parent_id \
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }
       #my log "--V atts=([join $__atts ,])\nvalues=(:[join $__atts ,:])"
+      set __postponed_vars [list]
       $insert_view_operation [my qn revision_add] \
-          [[my info class] insert_statement $__atts]
-      my fix_content $revision_id $text
+          [[my info class] insert_statement $__atts __postponed_vars]
+      my fix_content $revision_id $text $__postponed_vars
+
       if {$live_p} {
         ::xo::db::sql::content_item set_live_revision \
             -revision_id $revision_id \
