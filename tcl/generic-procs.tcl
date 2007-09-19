@@ -140,17 +140,10 @@ namespace eval ::Generic {
   # TODO: make it more general, based on slots
   #
   CrClass instproc insert_statement {atts postponed_vars} {
-    my log "-- insert_statement: sql_long_text_attributes [my set sql_long_text_attributes]"
-    ### todo: do be removed
-    my upvar $postponed_vars still_to_do
-    array set clob_vars [my set sql_long_text_attributes]
-    foreach a $atts {
-      set key clob_vars($a)
-      if {[info exists $key]} {
-        lappend still_to_do $a [set $key] [my uplevel "set $a"]
-      }
-    }
-    ####
+    # 
+    # postponed vars are only used in Oracle
+    #
+    # my log "-- insert_statement: sql_long_text_attributes [my set sql_long_text_attributes]"
     return "insert into [my set table_name]i ([join $atts ,]) \
                 values (:[join $atts ,:])"
   }
@@ -162,16 +155,27 @@ namespace eval ::Generic {
 
     # redefine for the time being the insert statement
     CrClass instproc insert_statement {atts postponed_vars} {
+      #
+      # The Oracle implementation of OpenACS cannot update
+      # here *LOBs safely updarted through the automatic generated
+      # view. So we postpone these updates and perform these
+      # as separate statements.
+      #
       my upvar $postponed_vars still_to_do
       set values [list]
       set attributes [list]
       array set clob_vars [my set sql_long_text_attributes]
       foreach a $atts {
-        # Don't insert the attribute text, which is added in Oracle
-        # via a separate statement.
+        #
+        # "text" is always handled in Oracle via separate statement
+        #
         if {$a eq "text"} continue
         set key clob_vars($a)
         if {[info exists $key]} {
+          #
+          # Pass back the attribute_name, the context (class) and 
+          # the value for the postponed updates
+          #
           lappend still_to_do $a [set $key] [my uplevel "set $a"]
         } else {
           lappend attributes $a
@@ -462,6 +466,15 @@ namespace eval ::Generic {
     $o destroy_on_cleanup
     foreach att [$o children] { 
       lappend sql_attribute_names [$att attribute_name]
+      #
+      # The virtual sqltype "long_text" indicates text variales
+      # with long content. In postgres, this is realized via
+      # the datatype text. Due to various limitations in Oracle,
+      # we use there CLOBS, which need in some context special 
+      # treatments (e.g. on updates). Thefore, we keep book about these
+      # in the class variable "sql_long_text_attributes", together 
+      # with [self] (the class, to which this variable belongs) as context.
+      #
       if {[$att sqltype] eq "long_text"} {
         lappend sql_long_text_attributes [$att attribute_name] [self]
       }
@@ -473,7 +486,7 @@ namespace eval ::Generic {
       foreach n [$sc set sql_long_text_attributes] {lappend sql_long_text_attributes $n}
     }
     #my log "-- attribute_names <$sql_attribute_names> [$o info children]"
-    my log "-- sql_long_text_attributes <$sql_long_text_attributes>"
+    #my log "-- sql_long_text_attributes <$sql_long_text_attributes>"
 
     if {![my object_type_exists]} {
       my create_object_type
@@ -877,13 +890,13 @@ namespace eval ::Generic {
                where  revision_id = $revision_id \
                returning content into :1" -blobs [list $content]
       }
-      my msg "--fix postponed_vars nr: [llength $postponed_vars]"
+      #my msg "--fix postponed_vars nr: [expr {[llength $postponed_vars]/3}]"
       foreach {att cls content} $postponed_vars {
-        my msg "$att [$cls table_name] [$cls id_column] length=[string length $content]"
+        #my msg "$att [$cls table_name] [$cls id_column] length=[string length $content]"
         db_dml [my qn att-$att] "update [$cls table_name] \
-               set    $att = empty_blob() \
+               set    $att = empty_clob() \
                where  [$cls id_column] = $revision_id \
-               returning $att into :1" -blobs [list $content]
+               returning $att into :1" -clobs [list $content]
       }
     }
 
