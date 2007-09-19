@@ -123,31 +123,34 @@ namespace eval ::xo::db {
     my log "unknown called with $obj $args"
   }
 
-
   #
-  # The following methods are used oracle, postgres specific code (locking,
-  # for the type hierarchies, ...
-  #
-  CrClass instproc lock {tablename mode} {
-    # no locking by default
-  }
+  # Deal with locking requirements
+  # 
   if {[db_driverkey ""] eq "postgresql"} {
     #
-    # Postgres
+    # PostgreSQL
     #
     set pg_version [db_string dbqd.null.get_version {
       select substring(version() from 'PostgreSQL #"[0-9]+.[0-9+]#".%' for '#')   }]
     ns_log notice "--Postgres Version $pg_version"      
     if {$pg_version < 8.2} {
-      ns_log notice "--Postgres Version $pg_version older than 8.2, use locks"      
+      ns_log notice "--Postgres Version $pg_version older than 8.2, use locks"
+      #
+      # We define a locking function, really locking the tables...
+      #
       CrClass instproc lock {tablename mode} {
         db_dml [my qn lock_objects] "LOCK TABLE $tablename IN $mode MODE"
       }
+    } else {
+      # No locking needed for newer versions of PostgreSQL
+      CrClass instproc lock {tablename mode} {;}
     }
   } else {
     #
     # Oracle
     #
+    # No locking needed for known versions of Oracle
+    CrClass instproc lock {tablename mode} {;}
   }
 
   #
@@ -172,40 +175,7 @@ namespace eval ::xo::db {
     }
   }
   
-  #
-  # temporary solution for CLOB inserts
-  # TODO: make it more general, based on slots
-  #
-  CrClass instproc insert_statement {atts vars} {
-    return "insert into [my set table_name]i ([join $atts ,]) \
-                values (:[join $vars ,:])"
-  }
-  
-#   if {[db_driverkey ""] ne "postgresql"} {
-#     #
-#     # Oracle
-#     #
-    
-#     # redefine for the time being the insert statement
-#     CrClass instproc insert_statement {atts vars} {
-#       # TODO : should be based on slots and not on attribute names
-#       # to avoid ambiguities
-#       set values [list]
-#       set suffix ""
-#       foreach a $atts v $vars {
-# 	if {$a eq "text"} {
-# 	  lappend values empty_clob()
-# 	  set suffix " returning $a into :$a"
-# 	} else {
-# 	  lappend values :$v
-# 	}
-#       }
-#       return "insert into [my set table_name]i ([join $atts ,]) \
-#                       values ([join $values ,])$suffix"
-#     }
-#   }
-  
-  	 
+
   #
   # database version (Oracle/PG) independent code
   #
@@ -401,6 +371,19 @@ namespace eval ::xo::db {
     }
   }
 
+  CrClass instproc update_long_text_slots {} {
+    #
+    # keep long_text_slots in a separate array (for Oracle)
+    #
+    my array unset long_text_slots
+    foreach {slot_name slot} [my array get db_slot] {
+      if {[$slot sqltype] eq "long_text"} {
+        my set long_text_slots($slot_name) $slot
+      }
+    }
+    #my log "--long_text_slots = [my array names long_text_slots]"
+  }
+
   #
   # ::xo::db::Class creates automatically save and insert methods.
   # For the content repository classes (created with CrClass) we use
@@ -433,16 +416,15 @@ namespace eval ::xo::db {
     # db_slot. This is due to the usage of the
     # automatically created views. Note, that classes created with
     # ::xo::db::Class keep only the class specific db slots.
-    set sc [my info superclass]
-    #my log "--slot local of [self] -- [my array names db_slot]"
-    #my log "--slot sc of $sc -- [$sc array names db_slot]"
-    foreach {slot_name slot} [$sc array get db_slot] {
+    #
+    foreach {slot_name slot} [[my info superclass] array get db_slot] {
       # don't overwrite slots, unless the object_title (named title)
       if {![info exists db_slot($slot_name)] ||
 	  $slot eq "::xo::db::Object::slot::object_title"} {
 	set db_slot($slot_name) $slot
       }
     }
+    my update_long_text_slots
     
     if {![::xo::db::Class object_type_exists_in_db -object_type $object_type]} {
       my create_object_type
@@ -740,44 +722,138 @@ namespace eval ::xo::db {
   }
 
   if {[db_driverkey ""] eq "postgresql"} {
-
-    # provide the appropriate db_* call for the view update. Earlier
-    # versions up to 5.3.0d1 used db_dml, newer versions (around july
-    # 2006) have to use db_0or1row, when the patch for deadlocks and
-    # duplicate items is applied...
+    #
+    # PostgreSQL
+    # 
+    # Provide the appropriate db_* call for the view update. Earlier
+    # versions up to 5.3.0d1 used db_dml, newer versions (since around
+    # july 2006) have to use db_0or1row, when the patch for deadlocks
+    # and duplicate items is applied...
     
     apm_version_get -package_key acs-content-repository -array info
     array get info
     CrItem set insert_view_operation \
         [expr {[apm_version_names_compare $info(version_name) 5.3.0d1] < 1 ? "db_dml" : "db_0or1row"}]
     array unset info
-  } else { ;# Oracle
-    CrItem set insert_view_operation db_dml
-  }
-  
-  # uncomment the following line, if you want to force db_0or1row for
-  # update operations (e.g. when using the provided patch for the
-  # content repository in a 5.2 installation)
 
-  #CrItem set insert_view_operation db_0or1row
+    #
+    # INSERT statements differ between PostgreSQL and Oracle
+    # due to the handling of CLOBS.
+    #
+    CrClass instproc insert_statement {atts vars} {
+      return "insert into [my set table_name]i ([join $atts ,]) \
+                values (:[join $vars ,:])"
+    }
 
-  CrItem instproc update_content_length {storage_type revision_id} {
-    if {$storage_type eq "file"} {
-      db_dml [my qn update_content_length] "update cr_revisions \
+    CrItem instproc fix_content {revision_id content} {
+      [my info class] instvar storage_type 
+      #my msg "--long_text_slots: [[my info class] array get long_text_slots]"
+      #foreach {slot_name slot} [[my info class] array get long_text_slots] {
+      #  set cls [$slot domain]
+      #  set content [my set $slot_name]
+      #  my msg "$slot_name [$cls table_name] [$cls id_column] length=[string length $content]"
+      #}
+      if {$storage_type eq "file"} {
+        db_dml [my qn fix_content_length] "update cr_revisions \
                 set content_length = [file size [my set import_file]] \
                 where revision_id = $revision_id"
+      }
     }
-  }
-  CrItem instproc update_content {revision_id content} {
-    [my info class] instvar storage_type 
-    if {$storage_type eq "file"} {
-      my log "--update_content not implemented for type file"
-    } else {
-      db_dml [my qn update_content] "update cr_revisions \
-                set content = :content where revision_id = $revision_id"
-    }
-  }
 
+    CrItem instproc update_content {revision_id content} {
+      #
+      # This method can be use to update the content field (only this) of 
+      # an content item without creating a new revision. This works
+      # currently only for storage_type == "text".
+      #
+      [my info class] instvar storage_type 
+      if {$storage_type eq "file"} {
+        my log "--update_content not implemented for type file"
+      } else {
+        db_dml [my qn update_content] "update cr_revisions \
+                set content = :content \
+		where revision_id = $revision_id"
+      }
+    }
+  } else {
+    #
+    # Oracle
+    #
+    CrItem set insert_view_operation db_dml
+
+    CrClass instproc insert_statement {atts vars} {
+      #
+      # The Oracle implementation of OpenACS cannot update
+      # here *LOBs safely updarted through the automatic generated
+      # view. So we postpone these updates and perform these
+      # as separate statements.
+      #
+      set values [list]
+      set attributes [list]
+      #my msg "--long_text_slots: [my array get long_text_slots]"
+
+      foreach a $atts v $vars {
+        #
+        # "text" and long_text_slots are handled in Oracle 
+        # via separate update statement.
+        #
+        if {$a eq "text" || [my exists long_text_slots($a)]} continue
+        lappend attributes $a
+        lappend values $v
+      }
+      return "insert into [my set table_name]i ([join $attributes ,]) \
+                values ([join $values ,])"
+    }
+
+    CrItem instproc fix_content {{-only_text false} revision_id content} {
+      [my info class] instvar storage_type
+      if {$storage_type eq "file"} {
+        db_dml [my qn fix_content_length] "update cr_revisions \
+                set content_length = [file size [my set import_file]] \
+                where revision_id = $revision_id"
+      } elseif {$storage_type eq "text"} {
+        db_dml [my qn fix_content] "update cr_revisions \
+               set    content = empty_blob(), content_length = [string length $content] \
+               where  revision_id = $revision_id \
+               returning content into :1" -blobs [list $content]
+      }
+      if {!$only_text} {
+        foreach {slot_name slot} [[my info class] array get long_text_slots] {
+          set cls [$slot domain]
+          set att [$slot column_name]
+          set content [my set $slot_name]
+          # my msg "$att [$cls table_name] [$cls id_column] length=[string length $content]"
+          db_dml [my qn att-$att] "update [$cls table_name] \
+               set    $att = empty_clob() \
+               where  [$cls id_column] = $revision_id \
+               returning $att into :1" -clobs [list $content]
+        }
+      }
+    }
+
+    CrItem instproc update_content {revision_id content} {
+      #
+      # This method can be used to update the content field (only this) of 
+      # an content item without creating a new revision. This works
+      # currently only for storage_type == "text".
+      #
+      [my info class] instvar storage_type
+      if {$storage_type eq "file"} {
+        my log "--update_content not implemented for type file"
+      } else {
+        my fix_content -only_text true $revision_id $content
+      }
+    }
+  }
+  
+  #
+  # Uncomment the following line, if you want to force db_0or1row for
+  # update operations (e.g. when using the provided patch for the
+  # content repository in a 5.2 installation)
+  #
+  # CrItem set insert_view_operation db_0or1row
+
+ 
   CrItem instproc current_user_id {} {
     if {[my isobject ::xo::cc]} {return [::xo::cc user_id]}
     if {[ad_conn isconnected]}  {return [ad_conn user_id]}
@@ -820,7 +896,7 @@ namespace eval ::xo::db {
       $insert_view_operation [my qn revision_add] \
 	  [[my info class] insert_statement $__atts $__vars]
 
-      my update_content_length $storage_type $revision_id
+      my fix_content $revision_id $text
       if {$live_p} {
         ::xo::db::sql::content_item set_live_revision \
             -revision_id $revision_id \
@@ -917,9 +993,9 @@ namespace eval ::xo::db {
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }
 
-      $insert_view_operation  [my qn revision_add] \
+      $insert_view_operation [my qn revision_add] \
 	  [[my info class] insert_statement $__atts $__vars]
-      my update_content_length $storage_type $revision_id
+      my fix_content $revision_id $text
 
       if {$live_p} {
         ::xo::db::sql::content_item set_live_revision \
