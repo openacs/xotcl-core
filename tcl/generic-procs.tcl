@@ -7,6 +7,27 @@ ad_library {
 }
 
 namespace eval ::Generic {
+  #
+  # The ns_caches below should exist, before any cached objects are
+  # created. Under most conditions, it is sufficient to do this in
+  # object-cache-init.tcl, which is performed after xotcl-core procs
+  # are read, but before applications using it (e.g. xowiki). However,
+  # if e.g. xowiki is loaded via install.xml, the -init methods of
+  # xotcl-core are not executed (probably a bug). Without the
+  # ns_cache, creating objects fails with an error. So, we moved the
+  # cache creation here and create caches, when they do not exist
+  # already. This change makes the object-cache-init.tcl
+  # obsolete. 
+  #
+  # Unfortunately, ns_cache has no command to check, whether
+  # a cache exists, so we use the little catch below to check.
+  #
+  if {[catch {ns_cache flush xotcl_object_cache NOTHING}]} {
+    ns_log notice "xotcl-core: creating xotcl-object caches"
+    
+    ns_cache create xotcl_object_cache -size 200000
+    ns_cache create xotcl_object_type_cache -size 10000
+  }
 
   Class CrClass -superclass Class -parameter {
     pretty_name
