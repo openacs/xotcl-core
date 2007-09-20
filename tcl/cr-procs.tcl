@@ -1183,7 +1183,7 @@ namespace eval ::xo::db {
   }
   CrCache instproc delete {-item_id} {
     next
-    ns_cache flush xotcl_object_cache ::$item_id
+    ::xo::clusterwide ns_cache flush xotcl_object_cache ::$item_id
     # we should probably flush as well cached revisions
   }
 
@@ -1192,10 +1192,11 @@ namespace eval ::xo::db {
   CrCache::Item instproc save args {
     set r [next]
     # cache only names with IDs
-    if {[regexp [[self class] set name_pattern] [self]]} {
-      #my log "--CACHE saving [self] in cache"
-      ns_cache set xotcl_object_cache [self] \
-	  [::Serializer deepSerialize [self]]
+    set obj [self]
+    if {[regexp [[self class] set name_pattern] $obj]} {
+      #my log "--CACHE saving $obj in cache"
+      ::xo::clusterwide ns_cache flush xotcl_object_cache $obj
+      ns_cache set xotcl_object_cache $obj [$obj serialize]
     }
     return $r
   }
@@ -1207,7 +1208,7 @@ namespace eval ::xo::db {
     return $item_id
   }
   CrCache::Item instproc delete args {
-    ns_cache flush xotcl_object_cache [self]
+    ::xo::clusterwide ns_cache flush xotcl_object_cache [self]
     next
   }
   

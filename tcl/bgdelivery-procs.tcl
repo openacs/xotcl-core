@@ -237,8 +237,7 @@ bgdelivery proc subscribe {key {initmsg ""} {mode default} } {
   ns_write "HTTP/1.0 200 OK\r\nContent-type: $content_type\r\n\r\n[string repeat { } 1024]"
   set ch [ns_conn channel]
   thread::transfer [my get_tid] $ch
-  my do -async ::Subscriber new -channel $ch -key $key -user_id [ad_conn user_id] -mode $mode
-  my send_to_subscriber $key $initmsg
+  my do ::Subscriber new -channel $ch -key $key -user_id [ad_conn user_id] -mode $mode
 }
 
 bgdelivery proc send_to_subscriber {key msg} {

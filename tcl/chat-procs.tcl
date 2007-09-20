@@ -24,15 +24,29 @@ namespace eval ::xo {
     if {![nsv_exists $cls initialized]} {
       my log "-- initialize $cls"
       $cls initialize_nsvs
-      nsv_set $cls initialized \
+      ::xo::clusterwide nsv_set $cls initialized \
 	  [ad_schedule_proc -thread "t" [my sweepinterval] $cls sweep_all_chats]
     }
-    if {![nsv_exists $array-seen newest]} {nsv_set $array-seen newest 0}
-    if {![nsv_exists $array-color idx]}   {nsv_set $array-color idx 0}
+    if {![nsv_exists $array-seen newest]} {::xo::clusterwide nsv_set $array-seen newest 0}
+    if {![nsv_exists $array-color idx]}   {::xo::clusterwide nsv_set $array-color idx 0}
     my init_user_color
   }
 
+
+
+  Chat instproc register_nsvs {msg_id user_id msg color secs} {
+    my instvar array now
+    if { ![nsv_exists $array-login $user_id] } {
+      ::xo::clusterwide nsv_set $array-login $user_id $secs
+    }
+    ::xo::clusterwide nsv_set $array $msg_id [list $now $secs $user_id $msg $color]
+    ::xo::clusterwide nsv_set $array-seen newest $now
+    ::xo::clusterwide nsv_set $array-seen last $secs
+    ::xo::clusterwide nsv_set $array-last-activity $user_id $now
+  }
+
   Chat instproc add_msg {{-get_new:boolean true} -uid msg} {
+    my log "--chat adding $msg"
     my instvar array now
     set user_id [expr {[info exists uid] ? $uid : [my set user_id]}]
     set color   [my user_color $user_id]
@@ -46,15 +60,7 @@ namespace eval ::xo {
       my broadcast_msg [Message new -volatile -time [clock seconds] \
 			    -user_id $user_id -msg $msg -color $color]
     }
-
-    set msg_id $now.$user_id
-    if { ![nsv_exists $array-login $user_id] } {
-      nsv_set $array-login $user_id [clock seconds]
-    }
-    nsv_set $array $msg_id [list $now [clock seconds] $user_id $msg $color]
-    nsv_set $array-seen newest $now
-    nsv_set $array-seen last [clock seconds]
-    nsv_set $array-last-activity $user_id $now
+    my register_nsvs $now.$user_id $user_id $msg $color [clock seconds]
     # this in any case a valid result, but only needed for the polling interface
     if {$get_new} {my get_new}
   }
@@ -79,7 +85,7 @@ namespace eval ::xo {
   Chat instproc check_age {key ago} {
     my instvar array timewindow
     if {$ago > $timewindow} {
-      nsv_unset $array $key
+      ::xo::clusterwide nsv_unset $array $key
       #my log "--c unsetting $key"
       return 0
     }
@@ -99,7 +105,7 @@ namespace eval ::xo {
 	  my check_age $key [expr {($now - $timestamp) / 1000}]
 	}
       }
-      nsv_set $array-seen $session_id $now
+      ::xo::clusterwide nsv_set $array-seen $session_id $now
       #my log "--c setting session_id $session_id: $now"
     } else {
       #my log "--c nothing new for $session_id"
@@ -116,7 +122,7 @@ namespace eval ::xo {
       }
     }
     #my log "--c setting session_id $session_id: $now"
-    nsv_set $array-seen $session_id $now
+    ::xo::clusterwide nsv_set $array-seen $session_id $now
     my render
   }
 
@@ -143,11 +149,11 @@ namespace eval ::xo {
     ns_log Notice "YY User $user_id logging out of chat"
     my add_msg -get_new false [_ chat.has_left_the_room].
     catch {
-        # do not try to clear nsvs, if they are not available
-        # this situation could occur after a server restart, after which the user tries to leave the room
-        nsv_unset $array-last-activity $user_id
-        nsv_unset $array-login $user_id
-        nsv_unset $array-color $user_id
+      # do not try to clear nsvs, if they are not available
+      # this situation could occur after a server restart, after which the user tries to leave the room
+      ::xo::clusterwide nsv_unset $array-last-activity $user_id
+      ::xo::clusterwide nsv_unset $array-login $user_id
+      ::xo::clusterwide nsv_unset $array-color $user_id
     }
   }
 
@@ -159,8 +165,8 @@ namespace eval ::xo {
       set colors [parameter::get -parameter UserColors -default [[my info class] set colors]]
       # ns_log notice "getting colors of [my info class] = [info exists colors]"
       set color [lindex $colors [expr { [nsv_get $array-color idx] % [llength $colors] }]]
-      nsv_set $array-color $user_id $color
-      nsv_incr $array-color idx
+      ::xo::clusterwide nsv_set $array-color $user_id $color
+      ::xo::clusterwide nsv_incr $array-color idx
     }
   }
   
@@ -177,10 +183,12 @@ namespace eval ::xo {
   }
   
   Chat instproc login {} {
+    my log "--chat login"
     my instvar array user_id now
     # was the user already active?
+    my log "--chat login already avtive? [nsv_exists $array-last-activity $user_id]"
     if {![nsv_exists $array-last-activity $user_id]} {
-        my add_msg -get_new false [_ xotcl-core.has_entered_the_room]
+      my add_msg -get_new false [_ xotcl-core.has_entered_the_room]
     }
     my encoder noencode
     #my log "--c setting session_id [my set session_id]: $now"
@@ -217,10 +225,9 @@ namespace eval ::xo {
     return [my encode $creator]  
   }
   
-  Chat instproc urlencode {string} {ns_urlencode $string}
-  Chat instproc noencode  {string} {set string}
-  Chat instproc encode    {string} {my [my encoder] $string}	
-
+  Chat instproc urlencode   {string} {ns_urlencode $string}
+  Chat instproc noencode    {string} {set string}
+  Chat instproc encode      {string} {my [my encoder] $string}
   Chat instproc json_encode {string} {
     string map [list \n \\n {"} {\"} ' {\'}] $string ;#"
   }
@@ -248,16 +255,18 @@ namespace eval ::xo {
   }
 
   Chat instproc broadcast_msg {msg} {
-    bgdelivery send_to_subscriber chat-[my chat_id] [my json_encode_msg $msg]
+    my log "--chat broadcast_msg $msg"
+    ::xo::clusterwide \
+        bgdelivery send_to_subscriber chat-[my chat_id] [my json_encode_msg $msg]
   }
 
   Chat instproc subscribe {-uid} {
     set user_id [expr {[info exists uid] ? $uid : [my set user_id]}]
     set color [my user_color $user_id]
-    bgdelivery subscribe chat-[my chat_id] [my json_encode_msg \
-	[Message new -volatile -time [clock seconds] \
-	     -user_id $user_id -color $color \
-	     -msg [_ xotcl-core.has_entered_the_room] ]] [my mode]
+    bgdelivery subscribe chat-[my chat_id] "" [my mode] 
+    my broadcast_msg [Message new -volatile -time [clock seconds] \
+                          -user_id $user_id -color $color \
+                          -msg [_ xotcl-core.has_entered_the_room] ]
   }
 
   Chat instproc render {} {
@@ -299,15 +308,15 @@ namespace eval ::xo {
     db_foreach get_rooms {
       select room_id, to_char(max(creation_date),'HH24:MI:SS YYYY-MM-DD') as last_activity 
       from chat_msgs group by room_id} {
-	nsv_set [self]-$room_id-seen last [clock scan $last_activity]
+	::xo::clusterwide nsv_set [self]-$room_id-seen last [clock scan $last_activity]
       }
   }
 
   ChatClass method flush_messages {-chat_id:required} {
     set array "[self]-$chat_id"
-    nsv_unset $array
-    nsv_unset $array-seen
-    nsv_unset $array-last-activity
+    ::xo::clusterwide nsv_unset $array
+    ::xo::clusterwide nsv_unset $array-seen
+    ::xo::clusterwide nsv_unset $array-last-activity
   }
 
   ChatClass method init {} {
