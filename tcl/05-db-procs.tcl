@@ -409,6 +409,7 @@ namespace eval ::xo::db {
     $r db_1row dbq..get_instance [$class fetch_query $id]
     $r set object_id $id
     $r destroy_on_cleanup
+    $r initialize_loaded_object
     return $r
   }
 
@@ -816,10 +817,12 @@ namespace eval ::xo::db {
     my check_table_atts
 
     # The default supertype is acs_object. If the supertype
-    # was not changed, we map the class to the object_type. 
-    if {$supertype ne "acs_object"} {
-      set supertype [my class_to_object_type [my info superclass]]
+    # was not changed (still acs_object), we map the superclass 
+    # to the object_type to obtain the ACS supertype.
+    if {$supertype eq "acs_object"} {
+      set supertype [::xo::db::Class class_to_object_type [my info superclass]]
     }
+
     if {![info exists pretty_name]}   {set pretty_name [namespace tail [self]]}
     if {![info exists pretty_plural]} {set pretty_plural $pretty_name}
 
@@ -1035,6 +1038,10 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::Class instproc initialize_acs_object {obj id} {
+    #
+    # This method is called, whenever a new (fresh) object with
+    # a new object_id is created.
+    #
     $obj set object_id $id
     # construct the same object_title as acs_object.new() does
     $obj set object_title "[my pretty_name] $id"
@@ -1082,35 +1089,68 @@ namespace eval ::xo::db {
     {-dbn ""}
     {-sql ""}
     {-full_statement_name ""}
+    {-as_order_composite:boolean true}
+    {-object_class "::xotcl::Object"}
+    {-named_objects:boolean false}
+    {-destroy_on_cleanup:boolean true}
   } {
-    Return a set of objects where each object is a tuple of the
-    answer-set of the SQL query. This method creates 
-    plain objects of the type of the specified class 
-    (default ::xotcl::Object) containing the variables that
-    the SQL query returns.
 
-    The container and contained objects are automatically 
-    destroyed on cleanup of the connection thread.
+    Retrieve multiple objects from the database using the given SQL
+    query and create XOTcl objects from the tuples. 
+
+    @param sql The SQL query to retrieve tuples. Note that if the SQL
+    query only returns a restricted set of attributes, the objects will
+    be only partially instantiated.
+
+    @param as_ordered_composite return an ordered composite object
+    preserving the order. If the flag is calse, one has to use
+    "info instances" to access the resulted objects.
+
+    @param object_class specifies the XOTcl class, for which instances
+    are created.
+
+    @named_objects If this flag is true, the value of the id_column is used
+    for the name of the created objects (object will be named
+    e.g. ::13738). Otherwise, objects are created with the XOTcl "new"
+    method to avoid object name clashes.
+
+    @destroy_on_cleanup If this flag is true, the objects (and ordered
+    composite) will be automatically destroyed on cleaup (typically
+    after the request was processed).
   } {
-    set __result [::xo::OrderedComposite new -destroy_on_cleanup]
-    #$__result proc destroy {} {my log "-- "; next}
+    if {$object_class eq ""} {set object_class [self]}
+    if {$as_order_composite} {
+      set __result [::xo::OrderedComposite new]
+      if {$destroy_on_cleanup} {$__result destroy_on_cleanup}
+    } else {
+      set __result ""
+    }
 
     db_with_handle -dbn $dbn db {
       set selection [db_exec select $db $full_statement_name $sql]
       while {1} {
         set continue [ns_db getrow $db $selection]
         if {!$continue} break
-        set o [::xotcl::Object new]
+        if {$named_objects} {
+          set object_name ::[ns_set get $selection [my id_column]]
+          set o [$object_class create $object_name]
+        } else {
+          set o [$object_class new]
+        }
+        if {$as_order_composite} {
+          $__result add $o
+        } elseif {$destroy_on_cleanup} {
+          $o destroy_on_cleanup
+        }
         foreach {att val} [ns_set array $selection] {$o set $att $val}
-
         if {[$o exists object_type]} {
-          # set the object type if it looks like from xotcl
+          # set the object type if it looks like managed from XOTcl
           if {[string match "::*" [set ot [$o set object_type]] ]} {
             $o class $ot
           }
         }
+        $o initialize_loaded_object
         #my log "--DB more = $continue [$o serialize]" 
-        $__result add $o
       }
     }
     return $__result
@@ -1280,6 +1320,14 @@ namespace eval ::xo::db {
       my insert
     }
     return $id
+  }
+
+  ::xo::db::Object instproc initialize_loaded_object {} {
+    #
+    # This method is to be called, after an existing
+    # object is fetched from the database.
+    #
+    # empty body, to be refined
   }
 
   ##############

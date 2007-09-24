@@ -59,7 +59,7 @@ namespace eval ::xo {
     set cmd [ns_queryget cmd]
     set addr [lindex [ns_set iget [ns_conn headers] x-forwarded-for] end]
     if {$addr eq ""} {set addr [ns_conn peeraddr]}
-    ns_log notice "--cluster got cmd='$cmd' from $addr"
+    #ns_log notice "--cluster got cmd='$cmd' from $addr"
     if {[catch {set result [::xo::Cluster execute [ns_conn peeraddr] $cmd]} errorMsg]} {
       ns_log notice "--cluster error: $errorMsg"
       ns_return 417 text/plain $errorMsg

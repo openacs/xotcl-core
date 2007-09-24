@@ -673,7 +673,8 @@ namespace eval ::xo::db {
 
   ##################################
 
-  ::xo::db::CrClass create ::xo::db::CrItem -superclass ::xo::db::Object \
+  ::xo::db::CrClass create ::xo::db::CrItem \
+      -superclass ::xo::db::Object \
       -table_name cr_revisions -id_column revision_id \
       -object_type content_revision \
       -slots {
@@ -957,9 +958,9 @@ namespace eval ::xo::db {
     set __atts  [list creation_user]
     set __vars $__atts
 
-    my log "db_slots for $__class: [$__class array get db_slot]"
+    #my log "db_slots for $__class: [$__class array get db_slot]"
     foreach {__slot_name __slot} [$__class array get db_slot] {
-      my log "--slot = $__slot"
+      #my log "--slot = $__slot"
       if {
 	  $__slot eq "::xo::db::Object::slot::object_title" ||
 	  $__slot eq "::xo::db::CrItem::slot::name"
