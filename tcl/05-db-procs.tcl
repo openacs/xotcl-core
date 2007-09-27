@@ -209,6 +209,7 @@ namespace eval ::xo::db {
 
     sql proc map_datatype {type} {
       switch -- $type {
+        string    { set type text }
         long_text { set type text }
       }
       return $type
@@ -258,6 +259,7 @@ namespace eval ::xo::db {
 
     sql proc map_datatype {type} {
       switch -- $type {
+        string    { set type varchar2(1000) }
         text      { set type varchar2(4000) }
         long_text { set type clob }
         boolean   { set type char(1) }
@@ -1395,7 +1397,7 @@ namespace eval ::xo::db {
     #
     set table_name [[my domain] table_name]
     if {$id_column} {
-      # add automatically a constraints for the id_column
+      # add automatically a constraint for the id_column
       set cname [::xo::db::mk_sql_constraint_name $table_name $name pk]
       append column_spec "\n\tCONSTRAINT $cname PRIMARY KEY"
     }
