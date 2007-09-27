@@ -162,7 +162,7 @@ namespace eval ::xo {
     if { [nsv_exists $array-color $user_id] } {
       return
     } else {
-      set colors [parameter::get -parameter UserColors -default [[my info class] set colors]]
+      set colors [::xo::parameter get -parameter UserColors -default [[my info class] set colors]]
       # ns_log notice "getting colors of [my info class] = [info exists colors]"
       set color [lindex $colors [expr { [nsv_get $array-color idx] % [llength $colors] }]]
       ::xo::clusterwide nsv_set $array-color $user_id $color
