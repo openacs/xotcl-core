@@ -42,6 +42,7 @@ if {$::xotcl::version < 1.5} {
         pretty_name 
         {pretty_plural ""}
         {datatype "text"} 
+        constraint_values
         help_text 
         validator
       }
@@ -57,6 +58,7 @@ if {$::xotcl::version < 1.5} {
           pretty_name 
           {pretty_plural ""}
           {datatype "text"}
+          constraint_values
           help_text 
           validator
         }
