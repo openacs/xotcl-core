@@ -419,6 +419,7 @@ namespace eval ::xo {
     {context ::xo::cc}
     package_url
     package_key
+    pretty_name
     instance_name
   }
   Package instforward query_parameter        {%my set context} %proc
