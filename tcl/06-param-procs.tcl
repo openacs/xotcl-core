@@ -2,11 +2,12 @@
 #
 #  - Huge number of parameter_values in larger dotlrn installations
 #    Learn: currently > 0.3 mio entries, 
-#    gallileo: > 2mio (2nd largest kind of object type)
-#    Small oacs installation: 1000 objects (38 package instances)
+#    Galileo: > 2mio (2nd most frequent kind of object type)
+#    Small oacs installations: 1000 objects (38 package instances)
 #
 #  - High growth, when parmeters are used more intensively
-#    Size: #package-key * #parameter * #package_instances
+#    Size grows quadratically: #parameter * #package_instances,
+#     independent of changed parameter values
 #    -> does not scale well.
 #
 # - High degree of redundancy:
@@ -22,7 +23,7 @@
 #   4 parameters we have 3 different values, ... for most, 
 #   all values are the same
 #
-# - Huge improvements, when redundancy is removed.
+# - Huge space improvements, when redundancy is removed.
 #   Learn: from 300000 entries -> 406 necessary entries
 #   Small oacs installation: 1000 objects -> 256 necessary entries
 #   => especially big savings on larger installations.
@@ -112,6 +113,38 @@ namespace eval ::xo {
   # So, fetch first the apm_parameter class from the definitions
   # in the database, and ...
   ::xo::db::Class get_class_from_db -object_type apm_parameter
+
+  #
+  # Complete attribute definition in acs_attributes
+  #
+  ::xo::db::apm_parameter slots {
+    ::xo::db::Attribute create description  \
+        -datatype string -sqltype varchar(2000) \
+        -pretty_name "Description"
+    ::xo::db::Attribute create section_name \
+        -datatype string -sqltype varchar(200) \
+        -pretty_name "Section Name"
+    ::xo::db::Attribute create datatype \
+        -datatype string -sqltype "varchar(100) not null" \
+        -constraint_values [list number string text] \
+        -default "string" \
+        -pretty_name "Datatype"
+    #
+    # TODO: Constraint_values are dummies for now.
+    #
+    # Should be for db::Attributes:
+    #    constraint apm_parameters_datatype_ck 
+    #    check(datatype in ('number', 'string','text')),
+    #
+    # Could be used directly for UI selections as well.
+    #
+    #
+    # Complete some slot definitions:
+    #
+    package_key   configure -required true
+    default_value configure -required true
+    section_name  configure -default ""
+  }
 
   # ... add the methods of ::xo::parameter by adding this as a mixin
   ::xo::db::apm_parameter instmixin parameter
@@ -206,10 +239,13 @@ namespace eval ::xo {
   }
 
   parameter proc get {
-    -package_id:required
+    -package_id
     -parameter:required
     -default
   } {
+    if {![info exists package_id]} {
+      set package_id [expr {[info command ::xo::cc] ne "" ? [::xo::cc package_id] : [ad_conn package_id]}]
+    }
     set parameter_obj [my get_parameter_object -parameter_name $parameter -package_id $package_id]
     if {$parameter_obj eq ""} {
       if {[info exists default]} {return $default}
@@ -295,7 +331,7 @@ namespace eval ::xo {
 #   set cmd1 "::parameter::get_from_package_key \
 #       -package_key xotcl-request-monitor \
 #       -parameter max-url-stats"
-#   set cmd2 "parameter get_from_package_key \
+#   set cmd2 "::xo::parameter get_from_package_key \
 #       -package_key xotcl-request-monitor \
 #       -parameter max-url-stats"
 #   ns_log notice "GET_PACKAGE_KEY old: [time $cmd1 100], new: [time $cmd2 100]"
@@ -305,7 +341,26 @@ namespace eval ::xo {
 #   ns_log notice "xotcl-request-monitor.$pname=[parameter get \
 #       -package_id $pid -parameter $pname]"
 #   set cmd1 "::parameter::get -package_id $pid -parameter $pname"
-#   set cmd2 "parameter get -package_id $pid -parameter $pname"
+#   set cmd2 "::xo::parameter get -package_id $pid -parameter $pname"
 #   ns_log notice "GET old: [time $cmd1 100], new: [time $cmd2 100]"
 
+  #
+  #
+  #
+  #
+#   set p [parameter get_parameter_object -package_key xowiki -parameter_name dummy]
+#   ns_log notice "--p getobject => $p"
+#   if {$p eq ""} {
+#     set p [::xo::db::apm_parameter new_persistent_object  \
+#                -package_key "xowiki" \
+#                -parameter_name "dummy" \
+#                -default_value "testing" \
+#                -description "Description of test parameter" \
+#                -section_name ""]
+#     ns_log notice "--p created new parameter $p"
+#   }
+#   $p append default_value "1"
+#   $p save
+  # $p delete
+  
 }
