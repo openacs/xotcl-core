@@ -612,13 +612,13 @@ namespace eval ::xo::db {
     if {$where_clause ne ""}          {lappend cond $where_clause}
     if {[info exists publish_status]} {lappend cond "ci.publish_status eq '$publish_status'"}
     if {$base_table eq "cr_revisions"} {
-      lappend cond "coalesce(ci.live_revision,ci.latest_revision) = bt.revision_id"
       lappend cond "acs_objects.object_id = bt.revision_id"
       set acs_objects_table "acs_objects, "
     } else {
       lappend cond "ci.item_id = bt.item_id"
       set acs_objects_table ""
     }
+    lappend cond "coalesce(ci.live_revision,ci.latest_revision) = bt.revision_id"
     lappend cond "ci.parent_id = $folder_id"
 
     if {$page_number ne ""} {
