@@ -110,7 +110,10 @@ namespace eval ::xo::db {
       foreach path [apm_get_package_files \
 			-package_key $package_key \
 			-file_types tcl_procs] {
-	uplevel #1 source "[acs_root_dir]/packages/$package_key/$path"
+        # Use apm_source instead of source to prevent double
+        # sourcing by the apm_loader (temporary solution, double
+        # sourcing should no happen)
+	uplevel #1 apm_source "[acs_root_dir]/packages/$package_key/$path"
       }
       my set required_package($package_key) 1
     }
