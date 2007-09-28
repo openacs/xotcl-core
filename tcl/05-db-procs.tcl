@@ -1154,7 +1154,9 @@ namespace eval ::xo::db {
             $o class $ot
           }
         }
-        $o initialize_loaded_object
+        if {[$o istype ::xo::db::Object]} {
+          $o initialize_loaded_object
+        }
         #my log "--DB more = $continue [$o serialize]" 
       }
     }
