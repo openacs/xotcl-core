@@ -735,9 +735,14 @@ namespace eval ::xo::db {
   
   ::xo::db::Class proc class_to_object_type {name} {
     if {[my isclass $name]} {
-      return [$name object_type]
+      if {[$name exists object_type]} {
+	return [$name object_type]
+      }
+      if {![$name istype ::xo::db::Object]} {
+	return acs_object
+      }
     }
-    switch --glob -- $name {
+    switch -glob -- $name {
       ::xo::db::Object {return acs_object}
       ::xo::db::CrItem {return content_revision}
       ::xo::db::*      {return [string range $name 10 end]}
@@ -959,7 +964,7 @@ namespace eval ::xo::db {
       if {[regexp {^::([^:]+)::} [self] _ head]} {
 	set tail [namespace tail [self]]
 	my set table_name [string tolower ${head}_$tail]
-	#my log "created table_name '[my table_name]'"
+	#my log "-- created table_name '[my table_name]'"
       } else {
 	error "Cannot determine automatically table name for class [self]. \
 		Use namespaces for classes."
@@ -967,6 +972,7 @@ namespace eval ::xo::db {
     }
     if {![my exists id_column]} {
       my set id_column [string tolower [namespace tail [self]]]_id
+      #my log "-- created id_column '[my id_column]'"
     }
   }
 
@@ -976,10 +982,10 @@ namespace eval ::xo::db {
       my create_object_type
     }
     my init_type_hierarchy
+    my check_table_atts
     my db_slots
 
     if {[my with_table]} {
-      my check_table_atts
       set table_definition [my table_definition]
       if {$table_definition ne ""} {
 	::xo::db::require table [my table_name] $table_definition
@@ -1393,6 +1399,7 @@ namespace eval ::xo::db {
       append column_spec " REFERENCES $references" 
     } elseif {$id_column} {
       set sc [[my domain] info superclass]
+      if {![$sc istype ::xo::db::Object]} {set sc ::xo::db::Object}
       #todo: 2x set not necessary (critem) 
       append column_spec " REFERENCES [$sc set table_name]([$sc set id_column])\
 		ON DELETE CASCADE"
