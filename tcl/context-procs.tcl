@@ -22,6 +22,7 @@ namespace eval ::xo {
     {parameter_declaration ""} 
     {actual_query " "}
     {package_id 0}
+    locale
   }
 
   # syntactic sugar for includelets, to allow the same syntax as 
@@ -178,21 +179,35 @@ namespace eval ::xo {
       #my log "--CONN ns_conn url"
       set url [ns_conn url]
     }
-    #my log "--i [self args]"
+    #my log "--i [self args] URL='$url'"
 
     # create connection context if necessary
     if {$package_id == 0} {
       array set "" [site_node::get_from_url -url $url]
       set package_id $(package_id)
     } 
+
+    # get locale; TODO at some time, we should get rid of the ad_conn init problem
+    if {[ns_conn isconnected]} {
+      # This can be called, before ad_conn is initialized. 
+      # Since it is not possible to pass the user_id and ad_conn barfs
+      # when  it tries to detect it, we use the catch and reset it later
+      if {[catch {set locale [lang::conn::locale -package_id $package_id]}]} {
+        set locale en_US
+      }
+    } else {
+      set locale [lang::system::locale -package_id $package_id]
+    }
+
     if {![my isobject ::xo::cc]} {
       my create ::xo::cc \
           -package_id $package_id \
           [list -parameter_declaration $parameter] \
 	  -user_id $user_id \
 	  -actual_query $actual_query \
+          -locale $locale \
           -url $url
-      #my msg "--cc ::xo::cc created $url [::xo::cc serialize]"
+      #my log "--cc ::xo::cc created $url [::xo::cc serialize]"
       ::xo::cc destroy_on_cleanup
     } else {
       #my log "--cc ::xo::cc reused $url"
@@ -200,6 +215,7 @@ namespace eval ::xo {
           -package_id $package_id \
           -url $url \
 	  -actual_query $actual_query \
+          -locale $locale \
           [list -parameter_declaration $parameter]
       ::xo::cc set_user_id $user_id
       ::xo::cc process_query_parameter
@@ -296,12 +312,16 @@ namespace eval ::xo {
 
   ConnectionContext instproc get_all_form_parameter {} {
     my instvar form_parameter
-    #array set form_parameter [ns_set array [ns_getform]]
-    foreach {att value} [ns_set array [ns_getform]] {
-      if {[info exists form_parameter($att)]} {
-        my set form_parameter_multiple($att) 1
+    if {[ns_conn isconnected]} {
+      #array set form_parameter [ns_set array [ns_getform]]
+      foreach {att value} [ns_set array [ns_getform]] {
+        if {[info exists form_parameter($att)]} {
+          my set form_parameter_multiple($att) 1
+        }
+        lappend form_parameter($att) $value
       }
-      lappend form_parameter($att) $value
+    } else {
+      array set form_parameter {}
     }
   }
   ConnectionContext instproc form_parameter {name {default ""}} {

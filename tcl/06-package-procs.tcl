@@ -80,7 +80,7 @@ namespace eval ::xo {
   PackageMgr ad_instproc require {{-url ""} package_id} {
     Create package object if needed.
   } {
-    #my log "--R $package_id exists? [my isobject ::$package_id]"
+    #my log "--R $package_id exists? [my isobject ::$package_id] url='$url'"
     if {![my isobject ::$package_id]} {
       #my log "--R we have to create ::$package_id //url='$url'"
       if {$url ne ""} {
@@ -153,7 +153,7 @@ namespace eval ::xo {
     my instance_name $info(instance_name)
     if {[my exists url] && [info exists root]} {
       regexp "^${root}(.*)$" $url _ url
-    } else {
+    } elseif {![my exists url]} {
       my log "--R we have no url, use package_url"
       # if we have no more information, we use the package_url as actual url
       set url $package_url
