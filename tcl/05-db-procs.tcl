@@ -833,9 +833,6 @@ namespace eval ::xo::db {
       set supertype [::xo::db::Class class_to_object_type [my info superclass]]
     }
 
-    if {![info exists pretty_name]}   {set pretty_name [namespace tail [self]]}
-    if {![info exists pretty_plural]} {set pretty_plural $pretty_name}
-
     ::xo::db::sql::acs_object_type create_type \
         -object_type $object_type \
         -supertype $supertype \
@@ -977,6 +974,10 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::Class instproc init {} {
+    my instvar pretty_name pretty_plural
+
+    if {![info exists pretty_name]}   {set pretty_name [namespace tail [self]]}
+    if {![info exists pretty_plural]} {set pretty_plural $pretty_name}
 
     if {![::xo::db::Class object_type_exists_in_db -object_type [my object_type]]} {
       my create_object_type
@@ -1130,6 +1131,7 @@ namespace eval ::xo::db {
     after the request was processed).
   } {
     if {$object_class eq ""} {set object_class [self]}
+    if {$sql eq ""} {set sql [my instance_select_query]}
     if {$as_order_composite} {
       set __result [::xo::OrderedComposite new]
       if {$destroy_on_cleanup} {$__result destroy_on_cleanup}
