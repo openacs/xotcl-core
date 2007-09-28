@@ -697,3 +697,32 @@ Object pageMaster -proc decorate {node} {
 }
 
 
+namespace eval ::xo {
+  #
+  # templating and CSS
+  #
+  Class create Page
+  Page proc requireCSS name {set ::need_css($name) 1}
+  Page proc requireJS  name {
+    if {![info exists ::need_js($name)]} {lappend ::js_order $name}
+    set ::need_js($name)  1
+  }
+  Page proc header_stuff {} {
+    set result ""
+    foreach file [array names ::need_css] {
+      append result "<link type='text/css' rel='stylesheet' href='$file' media='all' >\n"
+    }
+    if {[info exists ::js_order]} {
+      foreach file $::js_order  {
+        if {[string match "*;*" $file]} {
+          # it is not a file, but some javascipt statements
+          append result "<script language='javascript' type='text/javascript' >" $file "</script>\n"
+        } else {
+          append result "<script language='javascript' src='$file' type='text/javascript'>" \
+              "</script>\n"
+        }
+      }
+    }
+    return $result
+  }
+}
