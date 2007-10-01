@@ -198,13 +198,7 @@ namespace eval ::xo::db {
   
   if {[db_driverkey ""] eq "postgresql"} {
 
-    # during load, we do not have "package_plsql_args" available yet, so we do it by hand
-    sql set all_package_functions {
-      select distinct 
-        substring(function from 0 for position('__' in function)) as package_name,
-        substring(function from position('__' in function)+2) as object_name 
-       from acs_function_args
-    }
+
 
     sql proc map_function_name {sql} {
       return $sql
@@ -249,12 +243,6 @@ namespace eval ::xo::db {
     }
 
   } else { ;# Oracle
-
-    sql set all_package_functions {
-      select distinct package_name, object_name
-        from user_arguments args
-        where args.position > 0 and package_name is not null
-    }
 
     sql proc map_function_name {sql} {
       return [string map [list "__" .] $sql]
@@ -550,16 +538,218 @@ namespace eval ::xo::db {
   # interface for stored procedures
   #
 
+  if {[db_driverkey ""] eq "postgresql"} {
+    #
+    # PostgreSQL
+    #
+
+#     ::xo::db::Class proc get_all_package_functions {} {
+#       #
+#       # Get all package functions (package name, object name) from manually
+#       # maintained function args (created via define_function_args)
+#       #
+#       return [db_list_of_lists [my qn [self proc]] {
+#         select distinct 
+#           substring(function from 0 for position('__' in function)) as package_name,
+#           substring(function from position('__' in function)+2) as object_name 
+#         from acs_function_args
+#       }]
+#     }
+
+    ::xo::db::Class proc get_all_package_functions {} {
+      #
+      # Get all package functions (package name, object name) from PostgreSQL
+      # system catalogs.
+      #
+      return [db_list_of_lists [my qn [self proc]] {
+        select distinct 
+          upper(substring(proname from 0 for position('__' in proname))) as package_name,
+          upper(substring(proname from position('__' in proname)+2)) as object_name 
+        from pg_proc 
+        where substring(proname,'__') > 0
+      }]
+    }
+
+#     ::xo::db::Class instproc get_function_args {package_name object_name} {
+#       #
+#       # Get function_args for a single sql-function from manually
+#       # maintained function args (created via define_function_args)
+#       #
+#       return [db_list_of_lists [my qn get_function_params] {
+#         select args.arg_name, args.arg_default
+#         from acs_function_args args
+#         where args.function = upper(:package_name) || '__' || upper(:object_name)
+#         order by function, arg_seq
+#       }]
+#     }
+
+    ::xo::db::Class instproc get_function_args {package_name object_name} {
+      #
+      # Get function_args for a single sql-function from PostgreSQL
+      # system catalogs. 
+      # Note, that we can as well get the type in future versions
+      #
+      db_foreach [my qn get_function_params] {
+        select proname, pronargs, proargtypes,prosrc 
+        from pg_proc 
+        where proname = lower(:package_name) || '__' || lower(:object_name)
+        order by pronargs desc 
+      } {
+        set n 1
+        set function_args [list]
+        foreach line [split $prosrc \n] {
+          if {[regexp "alias for \\\$$n" $line]} {
+            regexp {^[^a-zA-Z]+([a-zA-Z0-9_]+)\s} $line _ fq_name
+            if {![info exists fq_name]} {
+              ns_log notice "--***** no fq_name in '$line'"
+            }
+            #lappend fq_names $fq_name
+            set name $fq_name
+            set default ""
+            if {![regexp {^.+__(.+)$} $fq_name _ name]} {
+              regexp {^[vp]_(.+)$} $fq_name _ name
+            }
+            if {[regexp {^.*-- default +([^, ]+) *$} $line _ default]} {
+              set default [string trim $default ']
+            }
+            lappend function_args [list [string toupper $name] $default]
+            if {[incr n]>$pronargs} break
+          }
+        }
+        if {$n == 1 && $pronargs > 0} {
+          set comment [string map [list \n "\n----\t"] $prosrc]
+          ns_log notice "---- no aliases for $proname/$pronargs $comment"
+          continue
+        } 
+        break
+      }
+      return $function_args
+    }
+
+    ::xo::db::Class instproc generate_psql {package_name object_name} {
+      set function_args [my get_function_args $package_name $object_name]
+      set function_args [my fix_function_args $function_args $package_name $object_name]
+      set psql_args [my sql-arguments $function_args $package_name $object_name]
+      #ns_log notice "-- psql-args=$psql_args"
+      my set sql [subst {
+        select ${package_name}__${object_name}($psql_args)
+      }]
+      return {ns_set value [ns_pg_bind 0or1row $db $sql] 0}
+    }
+
+    ::xo::db::Class instproc generate_proc_body {} {
+      return {
+        #function_args: [my set function_args]
+        foreach var \[list [my set arg_order]\]  {
+          set varname \[string tolower $var\]
+          if {\[info exists $varname\]} {
+            set $var \[set $varname\]
+            set _$var :$var
+          } else {
+            set _$var null
+          }
+        }
+        set sql "[my set sql]"
+        db_with_handle -dbn $dbn db {
+          #ns_log notice "--sql=$sql"
+          return \[ [set sql_command] \]
+        }
+      }
+    }
+
+  } else {
+    #
+    # Oracle
+    #
+
+    ::xo::db::Class proc get_all_package_functions {} {
+      #
+      # Get all package functions (package name, object name) from Oracle
+      # system catalogs.
+      #
+      return [db_list_of_lists [my qn [self proc]] {
+        select distinct package_name, object_name
+          from user_arguments args
+          where args.position > 0 and package_name is not null
+      }]
+    }
+
+    ::xo::db::Class instproc get_function_args {package_name object_name} {
+      # In Oracle, args.default_value appears to be defunct and useless.
+      # for now, we simply return a constant "unknown", otherwise the
+      # argument would be required
+      return [db_list_of_lists [my qn get_function_params] {
+	select args.argument_name, 'unknown'
+        from user_arguments args
+        where args.position > 0
+        and args.object_name = upper(:object_name)
+        and args.package_name = upper(:package_name)
+        order by args.position
+      }]
+    }
+
+    ::xo::db::Class instproc generate_psql {package_name object_name} {
+      # 
+      # in Oracle, we have to distinguish between functions and procs
+      #
+      set is_function [db_0or1row [my qn is_function] {
+        select 1 from dual
+        where exists (select 1 from user_arguments where
+                      package_name = upper(:package_name)
+                      and object_name = upper(:object_name)
+                      and position = 0)
+      }]
+
+      set function_args [my get_function_args $package_name $object_name]
+      set function_args [my fix_function_args $function_args $package_name $object_name]
+      set psql_args [my sql-arguments $function_args $package_name $object_name]
+
+      if {$is_function} {
+        my set sql [subst {BEGIN :1 := ${package_name}.${object_name}(\$sql_args); END;}]
+        return {ns_ora exec_plsql_bind $db $sql 1 ""}
+      } else {
+        my set sql [subst {BEGIN ${package_name}.${object_name}(\$sql_args); END;}]
+        #return {ns_set value [ns_ora select $db $sql] 0}
+        return {ns_ora dml $db $sql}
+      }
+    }
+    ::xo::db::Class instproc generate_proc_body {} {
+      return {
+        #function_args: [my set function_args]
+        set sql_args \[list\]
+        foreach var \[list [my set arg_order]\]  {
+          set varname \[string tolower $var\]
+          if {\[info exists $varname\]} {
+            lappend sql_args "$varname => :$varname"
+          } 
+        }
+        set sql_args \[join $sql_args ,\]
+        set sql "[my set sql]"
+        db_with_handle -dbn $dbn db {
+          #my log "sql=$sql, sql_command=[set sql_command]"
+          return \[ [set sql_command] \]
+        }
+      }
+    }
+
+  }
+
   # Some stored procedures like content_item__new do currently not
-  # define null default values.  Therefore, we need - temporary - this
-  # ugly redundancy to keep :required passing and to allow the xowiki
-  # regression test to run.  The correct fix is to define the correct
-  # default values in the database with define_function_args()
+  # define correctly default values.  Therefore, we need - temporary -
+  # this ugly redundancy to complete the definitions.  The correct fix
+  # is to define the correct default values in the database with
+  # define_function_args()
 
   ::xo::db::Class array set defaults {
     "content_item__new" {RELATION_TAG null DESCRIPTION null TEXT null 
       CREATION_IP null NLS_LANGUAGE null LOCALE null CONTEXT_ID null 
-      DATA null TITLE null ITEM_ID null
+      DATA null TITLE null ITEM_ID null 
+      CREATION_DATE now
+      ITEM_SUBTYPE content_item
+      CONTENT_TYPE content_revision
+      MIME_TYPE text/plain
+      IS_LIVE f
+      STORAGE_TYPE lob
     }
     "content_type__create_attribute" {
       DEFAULT_VALUE null SORT_ORDER null PRETTY_PLURAL null
@@ -568,115 +758,41 @@ namespace eval ::xo::db {
       DROP_CHILDREN_P f DROP_TABLE_P f DROP_OBJECTS_P f
     }
   }
-  
-  ::xo::db::Class instproc sql-arguments {sql package_name object_name} {
+
+  ::xo::db::Class instproc fix_function_args {function_args package_name object_name} {
+    if {![[self class] exists defaults(${package_name}__$object_name)]} {
+      return $function_args
+    }
+
+    array set additional_defaults [[self class] set defaults(${package_name}__$object_name)]
+    set result [list]
+    foreach arg $function_args {
+      foreach {arg_name default_value} $arg break
+      if {$default_value eq "" && [info exists additional_defaults($arg_name)]} {
+        lappend result [list $arg_name $additional_defaults($arg_name)]
+      } else {
+        lappend result [list $arg_name $default_value]
+      }
+    }
+    return $result 
+  }
+
+  ::xo::db::Class instproc sql-arguments {function_args package_name object_name} {
     my array unset defined
-    my set function_args [db_list_of_lists [my qn get_function_params] $sql]
     set psql_args [list]  
     my set arg_order [list]
-    foreach arg [my set function_args] {
+    my set function_args $function_args
+    foreach arg $function_args {
       foreach {arg_name default_value} $arg break
       lappend psql_args \$_$arg_name
       my lappend arg_order $arg_name
       my set defined($arg_name) $default_value
     }
-    if {[[self class] exists defaults(${package_name}__$object_name)]} {
-      set prototype_args [[self class] set defaults(${package_name}__$object_name)]
-      foreach {arg_name default_value} $prototype_args {
-        if {![my exists defined($arg_name)]} {
-          lappend psql_args \$_$arg_name
-          my lappend arg_order $arg_name
-        }
-      }
-      my array set defined $prototype_args
-    }
     return [join $psql_args ", "]
   }
+
   
-  ::xo::db::Class instproc psql-postgresql {package_name object_name full_statement_name} {
-    set psql_args [my sql-arguments {
-      select args.arg_name, args.arg_default
-      from acs_function_args args
-      where args.function = upper(:package_name) || '__' || upper(:object_name)
-      order by function, arg_seq
-    } $package_name $object_name]
-    #ns_log notice "-- psql-args=$psql_args"
-    my set sql [subst {
-      select ${package_name}__${object_name}($psql_args)
-    }]
-    return {ns_set value [ns_pg_bind 0or1row $db $sql] 0}
-  }
- 
-  ::xo::db::Class instproc psql-oracle {package_name object_name full_statement_name} {
-    # 
-    # in Oracle, we have to distinguish between functions and procs
-    #
-    set is_function [db_0or1row [my qn is_function] {
-       select 1 from dual
-       where exists (select 1 from user_arguments where
-		       package_name = upper(:package_name)
-		       and object_name = upper(:object_name)
-		       and position = 0)
-    }]
-    # In Oracle, args.default_value appears to be defunct and useless.
-    # for now, we simply return "null" as a constant, otherwise the
-    # argument would be required
-    set psql_args [my sql-arguments {
-	select args.argument_name, 'unknown'
-        from user_arguments args
-        where args.position > 0
-	  and args.object_name = upper(:object_name)
-	  and args.package_name = upper(:package_name)
-        order by args.position
-    } $package_name $object_name]
-    if {$is_function} {
-      my set sql [subst {BEGIN :1 := ${package_name}.${object_name}(\$sql_args); END;}]
-      return {ns_ora exec_plsql_bind $db $sql 1 ""}
-    } else {
-      my set sql [subst {BEGIN ${package_name}.${object_name}(\$sql_args); END;}]
-      #return {ns_set value [ns_ora select $db $sql] 0}
-      return {ns_ora dml $db $sql}
-    }
-  }
 
-  ::xo::db::Class instproc proc_body-postgresql {} {
-    return {
-      #defined: [my array get defined]
-     foreach var \[list [my set arg_order]\]  {
-        set varname \[string tolower $var\]
-        if {\[info exists $varname\]} {
-          set $var \[set $varname\]
-          set _$var :$var
-        } else {
-          set _$var null
-        }
-      }
-      set sql "[my set sql]"
-      db_with_handle -dbn $dbn db {
-        #ns_log notice "--sql=$sql"
-        return \[ [set sql_command] \]
-      }
-    }
-  }
-
-  ::xo::db::Class instproc proc_body-oracle {} {
-    return {
-      #defined: [my array get defined]
-      set sql_args \[list\]
-      foreach var \[list [my set arg_order]\]  {
-        set varname \[string tolower $var\]
-        if {\[info exists $varname\]} {
-          lappend sql_args "$varname => :$varname"
-        } 
-      }
-      set sql_args \[join $sql_args ,\]
-      set sql "[my set sql]"
-      db_with_handle -dbn $dbn db {
-        #my log "sql=$sql, sql_command=[set sql_command]"
-        return \[ [set sql_command] \]
-      }
-    }
-  }
 
   ::xo::db::Class instproc dbproc_nonposargs {object_name} {
     #
@@ -692,9 +808,8 @@ namespace eval ::xo::db {
       return
     }
     set package_name   [namespace tail [self]]
-    set statement_name [my qn $package_name-$object_name]
-    set sql_command    [my psql-[db_driverkey ""] $package_name $object_name $statement_name] 
-    set proc_body      [my proc_body-[db_driverkey ""]] 
+    set sql_command    [my generate_psql $package_name $object_name] 
+    set proc_body      [my generate_proc_body] 
 
     set nonposarg_list [list [list -dbn ""]]
     foreach arg_name [my set arg_order] {
@@ -726,7 +841,8 @@ namespace eval ::xo::db {
   }
  
   ::xo::db::Class proc create_all_functions {} {
-    db_foreach [my qn ""] [::xo::db::sql set all_package_functions] {
+    foreach item [my get_all_package_functions] {
+      foreach {package_name object_name} $item break
       set class_name ::xo::db::sql::[string tolower $package_name] 
       if {![my isobject $class_name]} { ::xo::db::Class create $class_name }
       $class_name dbproc_nonposargs [string tolower $object_name]
