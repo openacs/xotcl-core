@@ -1,11 +1,118 @@
+ad_library {
+  XOTcl implementation for synchronous and asynchronous HTTP and HTTPs requests
+
+  @author Gustaf Neumann, Stefan Sobernig
+  @creation-date 2007-10-05
+  @cvs-id $Id$
+}
+
 namespace eval ::xo {
   #
+  # Defined classes
+  #  1) HttpRequest
+  #  2) AsyncHttpRequest
+  #  3) HttpRequestTrace (mixin class)
+  #  4) Tls (mixin class, applicable to various protocols)
   #
+  ######################
   #
+  # 1 HttpRequest
+  #
+  # HttpRequest is a class to implement the client side
+  # for the HTTP methods GET and POST.
+  #
+  # Example of a GET request:
+  #
+  #  set r [::xo::HttpRequest new -url http://www.openacs.org/]
+  #
+  # The resulting object $r contains all information
+  # about the requests, such as e.g. statusCode or 
+  # data (the response body from the server). For details
+  # look into the output of [$r serialize]. The result 
+  # object in $r is automatically deleted at cleanup of
+  # a connection thread.
+  #
+  # Example of a POST request with a form with var1 and var2
+  # (providing post_data causes the POST request).
+  #    
+  #  set r [::xo::HttpRequest new \
+  #             -url http://yourhost.yourdomain/yourpath \
+  #             -post_data [export_vars {var1 var2}] \
+  #             -content_type application/x-www-form-urlencoded \ 
+  #         ]
+  #
+  # Provided that the Tcl module tls (see e.g. http://tls.sourceforge.net/)
+  # is available and can be loaded via "package require tls" into 
+  # the aolserver, you can use both TLS/SSL secured or unsecured requests 
+  # in the synchronous/ asynchronous mode by using an
+  # https url.
+  # 
+  #  set r [::xo::HttpRequest new -url https://learn.wu-wien.ac.at/]
+  #
+  ######################
+  #
+  # 2 AsyncHttpRequest
+  #
+  # AsyncHttpRequest is a subclass for HttpRequest implementing
+  # asynchronous HTTP requests without vwait (vwait causes 
+  # stalls on aolserver). AsyncHttpRequest requires to provide a listener 
+  # or callback object that will be notified upon success or failure of 
+  # the request.
+  #
+  # Asynchronous requests are much more complex to handle, since
+  # an application (a connection thread) can submit multiple
+  # asynchronous requests in parallel, which are likely to
+  # finish after the current request is done. The advantages
+  # are that the spooling of data can be delegated to a spooling
+  # thead and the connection thread is available for handling more
+  # incoming connections. The disadvantage is the higher
+  # complexity, one needs means to collect the received data.
+  #
+  # The following example uses the background delivery thread for
+  # spooling and defines in this thread a listener object (a). 
+  # Then in the second step, the listener object is used in te
+  # asynchronous request (b).
+  #
+  # (a) Create a listener/callback object in the background. Provide
+  # the two needed methods, one being invoked upon success (deliver),
+  # the other upon failure or cancellation (done).
+  #
+  #  ::bgdelivery do Object ::listener \
+  #     -proc deliver {payload obj} {
+  #       my log "Asynchronous request suceeded!"
+  #     } -proc done {reason obj} {
+  #       my log "Asynchronous request failed: $reason"
+  #     }
+  #
+  # (b)  Create the actual asynchronous request object in the background. 
+  # Make sure that you specify the previously created listener/callback 
+  # object as "request_manager" to the request object.
+  #
+  #  ::bgdelivery do ::xo::AsyncHttpRequest new \
+  #     -url "https://oacs-dotlrn-conf2007.wu-wien.ac.at/conf2007/" \
+  #     -request_manager ::listener
+  #
+  ######################
+  #
+  # 3 HttpRequestTrace
+  #
+  # HttpRequestTrace can be used to trace the one or all requests.
+  # If activated, the class writes protocol data into 
+  # /tmp/req-<somenumber>.
+  #
+  # Use 
+  #
+  #  ::xo::HttpRequest instmixin add ::xo::HttpRequestTrace
+  #
+  # to activate trace for all requests, 
+  # or mixin the class into a single request to trace it.
+  #
+
   Class create HttpRequest \
       -parameter {
 	{host}
-	{port 80} 
+	{protocol http} 
+	{port} 
 	{path /}
         {url}
 	{post_data ""} 
@@ -15,24 +122,57 @@ namespace eval ::xo {
         {user_agent xohttp/0.1}
       }
 
+  HttpRequest instproc set_default_port {protocol} {
+    switch $protocol {
+      http  {my set port 80}
+      https {my set port 443}
+    }
+  }
+
   HttpRequest instproc parse_url {} {
-    my instvar url host port path
-    if {[regexp {http://([^/]*)(/.*)} $url _ host path]} {
-      set port 80
+    my instvar protocol url host port path
+    if {[regexp {^(http|https)://([^/]+)(/.*)?$} $url _ protocol host path]} {
+      # Be friendly and allow strictly speaking invalid urls 
+      # like "http://www.openacs.org"  (no trailing slash)
+      if {$path eq ""} {set path /}
+      my set_default_port $protocol
       regexp {^([^:]+):(.*)$} $host _ host port
     } else {
       error "unsupported or invalid url '$url'"
     }
   }
 
+  HttpRequest instproc open_connection {} {
+    my instvar host port S
+    set S [socket $host $port]
+  }
+
   HttpRequest instproc init {} {
-    my instvar S post_data host port
+    my instvar S post_data host port protocol
+    my destroy_on_cleanup
     my set meta [list]
     my set data ""
-    if {[my exists url]} {my parse_url}
-    
-    if {[catch {set S [socket $host $port]} err]} {
-      my cancel "error socket $host $port: $err"
+    if {[my exists url]} {
+      my parse_url
+    } else {
+      if {![info exists port]} {my set_default_port $protocol}
+      if {![info exists host]} {
+        error "either host or url must be specified"
+      }
+    }
+    if {$protocol eq "https"} {
+      package require tls
+      if {[info command ::tls::import] eq ""} {
+        error "https request require the Tcl module TLS to be installed\n\
+             See e.g. http://tls.sourceforge.net/"
+      }
+      # 
+      # Add HTTPs handling
+      #
+      my mixin add ::xo::Tls
+    }
+    if {[catch {my open_connection} err]} {
+      my cancel "error during open connection via $protocol to $host $port: $err"
       return
     }
     if {[catch {
@@ -72,7 +212,6 @@ namespace eval ::xo {
     puts -nonewline $S $post_data
     my query_done
   }
-
   HttpRequest instproc query_done {} {
     my instvar S
     flush $S
@@ -91,7 +230,7 @@ namespace eval ::xo {
 
   HttpRequest instproc finish {} {
     catch {close [my set S]}
-    #my log "--- [my host] [my port] [my path] has finished"
+    my log "--- [my host] [my port] [my path] has finished"
     my notify deliver [my set data]
   }
   HttpRequest instproc getLine {var} {
@@ -154,6 +293,9 @@ namespace eval ::xo {
     }
   }
 
+  #
+  # Asynchronous requests
+  #
 
   Class AsyncHttpRequest -superclass HttpRequest -parameter {
     {timeout 10000} 
@@ -200,25 +342,38 @@ namespace eval ::xo {
     }
   }
 
+  # 
+  # TLS/SSL support
+  #
+  # Perform HTTPS requests via TLS (does not require nsopenssl)
+  # - requires tls 1.5.0 to be compiled into <aolsever>/lib/ ...
+  # - - - - - - - - - - - - - - - - - - 
+  # - see http://www.ietf.org/rfc/rfc2246.txt
+  # - http://wp.netscape.com/eng/ssl3/3-SPEC.HTM
+  # - - - - - - - - - - - - - - - - - - 
+  
+  Class Tls
+  Tls instproc open_connection {} {
+    my instvar S
+    #
+    # first perform regular initialization of the socket
+    #
+    next
+    #
+    # then import tls (could configure it here in more detail)
+    #
+    ::tls::import $S
+  }
+  
+
+  #
+  # Trace Requests
+  #                                 
+
   Class HttpRequestTrace 
   nsv_set HttpRequestTrace count 0
 
   HttpRequestTrace instproc init {} {
-
-    #TODO remove me
-#     my instvar host path
-#     if {[my exists endpoint]} {
-#       # soap specificities
-#       my url [my set endpoint]
-#       my post_data [my payload]
-#       my content_type "text/xml"
-#       if {[my action] eq ""} {
-#         my headers [list SOAPAction [my set endpoint]]
-#       } else {
-#         my headers [list SOAPAction [my action]]
-#       }
-#     }
-
     my instvar F post_data 
     my set meta [list]
     my set requestCount [nsv_incr HttpRequestTrace count]  ;# make it an instvar to find it in the log file
@@ -251,6 +406,10 @@ namespace eval ::xo {
     catch {close [my set F]}
     next
   }
-
-  #HttpRequest instmixin add HttpRequestTrace
+   
+  #
+  # To activate trace for all requests, uncomment the following line.
+  # To trace a single request, mixin ::xo::HttpRequestTrace into the request.
+  #                           
+  # HttpRequest instmixin add ::xo::HttpRequestTrace
 }
