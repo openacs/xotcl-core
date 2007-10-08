@@ -939,7 +939,8 @@ namespace eval ::xo::db {
   } {
     my instvar object_type supertype pretty_name pretty_plural \
         table_name id_column name_method abstract_p
-    
+
+    my check_default_values
     my check_table_atts
 
     # The default supertype is acs_object. If the supertype
@@ -1073,6 +1074,7 @@ namespace eval ::xo::db {
     Check table_name and id_column and set meaningful
     defaults, if these attributes are not provided.
   } {
+    my check_default_values
     if {![my exists table_name]} {
       if {[regexp {^::([^:]+)::} [self] _ head]} {
 	set tail [namespace tail [self]]
@@ -1089,12 +1091,13 @@ namespace eval ::xo::db {
     }
   }
 
-  ::xo::db::Class instproc init {} {
+  ::xo::db::Class instproc check_default_values {} {
     my instvar pretty_name pretty_plural
-
     if {![info exists pretty_name]}   {set pretty_name [namespace tail [self]]}
     if {![info exists pretty_plural]} {set pretty_plural $pretty_name}
+  }
 
+  ::xo::db::Class instproc init {} {
     if {![::xo::db::Class object_type_exists_in_db -object_type [my object_type]]} {
       my create_object_type
     }

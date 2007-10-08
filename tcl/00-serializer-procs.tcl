@@ -167,7 +167,7 @@ namespace eval ::xotcl::serializer {
 	[concat [$o info ${prefix}nonposargs $m] $arglist] \
 	[$o info ${prefix}body $m]
     foreach p {pre post} {
-      if {[$o info ${prefix}$p $m]!=""} {lappend r [$o info ${prefix}$p $m]}
+      if {[$o info ${prefix}$p $m] ne ""} {lappend r [$o info ${prefix}$p $m]}
     }
     return $r
   }
