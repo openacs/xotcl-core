@@ -26,7 +26,7 @@ namespace eval ::xo {
   #  set r [::xo::HttpRequest new -url http://www.openacs.org/]
   #
   # The resulting object $r contains all information
-  # about the requests, such as e.g. statusCode or 
+  # about the requests, such as e.g. status_code or 
   # data (the response body from the server). For details
   # look into the output of [$r serialize]. The result 
   # object in $r is automatically deleted at cleanup of
@@ -246,7 +246,7 @@ namespace eval ::xo {
     return $n
   }
   HttpRequest instproc received_first_line {} {
-    my instvar S statusCode
+    my instvar S status_code
     fconfigure $S -translation crlf
     set n [my getLine response]
     switch -exact -- $n {
@@ -254,7 +254,7 @@ namespace eval ::xo {
       -1 {return}
     }
     if {[regexp {^HTTP/([0-9.]+) +([0-9]+) *} $response _ \
-	     responseHttpVersion statusCode]} {
+	     responseHttpVersion status_code]} {
       my received_first_line_done
     } else {
       my log "--unexpected response '$response'"
@@ -275,6 +275,8 @@ namespace eval ::xo {
 	  #my log "--header $response"
 	  if {[regexp -nocase {^content-length:(.+)$} $response _ length]} {
 	    my set content_length [string trim $length]
+	  } elseif {[regexp -nocase {^content-type:(.+)$} $response _ type]} {
+	    my set content_type [string trim $type]
 	  }
 	  if {[regexp -nocase {^([^:]+): *(.+)$} $response _ key value]} {
 	    my lappend meta [string tolower $key] $value
