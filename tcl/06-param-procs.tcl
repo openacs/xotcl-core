@@ -234,7 +234,7 @@ namespace eval ::xo {
     }
     set package_id [my get_package_id_from_package_key -package_key $package_key]
     set value [$parameter_obj get -package_id $package_id]
-    if {$value eq ""} {return $default}
+    if {$value eq "" && [$parameter_obj set __success] == 0} {return $default}
     return $value
   }
 
@@ -252,7 +252,9 @@ namespace eval ::xo {
       error "No parameter '$parameter' for package_id '$package_id' defined"
     }
     set value [$parameter_obj get -package_id $package_id]
-    if {$value eq ""} {return $default}
+    #my log "--get <$parameter> <$default> returned <$value> s=[$parameter_obj set __success]"
+    #if {$value eq ""} {return $default}
+    if {$value eq "" && [$parameter_obj set __success] == 0} {return $default}
     return $value
   }
   
@@ -278,6 +280,7 @@ namespace eval ::xo {
     set nsv_array_name [my per_package_id_name $package_id]
     if {[nsv_exists $nsv_array_name $key]} {
       #my log "--parameter get <$key> from $nsv_array_name --> '[nsv_get $nsv_array_name $key]'"
+      my set __success 1
       return [nsv_get $nsv_array_name $key]
     }
     # We could as well store per-package-key values,
@@ -295,6 +298,7 @@ namespace eval ::xo {
     #     }
     #
     #my log "--parameter get <$key> from default of [my package_key] --> '[my default_value]'"
+    my set __success 0
     return [my default_value]
   }
 
@@ -313,7 +317,9 @@ namespace eval ::xo {
       select p.parameter_id, p.package_key, v.package_id, p.parameter_name, 
              p.default_value, v.attr_value 
       from apm_parameters p, apm_parameter_values v 
-      where p.parameter_id = v.parameter_id and attr_value <> p.default_value
+      where p.parameter_id = v.parameter_id 
+      and ( attr_value <> p.default_value
+	    or (attr_value is null and p.default_value is not null))
     } {
       ns_log notice "--p $parameter_id $package_key $package_id $parameter_name <$attr_value>"
       $parameter_id set_per_package_instance_value $package_id $attr_value
