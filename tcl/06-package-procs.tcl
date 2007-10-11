@@ -131,7 +131,7 @@ namespace eval ::xo {
                 -parameter $attribute \
                 -package_id [my id] \
                 -default $default]
-    #my log "--get_parameter <$attribute> <$default> returned $param"
+    #my log "--get_parameter <$attribute> <$default> returned <$param>"
     return $param
   }
  
@@ -159,6 +159,8 @@ namespace eval ::xo {
       set url $package_url
     } 
     my set_url -url $url
+    my set mime_type text/html
+    my set delivery ns_return
   }
  
   ::xo::Package instproc set_url {-url} {
@@ -167,6 +169,50 @@ namespace eval ::xo {
     #my log "--R object set to [my set object], [my serialize]"
   }
 
+  ::xo::Package instproc reply_to_user {text} {
+    if {[::xo::cc exists __continuation]} {
+      eval [::xo::cc set __continuation]
+    } else {
+      if {[string length $text] > 1} {
+        [my set delivery] 200 [my set mime_type] $text
+      }
+    }
+  }
+
+  ::xo::Package instproc return_page {-adp:required -variables -form} {
+    #my log "--vars=[self args]"
+    set __vars [list]
+    foreach _var $variables {
+      if {[llength $_var] == 2} {
+        lappend __vars [lindex $_var 0] [uplevel subst [lindex $_var 1]]
+      } else {
+        set localvar local.$_var
+        upvar $_var $localvar
+        if {[array exists $localvar]} {
+          lappend __vars &$_var $localvar
+        } elseif {[info exists $localvar]} {
+          # ignore undefined variables
+          lappend __vars $_var [set $localvar]
+        }
+      }
+    }
+
+    if {[info exists form]} {
+      set level [template::adp_level]
+      foreach f [uplevel #$level info vars ${form}:*] {
+        lappend __vars &$f $f
+        upvar #$level $f $f
+      }
+    }
+    #my log "--before adp"   ; # $__vars
+    set text [template::adp_include $adp $__vars]
+    #my log "--after adp"
+    if { [lang::util::translator_mode_p] } {
+      set text [::xo::localize $text 1]
+    }
+    #my log "--after adp"
+    return $text
+  }
  
   #ns_log notice [::xo::Package serialize]
 
