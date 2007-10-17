@@ -265,6 +265,12 @@ namespace eval ::xo {
     set array [my per_package_id_name $package_id]
     nsv_set $array [my parameter_name] $value
   }
+  parameter instproc clear_per_package_instance_value {package_id value} {
+    set array [my per_package_id_name $package_id]
+    if {[nsv_exists $array [my parameter_name]]} {
+      nsv_unset $array [my parameter_name]
+    }
+  }
   parameter instproc initialize_loaded_object {} {
     my instvar package_key parameter_name
     [self class] set Parameter_id($package_key,$parameter_name) [self]
@@ -327,6 +333,36 @@ namespace eval ::xo {
   }
 
   parameter initialize_parameters
+
+  #
+  # For the time being: catch changed parameter values
+  #
+  ad_proc -public -callback subsite::parameter_changed -impl xotcl-param-procs {
+   -package_id:required
+   -parameter:required
+   -value:required
+  } {
+    Implementation of subsite::parameter_changed for xotcl param procs
+    
+    @param package_id the package_id of the package the parameter was changed for
+    @param parameter  the parameter name
+    @param value      the new value
+  } {
+    #
+    # In order to use the existing inerface for parameters, we catch
+    # all parameter changes and update accordingly the values in the new
+    # interface.
+    #
+    set parameter_obj [ ::xo::parameter get_parameter_object \
+                           -package_key [apm_package_key_from_id $package_id] \
+                           -parameter_name $parameter]
+    $parameter_obj clear_per_package_instance_value $package_id $value
+    if {[$parameter_obj default_value] ne $value} {
+      $parameter_obj set_per_package_instance_value $package_id $value
+    }
+  }
+
+
   #
   #  A few test cases
   #
