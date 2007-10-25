@@ -590,10 +590,10 @@ namespace eval ::xo::db {
       # Note, that we can as well get the type in future versions
       #
       db_foreach [my qn get_function_params] {
-        select proname, pronargs, proargtypes,prosrc 
+        select proname, pronargs, proargtypes, prosrc 
         from pg_proc 
         where proname = lower(:package_name) || '__' || lower(:object_name)
-        order by pronargs desc 
+        order by pronargs, proargtypes desc 
       } {
         set n 1
         set function_args [list]
