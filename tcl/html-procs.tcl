@@ -8,6 +8,27 @@ proc require_html_procs {} {
       # set taken from W3C on http://www.w3.org/TR/html4/index/elements.html
       #
 
+      # If the following flag is set to false, tdom makes no checks
+      # for valid XML character encodings. In particular, XML does not
+      # allow characters below 0x20 besides #x9 | #xA | #xD (see XML
+      # 1.0 fourth edition http://www.w3.org/TR/REC-xml/) although
+      # these are valid UTF-8 characters (see rfc3629 or rfc2279). In
+      # other words, XML does not accept all valid UTF-8 strings. HTML
+      # does not seem to have this limitation.
+      #
+      # CAUTION: Notice that when this flag is set, tdom accepts
+      # invalid XML characters even in XML documents.  If the tdom
+      # tree is generated in XML and send to a different parser, a
+      # thorough XML parser will reject the document. So, this flag
+      # has to be used with caution.
+      #
+      # However, when the flag is not set, tdom complains about
+      # invalid input, so it would be necessary to strip all invalid
+      # XML characters via string map etc., which is not nice
+      # in the code and bad performance wise.
+
+      dom setTextCheck false
+
       #
       # Miscelaneous commands. Not part of html specs
       # but needed for generation of special dom nodes.
