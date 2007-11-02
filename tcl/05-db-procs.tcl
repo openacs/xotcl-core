@@ -112,7 +112,7 @@ namespace eval ::xo::db {
     sql proc select {
       -vars:required 
       -from:required 
-      -where:required 
+      {-where ""}
       {-groupby ""} 
       {-limit ""} 
       {-offset ""} 
@@ -120,11 +120,12 @@ namespace eval ::xo::db {
       {-orderby ""}
       {-map_function_names false}
     } {
+      set where_clause  [expr {$where   ne "" ? "WHERE $where" : ""}]
       set offset_clause [expr {$offset  ne "" ? "OFFSET $offset" : ""}]
       set limit_clause  [expr {$limit   ne "" ? "LIMIT $limit" : ""}]
       set order_clause  [expr {$orderby ne "" ? "ORDER BY $orderby" : ""}]
       set group_clause  [expr {$groupby ne "" ? "GROUP BY $groupby" : ""}]
-      return "SELECT $vars FROM $from WHERE $where $group_clause $order_clause $limit_clause $offset_clause"
+      return "SELECT $vars FROM $from $where_clause $group_clause $order_clause $limit_clause $offset_clause"
     }
 
     sql proc date_trunc {field date} {
@@ -163,7 +164,7 @@ namespace eval ::xo::db {
     sql proc select {
       -vars:required 
       -from:required 
-      -where:required 
+      {-where ""}
       {-groupby ""} 
       {-limit ""} 
       {-offset ""} 
@@ -172,10 +173,11 @@ namespace eval ::xo::db {
       {-map_function_names false}
     } {
       # "-start" not used so far
+      set where_clause [expr {$where ne "" ? "WHERE $where" : ""}]
       set order_clause [expr {$orderby ne "" ? "ORDER BY $orderby" : ""}]
       set group_clause [expr {$groupby ne "" ? "GROUP BY $groupby" : ""}]
       if {$map_function_names} {set vars [::xo::db::function_name $vars]}
-      set sql "SELECT $vars FROM $from WHERE $where $group_clause"
+      set sql "SELECT $vars FROM $from $where_clause $group_clause"
       if {$limit ne "" || $offset ne ""} {
         if {$offset eq ""} {
           set limit_clause "ROWNUM <= $limit"
