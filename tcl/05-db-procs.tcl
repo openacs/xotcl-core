@@ -219,7 +219,7 @@ namespace eval ::xo::db {
     sql proc select {
       -vars:required 
       -from:required 
-      -where:required 
+      {-where ""}
       {-groupby ""} 
       {-limit ""} 
       {-offset ""} 
@@ -270,7 +270,7 @@ namespace eval ::xo::db {
     sql proc select {
       -vars:required 
       -from:required 
-      -where:required 
+      {-where ""}
       {-groupby ""} 
       {-limit ""} 
       {-offset ""} 
@@ -586,14 +586,25 @@ namespace eval ::xo::db {
     ::xo::db::Class instproc get_function_args {package_name object_name} {
       #
       # Get function_args for a single sql-function from PostgreSQL
-      # system catalogs. 
-      # Note, that we can as well get the type in future versions
+      # system catalogs. We retrieve always the longest function for
+      # our definition, since we use an interface with non positional
+      # arguments, where in most situations, many arguments are
+      # optional.  In cases, where more function with the samenumber
+      # of arguments are available, we sort by the type as well to
+      # obtain a predictable ordering and to give string interfaces
+      # (text, varchar) a higher priority than integer or boolean
+      # arguments (e.g. int4, int8m bool). 
+      #
+      # Note: based on the ordering, char has lower priority over int* which 
+      # is probably a bug, but is not a problem in OpenACS.
+      #
+      # Note, that we can as well get the type in future versions.
       #
       db_foreach [my qn get_function_params] {
         select proname, pronargs, proargtypes, prosrc 
         from pg_proc 
         where proname = lower(:package_name) || '__' || lower(:object_name)
-        order by pronargs, proargtypes desc 
+        order by pronargs desc, proargtypes desc 
       } {
         set n 1
         set function_args [list]
