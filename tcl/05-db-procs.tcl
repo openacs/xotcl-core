@@ -613,6 +613,7 @@ namespace eval ::xo::db {
             regexp {^[^a-zA-Z]+([a-zA-Z0-9_]+)\s} $line _ fq_name
             if {![info exists fq_name]} {
               ns_log notice "--***** no fq_name in '$line'"
+		set fq_name ""
             }
             #lappend fq_names $fq_name
             set name $fq_name
