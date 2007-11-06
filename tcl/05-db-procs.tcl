@@ -612,8 +612,8 @@ namespace eval ::xo::db {
           if {[regexp "alias for \\\$$n" $line]} {
             regexp {^[^a-zA-Z]+([a-zA-Z0-9_]+)\s} $line _ fq_name
             if {![info exists fq_name]} {
-              ns_log notice "--***** no fq_name in '$line'"
-		set fq_name ""
+              ns_log notice "--***** Could not retrieve argument name for $proname argument $n from line '$line' in $prosrc'"
+	      set fq_name arg$n
             }
             #lappend fq_names $fq_name
             set name $fq_name
