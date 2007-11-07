@@ -324,8 +324,7 @@ namespace eval ::xo {
              p.default_value, v.attr_value 
       from apm_parameters p, apm_parameter_values v 
       where p.parameter_id = v.parameter_id 
-      and ( attr_value <> p.default_value
-	    or (attr_value is null and p.default_value is not null))
+      and coalesce(attr_value,'') <> coalesce(p.default_value,'')
     } {
       ns_log notice "--p $parameter_id $package_key $package_id $parameter_name <$attr_value>"
       $parameter_id set_per_package_instance_value $package_id $attr_value
