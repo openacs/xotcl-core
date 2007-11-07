@@ -635,7 +635,7 @@ namespace eval ::xo::db {
                 -where [join $cond " and "] \
                 -orderby $orderby \
                 -limit $limit -offset $offset]
-    my log "--sql=$sql"
+    #my log "--sql=$sql"
     return $sql
   }
 
