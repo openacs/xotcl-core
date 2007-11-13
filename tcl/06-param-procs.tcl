@@ -214,7 +214,6 @@ namespace eval ::xo {
         if {[$sc exists package_key]} {
           set package_key [$sc package_key]
           set success 1
-          #my log "--p new package_key=$package_key"
         }
       }
       if {!$success} break
