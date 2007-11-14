@@ -272,6 +272,12 @@ namespace eval ::xo {
     my process_query_parameter
   }
 
+  ConnectionContext instproc cache {cmd} {
+    set key cache($cmd)
+    if {![my exists $key]} {my set $key [uplevel $cmd]}
+    return [my set $key]
+  }
+
   ConnectionContext ad_instproc permission {-object_id -privilege -party_id } {
     call ::permission::permission_p but avoid multiple calls in the same
     session through caching in the connection context
