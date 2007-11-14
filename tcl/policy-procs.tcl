@@ -15,39 +15,54 @@ namespace eval ::xo {
     expr {[my isclass $c] ? [$c array names require_permission] : [list]}
   }
 
-  Policy instproc check_privilege {{-login true} -user_id -package_id privilege object method} {
-    set allowed -1   ;# undecided
-    if {[acs_user::site_wide_admin_p -user_id $user_id] && $privilege ne "nobody"} {
+  Policy instproc check_privilege {
+    {-login true} 
+    -user_id:required 
+    -package_id 
+    privilege object method
+  } {
+    if {$privilege eq "nobody"} {
+      return 0
+    }
+    if {$privilege eq "everybody" || $privilege eq "public" || $privilege eq "none"} {
       return 1
     }
-    switch $privilege {
-      nobody {return 0}
-      none  {return 1}
-      login {
-        if {$login} {
-          auth::require_login; return 1
-        } else {
-          return [expr {$user_id != 0}]
-        }
-      }
-      swa   {
-        set allowed 0
-        #if {!$allowed} {
-        #  ad_return_warning "Insufficient Permissions" \
-        #      "Only side wide admins are allowed for this operation! ($object $method)"
-        #  ad_script_abort
-        #}
-      }
-      default {
-        # try object specific privileges. These have the signature:
-        # 
-        # <class> instproc privilege=<name> {{-login true} user_id package_id method}
-        #
-        if {[$object info methods privilege=$privilege] ne ""} {
-	  if {![info exists package_id]} {set package_id [::xo::cc package_id]}
-          set allowed [$object privilege=$privilege -login $login $user_id $package_id $method]
-        }
-      }
+
+    my log "--login $login user_id=$user_id"
+    if {$login && $user_id == 0} {
+      #
+      # The tests below depend on the user_id.
+      # The main reason, we call auth:require_login here is to check for exired logins.
+      #
+      auth::require_login
+    }
+
+    if {$privilege eq "login" || $privilege eq "registered_user"} {
+      return [expr {$user_id != 0}]
+    }
+
+    if {[::xo::cc cache [list acs_user::site_wide_admin_p -user_id $user_id]]} {
+      # swa is allowed to do everything handled below as well
+      return 1
+    } elseif {$privilege eq "swa"} {
+      return 0
+    }
+
+    if {[::xo::cc permission -object_id $package_id -privilege admin -party_id $user_id]} {
+      # package_admin is allowed to do everything handled below as well
+      return 1
+    } elseif {$privilege eq "admin"} {
+      return 0
+    }
+
+    set allowed -1   ;# undecided
+    # try object specific privileges. These have the signature:
+    # 
+    # <class> instproc privilege=<name> {{-login true} user_id package_id method}
+    #
+    if {[$object info methods privilege=$privilege] ne ""} {
+      if {![info exists package_id]} {set package_id [::xo::cc package_id]}
+      set allowed [$object privilege=$privilege -login $login $user_id $package_id $method]
     }
     #my log "--check_privilege {$privilege $object $method} ==> $allowed"
     return $allowed
@@ -172,7 +187,7 @@ namespace eval ::xo {
       }
     }
 
-    #my log "--p enforce_permissions {$object $method} : $permission ==> $allowed"
+    my log "--p enforce_permissions {$object $method} : $permission ==> $allowed"
 
     if {!$allowed} {
       if {$permission eq ""} {

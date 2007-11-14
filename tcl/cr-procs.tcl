@@ -1139,9 +1139,7 @@ namespace eval ::xo::db {
     set allowed 0
     #my log "--checking privilege [self args]"
     if {[my exists creation_user]} {
-      if {$user_id == 0 && $login} {
-        auth::require_login
-      } elseif {[my set creation_user] == $user_id} {
+      if {[my set creation_user] == $user_id} {
         set allowed 1
       } else {
         # allow the package admin always access
