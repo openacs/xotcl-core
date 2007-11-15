@@ -278,6 +278,28 @@ namespace eval ::xo {
     return [my set $key]
   }
 
+  ConnectionContext instproc role=swa {-user_id:required -object_id} {
+    return [my cache [list acs_user::site_wide_admin_p -user_id $user_id]]
+  }
+  ConnectionContext instproc role=registered_user {-user_id:required -object_id} {
+    return [expr {$user_id != 0}]
+  }
+  ConnectionContext instproc role=unregistered_user {-user_id:required -object_id} {
+    return [expr {$user_id == 0}]
+  }
+  ConnectionContext instproc role=admin {-user_id:required -object_id:required} {
+    return [my permission -object_id $object_id -privilege admin -party_id $user_id]
+  }
+  ConnectionContext instproc role=creator {-user_id:required -object_id -object:required} {
+    $object instvar creation_user
+    return [expr {$creation_user == $user_id}]
+  }
+  ConnectionContext instproc role=app_group_member {-user_id:required -object_id} {
+    return [my cache [list application_group::contains_party_p \
+                          -party_id $user_id \
+                          -package_id $object_id]]
+  }
+
   ConnectionContext ad_instproc permission {-object_id -privilege -party_id } {
     call ::permission::permission_p but avoid multiple calls in the same
     session through caching in the connection context
