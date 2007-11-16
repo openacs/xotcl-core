@@ -278,26 +278,37 @@ namespace eval ::xo {
     return [my set $key]
   }
 
-  ConnectionContext instproc role=swa {-user_id:required -object_id} {
+  ConnectionContext instproc role=swa {-user_id:required -package_id} {
     return [my cache [list acs_user::site_wide_admin_p -user_id $user_id]]
   }
-  ConnectionContext instproc role=registered_user {-user_id:required -object_id} {
+  ConnectionContext instproc role=registered_user {-user_id:required -package_id} {
     return [expr {$user_id != 0}]
   }
-  ConnectionContext instproc role=unregistered_user {-user_id:required -object_id} {
+  ConnectionContext instproc role=unregistered_user {-user_id:required -package_id} {
     return [expr {$user_id == 0}]
   }
-  ConnectionContext instproc role=admin {-user_id:required -object_id:required} {
-    return [my permission -object_id $object_id -privilege admin -party_id $user_id]
+  ConnectionContext instproc role=admin {-user_id:required -package_id:required} {
+    return [my permission -object_id $package_id -privilege admin -party_id $user_id]
   }
-  ConnectionContext instproc role=creator {-user_id:required -object_id -object:required} {
+  ConnectionContext instproc role=creator {-user_id:required -package_id -object:required} {
     $object instvar creation_user
     return [expr {$creation_user == $user_id}]
   }
-  ConnectionContext instproc role=app_group_member {-user_id:required -object_id} {
+  ConnectionContext instproc role=app_group_member {-user_id:required -package_id} {
     return [my cache [list application_group::contains_party_p \
                           -party_id $user_id \
-                          -package_id $object_id]]
+                          -package_id $package_id]]
+  }
+  ConnectionContext instproc role=community_member {-user_id:required -package_id} {
+    if {[info command ::dotlrn_community::get_community_id] ne ""} {
+      set community_id [my cache [list [dotlrn_community::get_community_id -package_id $package_id]]]
+      if {$community_id ne ""} {
+        return [my cache [list dotlrn::user_is_community_member_p \
+                              -user_id $user_id \
+                              -community_id $community_id]]
+      }
+    }
+    return 0
   }
 
   ConnectionContext ad_instproc permission {-object_id -privilege -party_id } {
