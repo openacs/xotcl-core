@@ -707,8 +707,17 @@ namespace eval ::xo {
     if {![info exists ::need_js($name)]} {lappend ::js_order $name}
     set ::need_js($name)  1
   }
+  Page proc requireLink {-rel -type -title -href} {
+    regsub -all ' $title "&apos;" title
+    regsub -all ' $href "&apos;" href
+    set key "rel='$rel' type='$type' title='$title' href='$href'"
+    set ::need_link($key) 1
+  }
   Page proc header_stuff {} {
     set result ""
+    foreach link [array names ::need_link] {
+      append result "<link $link>\n"
+    }
     foreach file [array names ::need_css] {
       append result "<link type='text/css' rel='stylesheet' href='$file' media='all' >\n"
     }

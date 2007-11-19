@@ -8,7 +8,7 @@
     <singleton-p>t</singleton-p>
     <auto-mount>xotcl</auto-mount>
 
-    <version name="0.77" url="http://media.wu-wien.ac.at/download/xotcl-core-0.77.apm">
+    <version name="0.78" url="http://media.wu-wien.ac.at/download/xotcl-core-0.78.apm">
         <owner url="mailto:neumann@wu-wien.ac.at">Gustaf Neumann</owner>
         <summary>XOTcl library functionality (e.g. thread handling, online documentation, Generic Form and List Classes)</summary>
         <release-date>2007-11-13</release-date>
@@ -41,7 +41,7 @@ when components are reloaded.
         <license>BSD-Style</license>
         <maturity>0</maturity>
 
-        <provides url="xotcl-core" version="0.77"/>
+        <provides url="xotcl-core" version="0.78"/>
 
         <callbacks>
             <callback type="before-install"  proc="::xotcl::before_install_callback"/>
