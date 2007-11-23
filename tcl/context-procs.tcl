@@ -223,9 +223,16 @@ namespace eval ::xo {
   }
   ConnectionContext instproc set_user_id {user_id} {
     if {$user_id == -1} {  ;# not specified
-      my set user_id [expr {[info exists ::ad_conn(user_id)] ? [ad_conn user_id] : 0}]
+      if {[info exists ::ad_conn(user_id)]} {
+        my set user_id [ad_conn user_id]
+        my set untrusted_user_id [ad_conn untrusted_user_id]
+      } else {
+        my set user_id 0
+        my set untrusted_user_id 0
+      }
     } else {
       my set user_id $user_id
+      my set untrusted_user_id $user_id
     }
   }
 
@@ -311,7 +318,7 @@ namespace eval ::xo {
     return 0
   }
 
-  ConnectionContext ad_instproc permission {-object_id -privilege -party_id } {
+  ConnectionContext ad_instproc permission {-object_id:required -privilege:required -party_id } {
     call ::permission::permission_p but avoid multiple calls in the same
     session through caching in the connection context
   } {
@@ -321,7 +328,7 @@ namespace eval ::xo {
       if {$party_id == 0} {
         set key permission($object_id,$privilege,$party_id)
         if {[my exists $key]} {return [my set $key]}
-        set granted [permission::permission_p -party_id $party_id \
+        set granted [permission::permission_p -no_login -party_id $party_id \
                          -object_id $object_id \
                          -privilege $privilege]
         if {$granted} {
@@ -337,7 +344,8 @@ namespace eval ::xo {
     set key permission($object_id,$privilege,$party_id)
     if {[my exists $key]} {return [my set $key]}
     #my log "--p lookup $key"
-    my set $key [permission::permission_p -party_id $party_id \
+    my set $key [permission::permission_p -no_login \
+                     -party_id $party_id \
                      -object_id $object_id \
                      -privilege $privilege]
   }

@@ -34,7 +34,7 @@ namespace eval ::xo {
       # The tests below depend on the user_id.
       # The main reason, we call auth:require_login here is to check for exired logins.
       #
-      auth::require_login
+      set user_id [auth::require_login]
     }
 
     if {$privilege eq "login" || $privilege eq "registered_user"} {
@@ -133,10 +133,10 @@ namespace eval ::xo {
     }
 
     set permission [my get_permission $object $method]
-    #my msg "--permission for o=$object, m=$method => $permission"
+    #my log "--permission for o=$object, m=$method => $permission"
     if {$permission ne ""} {
       foreach {kind p} [my get_privilege -query_context $ctx $permission $object $method] break
-      #my msg "--privilege = $p kind = $kind"
+      #my log "--privilege = $p kind = $kind"
       switch $kind {
 	primitive {return [my check_privilege -login false \
 			       -package_id $package_id -user_id $user_id \
@@ -144,7 +144,7 @@ namespace eval ::xo {
 	complex {
 	  foreach {attribute privilege} $p break
 	  set id [$object set $attribute]
-	  #my msg "--p checking permission::permission_p -object_id $id -privilege $privilege"
+	  #my log "--p checking permission -object_id $id -privilege $privilege -party_id $user_id"
 	  return [::xo::cc permission -object_id $id -privilege $privilege -party_id $user_id]
 	}
       }
@@ -187,15 +187,17 @@ namespace eval ::xo {
       }
     }
 
-    my log "--p enforce_permissions {$object $method} : $permission ==> $allowed"
+    #my log "--p enforce_permissions {$object $method} : $permission ==> $allowed"
 
     if {!$allowed} {
+      set untrusted_user_id [::xo::cc set untrusted_user_id]
       if {$permission eq ""} {
-	ns_log notice "permission::require_permission: no permission for " \
-	    "$object->$method defined"
+	ns_log notice "enforce_permissions: no permission for $object->$method defined"
+      } elseif {$user_id == 0 && $untrusted_user_id} {
+        ns_log notice "enforce_permissions: force login, user_id=0 and untrusted_id=$untrusted_user_id"
+        auth::require_login
       } else {
-	ns_log notice "permission::require_permission: $user_id doesn't \
-		have $privilege on $object"
+	ns_log notice "enforce_permissions: $user_id doesn't have $privilege on $object"
       }
       ad_return_forbidden  "Permission Denied" [_ xotcl-core.policy-error-insufficient_permissions]
       ad_script_abort

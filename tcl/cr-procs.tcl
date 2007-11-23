@@ -18,7 +18,7 @@ namespace eval ::xo::db {
 # 	{storage_type "text"}
 # 	{folder_id -100}
 
-  ::xotcl::Class ::xo::db::CrClass \
+  ::xotcl::Class create ::xo::db::CrClass \
       -superclass ::xo::db::Class \
       -parameter {
 	{supertype content_revision}
@@ -1158,7 +1158,7 @@ namespace eval ::xo::db {
   # CrClass is a mixin class for caching the CrItems in ns_cache.
   #
   
-  ::xotcl::Class CrCache 
+  ::xotcl::Class create CrCache 
   CrCache instproc fetch_object {
     -item_id:required
     {-revision_id 0}
