@@ -691,7 +691,7 @@ namespace eval ::xo::db {
 	::xo::db::CrAttribute create description \
 	    -sqltype varchar(1000) \
 	    -pretty_name "Description" -pretty_plural "Descriptions"
-	#::xo::db::CrAttribute create publish_date -datatype timestamptz|date
+	::xo::db::CrAttribute create publish_date -datatype date
 	::xo::db::CrAttribute create mime_type \
 	    -sqltype varchar(200) \
 	    -pretty_name "Mime Type" -pretty_plural "Mime Types" \
@@ -854,6 +854,16 @@ namespace eval ::xo::db {
   #
   # CrItem set insert_view_operation db_0or1row
 
+  CrItem instproc update_revision {revision_id attribute value} {
+    #
+    # This method can be use to update arbitrary fields of 
+    # an revision.
+    #
+    
+    db_dml [my qn update_content] "update cr_revisions \
+                set $attribute = :value \
+		where revision_id = $revision_id"
+  }
  
   CrItem instproc current_user_id {} {
     if {[my isobject ::xo::cc]} {return [::xo::cc user_id]}
@@ -861,7 +871,11 @@ namespace eval ::xo::db {
     return ""
   }
 
-  CrItem ad_instproc save {-modifying_user {-live_p:boolean true}} {
+  CrItem ad_instproc save {
+    -modifying_user 
+    {-live_p:boolean true} 
+    {-use_given_publish_date:boolean false}
+  } {
     Updates an item in the content repository. We insert a new revision instead of 
     changing the current revision.
     @param modifying_user
@@ -879,7 +893,8 @@ namespace eval ::xo::db {
     foreach {__slot_name __slot} [[my info class] array get db_slot] {
       if {
 	  $__slot eq "::xo::db::Object::slot::object_title" ||
-	  $__slot eq "::xo::db::CrItem::slot::name"
+	  $__slot eq "::xo::db::CrItem::slot::name" ||
+          $__slot eq "::xo::db::CrItem::slot::publish_date"
 	} continue
       my instvar $__slot_name
       lappend __atts [$__slot column_name]
@@ -906,6 +921,14 @@ namespace eval ::xo::db {
         # if we do not make the revision live, use the old revision_id,
         # and let CrCache save it
         set revision_id $old_revision_id
+      }
+      #
+      # set_live revision updates publish_date to the current date.
+      # In order to keep a given publish date, we have to update the
+      # field manually.
+      #
+      if {$use_given_publish_date} {
+        my update_revision $revision_id publish_date [my publish_date]
       }
     }
     return $item_id
@@ -941,8 +964,13 @@ namespace eval ::xo::db {
   }
 
 
-  CrItem ad_instproc save_new {-package_id -creation_user -creation_ip \
-				   {-live_p:boolean true}} {
+  CrItem ad_instproc save_new {
+    -package_id 
+    -creation_user 
+    -creation_ip 
+    {-live_p:boolean true}
+    {-use_given_publish_date:boolean false}
+  } {
     Insert a new item to the content repository
     @param package_id
     @param creation_user user_id if the creating user
@@ -963,7 +991,8 @@ namespace eval ::xo::db {
       #my log "--slot = $__slot"
       if {
 	  $__slot eq "::xo::db::Object::slot::object_title" ||
-	  $__slot eq "::xo::db::CrItem::slot::name"
+	  $__slot eq "::xo::db::CrItem::slot::name" ||
+          $__slot eq "::xo::db::CrItem::slot::publish_date"
 	} continue
       my instvar $__slot_name
       if {![info exists $__slot_name]} {set $__slot_name ""}
@@ -1003,9 +1032,12 @@ namespace eval ::xo::db {
             -revision_id $revision_id \
             -publish_status [my set publish_status] 
       }
+      if {$use_given_publish_date} {
+        my update_revision $revision_id publish_date [my publish_date]
+      }
     }
     my set revision_id $revision_id
-    my db_1row  [my qn get_dates] {
+    my db_1row [my qn get_dates] {
       select creation_date, last_modified 
       from acs_objects where object_id = :revision_id
     }

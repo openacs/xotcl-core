@@ -198,7 +198,9 @@ namespace eval ::xo::db {
   
   if {[db_driverkey ""] eq "postgresql"} {
 
-
+    #
+    # PostgresSQL specific functions
+    #
 
     sql proc map_function_name {sql} {
       return $sql
@@ -208,6 +210,7 @@ namespace eval ::xo::db {
       switch -- $type {
         string    { set type text }
         long_text { set type text }
+        date      { set type timestampz }
       }
       return $type
     }
@@ -1603,7 +1606,7 @@ namespace eval ::xo::db {
   } {
     upvar $tz_var tz
     set tz 00
-    regexp {^([^.]+)[.][0-9]+(.*)$} $timestamp _ timestamp tz
+    regexp {^([^.]+)[.]?[0-9]*([+-][0-9]*)$} $timestamp _ timestamp tz
     return $timestamp
   }
 }
