@@ -56,5 +56,22 @@ namespace eval ::xo {
     #my log "$start_date <= $end_date = [expr {[clock scan $start_date] <= [clock scan $end_date]}]"
     expr {[clock scan $start_date] <= [clock scan $end_date]}
   }
+
+  ical ad_proc text_to_ical {{-remove_tags false} text} {
+    Transform arbitrary text to the escaped ical text format 
+    (see rfc 2445)
+  } {
+    if {$remove_tags} {regsub -all {<[^>]+>} $text "" text}
+    regsub -all \n $text \\n text
+    regsub -all {(\\|\;|\,)} $text {\\\1} text
+    return $text
+  }
+  ical ad_proc ical_to_text {text} {
+    Transform the escaped ical text format to plain text
+  } {
+    regsub -all {\\(n|N)} $text \n text
+    regsub -all {\\(\\|\;|\,)} $text {\1} text
+    return $text
+  }
   
 }
