@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<message_catalog package_key="xotcl-core" package_version="0.56" locale="el_GR" charset="utf-8">
+
+  <msg key="add">Προσθήκη %type%</msg>
+  <msg key="add_long">Προσθήκη νέου αντικειμένου του τύπου %type%</msg>
+  <msg key="create_new_type">Δημιουργία νέου %type%</msg>
+  <msg key="edit_item">Επεξεργασία αντικειμένου</msg>
+  <msg key="edit_type">Επεξεργασία %type%</msg>
+  <msg key="has_entered_the_room">μπήκε στο δωμάτιο</msg>
+  <msg key="live_revision">Αναθεώρηση ζωντανά</msg>
+  <msg key="policy-error-insufficient_permissions">&lt;blockquote&gt; Δεν έχετε επαρκείς άδειες για να εφαρμόσετε τη μέθοδο %method% στο αντικείμενο %object%. &lt;/blockquote&gt;</msg>
+  <msg key="revision_title">Αναθεωρήσεις εισόδου</msg>
+  <msg key="revisions">Αναθεωρήσεις </msg>
+</message_catalog>
