@@ -625,7 +625,7 @@ namespace eval ::xo::db {
               regexp {^[vp]_(.+)$} $fq_name _ name
             }
             if {[regexp {^.*-- default +([^, ]+) *$} $line _ default]} {
-              set default [string trim $default ']
+              set default [string trim $default '\n\r]
             }
             lappend function_args [list [string toupper $name] $default]
             if {[incr n]>$pronargs} break
