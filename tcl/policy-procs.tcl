@@ -28,7 +28,7 @@ namespace eval ::xo {
       return 1
     }
 
-    my log "--login $login user_id=$user_id"
+    #my log "--login $login user_id=$user_id"
     if {$login && $user_id == 0} {
       #
       # The tests below depend on the user_id.
@@ -64,7 +64,7 @@ namespace eval ::xo {
       if {![info exists package_id]} {set package_id [::xo::cc package_id]}
       set allowed [$object privilege=$privilege -login $login $user_id $package_id $method]
     }
-    #my log "--check_privilege {$privilege $object $method} ==> $allowed"
+    #my msg "--check_privilege {$privilege $object $method} ==> $allowed"
     return $allowed
   }
 
@@ -74,14 +74,14 @@ namespace eval ::xo {
     # or it might be conditional (primitive or complex) in a list of privilges
 
     foreach p $permission {
-      
+      #my msg "checking permission '$p'"
       set condition [lindex $p 0]
       if {[llength $condition]>1} {
         # we have a condition
 	foreach {cond value} $condition break
         if {[$object condition=$cond $query_context $value]} {
-          return [my get_privilege [lrange $p 1 end] $object $method]
-        } 
+          return [my get_privilege [list [lrange $p 1 end]] $object $method]
+        }
       } else {
         # we have no condition
         return [list [expr {[llength $p] == 1 ? "primitive" : "complex"}] $p]
@@ -136,7 +136,7 @@ namespace eval ::xo {
     #my log "--permission for o=$object, m=$method => $permission"
     if {$permission ne ""} {
       foreach {kind p} [my get_privilege -query_context $ctx $permission $object $method] break
-      #my log "--privilege = $p kind = $kind"
+      #my msg "--privilege = $p kind = $kind"
       switch $kind {
 	primitive {return [my check_privilege -login false \
 			       -package_id $package_id -user_id $user_id \
@@ -144,7 +144,8 @@ namespace eval ::xo {
 	complex {
 	  foreach {attribute privilege} $p break
 	  set id [$object set $attribute]
-	  #my log "--p checking permission -object_id $id -privilege $privilege -party_id $user_id"
+	  #my msg "--p checking permission -object_id $id -privilege $privilege -party_id $user_id\
+	  #	==> [::xo::cc permission -object_id $id -privilege $privilege -party_id $user_id]"
 	  return [::xo::cc permission -object_id $id -privilege $privilege -party_id $user_id]
 	}
       }

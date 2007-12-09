@@ -324,26 +324,27 @@ namespace eval ::xo {
   } {
     if {![info exists party_id]} {
       set party_id [my user_id]
-      #my log "--p party_id $party_id"
-      if {$party_id == 0} {
-        set key permission($object_id,$privilege,$party_id)
-        if {[my exists $key]} {return [my set $key]}
-        set granted [permission::permission_p -no_login -party_id $party_id \
-                         -object_id $object_id \
-                         -privilege $privilege]
-        if {$granted} {
-          my set $key $granted
-          return $granted
-        }
-        # The permission is not granted for the public.
-        # We force the user to login
-        auth::require_login
-        return 0
-      }
     }
+    if {$party_id == 0} {
+      set key permission($object_id,$privilege,$party_id)
+      if {[my exists $key]} {return [my set $key]}
+      #my msg "--p lookup $key"
+      set granted [permission::permission_p -no_login -party_id $party_id \
+                       -object_id $object_id \
+                       -privilege $privilege]
+      if {$granted} {
+        my set $key $granted
+        return $granted
+      }
+      # The permission is not granted for the public.
+      # We force the user to login
+      auth::require_login
+      return 0
+    }
+
     set key permission($object_id,$privilege,$party_id)
     if {[my exists $key]} {return [my set $key]}
-    #my log "--p lookup $key"
+    #my msg "--p lookup $key"
     my set $key [permission::permission_p -no_login \
                      -party_id $party_id \
                      -object_id $object_id \
