@@ -20,7 +20,7 @@ set output ""
 set isobject [::xotcl::api isobject $scope $object]
 
 if {!$isobject} {
-  ad_return_error "Object Error" "I was unable to access object $object. 
+  ad_return_complaint 1 "Unable to access object $object. 
 	Might this be a temporary object?"
   ad_script_abort
 }
