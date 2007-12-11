@@ -225,7 +225,9 @@ namespace eval ::xo {
     if {$user_id == -1} {  ;# not specified
       if {[info exists ::ad_conn(user_id)]} {
         my set user_id [ad_conn user_id]
-        my set untrusted_user_id [ad_conn untrusted_user_id]
+        if {[catch {my set untrusted_user_id [ad_conn untrusted_user_id]}]} {
+          my set untrusted_user_id [my user_id]
+        }
       } else {
         my set user_id 0
         my set untrusted_user_id 0
@@ -328,11 +330,11 @@ namespace eval ::xo {
     if {$party_id == 0} {
       set key permission($object_id,$privilege,$party_id)
       if {[my exists $key]} {return [my set $key]}
-      #my msg "--p lookup $key"
       set granted [permission::permission_p -no_login -party_id $party_id \
                        -object_id $object_id \
                        -privilege $privilege]
-      if {$granted} {
+      #my msg "--p lookup $key ==> $granted uid=[my user_id] uuid=[my set untrusted_user_id]"
+      if {$granted || [my user_id] == [my set untrusted_user_id]} {
         my set $key $granted
         return $granted
       }
