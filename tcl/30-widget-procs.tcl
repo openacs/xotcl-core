@@ -31,8 +31,137 @@ Object instproc asHTML {{-master defaultMaster} -page:switch} {
 #
 # Most importantly, we define ::xo::Table, somewhat similar to the classical multirow 
 
-namespace eval ::xo {
+namespace eval ::xo {}
+namespace eval ::xo::tdom {
 
+  ::xotcl::Class create ::xo::tdom::Class \
+      -superclass ::xotcl::Class \
+      -parameter {autoimport}
+
+  ::xo::tdom::Class instproc incr_level {{amount 1}} {
+    #
+    # Keep the nesting level of TdomClass instances during creation.
+    # Use a global variable to assure cleanup in case of execptions.
+    #
+    set var __tdom_level
+    global $var
+    if {[info exists $var]} {
+      incr $var $amount
+    } else {
+      set $var 1
+    }
+  }
+
+  #Object create ::xo::tmp
+  ::xo::tdom::Class instproc unknown args {
+    set configurecmds [lrange $args 0 end-1]
+    set createcmd [lindex $args end]
+    #
+    # Keep a stack of nesting levels of ::xo::tdom Objects.
+    # The stack is used for building automatically an ordered
+    # composite of objects, used e.g. in recursive renderings.
+    #
+    [self class] instvar stack
+    set level [my incr_level]
+
+    #
+    # Create a new instance of the current class and configure it.
+    #
+    #my log "tdom START $level [self], cmd='$configurecmds'"
+    set me [eval my new -destroy_on_cleanup $configurecmds]
+    #my log "tdom CREATED $level $me ([$me info class])"
+
+    #
+    # If we are not on the topmost level, add the created object
+    # to the parent ordered composite.
+    #
+    set stack($level) $me
+    if {$level > 1} {
+      set parent $stack([expr {$level - 1}])
+      #my log "tdom ADD  $level $me to $parent ([$parent info class])"
+      $parent add $me
+    }
+
+    #
+    # search for autoimports: all commands are executed in the ... currently not needed
+    #
+#     set class [$me info class]
+#     foreach cl [concat $class [$class info heritage]] {
+#       my log "tdom EVAL $level ns=[namespace current] autoimport in $cl?[$cl exists autoimport]"
+#       if {[$cl exists autoimport]} {
+#         my log "tdom IMPO [$cl autoimport] into $me"
+#         namespace eval ::xo::tmp [list namespace import -force [$cl autoimport]]
+#       }
+#     }
+#    #my log "tdom CMDS $level [lsort [info commands ::xo::tmp::*]]"
+
+    if {$createcmd ne ""} {
+      #
+      # perform the subcommand on the caller level to expand (like in tdom)
+      # all specified variables in the caller's context
+      #
+      uplevel $createcmd
+    }
+
+    #
+    # autorendering means that after creating an ordered composite,
+    # the topmost element is automatically rendered. This makes
+    # the ::xo::tdom classes behave more like plain tdom commands.
+    #
+    #my log "tdom AUTO $level [$me autorender]"
+
+    if {$level == 1 && [$me autorender]} {
+      #my log "tdom RNDR $level $me render"
+      $me render
+    }
+
+    #my log "tdom END  $level [self] me=$me"
+    set level [my incr_level -1]
+    return $me
+  }
+  
+  #
+  # ::xo::tdom::Object
+  # is the top of the class hierarchies for tdom objects
+  #
+  ::xotcl::Class create ::xo::tdom::Object \
+      -superclass ::xo::OrderedComposite \
+      -parameter {{autorender true}}
+
+  ::xo::tdom::Object instproc render {} {
+    foreach o [my children] { $o render }
+  }
+
+  ::xo::tdom::Object ad_instproc get_attributes {
+    args
+  } {
+    Get a list of attribute value pairs
+    of instance attributes. It returns only those
+    pairs for which a value exists.
+
+    @return flattened list of attribute value pairs
+  } {
+    set pairs [list]
+    foreach attribute $args {
+      set l [split $attribute]
+      if {[llength $l] > 1} {
+        foreach {attribute HTMLattribute} $l break
+      } else {
+        set HTMLattribute $attribute
+      }
+      #my msg "[my name] check for $attribute => [my exists $attribute]"
+      if {[my exists $attribute]} {
+        lappend pairs $HTMLattribute [my set $attribute]
+      }
+    }
+    return $pairs
+  }
+}
+
+
+
+
+namespace eval ::xo {
   #
   # Localization
   #
