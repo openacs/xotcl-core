@@ -831,27 +831,36 @@ namespace eval ::xo {
   # templating and CSS
   #
   Class create Page
-  Page proc requireCSS name {set ::need_css($name) 1}
+  Page proc requireCSS name {set ::_xo_need_css($name) 1}
   Page proc requireJS  name {
-    if {![info exists ::need_js($name)]} {lappend ::js_order $name}
-    set ::need_js($name)  1
+    if {![info exists ::_xo_need_js($name)]} {lappend ::_xo_js_order $name}
+    set ::_xo_need_js($name)  1
   }
   Page proc requireLink {-rel -type -title -href} {
     regsub -all ' $title "&apos;" title
     regsub -all ' $href "&apos;" href
     set key "rel='$rel' type='$type' title='$title' href='$href'"
-    set ::need_link($key) 1
+    set ::_xo_need_link($key) 1
+  }
+  Page proc set_property {name element value} {
+    set ::xo_property_${name}($element) $value
+  }
+  Page proc get_property {name} {
+    if {[array exists ::xo_property_${name}]} {
+      return [array get ::xo_property_${name}]
+    }
+    return [list]
   }
   Page proc header_stuff {} {
     set result ""
-    foreach link [array names ::need_link] {
+    foreach link [array names ::_xo_need_link] {
       append result "<link $link>\n"
     }
-    foreach file [array names ::need_css] {
+    foreach file [array names ::_xo_need_css] {
       append result "<link type='text/css' rel='stylesheet' href='$file' media='all' >\n"
     }
-    if {[info exists ::js_order]} {
-      foreach file $::js_order  {
+    if {[info exists ::_xo_js_order]} {
+      foreach file $::_xo_js_order  {
         if {[string match "*;*" $file]} {
           # it is not a file, but some javascipt statements
           append result "<script language='javascript' type='text/javascript' >" $file "</script>\n"
