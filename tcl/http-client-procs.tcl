@@ -147,6 +147,21 @@ namespace eval ::xo {
     set S [socket $host $port]
   }
 
+  HttpRequest instproc set_encoding {{-text_translation auto} content_type} {
+    #
+    # for text, use translation with optional encodings, else set translation binary
+    #
+    if {[string match text/* $content_type]} {
+      if {[regexp {*charset=([^ ]+)$} $content_type _ encoding]} {
+	fconfigure [my set S] -encoding $encoding -translation $text_translation
+      } else {
+	fconfigure [my set S] -translation $text_translation
+      }
+    } else {
+      fconfigure [my set S] -translation binary
+    }
+  }
+
   HttpRequest instproc init {} {
     my instvar S post_data host port protocol
     my destroy_on_cleanup
@@ -204,11 +219,8 @@ namespace eval ::xo {
     puts $S "Content-Length: [string length $post_data]"
     puts $S "Content-Type: [my content_type]"
     puts $S ""
-    fconfigure $S -translation {auto binary}
-    if {[regexp {; *charset=([^ ]+)$} [my content_type] _ encoding]} {
-      fconfigure $S -encoding $encoding
-    }
-    #my log "--post data blocking=[fconfigure $S -blocking]"
+    #fconfigure $S -translation {auto binary}
+    my set_encoding [my content_type]
     puts -nonewline $S $post_data
     my query_done
   }
@@ -287,7 +299,8 @@ namespace eval ::xo {
     my received_header_done
   }
   HttpRequest instproc received_header_done {} {
-    fconfigure [my set S] -translation binary
+    # we have received the header, including potentially the content_type of the returned data
+    my set_encoding [my content_type]
     if {[my exists content_length]} {
       my set data [read [my set S] [my set content_length]]
     } else {
@@ -330,7 +343,8 @@ namespace eval ::xo {
     fileevent [my set S] readable [list [self] header]
   }
   AsyncHttpRequest instproc received_header_done {} {
-    fconfigure [my set S] -translation binary
+    # we have received the header, including potentially the content_type of the returned data
+    my set_encoding [my content_type]
     fileevent [my set S] readable [list [self] received_data]
   }
   AsyncHttpRequest instproc received_data {} {
