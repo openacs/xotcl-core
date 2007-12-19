@@ -147,13 +147,16 @@ namespace eval ::xo {
     set S [socket $host $port]
   }
 
-  HttpRequest instproc set_encoding {{-text_translation auto} content_type} {
+  HttpRequest instproc set_encoding {
+    {-text_translation {auto binary}} 
+    content_type
+  } {
     #
     # for text, use translation with optional encodings, else set translation binary
     #
     if {[string match text/* $content_type]} {
-      if {[regexp {*charset=([^ ]+)$} $content_type _ encoding]} {
-	fconfigure [my set S] -encoding $encoding -translation $text_translation
+      if {[regexp {charset=([^ ]+)$} $content_type _ encoding]} {
+	fconfigure [my set S] -translation $text_translation -encoding $encoding
       } else {
 	fconfigure [my set S] -translation $text_translation
       }
