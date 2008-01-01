@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<message_catalog package_key="xotcl-core" package_version="0.38" locale="pt_BR" charset="ISO-8859-1">
+<message_catalog package_key="xotcl-core" locale="pt_BR" charset="ISO-8859-1">
 
   <msg key="add">Adicionar %type%</msg>
   <msg key="add_long">Adicionar novo item tipo %type%</msg>
+  <msg key="create_new_type">Criar novo %type%</msg>
   <msg key="edit_item">Editar Item</msg>
+  <msg key="edit_type">Editar %type%</msg>
   <msg key="has_entered_the_room">Entrou na sala</msg>
   <msg key="live_revision">Revisão Ativa</msg>
+  <msg key="policy-error-insufficient_permissions">&lt;blockquote&gt;
+Você não tem permissões suficientes para executar método %method% sobre objeto %object%.
+&lt;/blockquote&gt;</msg>
   <msg key="revision_title">Revisões da Entrada</msg>
   <msg key="revisions">Revisões</msg>
 </message_catalog>
