@@ -832,6 +832,7 @@ namespace eval ::xo {
   #
   Class create Page
   Page proc requireCSS name {set ::_xo_need_css($name) 1}
+  Page proc requireStyle s {set ::_xo_need_style($s) 1}
   Page proc requireJS  name {
     if {![info exists ::_xo_need_js($name)]} {lappend ::_xo_js_order $name}
     set ::_xo_need_js($name)  1
@@ -855,6 +856,9 @@ namespace eval ::xo {
     set result ""
     foreach link [array names ::_xo_need_link] {
       append result "<link $link>\n"
+    }
+    foreach style [array names ::_xo_need_style] {
+      append result "<style type='text/css'>$style</style>\n"
     }
     foreach file [array names ::_xo_need_css] {
       append result "<link type='text/css' rel='stylesheet' href='$file' media='all' >\n"
