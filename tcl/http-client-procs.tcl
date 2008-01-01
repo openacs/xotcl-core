@@ -156,7 +156,7 @@ namespace eval ::xo {
     #
     if {[string match text/* $content_type]} {
       if {[regexp {charset=([^ ]+)$} $content_type _ encoding]} {
-	fconfigure [my set S] -translation $text_translation -encoding $encoding
+	fconfigure [my set S] -translation $text_translation -encoding [string tolower $encoding]
       } else {
 	fconfigure [my set S] -translation $text_translation
       }
