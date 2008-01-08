@@ -74,6 +74,21 @@ namespace eval ::xo {
 
     # create package object if necessary
     my require -url $url $package_id
+
+    #
+    # In case the login expired, we can force an early login to
+    # prevent later login redirects, which can cause problems
+    # from within catch operations. The package can decide, if
+    # it want to force a refresh of the login, even if some pages 
+    # might not require the real user_id.
+    #
+    my msg "force [$package_id force_refresh_login] &&\
+	[::xo::cc set untrusted_user_id] != [::xo::cc user_id]"
+    if {[$package_id force_refresh_login] && 
+	[::xo::cc set untrusted_user_id] != [::xo::cc user_id]} {
+      auth::require_login
+    }
+
     ::xo::cc export_vars -level 2
   }
 
@@ -119,6 +134,7 @@ namespace eval ::xo {
         url 
         {context ::xo::cc}
         package_url
+	{force_refresh_login false}
       }
   ::xo::Package instforward query_parameter        {%my set context} %proc
   ::xo::Package instforward exists_query_parameter {%my set context} %proc
@@ -143,7 +159,8 @@ namespace eval ::xo {
     set package_url $info(url)
     if {[ns_conn isconnected]} {
       # in case of of host-node map, simplify the url to avoid redirects
-      # .... but ad_host works only, when we are connected.... TODO: solution for syndication
+      # .... but ad_host works only, when we are connected.... 
+      # TODO: solution for syndication
       set root [root_of_host [ad_host]]
       regexp "^${root}(.*)$" $package_url _ package_url
     }
