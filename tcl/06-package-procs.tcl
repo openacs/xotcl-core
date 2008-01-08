@@ -82,8 +82,8 @@ namespace eval ::xo {
     # it want to force a refresh of the login, even if some pages 
     # might not require the real user_id.
     #
-    my msg "force [$package_id force_refresh_login] &&\
-	[::xo::cc set untrusted_user_id] != [::xo::cc user_id]"
+    #my msg "force [$package_id force_refresh_login] &&\
+    #	[::xo::cc set untrusted_user_id] != [::xo::cc user_id]"
     if {[$package_id force_refresh_login] && 
 	[::xo::cc set untrusted_user_id] != [::xo::cc user_id]} {
       auth::require_login
