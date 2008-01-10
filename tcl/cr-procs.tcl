@@ -79,7 +79,7 @@ namespace eval ::xo::db {
   }
 
   CrClass ad_proc get_instance_from_db {
-    -item_id
+    {-item_id 0}
     {-revision_id 0}
   } {
     Instantiate the live revision or the specified revision of an 
@@ -289,7 +289,7 @@ namespace eval ::xo::db {
 
   CrClass ad_instproc require_folder {
     {-parent_id -100} 
-    {-content_types content_revision}
+    {-content_types}
     -package_id 
     -name
   } {
@@ -340,10 +340,16 @@ namespace eval ::xo::db {
                            -parent_id $parent_id \
                            -package_id $package_id -context_id $cid]
       }
+      if {![info exists content_types]} {
+        set content_types [::xo::db::Class class_to_object_type [self]]*
+        #ns_log notice "CONTENT TYPES = '$content_types'"
+      }
+
       # register all specified content types
       foreach content_type $content_types {
 	# if a content_type ends with a *, include subtypes
-	set with_subtypes [expr {[regexp {^(.*)[*]$} $content_type _ content_type] ? "t" : "f"}]
+	set with_subtypes [expr {[regexp {^(.*)[*]$} $content_type _ content_type] ? 
+                                 "t" : "f"}]
 	::xo::db::sql::content_folder register_content_type \
 	    -folder_id $folder_id \
 	    -content_type $content_type \
@@ -506,7 +512,7 @@ namespace eval ::xo::db {
 
 
   CrClass ad_instproc get_instance_from_db {
-    -item_id
+    {-item_id 0}
     {-revision_id 0}
   } { 
     Retrieve either the live revision or a specified revision
