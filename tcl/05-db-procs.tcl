@@ -867,12 +867,16 @@ namespace eval ::xo::db {
   ::xo::db::Class proc class_to_object_type {name} {
     if {[my isclass $name]} {
       if {[$name exists object_type]} {
+        # The specified class has an object_type defined; return it
 	return [$name object_type]
       }
       if {![$name istype ::xo::db::Object]} {
+        # The specified class is not subclass of ::xo::db::Object.
+        # return acs_object in your desparation.
 	return acs_object
       }
     }
+    # Standard mapping rules
     switch -glob -- $name {
       ::xo::db::Object {return acs_object}
       ::xo::db::CrItem {return content_revision}
