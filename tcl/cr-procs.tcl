@@ -377,7 +377,7 @@ namespace eval ::xo::db {
     }
   }
 
-  CrClass instproc update_long_text_slots {} {
+  CrClass instproc remember_long_text_slots {} {
     #
     # keep long_text_slots in a separate array (for Oracle)
     #
@@ -430,7 +430,7 @@ namespace eval ::xo::db {
 	set db_slot($slot_name) $slot
       }
     }
-    my update_long_text_slots
+    my remember_long_text_slots
     
     if {![::xo::db::Class object_type_exists_in_db -object_type $object_type]} {
       my create_object_type
@@ -782,6 +782,15 @@ namespace eval ::xo::db {
 		where revision_id = $revision_id"
       }
     }
+
+    CrItem instproc update_attribute_from_slot {-revision_id slot value} {
+      if {![info exists revision_id]} {my instvar revision_id}
+      set domain [$slot domain]
+      set sql "update [$domain table_name] \
+                set [$slot column_name] = :value \
+		where [$domain id_column] = $revision_id"
+      db_dml [my qn update_attribute_from_slot] $sql
+    }
   } else {
     #
     # Oracle
@@ -826,14 +835,7 @@ namespace eval ::xo::db {
       }
       if {!$only_text} {
         foreach {slot_name slot} [[my info class] array get long_text_slots] {
-          set cls [$slot domain]
-          set att [$slot column_name]
-          set content [my set $slot_name]
-          # my msg "$att [$cls table_name] [$cls id_column] length=[string length $content]"
-          db_dml [my qn att-$att] "update [$cls table_name] \
-               set    $att = empty_clob() \
-               where  [$cls id_column] = $revision_id \
-               returning $att into :1" -clobs [list $content]
+          my update_attribute_from_slot -revision_id $revision_id $slot [my set $slot_name]
         }
       }
     }
@@ -850,6 +852,23 @@ namespace eval ::xo::db {
       } else {
         my fix_content -only_text true $revision_id $content
       }
+    }
+
+    CrItem instproc update_attribute_from_slot {-revision_id slot value} {
+      if {![info exists revision_id]} {my instvar revision_id}
+      set domain [$slot domain]
+      set att [$slot column_name]
+      if {[$slot sqltype] eq "long_text"} {
+        db_dml [my qn att-$att] "update [$domain table_name] \
+               set    $att = empty_clob() \
+               where  [$domain id_column] = $revision_id \
+               returning $att into :1" -clobs [list $value]
+      } else {
+        set sql "update [$domain table_name] \
+                set $att = :value \
+		where [$domain id_column] = $revision_id"
+      }
+      db_dml [my qn update_attribute-$att] $sql
     }
   }
   
@@ -923,18 +942,19 @@ namespace eval ::xo::db {
         ::xo::db::sql::content_item set_live_revision \
             -revision_id $revision_id \
             -publish_status [my set publish_status]
+        #
+        # set_live revision updates publish_date to the current date.
+        # In order to keep a given publish date, we have to update the
+        # field manually.
+        #
+        if {$use_given_publish_date} {
+          my update_revision $revision_id publish_date [my publish_date]
+        }
+        my set revision_id $revision_id
       } else {
         # if we do not make the revision live, use the old revision_id,
-        # and let CrCache save it
-        set revision_id $old_revision_id
-      }
-      #
-      # set_live revision updates publish_date to the current date.
-      # In order to keep a given publish date, we have to update the
-      # field manually.
-      #
-      if {$use_given_publish_date} {
-        my update_revision $revision_id publish_date [my publish_date]
+        # and let CrCache save it ...... TODO: is this still needed? comment out for testing
+        #set revision_id $old_revision_id
       }
     }
     return $item_id
@@ -1037,9 +1057,9 @@ namespace eval ::xo::db {
         ::xo::db::sql::content_item set_live_revision \
             -revision_id $revision_id \
             -publish_status [my set publish_status] 
-      }
-      if {$use_given_publish_date} {
-        my update_revision $revision_id publish_date [my publish_date]
+        if {$use_given_publish_date} {
+          my update_revision $revision_id publish_date [my publish_date]
+        }
       }
     }
     my set revision_id $revision_id
@@ -1226,8 +1246,7 @@ namespace eval ::xo::db {
 
   ::xotcl::Class create CrCache::Item
   CrCache::Item set name_pattern {^::[0-9]+$}
-  CrCache::Item instproc save args {
-    set r [next]
+  CrCache::Item instproc flush_from_cache_and_refresh {} {
     # cache only names with IDs
     set obj [self]
     if {[regexp [[self class] set name_pattern] $obj]} {
@@ -1235,6 +1254,17 @@ namespace eval ::xo::db {
       ::xo::clusterwide ns_cache flush xotcl_object_cache $obj
       ns_cache set xotcl_object_cache $obj [$obj serialize]
     }
+  }
+  CrCache::Item instproc update_attribute_from_slot args {
+    set r [next]
+    my flush_from_cache_and_refresh
+    return $r
+  }
+  CrCache::Item instproc save args {
+    # we perform next before the cache update, since when update fails, we do not
+    # want to populate wrong content in the cache
+    set r [next]
+    my flush_from_cache_and_refresh
     return $r
   }
   CrCache::Item instproc save_new args {
