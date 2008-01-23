@@ -1094,10 +1094,13 @@ namespace eval ::xo::db {
     defaults, if these attributes are not provided.
   } {
     my check_default_values
+    set table_name_error_tail ""
+    set id_column_error_tail ""
     if {![my exists table_name]} {
       if {[regexp {^::([^:]+)::} [self] _ head]} {
 	set tail [namespace tail [self]]
 	my set table_name [string tolower ${head}_$tail]
+	set table_name_error_tail ", or use different namespaces/class names"
 	#my log "-- created table_name '[my table_name]'"
       } else {
 	error "Cannot determine automatically table name for class [self]. \
@@ -1106,7 +1109,18 @@ namespace eval ::xo::db {
     }
     if {![my exists id_column]} {
       my set id_column [string tolower [namespace tail [self]]]_id
+      set id_column_error_tail ", or use different class names"
       #my log "-- created id_column '[my id_column]'"
+    }
+
+    if {![regexp {^[[:alpha:]_][[:alnum:]_]*$} [my table_name]]} {
+      error "Table name '[my table_name]' is unsafe in SQL: \
+	Please specify a different table_name$table_name_error_tail." 
+    }
+
+    if {![regexp {^[[:alpha:]_][[:alnum:]_]*$} [my id_column]]} {
+      error "Name for id_column '[my id_column]' is unsafe in SQL: \
+        Please specify a different id_column$id_column_error_tail" 
     }
   }
 
