@@ -2,8 +2,10 @@
 <message_catalog package_key="xotcl-core" locale="en_US" charset="ISO-8859-1">
 
   <msg key="add">Add %type%</msg>
+  <msg key="add_item">Add Item</msg>
   <msg key="add_long">Add new item of type %type%</msg>
   <msg key="create_new_type">Create New %type%</msg>
+  <msg key="delete_item">Delete Item</msg>
   <msg key="edit_item">Edit Item</msg>
   <msg key="edit_type">Edit %type%</msg>
   <msg key="has_entered_the_room">has entered the room</msg>
@@ -13,4 +15,5 @@ You don't have sufficient permissions for performing method %method% on object %
 &lt;/blockquote&gt;</msg>
   <msg key="revision_title">Revisions of Entry</msg>
   <msg key="revisions">Revisions</msg>
+  <msg key="view_item">View Item</msg>
 </message_catalog>

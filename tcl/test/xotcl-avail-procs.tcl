@@ -17,7 +17,7 @@ aa_register_case -cats {api smoke} check_xotcl {
    #}
  }
 
-  ? {expr {$::xotcl::version < 1.4}} 0 "XOTcl Version $::xotcl::version >= 1.4"
+  ? {expr {$::xotcl::version < 1.5}} 0 "XOTcl Version $::xotcl::version >= 1.5"
 
   set ns_cache_version_old [catch {ns_cache names xowiki_cache xxx}]
   if {$ns_cache_version_old} {

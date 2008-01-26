@@ -66,7 +66,7 @@ namespace eval ::xo {
       }
     }
     #show_stack;my log "--W children murdered, now next, chlds=[my info children]"
-    namespace eval [self] {namespace forget *}  ;# for pre 1.4.0 versions
+    #namespace eval [self] {namespace forget *}  ;# for pre 1.4.0 versions
     next
   }
 

@@ -469,23 +469,22 @@ namespace eval ::xo {
 	  {src /resources/acs-subsite/Edit16.gif} {width 16} {height 16} {border 0} 
 	  {title "[_ xotcl-core.edit_item]"} {alt "edit"}
 	}
-    # for xotcl 1.4.0:  {title [_ xotcl-core.edit_item]} {alt "edit"}
     
     Class ImageField_AddIcon \
 	-superclass ImageAnchorField -parameter {
 	  {src /resources/acs-subsite/Add16.gif} {width 16} {height 16} {border 0} 
-	  {title "Add Item"} {alt "add"}
+	  {title "[_ xotcl-core.add_item]"} {alt "add"}
 	}
 
     Class ImageField_ViewIcon \
 	-superclass ImageAnchorField -parameter {
 	  {src /resources/acs-subsite/Zoom16.gif} {width 16} {height 16} {border 0} 
-	  {title "View Item"} {alt "view"}
+	  {title "[_ xotcl-core.view_item]"} {alt "view"}
 	}
     Class ImageField_DeleteIcon \
 	-superclass ImageAnchorField -parameter {
 	  {src /resources/acs-subsite/Delete16.gif} {width 16} {height 16} {border 0} 
-	  {title "Delete Item"} {alt "delete"}
+	  {title "[_ xotcl-core.delete_item]"} {alt "delete"}
 	}
     
     # export table elements
