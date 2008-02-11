@@ -207,10 +207,10 @@ bgdelivery ad_proc returnfile {statuscode mime_type filename} {
   blocking a request thread. This is especially important when large files are 
   requested over slow (e.g. dial-ip) connections.
 } {
-  ns_log notice "statuscode = $statuscode, filename=$filename"
+  #ns_log notice "statuscode = $statuscode, filename=$filename"
   set size [file size $filename]
-  ns_setexpires 1000000
-  ns_log notice "expires-set $filename"
+  #ns_setexpires 1000000
+  #ns_log notice "expires-set $filename"
   if {[my write_headers $statuscode $mime_type $size]} {
     set ch [ns_conn channel]
     thread::transfer [my get_tid] $ch
