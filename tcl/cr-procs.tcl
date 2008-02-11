@@ -99,7 +99,7 @@ namespace eval ::xo::db {
     {-parent_id -100}
   } {
     Check, whether an content item with the given name exists.
-    If not, return 0.
+    If the item exists, return its item_id, otherwise 0.
 
     @return item_id
   } {

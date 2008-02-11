@@ -1553,9 +1553,8 @@ namespace eval ::xo::db {
       append column_spec " REFERENCES $references" 
     } elseif {$id_column} {
       set sc [[my domain] info superclass]
-      if {![$sc istype ::xo::db::Object]} {set sc ::xo::db::Object}
-      #todo: 2x set not necessary (critem) 
-      append column_spec " REFERENCES [$sc set table_name]([$sc set id_column])\
+      if {![$sc istype ::xo::db::Class]} {set sc ::xo::db::Object}
+      append column_spec " REFERENCES [$sc table_name]([$sc id_column])\
 		ON DELETE CASCADE"
     }
     #
