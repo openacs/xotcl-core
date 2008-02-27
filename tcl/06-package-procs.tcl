@@ -38,6 +38,7 @@ namespace eval ::xo {
     {-url ""}
     {-user_id -1}
     {-actual_query " "}
+    {-original_url_and_query}
     {-init_url true}
     {-form_parameter}
   } {
@@ -54,7 +55,7 @@ namespace eval ::xo {
     init_url false requires the package_id to be specified and
     a call to Package instproc set_url to complete initialization
   } {
-    #my log "--i [self args], URL=$url, init_url=$init_url"
+    #my msg "--i [self args], URL=$url, init_url=$init_url"
 
     if {$url eq "" && $init_url} {
       #set url [ns_conn url]
@@ -67,6 +68,11 @@ namespace eval ::xo {
     ConnectionContext require \
 	-package_id $package_id -user_id $user_id \
 	-parameter $parameter -url $url -actual_query $actual_query
+
+    if {[info exists original_url_and_query]} {
+      ::xo::cc original_url_and_query $original_url_and_query
+    }
+
     set package_id [::xo::cc package_id]
     if {[info exists form_parameter]} {
       ::xo::cc array set form_parameter $form_parameter

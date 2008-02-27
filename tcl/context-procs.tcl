@@ -104,6 +104,16 @@ namespace eval ::xo {
     #my log "--cc qp [array names queryparm] // $actual_query"
   }
 
+  Context instproc original_url_and_query args {
+    if {[llength $args] == 1} {
+      my set original_url_and_query [lindex $args 0]
+    } elseif {[my exists original_url_and_query]} {
+      return [my set original_url_and_query]
+    } else {
+      return [my url]?[my actual_query]
+    }
+  }
+
   Context instproc query_parameter {name {default ""}} {
     my instvar queryparm
     return [expr {[info exists queryparm($name)] ? $queryparm($name) : $default}]
