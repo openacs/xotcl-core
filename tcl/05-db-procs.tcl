@@ -1334,12 +1334,17 @@ namespace eval ::xo::db {
       set tn [$cl table_name]
       if {$tn  ne ""} {
         lappend tables $tn
-	my log "--db_slots of $cl = [$cl array get db_slot]"
+	#my log "--db_slots of $cl = [$cl array get db_slot]"
 	foreach {slot_name slot} [$cl array get db_slot] {
-	  lappend attributes [$slot attribute_reference $tn]
+          # avoid duplicate output names
+          set name [$slot name]
+          if {![info exists names($name)]} {
+            lappend attributes [$slot attribute_reference $tn]
+          }
+          set names($name) 1
 	}
         if {$cl ne [self]} {
-          lappend join_expressions "[$cl id_column] = $id_column"
+          lappend join_expressions "$tn.[$cl id_column] = [my table_name]$id_column"
         }
       }
     }
@@ -1379,15 +1384,21 @@ namespace eval ::xo::db {
       #if {$cl eq "::xo::db::Object"} break
       if {$cl eq "::xotcl::Object"} break
       set tn [$cl table_name]
+
       if {$tn  ne ""} {
         lappend tables $tn
 	if {$all_attributes} {
 	  foreach {slot_name slot} [$cl array get db_slot] {
-	    lappend select_attributes [$slot attribute_reference $tn]
+            # avoid duplicate output names
+            set name [$slot name]
+            if {![info exists names($name)]} {
+              lappend select_attributes [$slot attribute_reference $tn]
+            }
+            set names($name) 1
 	  }
 	}
         if {$cl ne [self]} {
-          lappend join_expressions "[$cl id_column] = $id_column"
+          lappend join_expressions "$tn.[$cl id_column] = [my table_name].$id_column"
         }
       }
     }
