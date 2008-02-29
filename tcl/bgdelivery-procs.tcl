@@ -211,6 +211,7 @@ bgdelivery ad_proc returnfile {statuscode mime_type filename} {
   set size [file size $filename]
   #ns_setexpires 1000000
   #ns_log notice "expires-set $filename"
+
   if {[my write_headers $statuscode $mime_type $size]} {
     set ch [ns_conn channel]
     thread::transfer [my get_tid] $ch
