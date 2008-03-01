@@ -866,10 +866,9 @@ namespace eval ::xo {
       foreach file $::_xo_js_order  {
         if {[string match "*;*" $file]} {
           # it is not a file, but some javascipt statements
-          append result "<script language='javascript' type='text/javascript' >" $file "</script>\n"
+          append result "<script type='text/javascript' >" $file "</script>\n"
         } else {
-          append result "<script language='javascript' src='$file' type='text/javascript'>" \
-              "</script>\n"
+          append result "<script src='$file' type='text/javascript'></script>\n"
         }
       }
     }
