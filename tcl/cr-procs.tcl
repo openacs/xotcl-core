@@ -1234,6 +1234,7 @@ namespace eval ::xo::db {
         my log "--!! $object exists already"
       } else {
         set o [eval $code]
+	$object initialize_loaded_object
       }
     }
     return $object
