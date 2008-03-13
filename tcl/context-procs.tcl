@@ -297,6 +297,9 @@ namespace eval ::xo {
     return [my set $key]
   }
 
+  ConnectionContext instproc role=all {-user_id:required -package_id} {
+    return 1
+  }
   ConnectionContext instproc role=swa {-user_id:required -package_id} {
     return [my cache [list acs_user::site_wide_admin_p -user_id $user_id]]
   }
