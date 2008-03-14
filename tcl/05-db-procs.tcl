@@ -73,9 +73,9 @@ namespace eval ::xo::db {
   require set postgresql_table_exists {select 1 from pg_tables   where tablename  = '$name'}
   require set postgresql_view_exists  {select 1 from pg_views    where viewname   = '$name'}
   require set postgresql_index_exists {select 1 from pg_indexes  where indexname  = '$name'}
-  require set oracle_table_exists     {select 1 from all_tables  where table_name = '$name'}
-  require set oracle_view_exists      {select 1 from all_views   where view_name  = '$name'}
-  require set oracle_index_exists     {select 1 from all_indexes where index_name = '$name'}
+  require set oracle_table_exists     {select 1 from user_tables  where table_name = '$name'}
+  require set oracle_view_exists      {select 1 from user_views   where view_name  = '$name'}
+  require set oracle_index_exists     {select 1 from user_indexes where index_name = '$name'}
 
   require proc table {name definition} {
     if {[db_driverkey ""] eq "oracle"} {set name [string toupper $name]}
