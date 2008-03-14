@@ -99,6 +99,7 @@ namespace eval ::xo::db {
     set uniquepart [expr {$unique ? "UNIQUE" : ""}]
     set name [::xo::db::mk_sql_constraint_name $table $colpart $suffix]
     if {![db_0or1row [my qn ""] [subst [my set [db_driverkey ""]_index_exists]]]} {
+      if {[db_driverkey ""] eq "oracle"} {set using ""}
       set using [expr {$using ne "" ? "using $using" : ""}]
       db_dml [my qn create-index-$name] \
           "create $uniquepart index $name ON $table $using ($col)"
@@ -211,6 +212,7 @@ namespace eval ::xo::db {
         string    { set type text }
         long_text { set type text }
         date      { set type timestampz }
+        ltree     { set type [expr {[::xo::db::has_ltree] ? "ltree" : "text" }] }
       }
       return $type
     }
@@ -257,6 +259,7 @@ namespace eval ::xo::db {
         text      { set type varchar2(4000) }
         long_text { set type clob }
         boolean   { set type char(1) }
+        ltree     { set type varchar2(1000) }
       }
       return $type
     }
