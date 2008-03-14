@@ -154,7 +154,7 @@ namespace eval ::xo::db {
   }
 
   #
-  # Generic part (independet of Postgres/Oracle)
+  # Generic part (independent of Postgres/Oracle)
   #
 
   CrClass instproc type_selection_clause {{-base_table cr_revisions} {-with_subtypes:boolean false}} {
