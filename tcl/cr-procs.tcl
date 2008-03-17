@@ -818,7 +818,7 @@ namespace eval ::xo::db {
         lappend values $v
       }
       return "insert into [my set table_name]i ([join $attributes ,]) \
-                values ([join $values ,])"
+                values (:[join $values ,:])"
     }
 
     CrItem instproc fix_content {{-only_text false} revision_id content} {
@@ -867,8 +867,8 @@ namespace eval ::xo::db {
         set sql "update [$domain table_name] \
                 set $att = :value \
 		where [$domain id_column] = $revision_id"
+        db_dml [my qn update_attribute-$att] $sql
       }
-      db_dml [my qn update_attribute-$att] $sql
     }
   }
   

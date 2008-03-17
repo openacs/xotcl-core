@@ -697,7 +697,7 @@ namespace eval ::xo::db {
       # for now, we simply return a constant "unknown", otherwise the
       # argument would be required
       return [db_list_of_lists [my qn get_function_params] {
-	select args.argument_name, 'unknown'
+	select args.argument_name, 'NULL'
         from user_arguments args
         where args.position > 0
         and args.object_name = upper(:object_name)
@@ -1637,7 +1637,8 @@ namespace eval ::xo::db {
   } {
     upvar $tz_var tz
     set tz 00
-    regexp {^([^.]+)[.]?[0-9]*([+-][0-9]*)$} $timestamp _ timestamp tz
+    #regexp {^([^.]+)[.]?[0-9]*([+-][0-9]*)$} $timestamp _ timestamp tz
+    regexp {^([^.]+)[.][0-9]*([+-][0-9]*)$} $timestamp _ timestamp tz
     return $timestamp
   }
 }
