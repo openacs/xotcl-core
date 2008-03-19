@@ -373,7 +373,7 @@ namespace eval ::xo {
 #   }
 
 
-  ConnectionContext instproc get_all_form_parameter {} {
+  ConnectionContext instproc load_form_parameter {} {
     my instvar form_parameter
     if {[ns_conn isconnected]} {
       #array set form_parameter [ns_set array [ns_getform]]
@@ -393,7 +393,7 @@ namespace eval ::xo {
   ConnectionContext instproc form_parameter {name {default ""}} {
     my instvar form_parameter form_parameter_multiple
     if {![info exists form_parameter]} {
-      my get_all_form_parameter
+      my load_form_parameter
     }
     if {[info exists form_parameter($name)]} {
       if {[info exists form_parameter_multiple($name)]} {
@@ -408,9 +408,12 @@ namespace eval ::xo {
   ConnectionContext instproc exists_form_parameter {name} {
     my instvar form_parameter
     if {![info exists form_parameter]} {
-      my get_all_form_parameter
+      my load_form_parameter
     }
     my exists form_parameter($name)
+  }
+  ConnectionContext instproc get_all_form_parameter {} {
+    return [my array get form_parameter]
   }
   
   ConnectionContext instproc set_parameter {name value} {
