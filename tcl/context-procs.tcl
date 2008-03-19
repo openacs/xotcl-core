@@ -378,6 +378,9 @@ namespace eval ::xo {
     if {[ns_conn isconnected]} {
       #array set form_parameter [ns_set array [ns_getform]]
       foreach {att value} [ns_set array [ns_getform]] {
+        # For some unknown reasons, Safari 3.* returns sometimes
+        # entries with empty names... We ignore these for now
+        if {$att eq ""} continue
         if {[info exists form_parameter($att)]} {
           my set form_parameter_multiple($att) 1
         }
