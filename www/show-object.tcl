@@ -179,7 +179,14 @@ if {$isclass} {
   append output "<h4>Class Hierarchy of $object</h4>"
   #append output [superclass_hierarchy $object]
   append output [draw_as_tree [superclass_hierarchy $object $scope]]
-  set class_hierarchy [ns_urlencode [concat $object [$object info heritage]]]
+  #set class_hierarchy [ns_urlencode [concat $object [$object info heritage]]]
+  #
+  # compute list of classes with siblings
+  set class_hierarchy [list]
+  foreach c [$object info superclass] {eval lappend class_hierarchy [$c info subclass]}
+  eval lappend class_hierarchy  [$object info heritage]
+  set class_hierarchy [ns_urlencode $class_hierarchy]
+  #set class_hierarchy [ns_urlencode [concat $object [$object info heritage]]]
 }
 
 if {[nsv_exists api_library_doc $index]} {

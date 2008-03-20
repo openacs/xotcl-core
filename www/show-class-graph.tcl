@@ -5,6 +5,7 @@ ad_page_contract {
   @cvs-id $Id$
 } -query {
   {classes}
+  {documented_only 1}
 }
 
 ::xotcl::Object instproc dotquote {e} {
@@ -15,7 +16,7 @@ ad_page_contract {
   foreach e $l { lappend result \"$e\" }
   return $result
 }
-::xotcl::Object instproc dotcode {{-omit_base_classes 1} things} {
+::xotcl::Object instproc dotcode {{-omit_base_classes 1} {-documented_methods 1} things} {
   set classes [list]
   set objects [list]
 
@@ -68,19 +69,21 @@ ad_page_contract {
   }
   set tclasses ""
   foreach e $classes {
-    set p [$e info parameter]
-    if {$p eq ""} {
-      append tclasses "[my dotquote $e] \[label=\"\{$e|"
-    } else {
-      append tclasses "[my dotquote $e] \[label=\"\{$e|"
-      foreach x $p {
-        set x [lindex $x 0]
-	append tclasses "$x\\l"
-      }
+    append tclasses "[my dotquote $e] \[label=\"\{$e|"
+    foreach slot [$e info slots] {
+      append tclasses "[$slot name]\\l"
     }
     append tclasses "|"
-    foreach i [lsort [$e info instprocs]] {
-      append tclasses "$i\\l"
+    ::xotcl::api scope_from_object_reference scope e
+    foreach method [lsort [$e info instprocs]] {
+      if {$documented_methods} {
+         set proc_index [::xotcl::api proc_index $scope $e instproc $method]
+         if {[nsv_exists api_proc_doc $proc_index]} {
+	   append tclasses "$method\\l"
+         }
+       } else {
+	 append tclasses "$method\\l"
+       }
     }
     append tclasses "\}\"\];"
   }
@@ -106,7 +109,7 @@ ad_page_contract {
 }"
 }
 
-set dot_code [::xotcl::Object dotcode $classes]
+set dot_code [::xotcl::Object dotcode -documented_methods $documented_only $classes]
 set dot ""
 catch {set dot [::util::which dot]}
 # final ressort for cases, where ::util::which is not available
