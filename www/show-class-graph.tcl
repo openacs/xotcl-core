@@ -16,6 +16,23 @@ ad_page_contract {
   foreach e $l { lappend result \"$e\" }
   return $result
 }
+::xotcl::Object instproc dot_append_method {{-documented_methods 1} e methods_ref kind} {
+  my upvar $methods_ref methods
+  set infokind $kind
+  if {$kind eq "instproc"} {append infokind s}
+  ::xotcl::api scope_from_object_reference scope e
+  foreach method [$e info $infokind] {
+    if {$documented_methods} {
+      set proc_index [::xotcl::api proc_index $scope $e $kind $method]
+      #my msg "check $method => [nsv_exists api_proc_doc $proc_index]"
+      if {[nsv_exists api_proc_doc $proc_index]} {
+        lappend methods $method
+      }
+    } else {
+      lappend methods $method
+    }
+  }
+}
 ::xotcl::Object instproc dotcode {{-omit_base_classes 1} {-documented_methods 1} things} {
   set classes [list]
   set objects [list]
@@ -75,15 +92,11 @@ ad_page_contract {
     }
     append tclasses "|"
     ::xotcl::api scope_from_object_reference scope e
-    foreach method [lsort [$e info instprocs]] {
-      if {$documented_methods} {
-         set proc_index [::xotcl::api proc_index $scope $e instproc $method]
-         if {[nsv_exists api_proc_doc $proc_index]} {
-	   append tclasses "$method\\l"
-         }
-       } else {
-	 append tclasses "$method\\l"
-       }
+    set methods [list]
+    my dot_append_method -documented_methods $documented_methods $e methods instproc
+    my dot_append_method -documented_methods $documented_methods $e methods instforward
+    foreach method [lsort $methods] {
+      append tclasses "$method\\l"
     }
     append tclasses "\}\"\];"
   }

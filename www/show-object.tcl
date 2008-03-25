@@ -183,8 +183,13 @@ if {$isclass} {
   #
   # compute list of classes with siblings
   set class_hierarchy [list]
-  foreach c [$object info superclass] {eval lappend class_hierarchy [$c info subclass]}
-  eval lappend class_hierarchy  [$object info heritage]
+  foreach c [$object info superclass] {
+    if {$c eq "::xotcl::Object"} {continue}
+    eval lappend class_hierarchy [$c info subclass]
+  }
+  eval lappend class_hierarchy [$object info heritage]
+  if {[lsearch -exact $class_hierarchy $object] == -1} {lappend class_hierarchy $object}
+  #::xotcl::Object msg class_hierarchy=$class_hierarchy
   set class_hierarchy [ns_urlencode $class_hierarchy]
   #set class_hierarchy [ns_urlencode [concat $object [$object info heritage]]]
 }
