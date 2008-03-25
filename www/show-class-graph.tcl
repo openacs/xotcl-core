@@ -6,6 +6,7 @@ ad_page_contract {
 } -query {
   {classes}
   {documented_only 1}
+  {with_children 0}
 }
 
 ::xotcl::Object instproc dotquote {e} {
@@ -68,9 +69,11 @@ ad_page_contract {
   foreach e $things {
     if {![my isobject $e]} continue
     if {$omit_base_classes && $e eq "::xotcl::Object" || $e eq "::xotcl::Class"} continue
-    foreach c [$e info children] {
-      if {[lsearch $things $c] == -1} continue
-      append children "[my dotquote $c]->[my dotquote $e];\n"
+    if {$with_children} {
+      foreach c [$e info children] {
+        if {[lsearch $things $c] == -1} continue
+        append children "[my dotquote $c]->[my dotquote $e];\n"
+      }
     }
     set m [$e info mixin]
     #puts "-- $e mixin $m"
@@ -127,7 +130,7 @@ set dot ""
 catch {set dot [::util::which dot]}
 # final ressort for cases, where ::util::which is not available
 if {$dot eq "" && [file executable /usr/bin/dot]} {set dot /usr/bin/dot}
-if {$dot eq ""} {ns_return 404 plain/text "do dot found"}
+if {$dot eq ""} {ns_return 404 plain/text "do dot found"; ad_script_abort}
 
 set tmpfile [ns_tmpnam].png
 set f [open "|$dot  -Tpng -o $tmpfile" w]
