@@ -34,6 +34,24 @@ ad_page_contract {
     }
   }
 }
+::xotcl::Object instproc dotclass {{-documented_methods 1} e} {
+  set definition ""
+  append definition "[my dotquote $e] \[label=\"\{$e|"
+  foreach slot [$e info slots] {
+    append definition "[$slot name]\\l"
+  }
+  append definition "|"
+  ::xotcl::api scope_from_object_reference scope e
+  set methods [list]
+  my dot_append_method -documented_methods $documented_methods $e methods instproc
+  my dot_append_method -documented_methods $documented_methods $e methods instforward
+  foreach method [lsort $methods] {
+    append definition "$method\\l"
+  }
+  append definition "\}\"\];\n"
+}
+
+
 ::xotcl::Object instproc dotcode {{-with_children 0} {-omit_base_classes 1} {-documented_methods 1} things} {
   set classes [list]
   set objects [list]
@@ -80,28 +98,20 @@ ad_page_contract {
     if {$m eq ""} continue
     append mixins "[my dotquote $e]->[my dotquotel $m];\n"
   }
+  set tclasses ""
   set instmixins ""
   foreach e $classes {
     set m [$e info instmixin]
     #puts "-- $e instmixin $m"
     if {$m eq ""} continue
+    #foreach mixin $m {
+    #  append tclasses [my dotclass -documented_methods $documented_methods $mixin]
+    #}
     append instmixins "[my dotquote $e]->[my dotquotel $m];\n"
   }
-  set tclasses ""
+
   foreach e $classes {
-    append tclasses "[my dotquote $e] \[label=\"\{$e|"
-    foreach slot [$e info slots] {
-      append tclasses "[$slot name]\\l"
-    }
-    append tclasses "|"
-    ::xotcl::api scope_from_object_reference scope e
-    set methods [list]
-    my dot_append_method -documented_methods $documented_methods $e methods instproc
-    my dot_append_method -documented_methods $documented_methods $e methods instforward
-    foreach method [lsort $methods] {
-      append tclasses "$method\\l"
-    }
-    append tclasses "\}\"\];"
+    append tclasses [my dotclass -documented_methods $documented_methods $e]
   }
   #label = \".\\n.\\nObject relations of [self]\"
   #edge \[dir=back, constraint=0\] \"::Decorate_Action\" -> \"::Action\";
