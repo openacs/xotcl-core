@@ -179,6 +179,20 @@ if {$isclass} {
   append output "<h4>Class Hierarchy of $object</h4>"
   #append output [superclass_hierarchy $object]
   append output [draw_as_tree [superclass_hierarchy $object $scope]]
+  #set class_hierarchy [ns_urlencode [concat $object [$object info heritage]]]
+  #
+  # compute list of classes with siblings
+  set class_hierarchy [list]
+  foreach c [$object info superclass] {
+    if {$c eq "::xotcl::Object"} {continue}
+    eval lappend class_hierarchy [$c info subclass]
+  }
+  eval lappend class_hierarchy [$object info heritage]
+  if {[lsearch -exact $class_hierarchy $object] == -1} {lappend class_hierarchy $object}
+  #::xotcl::Object msg class_hierarchy=$class_hierarchy
+  set class_hierarchy [ns_urlencode $class_hierarchy]
+  set documented_only [expr {$show_methods < 2}]
+  #set class_hierarchy [ns_urlencode [concat $object [$object info heritage]]]
 }
 
 if {[nsv_exists api_library_doc $index]} {

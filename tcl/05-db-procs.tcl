@@ -421,7 +421,7 @@ namespace eval ::xo::db {
     @return table_name
   } {
     return [db_string [my qn get_table_name] {
-      select table_name from acs_object_types where object_type = :object_type
+      select lower(table_name) as table_name from acs_object_types where object_type = :object_type
     } -default ""]
   }
 
@@ -480,19 +480,16 @@ namespace eval ::xo::db {
 
     @return class name of the created XOTcl class
   } {
+    # some table_names and id_columns in acs_object_types are unfortunately upper case, 
+    # so we have to convert to lower case here....
     db_1row dbqd..fetch_class {
-      select object_type, supertype, pretty_name, id_column, table_name  
+      select object_type, supertype, pretty_name, lower(id_column) as id_column, lower(table_name) as table_name
       from acs_object_types where object_type = :object_type
     }
     set classname [my object_type_to_class $object_type]
     if {![my isclass $classname]} {
       # the XOTcl class does not exist, we create it
-      #switch $supertype {
-      #acs_object       {set superclass ::xo::db::Object}
-      #content_revision {set superclass ::xo::db::CrItem}
-      #default          {[my object_type_to_class $supertype]}
-      #}
-      #my log "creating class $classname superclass $superclass"
+      #my log "--db create class $classname superclass $supertype"
       ::xo::db::Class create $classname \
           -superclass [my object_type_to_class $supertype] \
           -object_type $object_type \
@@ -502,7 +499,7 @@ namespace eval ::xo::db {
           -table_name $table_name \
 	  -noinit
     } else {
-      #my log "we have a class $classname"
+      #my log "--db we have a class $classname"
     }
     set attributes [db_list_of_lists dbqd..get_atts {
       select attribute_name, pretty_name, pretty_plural, datatype, 
@@ -615,10 +612,11 @@ namespace eval ::xo::db {
         set n 1
         set function_args [list]
         foreach line [split $prosrc \n] {
-          if {[regexp "alias for \\\$$n" $line]} {
+          if {[regexp -nocase "alias +for +\\\$$n" $line]} {
             regexp {^[^a-zA-Z]+([a-zA-Z0-9_]+)\s} $line _ fq_name
             if {![info exists fq_name]} {
-              ns_log notice "--***** Could not retrieve argument name for $proname argument $n from line '$line' in $prosrc'"
+              ns_log notice "--***** Could not retrieve argument name for $proname\
+			argument $n from line '$line' in $prosrc'"
 	      set fq_name arg$n
             }
             #lappend fq_names $fq_name

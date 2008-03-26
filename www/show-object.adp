@@ -36,6 +36,9 @@ pre it {
 <hr>
 
 <h1 class="page-title">@title;noquote@</h1>
+<if @class_hierarchy@ not nil>
+<img style='float: right; max-width: 800px;' src='./show-class-graph?classes=@class_hierarchy@&documented_only=@documented_only@'>
+</if>
 @output;noquote@
 
 <hr>

@@ -154,7 +154,7 @@ namespace eval ::xo {
     #
     # for text, use translation with optional encodings, else set translation binary
     #
-    if {[string match text/* $content_type]} {
+    if {[string match "text/*" $content_type]} {
       if {[regexp {charset=([^ ]+)$} $content_type _ encoding]} {
 	fconfigure [my set S] -translation $text_translation -encoding [string tolower $encoding]
       } else {
