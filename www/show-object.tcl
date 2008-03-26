@@ -191,6 +191,7 @@ if {$isclass} {
   if {[lsearch -exact $class_hierarchy $object] == -1} {lappend class_hierarchy $object}
   #::xotcl::Object msg class_hierarchy=$class_hierarchy
   set class_hierarchy [ns_urlencode $class_hierarchy]
+  set documented_only [expr {$show_methods < 2}]
   #set class_hierarchy [ns_urlencode [concat $object [$object info heritage]]]
 }
 
