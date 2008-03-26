@@ -34,7 +34,7 @@ ad_page_contract {
     }
   }
 }
-::xotcl::Object instproc dotcode {{-omit_base_classes 1} {-documented_methods 1} things} {
+::xotcl::Object instproc dotcode {{-with_children 0} {-omit_base_classes 1} {-documented_methods 1} things} {
   set classes [list]
   set objects [list]
 
@@ -125,7 +125,7 @@ ad_page_contract {
 }"
 }
 
-set dot_code [::xotcl::Object dotcode -documented_methods $documented_only $classes]
+set dot_code [::xotcl::Object dotcode -with_children $with_children -documented_methods $documented_only $classes]
 set dot ""
 catch {set dot [::util::which dot]}
 # final ressort for cases, where ::util::which is not available
