@@ -7,6 +7,7 @@ ad_page_contract {
   {classes}
   {documented_only 1}
   {with_children 0}
+  {dpi 96}
 }
 
 ::xotcl::Object instproc dotquote {e} {
@@ -52,7 +53,13 @@ ad_page_contract {
 }
 
 
-::xotcl::Object instproc dotcode {{-with_children 0} {-omit_base_classes 1} {-documented_methods 1} things} {
+::xotcl::Object instproc dotcode {
+  {-with_children 0} 
+  {-omit_base_classes 1} 
+  {-documented_methods 1} 
+  {-dpi 96} 
+  things
+} {
   set classes [list]
   set objects [list]
 
@@ -123,6 +130,7 @@ ad_page_contract {
   #set font "fontname = \"Bitstream Vera Sans\",fontsize = 8,"
 # rankdir = BT; labeldistance = 20;
   return "digraph {
+   dpi = $dpi;
    rankdir = BT;
    node \[$font shape=record\]; $tclasses
    edge \[arrawohead=empty\]; $superclasses
@@ -135,7 +143,9 @@ ad_page_contract {
 }"
 }
 
-set dot_code [::xotcl::Object dotcode -with_children $with_children -documented_methods $documented_only $classes]
+set dot_code [::xotcl::Object dotcode -dpi $dpi \
+                  -with_children $with_children -documented_methods $documented_only \
+                  $classes]
 set dot ""
 catch {set dot [::util::which dot]}
 # final ressort for cases, where ::util::which is not available
