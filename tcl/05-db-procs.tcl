@@ -1635,8 +1635,9 @@ namespace eval ::xo::db {
   } {
     upvar $tz_var tz
     set tz 00
-    #regexp {^([^.]+)[.]?[0-9]*([+-][0-9]*)$} $timestamp _ timestamp tz
-    regexp {^([^.]+)[.][0-9]*([+-][0-9]*)$} $timestamp _ timestamp tz
+    if {![regexp {^([^.]+)[.][0-9]*([+-][0-9]*)$} $timestamp _ timestamp tz]} {
+      regexp {^([^.]+)([+-][0-9]*)$} $timestamp _ timestamp tz
+    }
     return $timestamp
   }
 }
