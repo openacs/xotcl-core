@@ -63,7 +63,7 @@ namespace eval ::xo::db {
   } {
     Return the object type for an item_id or revision_id.
 
-    @retun object_type typically an XOTcl class
+    @return object_type typically an XOTcl class
   } {
     set object_type [ns_cache eval xotcl_object_type_cache \
                          [expr {$item_id ? $item_id : $revision_id}] {
@@ -183,7 +183,7 @@ namespace eval ::xo::db {
 
   CrClass set common_query_atts {
     object_type  
-    creation_user creation_date creation_user 
+    creation_user creation_date
     publish_status last_modified 
   }
   if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} {
@@ -462,6 +462,7 @@ namespace eval ::xo::db {
       switch -glob -- $v {
         publish_status {set fq i.$v}
         creation_date  {set fq o.$v}
+        creation_user  {set fq o.$v}
         package_id     {set fq o.$v}
         default        {set fq n.$v}
       }
@@ -492,6 +493,11 @@ namespace eval ::xo::db {
        and    i.item_id = n.item_id \
        and    o.object_id = $revision_id"
     } else {
+      # We fetch the creation_user and the modifying_user by returning the 
+      # creation_user of the automatic view as modifying_user. In case of
+      # troubles, comment next line out.
+      lappend atts "n.creation_user as modifying_user"
+      
       $object db_1row [my qn fetch_from_view_item_id] "\
        select [join $atts ,], i.parent_id \
        from   [my set table_name]i n, cr_items i, acs_objects o \
@@ -906,10 +912,19 @@ namespace eval ::xo::db {
     @param modifying_user
     @param live_p make this revision the live revision
   } {
-    my instvar creation_user
+    #my instvar creation_user
     set __atts [list creation_user]
     set __vars $__atts
     
+    # The modifying_user is not maintained by the CR (bug?)
+    # xotcl-core handles this by having the modifying user as
+    # creation_user of the revision.
+    #
+    # Caveat: the creation_user fetched is different if we fetch via
+    # item_id (the creation_user is the creator of the item) or if we
+    # fetch via revision_id (the creation_user is the creator of the
+    # revision)
+
     set creation_user [expr {[info exists modifying_user] ?
                              $modifying_user :
                              [my current_user_id]}]

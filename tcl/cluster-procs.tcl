@@ -15,11 +15,22 @@ namespace eval ::xo {
     eval ::xo::Cluster broadcast $args
   }
 
+  proc cache_flush_all {cache pattern} {
+    # Provide means to perform a wildcard-based cache flushing on
+    # (cluster) machines.
+    foreach n [ns_cache names $cache $pattern] {ns_cache flush $cache $n}
+  }
+
   Class Cluster -parameter {host {port 80}}
   Cluster set allowed_host_patterns [list]
   Cluster array set allowed_host {
     "127.0.0.1" 1
   }
+  # 
+  # The allowed commands are of the form 
+  #   - command names followed by 
+  #   - optional "except patterns"
+  #
   Cluster array set allowed_command {
     set "" 
     unset "" 
@@ -28,6 +39,7 @@ namespace eval ::xo {
     nsv_incr ""
     bgdelivery ""
     ns_cache "^ns_cache\s+eval"
+    xo::cache_flush_all ""
   }
   #
   # Prevent unwanted object generations for unknown 
