@@ -63,7 +63,7 @@ namespace eval ::xo::db {
   } {
     Return the object type for an item_id or revision_id.
 
-    @retun object_type typically an XOTcl class
+    @return object_type typically an XOTcl class
   } {
     set object_type [ns_cache eval xotcl_object_type_cache \
                          [expr {$item_id ? $item_id : $revision_id}] {

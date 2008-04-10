@@ -382,7 +382,7 @@ namespace eval ::xo::db {
   } {
     Return the object type for the give id.
 
-    @retun object_type, typically an XOTcl class
+    @return object_type, typically an XOTcl class
   } {
     db_1row [my qn get_class] \
 	"select object_type from acs_objects where object_id=$id"
