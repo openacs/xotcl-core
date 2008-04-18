@@ -184,8 +184,17 @@ namespace eval ::xo {
     my set_url -url $url
     my set mime_type text/html
     my set delivery ns_return
+    set target_class ::$info(package_key)::Package
+    if {[my info class] ne $target_class && [my isclass $target_class]} {
+      my class $target_class
+    }
+    my initialize
   }
- 
+
+  ::xo::Package instproc initialize {} { 
+    # empty hook for user level initialization
+  }
+
   ::xo::Package instproc set_url {-url} {
     my url $url
     my set object [string range [my url] [string length [my package_url]] end]
