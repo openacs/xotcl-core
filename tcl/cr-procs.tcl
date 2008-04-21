@@ -594,7 +594,7 @@ namespace eval ::xo::db {
     @param with_subtypes return subtypes as well
     @param count return the query for counting the solutions
     @param folder_id parent_id
-    @param publish_status one of 'live', 'ready' or 'production'
+    @param publish_status one of 'live', 'ready', or 'production'
     @param base_table typically automatic view, must contain title and revision_id
     @return sql query
   } {
