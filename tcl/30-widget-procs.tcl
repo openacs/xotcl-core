@@ -299,8 +299,8 @@ namespace eval ::xo {
   #
   Class Table -superclass OrderedComposite \
       -parameter [expr {[apm_version_names_compare [ad_acs_version] 5.3.0] == 1 ? 
-			{{no_data  "No Data"} {renderer TABLE3}} :
-			{{no_data  "No Data"} {renderer TABLE2}} 
+			{{no_data  "No Data"} {renderer TABLE3} name} :
+			{{no_data  "No Data"} {renderer TABLE2} name} 
 		      }]
   
   Table instproc destroy {} {
@@ -378,6 +378,9 @@ namespace eval ::xo {
       append output [join $line ,] \n
     }
     #ns_return 200 text/plain $output
+    my instvar name
+    if {![my exists name]} {set name "table"}
+    ns_set put [ns_conn outputheaders] Content-Disposition "attachment;filename=$name.csv"
     ns_return 200 text/csv $output
   }
 

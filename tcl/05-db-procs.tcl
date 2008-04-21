@@ -64,6 +64,18 @@ namespace eval ::xo::db {
     }
   }
 
+  ad_proc has_hstore {} {
+    Check, whether hstore is available (postgres only)
+  } {
+    ns_cache eval xotcl_object_cache ::xo::has_hstore {
+      if {[db_driverkey ""] eq "postgresql" && 
+          [db_string check_hstore "select count(*) from pg_proc where proname = 'hstore_in'"]} {
+        return 1
+      }
+      return 0
+    }
+  }
+
   #
   # The object require provides an interface to create certain
   # resources in case they are not created already.
@@ -569,7 +581,7 @@ namespace eval ::xo::db {
           upper(substring(proname from 0 for position('__' in proname))) as package_name,
           upper(substring(proname from position('__' in proname)+2)) as object_name 
         from pg_proc 
-        where strpos(proname,'__') > 0
+        where strpos(proname,'__') > 1
       }]
     }
 
