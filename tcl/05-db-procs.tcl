@@ -581,7 +581,7 @@ namespace eval ::xo::db {
           upper(substring(proname from 0 for position('__' in proname))) as package_name,
           upper(substring(proname from position('__' in proname)+2)) as object_name 
         from pg_proc 
-        where strpos(proname,'__') > 0
+        where strpos(proname,'__') > 1
       }]
     }
 
