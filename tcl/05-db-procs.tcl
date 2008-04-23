@@ -1357,7 +1357,7 @@ namespace eval ::xo::db {
           set names($name) 1
 	}
         if {$cl ne [self]} {
-          lappend join_expressions "$tn.[$cl id_column] = [my table_name]$id_column"
+          lappend join_expressions "$tn.[$cl id_column] = [my table_name].$id_column"
         }
       }
     }
