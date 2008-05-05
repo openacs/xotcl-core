@@ -89,6 +89,11 @@ namespace eval ::xo::db {
   require set oracle_view_exists      {select 1 from user_views   where view_name  = '$name'}
   require set oracle_index_exists     {select 1 from user_indexes where index_name = '$name'}
 
+  require proc exists_table {name} {
+    if {[db_driverkey ""] eq "oracle"} {set name [string toupper $name]}
+    db_0or1row [my qn ""] [subst [my set [db_driverkey ""]_table_exists]]
+  }
+
   require proc table {name definition} {
     if {[db_driverkey ""] eq "oracle"} {set name [string toupper $name]}
     if {![db_0or1row [my qn ""] [subst [my set [db_driverkey ""]_table_exists]]]} {
@@ -1640,7 +1645,37 @@ namespace eval ::xo::db {
   ::xo::db::Object db_slots
   ##############
 
- 
+  ##############
+  # Handling temporary tables in PostgreSQL and Oracle via a common interface
+  ##############
+  
+  ::xotcl::Class create ::xo::db::temp_table -parameter {name query vars}
+  ::xo::db::temp_table instproc init {} {
+    # The cleanup order is - at least under aolserver 4.01 - hard to get right.
+    # When destroy_on_cleanup is executed, ther might be already some global
+    # data for the database interaction gone.... So, destroy these objects 
+    # by hand for now.
+    # my destroy_on_cleanup
+    
+    # PRESERVE ROWS means that the data will be available until the end of the SQL session
+    set sql_create "CREATE global temporary table [my name] on commit PRESERVE ROWS as "
+    
+    # When the table exists already, simply insert into it ...
+    if {[::xo::db::require exists_table [my name]]} {
+      db_dml . "insert into [my name] ([my vars]) ([my query])"
+    } else {
+      # ... otherwise, create the table with the data in one step
+      db_dml [my qn get_n_most_recent_contributions] $sql_create[my query]
+    }
+  }
+  ::xo::db::temp_table instproc destroy {} {
+    # A session spans multiple connections in OpenACS.
+    # We want to get rid the data when we are done.
+    db_dml [my qn truncate_temp_table] "truncate table [my name]"
+    next
+  }
+
+  ##############
   ad_proc tcl_date {timestamp tz_var} {
     Convert the time stamp (coming from the database) into a format, which
     can be passed to Tcl's "clock scan".
