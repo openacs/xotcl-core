@@ -82,21 +82,26 @@ namespace eval ::xo::db {
   #
   ::xotcl::Object create require
 
-  require set postgresql_table_exists {select 1 from pg_tables   where tablename  = '$name'}
-  require set postgresql_view_exists  {select 1 from pg_views    where viewname   = '$name'}
-  require set postgresql_index_exists {select 1 from pg_indexes  where indexname  = '$name'}
+  #require set postgresql_table_exists {select 1 from pg_tables    where tablename  = '$name'}
+  require set postgresql_table_exists {select 1 from pg_class     where relname    = '$name' and\
+                                           pg_table_is_visible(oid)}
+  require set postgresql_view_exists  {select 1 from pg_views     where viewname   = '$name'}
+  require set postgresql_index_exists {select 1 from pg_indexes   where indexname  = '$name'}
   require set oracle_table_exists     {select 1 from user_tables  where table_name = '$name'}
   require set oracle_view_exists      {select 1 from user_views   where view_name  = '$name'}
   require set oracle_index_exists     {select 1 from user_indexes where index_name = '$name'}
 
   require proc exists_table {name} {
-    if {[db_driverkey ""] eq "oracle"} {set name [string toupper $name]}
+    if {[db_driverkey ""] eq "oracle"} {
+      set name [string toupper $name]
+    } else {
+      set name [string tolower $name]
+    }
     db_0or1row [my qn ""] [subst [my set [db_driverkey ""]_table_exists]]
   }
 
   require proc table {name definition} {
-    if {[db_driverkey ""] eq "oracle"} {set name [string toupper $name]}
-    if {![db_0or1row [my qn ""] [subst [my set [db_driverkey ""]_table_exists]]]} {
+    if {![my exists_table $name]} {
       #my log "--table $name does not exist, creating with $definition"
       db_dml [my qn create-table-$name] "create table $name ($definition)"
     }
