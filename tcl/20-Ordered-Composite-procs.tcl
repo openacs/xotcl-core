@@ -52,7 +52,14 @@ namespace eval ::xo {
     #my log "-- adding __parent [self] to $obj -- calling after_insert"
     #$obj __after_insert
   }
-
+  OrderedComposite instproc delete obj {
+    my instvar __children
+    set p [lsearch -exact $__children $obj]
+    if {$p == -1} {error "can't delete '$obj' from $__children"}
+    set __children [lreplace $__children $p $p]
+    $obj destroy
+  }
+  
   OrderedComposite instproc last_child {} {
     lindex [my set __children] end
   }

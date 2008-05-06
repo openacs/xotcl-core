@@ -1276,7 +1276,7 @@ namespace eval ::xo::db {
     {-dbn ""}
     {-sql ""}
     {-full_statement_name ""}
-    {-as_order_composite:boolean true}
+    {-as_ordered_composite:boolean true}
     {-object_class "::xotcl::Object"}
     {-named_objects:boolean false}
     {-destroy_on_cleanup:boolean true}
@@ -1307,7 +1307,7 @@ namespace eval ::xo::db {
   } {
     if {$object_class eq ""} {set object_class [self]}
     if {$sql eq ""} {set sql [my instance_select_query]}
-    if {$as_order_composite} {
+    if {$as_ordered_composite} {
       set __result [::xo::OrderedComposite new]
       if {$destroy_on_cleanup} {$__result destroy_on_cleanup}
     } else {
@@ -1325,7 +1325,7 @@ namespace eval ::xo::db {
         } else {
           set o [$object_class new]
         }
-        if {$as_order_composite} {
+        if {$as_ordered_composite} {
           $__result add $o
         } elseif {$destroy_on_cleanup} {
           $o destroy_on_cleanup
