@@ -143,7 +143,7 @@ namespace eval ::xo {
       }
 
   # Provide for mapping from HTTP charset encoding labels
-  # to Tcl-specific ones
+  # to Tcl-specific ones (see http://naviserver.cvs.sourceforge.net/naviserver/naviserver/nsd/encoding.c?view=markup)
 
   HttpCore array set http_to_tcl_encodings {
     iso-2022-jp     	iso2022-jp
