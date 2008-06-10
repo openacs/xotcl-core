@@ -2,8 +2,10 @@
 <message_catalog package_key="xotcl-core" locale="es_ES" charset="ISO-8859-1">
 
   <msg key="add">Añadir %type%</msg>
+  <msg key="add_item">Añadir elemento</msg>
   <msg key="add_long">Añadir un nuevo ítem del tipo %type%</msg>
   <msg key="create_new_type">Crear Nuevo %type%</msg>
+  <msg key="delete_item">Borrar elemento</msg>
   <msg key="edit_item">Editar Ítem</msg>
   <msg key="edit_type">Editar %type%</msg>
   <msg key="has_entered_the_room">ha entrado en la sala</msg>
@@ -13,4 +15,5 @@ Usted no tiene permisos suficientes para realizar método %method% en objeto %obj
 &lt;/blockquote&gt;</msg>
   <msg key="revision_title">Revisiones de la Entrada</msg>
   <msg key="revisions">Revisiones</msg>
+  <msg key="view_item">Ver elemento</msg>
 </message_catalog>
