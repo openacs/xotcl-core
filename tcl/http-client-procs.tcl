@@ -99,9 +99,17 @@ namespace eval ::xo {
   # the other upon failure or cancellation (done).
   #
   #  ::bgdelivery do Object ::listener \
-  #     -proc deliver {payload obj} {
-  #       my log "Asynchronous request suceeded!"
-  #     } -proc done {reason obj} {
+  #     -proc start_request {payload obj} {
+  #       my log "request $obj started"
+  #     } -proc request_data {payload obj} {
+  #       my log "partial or complete post"
+  #     } -proc start_reply {payload obj} {
+  #       my log "reply $obj started"
+  #     } -proc reply_data {payload obj} {
+  #       my log "partial or complete delivery"
+  #     } -proc success {data obj} {
+  #       my log "Asynchronous request successfully completed"
+  #     } -proc failure {reason obj} {
   #       my log "Asynchronous request failed: $reason"
   #     }
   #
@@ -293,7 +301,7 @@ namespace eval ::xo {
     }
   }
 
-  HttpCore instproc write_to_socket {} {
+  HttpCore instproc send_request {} {
     my instvar S post_data host
     if {[catch {
       set method [expr {$post_data eq "" ? "GET" : "POST"}]
@@ -316,7 +324,7 @@ namespace eval ::xo {
   HttpCore instproc GET {} {
     my instvar S
     puts $S ""
-    my query_done
+    my request_done
   }
 
   HttpCore instproc POST {} {
@@ -324,15 +332,18 @@ namespace eval ::xo {
     puts $S "Content-Length: [string length $post_data]"
     puts $S "Content-Type: [my content_type]"
     puts $S ""
-    #fconfigure $S -translation {auto binary}
     my set_encoding [my content_type]
-    puts -nonewline $S $post_data
-    my query_done
+    my send_POST_data
   }
-  HttpCore instproc query_done {} {
+  HttpCore instproc send_POST_data {} {
+    my instvar S post_data
+    puts -nonewline $S $post_data
+    my request_done
+  }
+  HttpCore instproc request_done {} {
     my instvar S
     flush $S
-    my received_first_line
+    my reply_first_line
   }
 
   HttpCore instproc close {} {
@@ -354,13 +365,13 @@ namespace eval ::xo {
     my instvar S
     set n [gets $S response]
     if {[eof $S]} {
-      my debug "--premature eof"
+      my log "--premature eof"
       return -2
     }
     if {$n == -1} {my debug "--input pending, no full line"; return -1}
     return $n
   }
-  HttpCore instproc received_first_line {} {
+  HttpCore instproc reply_first_line {} {
     my instvar S status_code
     fconfigure $S -translation crlf
     set n [my getLine response]
@@ -370,13 +381,13 @@ namespace eval ::xo {
     }
     if {[regexp {^HTTP/([0-9.]+) +([0-9]+) *} $response _ \
 	     responseHttpVersion status_code]} {
-      my received_first_line_done
+      my reply_first_line_done
     } else {
-      my debug "--unexpected response '$response'"
+      my log "--unexpected response '$response'"
       my cancel unexpected-response
     }
   }
-  HttpCore instproc received_first_line_done {} {
+  HttpCore instproc reply_first_line_done {} {
     my header
   }
   HttpCore instproc header {} {
@@ -399,9 +410,9 @@ namespace eval ::xo {
 	}
       }
     }
-    my received_header_done
+    my reply_header_done
   }
-  HttpCore instproc received_header_done {} {
+  HttpCore instproc reply_header_done {} {
     # we have received the header, including potentially the 
     # content_type of the returned data
     my set_encoding [my content_type]
@@ -418,6 +429,10 @@ namespace eval ::xo {
 
   HttpCore instproc unset_status {key} {
     nsv_unset bgdelivery $key
+  }
+
+  HttpCore instproc exists_status {key} {
+    return [nsv_exists bgdelivery $key]
   }
 
   HttpCore instproc get_status {key} {
@@ -439,7 +454,7 @@ namespace eval ::xo {
   }
 
   HttpRequest instproc init {} {
-    if {[my exists timeout] && [my timeout] != 0} {
+    if {[my exists timeout] && [my timeout] > 0} {
       # create a cond and mutex
       set cond  [thread::cond create]
       set mutex [thread::mutex create]
@@ -447,6 +462,7 @@ namespace eval ::xo {
       thread::mutex lock $mutex
      
       # start the asynchronous request
+      my log "--a create new  ::xo::AsyncHttpRequest"
       set req [bgdelivery do -async ::xo::AsyncHttpRequest new \
 		   -mixin ::xo::AsyncHttpRequest::RequestManager \
 		   -url [my url] \
@@ -457,14 +473,17 @@ namespace eval ::xo {
 		   -user_agent [my user_agent] \
 		   -condition $cond]
 
-      my set_status $cond COND_WAIT_TIMEOUT
-      thread::cond wait $cond $mutex [my timeout]
+      while {1} {
+	my set_status $cond COND_WAIT_TIMEOUT
+	thread::cond wait $cond $mutex [my timeout]
 
-      set status [my get_status $cond]
-      my debug "status after cond-wait $status"
+	set status [my get_status $cond]
+	my log "status after cond-wait $status"
 
+	if {$status ne "COND_WAIT_REFRESH"} break
+      }
       if {$status eq "COND_WAIT_TIMEOUT"} {
-	my set_status $cond "COND_WAIT_CANCELLED"
+	my set_status $cond "COND_WAIT_CANCELED"
       }
       set status_value [my get_value_for_status $cond]
       if {$status eq "JOB_COMPLETED"} {
@@ -482,7 +501,14 @@ namespace eval ::xo {
       my unset_status $cond
     } else {
       next;# HttpCore->init()
-      my write_to_socket
+      my send_request
+      #
+      # test whether open_connection yielded
+      # a socket ...
+      #
+      if {[my exists S]} {
+	my send_request
+      }
     }
   }
     
@@ -494,61 +520,112 @@ namespace eval ::xo {
     Attribute timeout -type integer -default 10000 ;# 10 seconds
     Attribute request_manager
   }
-  AsyncHttpRequest instproc init {} {
+  AsyncHttpRequest instproc set_timeout {} {
+    my log "--a"
+    my cancel_timeout
     my debug "--- setting socket timeout: [my set timeout]"
-    my set to_identifier [after [my set timeout] [self] cancel timeout]
-    next
-    fileevent [my set S] writable [list [self] write_to_socket]
+    my set timeout_handle [after [my set timeout] [self] cancel timeout]
   }
-  AsyncHttpRequest instproc write_to_socket {} {
+  AsyncHttpRequest instproc cancel_timeout {} {
+    if {[my exists timeout_handle]} {
+      after cancel [my set timeout_handle]
+    }
+  }
+  AsyncHttpRequest instproc send_request {} {
+    my log "--a"
     # remove fileevent handler explicitly
     fileevent [my set S] writable {}
     next
   }
-  AsyncHttpRequest instproc POST {} {
-    if {[my exists S]} {fconfigure [my set S] -blocking false}
+  AsyncHttpRequest instproc init {} {
+    my log "--a"
+    my notify start_request
+    my set_timeout
     next
+    #
+    # test whether open_connection yielded
+    # a socket ...
+    #
+    if {[my exists S]} {
+      fileevent [my set S] writable [list [self] send_request]
+    }
   }
-  AsyncHttpRequest instproc notify {method arg} {
+  AsyncHttpRequest instproc notify {method {arg ""}} {
     if {[my exists request_manager]} {
       [my request_manager] $method $arg [self]
     }
   }
+  AsyncHttpRequest instproc POST {} {
+    if {[my exists S]} {fconfigure [my set S] -blocking false}
+    fileevent [my set S] writable [list [self] send_POST_data]
+    my set bytes_sent 0
+    next
+  }
+  AsyncHttpRequest instproc send_POST_data {} {
+    my instvar S post_data bytes_sent
+    my set_timeout
+    set l [string length $post_data]
+    if {$bytes_sent < $l} {
+      set to_send [expr {$l - $bytes_sent}]
+      set block_size [expr {$to_send < 4096 ? $to_send : 4096}]
+      set bytes_sent_1 [expr {$bytes_sent + $block_size}]
+      set block [string range $post_data $bytes_sent $bytes_sent_1]
+      my notify request_data $block
+      puts -nonewline $S $block
+      set bytes_sent $bytes_sent_1
+    } else {
+      fileevent $S writable ""
+      my request_done
+    }
+  }
   AsyncHttpRequest instproc cancel {reason} {
     if {$reason ne "timeout"} {
-      after cancel [my set to_identifier]
+      my cancel_timeout
     }
     next
-    my debug "--- cancelled for $reason"
-    my notify done $reason
+    my debug "--- canceled for $reason"
+    my notify failure $reason
   }
   AsyncHttpRequest instproc finish {} {
-    after cancel [my set to_identifier]
+    my log "--a"
+    my cancel_timeout
     next
-    my debug "--- deliver data [my set data]"
-    my notify deliver [my set data]
+    my debug "--- finished data [my set data]"
+    my notify success [my set data]
   }
-  AsyncHttpRequest instproc query_done {} {
+  AsyncHttpRequest instproc request_done {} {
+    my log "--a"
+    my notify start_reply
+    my set_timeout
     my instvar S
     flush $S
     fconfigure $S -blocking false
-    fileevent $S readable [list [self] received_first_line]
+    fileevent $S readable [list [self] reply_first_line]
   }
-  AsyncHttpRequest instproc received_first_line_done {} {
-    fileevent [my set S] readable [list [self] header]
+  AsyncHttpRequest instproc reply_first_line_done {} {
+    my log "--a"
+    my set_timeout
+    my instvar S
+    fileevent $S readable [list [self] header]      
   }
-  AsyncHttpRequest instproc received_header_done {} {
+  AsyncHttpRequest instproc reply_header_done {} {
+    my log "--a"
+    my set_timeout
     # we have received the header, including potentially the 
     # content_type of the returned data
     my set_encoding [my content_type]
-    fileevent [my set S] readable [list [self] received_data]
+    fileevent [my set S] readable [list [self] receive_reply_data]
   }
-  AsyncHttpRequest instproc received_data {} {
+  AsyncHttpRequest instproc receive_reply_data {} {
+    my log "--a"
     my instvar S
+    my log "JOB receive_reply_data eof=[eof $S]"
     if {[eof $S]} {
       my finish
     } else {
+      my set_timeout
       set block [read $S]
+      my notify reply_data $block
       my append data $block
       #my debug "reveived [string length $block] bytes"
     }
@@ -564,32 +641,62 @@ namespace eval ::xo {
   Class create AsyncHttpRequest::RequestManager \
       -slots {
 	Attribute condition
-      } \
-      -instproc finalize {obj status value} {
+      } -instproc finalize {obj status value} {
 	# set the result and do the notify
 	my instvar condition
-	if {[my get_status $condition] eq "COND_WAIT_TIMEOUT"} {
+	# If a job was canceled, the status variable might not exist
+	# anymore, the condition might be already gone as well.  In
+	# this case, we do not have to perform the cond-notify.
+	if {[my exists_status $condition] && 
+	    [my get_status $condition] eq "COND_WAIT_TIMEOUT"} {
 	  my set_status $condition $status $value
 	  catch {thread::cond notify $condition}
 	  $obj debug "--- destroying after finish"
 	  $obj destroy
 	}
-      } \
-      -instproc deliver {payload obj} {
+
+      } -instproc set_cond_timeout {} {
+	my instvar condition
+	if {[my exists_status $condition] && 
+	    [my get_status $condition] eq "COND_WAIT_TIMEOUT"} {
+	  my set_status $condition COND_WAIT_REFRESH
+	  catch {thread::cond notify $condition}
+	}
+	
+      } -instproc start_request {payload obj} {
+	my log "JOB start request $obj"
+	my set_cond_timeout
+
+      } -instproc request_data {payload obj} {
+	my log "JOB request data $obj [string length $payload]"
+	my set_cond_timeout
+
+      } -instproc start_reply {payload obj} {
+	my log "JOB start reply $obj"
+	my set_cond_timeout
+
+      } -instproc reply_data {payload obj} {
+	my log "JOB reply data $obj [string length $payload]"
+	my set_cond_timeout
+
+      } -instproc success {payload obj} {
 	my finalize $obj "JOB_COMPLETED" $payload
-      } \
-      -instproc done {reason obj} {
+
+      } -instproc failure {reason obj} {
 	my finalize $obj "JOB_FAILED" $reason
-      } \
-      -instproc init {} {
+
+      } -instproc init {} {
 	# register request object as its own request_manager
 	my request_manager [self]
 	next
-      } \
-      -instproc cancel {reason} {
+
+      } -instproc cancel {reason} {
 	next
 	my debug "--- destroying after cancel"
 	my destroy
+
+      } -instproc unknown {method args} {
+	my log "UNKNOWN $method"
       }
   
   # 
