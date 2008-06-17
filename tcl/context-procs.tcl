@@ -195,7 +195,7 @@ namespace eval ::xo {
     if {$package_id == 0} {
       array set "" [site_node::get_from_url -url $url]
       set package_id $(package_id)
-      my log "--i setting pkg tp $package_id"
+      #my log "--i setting pkg tp $package_id"
     } 
 
     # get locale; TODO at some time, we should get rid of the ad_conn init problem
@@ -228,9 +228,10 @@ namespace eval ::xo {
 	  -actual_query $actual_query \
           -locale $locale \
           [list -parameter_declaration $parameter]
-      if {$package_id ne ""} {
-        ::xo::cc package_id $package_id 
-      }
+      #if {$package_id ne ""} {
+      #  ::xo::cc package_id $package_id 
+      #}
+      ::xo::cc package_id $package_id 
       ::xo::cc set_user_id $user_id
       ::xo::cc process_query_parameter
     }

@@ -77,6 +77,79 @@ namespace eval ::xo {
 }
 
 namespace eval ::xo {
+  Class create ::xo::ical::VCALITEM -parameter {
+    creation_date
+    last_modified
+    due
+    stamp
+    uid
+    priority
+    summary
+    url
+    description
+  }
+  ::xo::ical::VCALITEM instproc as_ical {} {
+    my instvar creation_date last_modified stamp uid
+
+    if {![info exists stamp]}         {set stamp $creation_date}
+    if {![info exists last_modified]} {set last_modified $stamp}
+    
+    set tcl_stamp         [::xo::db::tcl_date $stamp tz]
+    set tcl_creation_date [::xo::db::tcl_date $creation_date tz]
+    set tcl_last_modified [::xo::db::tcl_date $last_modified tz]
+    set dtstamp   [::xo::ical clock_to_utc [clock scan $tcl_stamp]]
+    set dtlastmod [::xo::ical clock_to_utc [clock scan $tcl_last_modified]]
+    set dtcreated [::xo::ical clock_to_utc [clock scan $tcl_creation_date]]
+
+    if {[my exists due]} {
+      set dtdue [::xo::ical clock_to_utc [clock scan [my due]]]
+      set due "DUE:$dtdue\n"
+    } else {
+      set due ""
+    }
+
+    if {[my exists url]}      {set url "URL:[my url]\n"} {set url ""}
+    if {[my exists priority]} {set url "PRIORITY:[my priority]\n"} {set priority ""}
+    if {[my exists description]} {set description "DESCRIPTION:[::xo::ical text_to_ical [my description]]\n"} {set description ""}
+    if {[my exists summary]}  {set summary "SUMMARY:[::xo::ical text_to_ical [my summary]]\n"} {set summary ""}
+#STATUS:IN-PROCESS
+#PERCENT-COMPLETE:25
+    set item_type [namespace tail [my info class]]
+    append t "BEGIN:$item_type\n" \
+        "CREATED:$dtcreated\n" \
+        "LAST-MODIFIED:$dtlastmod\n" \
+        "DTSTAMP:$dtstamp\n" \
+        "UID:$uid\n" \
+        $due $summary $url $description $priority \
+        "END:$item_type\n"
+    return $t
+  }
+  Class create ::xo::ical::VTODO -superclass ::xo::ical::VCALITEM -parameter {
+  }
+  # just a stub for now
+  Class create ::xo::ical::VEVENT -superclass ::xo::ical::VCALITEM -parameter {
+  }  
+
+  #
+  # This class is designed to be a mixin for an ordered composite
+  #
+  Class create ::xo::ical::VCALENDAR -parameter {prodid version method}
+  ::xo::ical::VCALENDAR instproc as_ical {} {
+    if {[my exists prodid]}  {set prodid  "PRODID:[my prodid]\n"} {set prodid ""}
+    if {[my exists method]}  {set method  "METHOD:[string toupper [my method]]\n"} {set method ""}
+    if {[my exists version]} {set version "VERSION:[my version]\n"} {set version "VERSION:2.0\n"}
+    set t ""
+    append t "BEGIN:VCALENDAR\n" $prodid $version $method
+    foreach i [my children] {
+      append t [$i as_ical]
+    }
+    append t "END:VCALENDAR\n"
+    return $t
+  }
+
+}
+
+namespace eval ::xo {
   Class create dav -parameter {
     {url /webdav}
     {package}
@@ -220,6 +293,16 @@ namespace eval ::xo {
     ns_return 204 text/xml {<?xml version="1.0" encoding="utf-8" ?>}
   }
 
+  dav ad_instproc get_package_id {} {
+    initialize the given package 
+    @return package_id 
+  } {
+    my instvar uri package
+    $package initialize -url $uri
+    #my log "--dav [my package] initialize -url $uri"
+    return $package_id
+  }
+
   dav ad_instproc handle_request { args } {
     Process the incoming web-dav request. This method
     could be overloaded by the application and
@@ -230,8 +313,7 @@ namespace eval ::xo {
     #my log "--dav handle_request method=$method uri=$uri\
     #	userid=$user_id -ns_conn query '[ns_conn query]'"
     if {[my exists package]} {
-      [my package] initialize -url $uri
-      #my log "--dav [my package] initialize -url $uri"
+      my get_package_id
     }
     if {[my procsearch $method] ne ""} {
       my $method
