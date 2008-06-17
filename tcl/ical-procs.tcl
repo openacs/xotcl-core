@@ -13,7 +13,7 @@ namespace eval ::xo {
     importing and exporting single or multiple calendar items
     in the ical format (see rfc 2445). Currently only the part
     of ical is implemented, which is used by the mozilla
-    calendar (sunbird, or the xul-file for thunderbird or firefox).
+    calendar (Sunbird, or Lightning for Thunderbird).
     
     @author Gustaf Neumann
   }
@@ -31,6 +31,9 @@ namespace eval ::xo {
     set sec   [string range $time 4 5]
     set TZ [expr {$utc ? "GMT" : ""}]
     return [clock scan "$year-$month-$day $hour:$min $TZ"]
+  }
+  ical proc tcl_time_to_utc {time} {
+    clock format [clock scan $time] -format "%Y%m%dT%H%M%SZ" -gmt 1
   }
   ical proc clock_to_utc {seconds} {
     clock format $seconds -format "%Y%m%dT%H%M%SZ" -gmt 1
@@ -80,54 +83,123 @@ namespace eval ::xo {
   Class create ::xo::ical::VCALITEM -parameter {
     creation_date
     last_modified
-    due
-    stamp
+    dtstart
+    dtstamp
     uid
     priority
     summary
     url
     description
+    location
+    geo
+    status
   }
-  ::xo::ical::VCALITEM instproc as_ical {} {
-    my instvar creation_date last_modified stamp uid
 
-    if {![info exists stamp]}         {set stamp $creation_date}
-    if {![info exists last_modified]} {set last_modified $stamp}
+  ::xo::ical::VCALITEM instproc tag {-tag -conv -value slot} {
+    if {![info exists tag]} {
+      set tag [string toupper $slot]
+    }
+    if {![info exists value]} {
+      if {[my exists $slot]} {
+	set value [my $slot]
+      } else {
+	return ""
+      }
+    }
+    if {[info exists conv]} {
+      return "$tag:[::xo::ical $conv $value]\n"
+    } else {
+      return "$tag:$value\n"
+    }
+    return ""
+  }
+
+  ::xo::ical::VCALITEM instproc as_ical {} {
+    my instvar creation_date last_modified dtstamp
+    #
+    # All date/time stamps are provided either by 
+    # the ANSI date (from postgres) or by a date
+    # which can be processed via clock scan
+    #
+    if {![info exists dtstamp]}       {set dtstamp $creation_date}
+    if {![info exists last_modified]} {set last_modified $dtstamp}
     
-    set tcl_stamp         [::xo::db::tcl_date $stamp tz]
+    set tcl_stamp         [::xo::db::tcl_date $dtstamp tz]
     set tcl_creation_date [::xo::db::tcl_date $creation_date tz]
     set tcl_last_modified [::xo::db::tcl_date $last_modified tz]
-    set dtstamp   [::xo::ical clock_to_utc [clock scan $tcl_stamp]]
-    set dtlastmod [::xo::ical clock_to_utc [clock scan $tcl_last_modified]]
-    set dtcreated [::xo::ical clock_to_utc [clock scan $tcl_creation_date]]
 
-    if {[my exists due]} {
-      set dtdue [::xo::ical clock_to_utc [clock scan [my due]]]
-      set due "DUE:$dtdue\n"
-    } else {
-      set due ""
-    }
+    # status values: 
+    #    VEVENT:   TENTATIVE, CONFIRMED, CANCELLED
+    #    VTODO:    NEEDS-ACTION, COMPLETED, IN-PROCESS, CANCELLED
+    #    VJOURNAL: DRAFT, FINAL, CANCELLED
 
-    if {[my exists url]}      {set url "URL:[my url]\n"} {set url ""}
-    if {[my exists priority]} {set url "PRIORITY:[my priority]\n"} {set priority ""}
-    if {[my exists description]} {set description "DESCRIPTION:[::xo::ical text_to_ical [my description]]\n"} {set description ""}
-    if {[my exists summary]}  {set summary "SUMMARY:[::xo::ical text_to_ical [my summary]]\n"} {set summary ""}
-#STATUS:IN-PROCESS
-#PERCENT-COMPLETE:25
     set item_type [namespace tail [my info class]]
     append t "BEGIN:$item_type\n" \
-        "CREATED:$dtcreated\n" \
-        "LAST-MODIFIED:$dtlastmod\n" \
-        "DTSTAMP:$dtstamp\n" \
-        "UID:$uid\n" \
-        $due $summary $url $description $priority \
+	[my tag -conv tcl_time_to_utc -value $tcl_creation_date created] \
+	[my tag -conv tcl_time_to_utc -value $tcl_last_modified last-modified] \
+	[my tag -conv tcl_time_to_utc -value $tcl_stamp dtstamp] \
+	[my tag -conv tcl_time_to_utc dtstart] \
+	[my tag -conv tcl_time_to_utc dtend] \
+	[my tag -conv tcl_time_to_utc completed] \
+	[my tag -conv tcl_time_to_utc percent-complete] \
+	[my tag uid] \
+	[my tag url] \
+	[my tag geo] \
+	[my tag priority] \
+	[my tag location] \
+	[my tag status] \
+	[my tag -conv text_to_ical description] \
+	[my tag -conv text_to_ical summary] \
+	[my tag -conv tcl_time_to_utc due] \
         "END:$item_type\n"
     return $t
   }
+  #
+  # VTODO
+  #
+  # optional fields, must not occur more than once
+  #
+  #           class / *completed / *created / *description / *dtstamp /
+  #           *dtstart / *geo / *last-mod / *location / organizer /
+  #           *percent-complete / *priority / recurid / seq / *status /
+  #           *summary / *uid / *url /
+  #
+  # optional, but mutual exclusive
+  #           *due / duration /
+  #
+  # optional fields, may occur more than once
+  #
+  #           attach / attendee / categories / comment / contact /
+  #           exdate / exrule / rstatus / related / resources /
+  #           rdate / rrule / x-prop
+
   Class create ::xo::ical::VTODO -superclass ::xo::ical::VCALITEM -parameter {
+    due
+    completed
+    percent-complete
   }
+  #
+  # VEVENT
+  #
+  # optional fields, must not occur more than once
+  #
+  #          class / *created / *description / *dtstart / *geo /
+  #          *last-mod / *location / organizer / *priority /
+  #          *dtstamp / seq / *status / *summary / transp /
+  #          *uid / *url / recurid /
+  #
+  # dtend or duration may appear, but dtend and duration are mutual exclusive
+  #           *dtend / duration /
+  #
+  # optional fields, may occur more than once
+  #
+  #           attach / attendee / categories / comment / contact /
+  #           exdate / exrule / rstatus / related / resources /
+  #           rdate / rrule / x-prop
+  #
   # just a stub for now
   Class create ::xo::ical::VEVENT -superclass ::xo::ical::VCALITEM -parameter {
+    dtend
   }  
 
   #
