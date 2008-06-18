@@ -169,9 +169,14 @@ namespace eval ::xo {
 ::xotcl::Object instproc debug msg {
   ns_log debug "[self] [self callingclass]->[self callingproc]: $msg"
 }
-::xotcl::Object instproc msg msg {
+::xotcl::Object instproc msg {{-html false} msg} {
   if {[ns_conn isconnected]} {
-    util_user_message -message "$msg  ([self] [self callingclass]->[self callingproc])"
+    set msg "$msg  ([self] [self callingclass]->[self callingproc])"
+    if {$html} {
+        util_user_message -html -message $msg
+    } else {
+      util_user_message -message $msg
+    }
   }
 }
 ::xotcl::Object instproc qn query_name {

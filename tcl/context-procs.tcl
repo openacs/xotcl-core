@@ -189,12 +189,13 @@ namespace eval ::xo {
       #my log "--CONN ns_conn url"
       set url [ns_conn url]
     }
-    #my log "--i [self args] URL='$url'"
+    #my log "--i [self args] URL='$url', pkg=$package_id"
 
     # create connection context if necessary
     if {$package_id == 0} {
       array set "" [site_node::get_from_url -url $url]
       set package_id $(package_id)
+      #my log "--i setting pkg tp $package_id"
     } 
 
     # get locale; TODO at some time, we should get rid of the ad_conn init problem
@@ -217,16 +218,20 @@ namespace eval ::xo {
 	  -actual_query $actual_query \
           -locale $locale \
           -url $url
+      #::xo::show_stack
       #my log "--cc ::xo::cc created $url [::xo::cc serialize]"
       ::xo::cc destroy_on_cleanup
     } else {
-      #my log "--cc ::xo::cc reused $url"
+      #my log "--cc ::xo::cc reused $url -package_id $package_id"
       ::xo::cc configure \
-          -package_id $package_id \
           -url $url \
 	  -actual_query $actual_query \
           -locale $locale \
           [list -parameter_declaration $parameter]
+      #if {$package_id ne ""} {
+      #  ::xo::cc package_id $package_id 
+      #}
+      ::xo::cc package_id $package_id 
       ::xo::cc set_user_id $user_id
       ::xo::cc process_query_parameter
     }
@@ -444,6 +449,4 @@ namespace eval ::xo {
     return $query
   }
 
-
 }
-

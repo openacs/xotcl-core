@@ -233,7 +233,7 @@ namespace eval ::xo::db {
       switch -- $type {
         string    { set type text }
         long_text { set type text }
-        date      { set type timestampz }
+        date      { set type "timestamp with time zone" }
         ltree     { set type [expr {[::xo::db::has_ltree] ? "ltree" : "text" }] }
       }
       return $type
@@ -362,6 +362,7 @@ namespace eval ::xo::db {
 	{security_inherit_p t}
 	{auto_save false}
 	{with_table true}
+	{sql_package_name "[namespace tail [self]]"}
       } -ad_doc {
 	::xo::db::Class is a meta class for interfacing with acs_object_types.
 	acs_object_types are instances of this meta class. The meta class defines
@@ -845,7 +846,7 @@ namespace eval ::xo::db {
       my log "We cannot handle object_name = '$object_name' in this version"  
       return
     }
-    set package_name   [namespace tail [self]]
+    set package_name   [my sql_package_name]
     set sql_command    [my generate_psql $package_name $object_name] 
     set proc_body      [my generate_proc_body] 
 
@@ -1000,7 +1001,8 @@ namespace eval ::xo::db {
         -table_name $table_name \
         -id_column $id_column \
         -abstract_p $abstract_p \
-        -name_method $name_method
+        -name_method $name_method \
+        -package_name [my sql_package_name]
   }
   
   ::xo::db::Class ad_instproc drop_object_type {{-cascade true}} {
@@ -1130,6 +1132,11 @@ namespace eval ::xo::db {
 		Use namespaces for classes."
       }
     }
+
+    if {[string length [my sql_package_name]] > 31} {
+      error "SQL package_name '[my sql_package_name]' can be maximal 31 characters"
+    }
+
     if {![my exists id_column]} {
       my set id_column [string tolower [namespace tail [self]]]_id
       set id_column_error_tail ", or use different class names"
