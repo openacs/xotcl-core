@@ -75,7 +75,7 @@ namespace eval ::xo {
       if {[regexp {^::([^:]+)::} $object_type _ head]} {
 	set tail [namespace tail $object_type]
 	set pretty_name "#$head.$tail-$name#"
-	my log "--created pretty_name = $pretty_name"
+	#my log "--created pretty_name = $pretty_name"
       } else {
 	error "Cannot determine automatically message key for pretty name. \
 		Use namespaces for classes"
