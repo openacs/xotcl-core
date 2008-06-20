@@ -374,13 +374,6 @@ namespace eval ::xo::db {
   
   ::xo::db::Class set __default_superclass ::xo::db::Object  ;# will be supported in XOTcl 1.6
 
-  ::xo::db::Class proc namespace_head {name} {
-    if {[regexp {^(::)?([^:]+)::} $name _ colons head]} {
-      return $head
-    }
-    return ""
-  }
-
   #
   # Define an XOTcl interface for creating new object types
   #
@@ -1136,11 +1129,12 @@ namespace eval ::xo::db {
     my instvar sql_package_name
 
     if {![my exists sql_package_name]} {
-      set sql_package_name [::xo::db::Class namespace_head [self]]
+      set sql_package_name [self]
       my log "-- sql_package_name of [self] is '$sql_package_name'"
     }
-    if {[string length $sql_package_name] > 31} {
-      error "SQL package_name '$sql_package_name' can be maximal 31 characters long!"
+    if {[string length $sql_package_name] > 30} {
+      error "SQL package_name '$sql_package_name' can be maximal 30 characters long!\
+		Please specify a shorter sql_package_name in the class definition."
     }
     if {$sql_package_name eq ""} {
       error "Cannot determine SQL package_name. Please specify it explicitely!"
@@ -1148,7 +1142,9 @@ namespace eval ::xo::db {
 
     if {![my exists table_name]} {
       set tail [namespace tail [self]]
-      my set table_name [string tolower ${sql_package_name}_$tail]
+      regexp {^::([^:]+)::} [self] _ head
+      my table_name [string tolower ${head}_$tail]
+      #my log "-- table_name of [self] is '[my table_name]'"
       set table_name_error_tail ", or use different namespaces/class names"
     }
 
@@ -1161,6 +1157,11 @@ namespace eval ::xo::db {
     if {![regexp {^[[:alpha:]_][[:alnum:]_]*$} [my table_name]]} {
       error "Table name '[my table_name]' is unsafe in SQL: \
 	Please specify a different table_name$table_name_error_tail." 
+    }
+
+    if {[string length [my table_name]] > 30} {
+      error "SQL table_name '[my table_name]' can be maximal 30 characters long!\
+		Please specify a shorter table_name in the class definition."
     }
 
     if {![regexp {^[[:alpha:]_][[:alnum:]_]*$} [my id_column]]} {
