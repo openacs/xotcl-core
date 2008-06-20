@@ -312,7 +312,7 @@ namespace eval ::xo {
       -sql [::xo::db::apm_parameter instance_select_query] \
       -object_class ::xo::db::apm_parameter \
       -as_ordered_composite false -named_objects true -destroy_on_cleanup false
-  ns_log notice "--p got [llength [::xo::db::apm_parameter info instances]] parameters"
+  #ns_log debug "--p got [llength [::xo::db::apm_parameter info instances]] parameters"
   #foreach p [::xo::db::apm_parameter info instances] { ns_log notice [$p serialize] }
 
   parameter proc initialize_parameters {} {
@@ -325,7 +325,7 @@ namespace eval ::xo {
       where p.parameter_id = v.parameter_id 
       and coalesce(attr_value,'') <> coalesce(p.default_value,'')
     } {
-      ns_log notice "--p $parameter_id $package_key $package_id $parameter_name <$attr_value>"
+      ns_log debug "--p $parameter_id $package_key $package_id $parameter_name <$attr_value>"
       $parameter_id set_per_package_instance_value $package_id $attr_value
     }
   }

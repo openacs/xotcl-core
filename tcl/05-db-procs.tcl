@@ -233,7 +233,7 @@ namespace eval ::xo::db {
       switch -- $type {
         string    { set type text }
         long_text { set type text }
-        date      { set type "timestamp with time zone" }
+        date      { set type timestampz }
         ltree     { set type [expr {[::xo::db::has_ltree] ? "ltree" : "text" }] }
       }
       return $type
@@ -362,7 +362,6 @@ namespace eval ::xo::db {
 	{security_inherit_p t}
 	{auto_save false}
 	{with_table true}
-	{sql_package_name}
       } -ad_doc {
 	::xo::db::Class is a meta class for interfacing with acs_object_types.
 	acs_object_types are instances of this meta class. The meta class defines
@@ -373,13 +372,6 @@ namespace eval ::xo::db {
       }
   
   ::xo::db::Class set __default_superclass ::xo::db::Object  ;# will be supported in XOTcl 1.6
-
-  ::xo::db::Class proc namespace_head {name} {
-    if {[regexp {^(::)?([^:]+)::} $name _ colons head]} {
-      return $head
-    }
-    return ""
-  }
 
   #
   # Define an XOTcl interface for creating new object types
@@ -527,7 +519,6 @@ namespace eval ::xo::db {
           -pretty_name $pretty_name \
           -id_column $id_column \
           -table_name $table_name \
-          -sql_package_name [namespace tail $classname] \
 	  -noinit
     } else {
       #my log "--db we have a class $classname"
@@ -854,11 +845,7 @@ namespace eval ::xo::db {
       my log "We cannot handle object_name = '$object_name' in this version"  
       return
     }
-    #
-    # Object names have the form of e.g. ::xo::db::apm_parameter.
-    # Therefore, we use the namspace tail as sql_package_name.
-    #
-    set package_name   [my sql_package_name [namespace tail [self]]]
+    set package_name   [namespace tail [self]]
     set sql_command    [my generate_psql $package_name $object_name] 
     set proc_body      [my generate_proc_body] 
 
@@ -1013,8 +1000,7 @@ namespace eval ::xo::db {
         -table_name $table_name \
         -id_column $id_column \
         -abstract_p $abstract_p \
-        -name_method $name_method \
-        -package_name [my sql_package_name]
+        -name_method $name_method
   }
   
   ::xo::db::Class ad_instproc drop_object_type {{-cascade true}} {
@@ -1133,25 +1119,17 @@ namespace eval ::xo::db {
     my check_default_values
     set table_name_error_tail ""
     set id_column_error_tail ""
-    my instvar sql_package_name
-
-    if {![my exists sql_package_name]} {
-      set sql_package_name [::xo::db::Class namespace_head [self]]
-      my log "-- sql_package_name of [self] is '$sql_package_name'"
-    }
-    if {[string length $sql_package_name] > 31} {
-      error "SQL package_name '$sql_package_name' can be maximal 31 characters long!"
-    }
-    if {$sql_package_name eq ""} {
-      error "Cannot determine SQL package_name. Please specify it explicitely!"
-    }
-
     if {![my exists table_name]} {
-      set tail [namespace tail [self]]
-      my set table_name [string tolower ${sql_package_name}_$tail]
-      set table_name_error_tail ", or use different namespaces/class names"
+      if {[regexp {^::([^:]+)::} [self] _ head]} {
+	set tail [namespace tail [self]]
+	my set table_name [string tolower ${head}_$tail]
+	set table_name_error_tail ", or use different namespaces/class names"
+	#my log "-- created table_name '[my table_name]'"
+      } else {
+	error "Cannot determine automatically table name for class [self]. \
+		Use namespaces for classes."
+      }
     }
-
     if {![my exists id_column]} {
       my set id_column [string tolower [namespace tail [self]]]_id
       set id_column_error_tail ", or use different class names"

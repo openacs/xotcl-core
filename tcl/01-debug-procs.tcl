@@ -75,7 +75,7 @@ namespace eval ::xo {
       if {[regexp {^::([^:]+)::} $object_type _ head]} {
 	set tail [namespace tail $object_type]
 	set pretty_name "#$head.$tail-$name#"
-	#my log "--created pretty_name = $pretty_name"
+	my log "--created pretty_name = $pretty_name"
       } else {
 	error "Cannot determine automatically message key for pretty name. \
 		Use namespaces for classes"
@@ -169,14 +169,9 @@ namespace eval ::xo {
 ::xotcl::Object instproc debug msg {
   ns_log debug "[self] [self callingclass]->[self callingproc]: $msg"
 }
-::xotcl::Object instproc msg {{-html false} msg} {
+::xotcl::Object instproc msg msg {
   if {[ns_conn isconnected]} {
-    set msg "$msg  ([self] [self callingclass]->[self callingproc])"
-    if {$html} {
-        util_user_message -html -message $msg
-    } else {
-      util_user_message -message $msg
-    }
+    util_user_message -message "$msg  ([self] [self callingclass]->[self callingproc])"
   }
 }
 ::xotcl::Object instproc qn query_name {

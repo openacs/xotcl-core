@@ -594,7 +594,7 @@ namespace eval ::xo::db {
     @param with_subtypes return subtypes as well
     @param count return the query for counting the solutions
     @param folder_id parent_id
-    @param publish_status one of 'live', 'ready', or 'production'
+    @param publish_status one of 'live', 'ready' or 'production'
     @param base_table typically automatic view, must contain title and revision_id
     @return sql query
   } {
@@ -824,7 +824,7 @@ namespace eval ::xo::db {
         lappend values $v
       }
       return "insert into [my set table_name]i ([join $attributes ,]) \
-                values (:[join $values ,:])"
+                values ([join $values ,])"
     }
 
     CrItem instproc fix_content {{-only_text false} revision_id content} {
@@ -873,8 +873,8 @@ namespace eval ::xo::db {
         set sql "update [$domain table_name] \
                 set $att = :value \
 		where [$domain id_column] = $revision_id"
-        db_dml [my qn update_attribute-$att] $sql
       }
+      db_dml [my qn update_attribute-$att] $sql
     }
   }
   

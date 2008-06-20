@@ -97,8 +97,15 @@ ad_library {
 }
 
 ################## main thread support ##################
+#::xotcl::RecreationClass create ::xotcl::THREAD \
+#    -instrecreate 1 \
+#    -parameter {{persistent 0}}
+
 Class create ::xotcl::THREAD \
     -parameter {{persistent 0} {lightweight 0}}
+
+#Class create ::xotcl::THREAD \
+#    -parameter {{persistent 0}}
 
 ::xotcl::THREAD instproc check_blueprint {} {
   if {![[self class] exists __blueprint_checked]} {
@@ -110,9 +117,7 @@ Class create ::xotcl::THREAD \
 }
 
 ::xotcl::THREAD instproc init cmd {
-  if {$cmd eq "-noinit"} {return}
   my instvar initcmd 
-  #ns_log notice "+++ THREAD cmd='$cmd', epoch=[ns_ictl epoch]"
   if {![ns_ictl epoch]} {
     #ns_log notice "--THREAD init [self] no epoch"
 
