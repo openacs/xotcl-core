@@ -1373,7 +1373,7 @@ namespace eval ::xo::db {
     set tables [list]
     set attributes [list]
     set id_column [my id_column]
-    set join_expressions [list "$id_column = $id"]
+    set join_expressions [list "[my table_name].$id_column = $id"]
     foreach cl [concat [self] [my info heritage]] {
       #if {$cl eq "::xo::db::Object"} break
       if {$cl eq "::xotcl::Object"} break
