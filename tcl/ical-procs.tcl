@@ -334,7 +334,7 @@ namespace eval ::xo {
     set filter_url [my url]*
     set url [my url]/*
     foreach method {
-      GET HEAD PUT MKCOL COPY MOVE PROPFIND PROPPATCH
+      GET HEAD PUT POST MKCOL COPY MOVE PROPFIND PROPPATCH
       DELETE LOCK UNLOCK
     } {
       ns_register_filter preauth $method $filter_url  [self]
