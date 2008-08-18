@@ -99,6 +99,7 @@ namespace eval ::Generic {
       set old_name [::xo::cc form_parameter __object_name ""]
       set new_name [$data set name]
       if {$old_name ne $new_name} {
+        #my msg "rename from $old_name to $new_name"
         db_dml [my qn update_rename] "update cr_items set name = :new_name \
                 where item_id = [$data set item_id]"
       }
@@ -123,26 +124,24 @@ namespace eval ::Generic {
     set context [list $edit_form_page_title]
   }
 
-  Form instproc new_request {} {
-    #my log "--- new_request ---"
-    my request create
+  Form instproc set_form_data {} {
     my instvar data
-    #my log "--VAR [my var item_id]"
     foreach var [[$data info class] array names db_slot] {
       if {[$data exists $var]} {
         my var $var [list [$data set $var]]
       }
     }
   }
+
+  Form instproc new_request {} {
+    #my log "--- new_request ---"
+    my request create
+    my set_form_data
+  }
   Form instproc edit_request {item_id} {
-    my instvar data
     #my log "--- edit_request ---"
     my request write
-    foreach var [[$data info class] array names db_slot] {
-      if {[$data exists $var]} {
-        my var $var [list [$data set $var]]
-      }
-    }
+    my set_form_data
   }
 
   Form instproc on_submit {item_id} {
