@@ -1313,7 +1313,7 @@ namespace eval ::xo::db {
     be only partially instantiated.
 
     @param as_ordered_composite return an ordered composite object
-    preserving the order. If the flag is calse, one has to use
+    preserving the order. If the flag is false, one has to use
     "info instances" to access the resulted objects.
 
     @param object_class specifies the XOTcl class, for which instances
