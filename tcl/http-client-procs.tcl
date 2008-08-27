@@ -462,7 +462,7 @@ namespace eval ::xo {
       thread::mutex lock $mutex
      
       # start the asynchronous request
-      my log "--a create new  ::xo::AsyncHttpRequest"
+      my debug "--a create new  ::xo::AsyncHttpRequest"
       set req [bgdelivery do -async ::xo::AsyncHttpRequest new \
 		   -mixin ::xo::AsyncHttpRequest::RequestManager \
 		   -url [my url] \
@@ -478,7 +478,7 @@ namespace eval ::xo {
 	thread::cond wait $cond $mutex [my timeout]
 
 	set status [my get_status $cond]
-	my log "status after cond-wait $status"
+	my debug "status after cond-wait $status"
 
 	if {$status ne "COND_WAIT_REFRESH"} break
       }
@@ -521,7 +521,6 @@ namespace eval ::xo {
     Attribute request_manager
   }
   AsyncHttpRequest instproc set_timeout {} {
-    my log "--a"
     my cancel_timeout
     my debug "--- setting socket timeout: [my set timeout]"
     my set timeout_handle [after [my set timeout] [self] cancel timeout]
@@ -532,13 +531,11 @@ namespace eval ::xo {
     }
   }
   AsyncHttpRequest instproc send_request {} {
-    my log "--a"
     # remove fileevent handler explicitly
     fileevent [my set S] writable {}
     next
   }
   AsyncHttpRequest instproc init {} {
-    my log "--a"
     my notify start_request
     my set_timeout
     next
@@ -587,14 +584,12 @@ namespace eval ::xo {
     my notify failure $reason
   }
   AsyncHttpRequest instproc finish {} {
-    my log "--a"
     my cancel_timeout
     next
     my debug "--- finished data [my set data]"
     my notify success [my set data]
   }
   AsyncHttpRequest instproc request_done {} {
-    my log "--a"
     my notify start_reply
     my set_timeout
     my instvar S
@@ -603,13 +598,11 @@ namespace eval ::xo {
     fileevent $S readable [list [self] reply_first_line]
   }
   AsyncHttpRequest instproc reply_first_line_done {} {
-    my log "--a"
     my set_timeout
     my instvar S
     fileevent $S readable [list [self] header]      
   }
   AsyncHttpRequest instproc reply_header_done {} {
-    my log "--a"
     my set_timeout
     # we have received the header, including potentially the 
     # content_type of the returned data
@@ -617,9 +610,8 @@ namespace eval ::xo {
     fileevent [my set S] readable [list [self] receive_reply_data]
   }
   AsyncHttpRequest instproc receive_reply_data {} {
-    my log "--a"
     my instvar S
-    my log "JOB receive_reply_data eof=[eof $S]"
+    my debug "JOB receive_reply_data eof=[eof $S]"
     if {[eof $S]} {
       my finish
     } else {
@@ -648,7 +640,9 @@ namespace eval ::xo {
 	# anymore, the condition might be already gone as well.  In
 	# this case, we do not have to perform the cond-notify.
 	if {[my exists_status $condition] && 
-	    [my get_status $condition] eq "COND_WAIT_TIMEOUT"} {
+	    [my get_status $condition] eq "COND_WAIT_REFRESH"} {
+          # Before, we had here COND_WAIT_TIMEOUT instead of 
+          # COND_WAIT_REFRESH
 	  my set_status $condition $status $value
 	  catch {thread::cond notify $condition}
 	  $obj debug "--- destroying after finish"
@@ -664,19 +658,19 @@ namespace eval ::xo {
 	}
 	
       } -instproc start_request {payload obj} {
-	my log "JOB start request $obj"
+	my debug "JOB start request $obj"
 	my set_cond_timeout
 
       } -instproc request_data {payload obj} {
-	my log "JOB request data $obj [string length $payload]"
+	my debug "JOB request data $obj [string length $payload]"
 	my set_cond_timeout
 
       } -instproc start_reply {payload obj} {
-	my log "JOB start reply $obj"
+	my debug "JOB start reply $obj"
 	my set_cond_timeout
 
       } -instproc reply_data {payload obj} {
-	my log "JOB reply data $obj [string length $payload]"
+	my debug "JOB reply data $obj [string length $payload]"
 	my set_cond_timeout
 
       } -instproc success {payload obj} {

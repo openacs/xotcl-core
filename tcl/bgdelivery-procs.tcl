@@ -134,12 +134,12 @@ if {![string match *contentsentlength* $msg]} {
     $request destroy
     if {$running == 0 && $release} {my all_done}
   }
-  ::HttpSpooler instproc deliver {data request} {
+  ::HttpSpooler instproc deliver {data request {encoding binary}} {
     my instvar spooling 
     my log "-- spooling $spooling"
     if {$spooling} {
       my log "--enqueue"
-      my lappend queue $data $request
+      my lappend queue $data $request $encoding
     } else {
       #my log "--send"
       set spooling 1
@@ -147,12 +147,12 @@ if {![string match *contentsentlength* $msg]} {
       # my done
       set filename [ns_tmpnam]
       set fd [open $filename w]
-      fconfigure $fd -translation binary
+      fconfigure $fd -translation binary -encoding $encoding
       puts -nonewline $fd $data
       close $fd
       set fd [open $filename]
-      fconfigure $fd -translation binary
-      fconfigure [my channel] -translation binary
+      fconfigure $fd -translation binary -encoding $encoding
+      fconfigure [my channel] -translation binary  -encoding $encoding
       fcopy $fd [my channel] -command \
 	  [list [self] end-delivery $filename $fd [my channel] $request]
     }
@@ -166,8 +166,9 @@ if {![string match *contentsentlength* $msg]} {
       my log "--dequeue"
       set data [lindex $queue 0]
       set req  [lindex $queue 1]
-      set queue [lreplace $queue 0 1]
-      my deliver $data $req
+      set enc  [lindex $queue 2]
+      set queue [lreplace $queue 0 2]
+      my deliver $data $req $enc
     }
     my done delivered $request
   }
