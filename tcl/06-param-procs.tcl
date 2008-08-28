@@ -243,7 +243,11 @@ namespace eval ::xo {
     -default
   } {
     if {![info exists package_id]} {
-      set package_id [expr {[info command ::xo::cc] ne "" ? [::xo::cc package_id] : [ad_conn package_id]}]
+      # try to get the package id; 
+      # if everything fails, use kernel_id (to be compatible with trad. parameter::get)
+      set package_id [expr {[info command ::xo::cc] ne "" ? 
+		    [::xo::cc package_id] : 
+		    [ns_conn isconnected] ? [ad_conn package_id] : [ad_acs_kernel_id]}]
     }
     set parameter_obj [my get_parameter_object -parameter_name $parameter -package_id $package_id]
     if {$parameter_obj eq ""} {
