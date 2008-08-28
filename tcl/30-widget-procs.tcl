@@ -359,8 +359,8 @@ namespace eval ::xo {
   Table instproc write_csv {} {
     set output ""
     set line [list]
-    my msg columns=[[self]::__columns children]
     foreach column [[self]::__columns children] {
+      if {[$column exists no_csv]} continue
       set label [$column label]
       if {[regexp {^#(.*)#$} $label _ message_key]} {
         set label [_ $message_key]
@@ -372,6 +372,7 @@ namespace eval ::xo {
     foreach row [my children] {
       set line [list]
       foreach column [[self]::__columns children] {
+        if {[$column exists no_csv]} continue
 	set value [string map {\" \\\"} [$row set [$column set name]]]
 	lappend line \"$value\"
       }
@@ -414,7 +415,7 @@ namespace eval ::xo {
 
     Class Field \
 	-superclass ::xo::OrderedComposite::Child \
-	-parameter {label {html {}} {orderby ""} name {richtext false}} \
+	-parameter {label {html {}} {orderby ""} name {richtext false} no_csv} \
 	-instproc init {} {
 	  my set name [namespace tail [self]]
 	} \
