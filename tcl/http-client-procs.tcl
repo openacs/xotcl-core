@@ -500,8 +500,7 @@ namespace eval ::xo {
       thread::mutex destroy $mutex
       my unset_status $cond
     } else {
-      next;# HttpCore->init()
-      my send_request
+      next    ;# HttpCore->init
       #
       # test whether open_connection yielded
       # a socket ...
