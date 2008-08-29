@@ -17,6 +17,21 @@ if {[server_cluster_enabled_p]} {
     }
   }
   
-  ns_register_filter trace GET /xotcl/do ::xo::Cluster
-  ad_register_filter -priority 900 preauth GET /xotcl/do ::xo::Cluster
+  set url [::xo::Cluster set url]
+
+  # Check, if the filter url mirrors a site node. If so,
+  # the cluster mechanism will not work, if the site node
+  # requires a login. Clustering will only work if the
+  # root node is freely accessible.
+
+  array set node [site_node::get -url $url] 
+  if {$node(url) ne "/"} {
+    ns_log notice "***\n*** WARNING: there appears a package mounted on\
+	$url\n***Cluster configuration will not work\
+	since there is a conflict with the aolserver filter with the same name!\n"
+  }
+  
+  #ns_register_filter trace GET $url ::xo::Cluster
+  ns_register_filter preauth GET $url ::xo::Cluster 
+  #ad_register_filter -priority 900 preauth GET $url ::xo::Cluster
 }
