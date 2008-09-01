@@ -377,7 +377,7 @@ namespace eval ::xo {
     set n [my getLine response]
     switch -exact -- $n {
       -2 {my cancel premature-eof; return}
-      -1 {return}
+      -1 {my finish; return}
     }
     if {[regexp {^HTTP/([0-9.]+) +([0-9]+) *} $response _ \
 	     responseHttpVersion status_code]} {
@@ -421,6 +421,7 @@ namespace eval ::xo {
     } else {
       my set data [read [my set S]]
     }
+    my finish
   }
 
   HttpCore instproc set_status {key newStatus {value ""}} {
