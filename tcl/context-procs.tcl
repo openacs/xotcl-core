@@ -74,7 +74,7 @@ namespace eval ::xo {
 	set name [string range $param 1 end]
 	if {![info exists passed_args($param)] &&
 	    [my exists_form_parameter $name]} {
-	  my log "--cc adding passed_args(-$name) [my form_parameter $name]"
+	  #my log "--cc adding passed_args(-$name) [my form_parameter $name]"
 	  set passed_args($param) [my form_parameter $name]
 	}
       }
