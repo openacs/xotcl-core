@@ -225,18 +225,32 @@ namespace eval ::xo {
 
 }
 
-
-# ::xotcl::Class instproc import {class pattern} {
-#   namespace eval [self] [list \
-#   namespace import [list import [$class self]]::$pattern;
-#     my log "--namespace [list import [$class self]]::$pattern"
-#   ]
-# }
-
-# ::xotcl::Class instproc export args {
-#   my log "--namespace eval [self] {eval namespace export $args}"
-#   namespace eval [self] [list eval namespace export $args]
-# }
+namespace eval ::xo {
+  # 
+  # Make reporting back of the version numbers of the most important 
+  # nvolved components easier.
+  #
+  proc report_version_numbers {{pkg_list {acs-kernel xotcl-core xotcl-request-monitor xowiki s5 xoportal xowf}}} {
+    append _ "Database: "
+    if {[db_driverkey {}] eq "postgresql"} {
+      append _ [db_string dbqd.null.get_version {select version() from dual}] \n
+    } else {
+      append _ [db_driverkey {}]\n
+    }
+    append _ "Server:   [ns_info patchlevel] ([ns_info name])\n"
+    append _ "Tcl:      $::tcl_patchLevel\n"
+    append _ "XOTcl:    $::xotcl::version$::xotcl::patchlevel\n"
+    append _ "Tdom:     [package req tdom]\n"
+    append _ "Tcllib: \n"
+    append _ [exec sh -c "ls -ld [ns_info home]/lib/tcll*"] \n\n
+    foreach pk $pkg_list {
+      if {[apm_package_installed_p $pk]} {
+        append _ "[format %-22s $pk:] " [apm_version_get -package_key $pk -array ""; set x "$(version_name), $(release_date)"] \n
+      }
+    }
+    return $_
+  }
+}
 
 #ns_log notice "--T [info command ::ttrace::isenabled]"
 # tell ttrace to put these to the blueprint
@@ -354,6 +368,7 @@ namespace eval ::xo {
     array unset ::xo::cleanup
     #ns_log notice "*** end of cleanup"
   }
+
 }
 
 #ns_log notice "*** FREECONN? [ns_ictl gettraces freeconn]"
