@@ -31,9 +31,6 @@ namespace eval ::xo {
     }
   }
 
-  ::xo::Package proc initialize args {
-    
-  }
   PackageMgr ad_instproc initialize {
     -ad_doc
     {-parameter ""}
