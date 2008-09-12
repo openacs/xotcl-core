@@ -108,7 +108,7 @@ namespace eval ::xo {
       #
       set package_key [apm_package_key_from_id $package_id]
       set package_class ""
-      foreach p [::xo::PackageMgr info instances] {
+      foreach p [::xo::PackageMgr allinstances] {
         if {[$p package_key] eq $package_key} {
           set package_class $p
           break
@@ -118,10 +118,10 @@ namespace eval ::xo {
         # For some unknown reason, we did not find the key.
         # Be conservative, behave like in older versions,
         # but complain in ns_log
-        ns_log error "Could not find ::xo::Package with key $package_key"
+        ns_log error "Could not find ::xo::Package with key $package_key ($package_id)"
         set package_class [self]
       }
-      my log "PKG: $package_class"
+      #my log "PKG: $package_class"
       
       if {$url ne ""} {
         $package_class create ::$package_id -id $package_id -url $url
