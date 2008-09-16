@@ -1268,7 +1268,13 @@ namespace eval ::xo::db {
     if {[regexp [[self class] set name_pattern] $obj]} {
       #my log "--CACHE saving $obj in cache"
       ::xo::clusterwide ns_cache flush xotcl_object_cache $obj
+      # We do not want to cache per object mixins for the time being
+      # (some classes might be volatile). So save mixin-list, cache
+      # and resore them later for the current session.
+      set mixins [$obj info mixin]
+      $obj mixin [list]
       ns_cache set xotcl_object_cache $obj [$obj serialize]
+      $obj mixin $mixins
     }
   }
   CrCache::Item instproc update_attribute_from_slot args {
