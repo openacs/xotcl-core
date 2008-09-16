@@ -25,9 +25,18 @@ namespace eval ::xo::db {
   #
   if {[catch {ns_cache flush xotcl_object_cache NOTHING}]} {
     ns_log notice "xotcl-core: creating xotcl-object caches"
-    
-    ns_cache create xotcl_object_cache -size 200000
-    ns_cache create xotcl_object_type_cache -size 10000
+
+    ns_cache create xotcl_object_cache \
+        -size [parameter::get_from_package_key \
+                   -package_key xotcl-core \
+                   -parameter XOTclObjectCacheSize \
+                   -default 400000]
+
+    ns_cache create xotcl_object_type_cache \
+        -size [parameter::get_from_package_key \
+                   -package_key xotcl-core \
+                   -parameter XOTclObjectTypeCacheSize \
+                   -default 10000]
   }
   #
   # A few helper functions
