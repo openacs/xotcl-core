@@ -100,8 +100,7 @@ namespace eval ::Generic {
       set new_name [$data set name]
       if {$old_name ne $new_name} {
         #my msg "rename from $old_name to $new_name"
-        db_dml [my qn update_rename] "update cr_items set name = :new_name \
-                where item_id = [$data set item_id]"
+        $data rename -old_name $old_name -new_name $new_name
       }
     }
     return [$data set item_id]

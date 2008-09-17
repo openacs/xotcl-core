@@ -104,11 +104,12 @@ namespace eval ::xo::db {
     @return item_id
   } {
     if {[db_0or1row [my qn entry_exists_select] "\
-       select item_id from cr_items where name = :name and parent_id = :parent_id"]} {
+      select item_id from cr_items where name = :name and parent_id = :parent_id"]} {
       return $item_id
     }
     return 0
   }
+  
 
   CrClass ad_proc delete {
     -item_id 
@@ -1094,6 +1095,13 @@ namespace eval ::xo::db {
     [my info class] delete -item_id [my set item_id]
   }
 
+  CrItem ad_instproc rename {-old_name:required -new_name:required} {
+    Rename a content item 
+  } {
+    db_dml [my qn update_rename] "update cr_items set name = :new_name \
+                where item_id = [my item_id]"
+  }
+
   CrItem instproc revisions {} {
 
     ::TableWidget t1 -volatile \
@@ -1260,6 +1268,26 @@ namespace eval ::xo::db {
     # we should probably flush as well cached revisions
   }
 
+  ::xotcl::Class create CrCache::Class
+  CrCache::Class instproc lookup {
+    -name:required
+    {-parent_id -100}
+  } {
+    # We need here the strange logic to avoid caching of lookup fails.
+    # In order to cache fails as well, we would have to flush the fail
+    # on new added items and renames.
+    while {1} {
+      set item_id [ns_cache eval xotcl_object_type_cache $parent_id-$name {
+        set item_id [next]
+        if {$item_id == 0} break ;# don't cache
+        return $item_id
+      }]
+      break
+    }
+    #my msg "lookup $parent_id-$name -> item_id=$item_id"
+    return $item_id
+  }
+
   ::xotcl::Class create CrCache::Item
   CrCache::Item set name_pattern {^::[0-9]+$}
   CrCache::Item instproc flush_from_cache_and_refresh {} {
@@ -1298,10 +1326,18 @@ namespace eval ::xo::db {
   }
   CrCache::Item instproc delete args {
     ::xo::clusterwide ns_cache flush xotcl_object_cache [self]
+    #my msg "delete flush xotcl_object_type_cache [my parent_id]-[my name]"
+    ::xo::clusterwide ns_cache flush xotcl_object_type_cache [my parent_id]-[my name]
+    next
+  }
+  CrCache::Item instproc rename {-old_name:required -new_name:required} {
+    #my msg "rename flush xotcl_object_type_cache [my parent_id]-$old_name"
+    ::xo::clusterwide ns_cache flush xotcl_object_type_cache [my parent_id]-$old_name
     next
   }
   
   CrClass instmixin CrCache
+  CrClass mixin CrCache::Class
   CrItem instmixin CrCache::Item
 }  
 

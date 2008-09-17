@@ -8,10 +8,10 @@
     <singleton-p>t</singleton-p>
     <auto-mount>xotcl</auto-mount>
 
-    <version name="0.91" url="http://media.wu-wien.ac.at/download/xotcl-core-0.91.apm">
+    <version name="0.92" url="http://media.wu-wien.ac.at/download/xotcl-core-0.92.apm">
         <owner url="mailto:neumann@wu-wien.ac.at">Gustaf Neumann</owner>
         <summary>XOTcl library functionality (e.g. thread handling, online documentation, Generic Form and List Classes)</summary>
-        <release-date>2008-09-16</release-date>
+        <release-date>2008-09-17</release-date>
         <vendor>Gustaf Neumann, WU Wien</vendor>
         <description format="text/html">This component contains some core functionality for OpenACS
 applications using XOTcl. It includes
@@ -41,7 +41,7 @@ when components are reloaded.
         <license>BSD-Style</license>
         <maturity>0</maturity>
 
-        <provides url="xotcl-core" version="0.91"/>
+        <provides url="xotcl-core" version="0.92"/>
 
         <callbacks>
             <callback type="after-upgrade"  proc="::xotcl-core::after_upgrade_callback"/>
