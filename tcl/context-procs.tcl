@@ -345,6 +345,7 @@ namespace eval ::xo {
     if {![info exists party_id]} {
       set party_id [my user_id]
     }
+    # my log "--  context permission user_id=$party_id uid=[::xo::cc user_id] untrusted=[::xo::cc set untrusted_user_id]"
     if {$party_id == 0} {
       set key permission($object_id,$privilege,$party_id)
       if {[my exists $key]} {return [my set $key]}
@@ -358,7 +359,8 @@ namespace eval ::xo {
       }
       # The permission is not granted for the public.
       # We force the user to login
-      auth::require_login
+      #my log "-- require login"
+      #auth::require_login
       return 0
     }
 
@@ -369,6 +371,8 @@ namespace eval ::xo {
                      -party_id $party_id \
                      -object_id $object_id \
                      -privilege $privilege]
+    #my log "--  context return [my set $key]"
+    #my set $key
   }
   
 #   ConnectionContext instproc destroy {} {

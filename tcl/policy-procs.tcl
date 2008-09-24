@@ -14,13 +14,14 @@ namespace eval ::xo {
     set c [self]::$class
     expr {[my isclass $c] ? [$c array names require_permission] : [list]}
   }
-
+  
   Policy instproc check_privilege {
     {-login true} 
     -user_id:required 
     -package_id 
     privilege object method
   } {
+    #my log "--p [self proc] [self args]"
     if {$privilege eq "nobody"} {
       return 0
     }
@@ -28,12 +29,13 @@ namespace eval ::xo {
       return 1
     }
 
-    #my log "--login $login user_id=$user_id"
+    #my log "--login $login user_id=$user_id uid=[::xo::cc user_id] untrusted=[::xo::cc set untrusted_user_id]"
     if {$login && $user_id == 0} {
       #
       # The tests below depend on the user_id.
       # The main reason, we call auth:require_login here is to check for exired logins.
       #
+      #my log "--p [self proc] calls require_login"
       set user_id [auth::require_login]
     }
 
@@ -134,6 +136,7 @@ namespace eval ::xo {
 
     set permission [my get_permission $object $method]
     #my log "--permission for o=$object, m=$method => $permission"
+    #my log "--     user_id=$user_id uid=[::xo::cc user_id] untrusted=[::xo::cc set untrusted_user_id]"
     if {$permission ne ""} {
       foreach {kind p} [my get_privilege -query_context $ctx $permission $object $method] break
       #my msg "--privilege = $p kind = $kind"
@@ -166,7 +169,6 @@ namespace eval ::xo {
     if {![info exists user_id]} {set user_id [::xo::cc user_id]}
     if {![info exists package_id]} {set package_id [::xo::cc package_id]}
 
-    #my log "--p enforce_permissions {$object $method}"
     set allowed 0
     set permission [my get_permission $object $method]
     if {$permission ne ""} {
