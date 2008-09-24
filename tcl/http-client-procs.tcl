@@ -297,7 +297,6 @@ namespace eval ::xo {
     }
     if {[catch {my open_connection} err]} {
       my cancel "error during open connection via $protocol to $host $port: $err"
-      return
     }
   }
 
@@ -352,11 +351,14 @@ namespace eval ::xo {
   }
 
   HttpCore instproc cancel {reason} {
+    my set status canceled
+    my set cancel_message $reason
     my debug "--- $reason"
     my close
   }
 
   HttpCore instproc finish {} {
+    my set status finished
     my close
     my debug "--- [my host] [my port] [my path] has finished"
   }
