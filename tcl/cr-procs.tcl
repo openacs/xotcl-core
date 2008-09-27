@@ -580,6 +580,7 @@ namespace eval ::xo::db {
     {-where_clause ""}
     {-from_clause ""}
     {-with_subtypes:boolean true}
+    {-with_children:boolean false}
     {-publish_status}
     {-count:boolean false}
     {-folder_id}
@@ -593,6 +594,7 @@ namespace eval ::xo::db {
     @param orderby for ordering the solution set
     @param where_clause clause for restricting the answer set
     @param with_subtypes return subtypes as well
+    @param with_children return immediate child objects of all objects as well
     @param count return the query for counting the solutions
     @param folder_id parent_id
     @param publish_status one of 'live', 'ready', or 'production'
@@ -632,7 +634,11 @@ namespace eval ::xo::db {
       set acs_objects_table ""
     }
     lappend cond "coalesce(ci.live_revision,ci.latest_revision) = bt.revision_id"
-    lappend cond "ci.parent_id = $folder_id"
+    if {$with_children} { 
+      lappend cond "(ci.parent_id = $folder_id or ci.parent_id in (select item_id from cr_items where parent_id = $folder_id))"
+    } else {
+      lappend cond "ci.parent_id = $folder_id"
+    }
 
     if {$page_number ne ""} {
       set limit $page_size

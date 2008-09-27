@@ -298,8 +298,20 @@ namespace eval ::xo {
 
   ConnectionContext instproc cache {cmd} {
     set key cache($cmd)
-    if {![my exists $key]} {my set $key [uplevel $cmd]}
+    if {![my exists $key]} {my set $key [my uplevel $cmd]}
     return [my set $key]
+  }
+  ConnectionContext instproc cache_exists {cmd} {
+    return [my exists cache($cmd)]
+  }
+  ConnectionContext instproc cache_get {cmd} {
+    return [my set cache($cmd)]
+  }
+  ConnectionContext instproc cache_set {cmd value} {
+    return [my set cache($cmd) $value]
+  }
+  ConnectionContext instproc cache_unset {cmd} {
+    return [my unset cache($cmd)]
   }
 
   ConnectionContext instproc role=all {-user_id:required -package_id} {
@@ -426,6 +438,8 @@ namespace eval ::xo {
   }
   
   ConnectionContext instproc set_parameter {name value} {
+    set key [list get_parameter $name]
+    if {[my cache_exists $key]} {my cache_delete $key}
     my set perconnectionparam($name) $value
   }
   ConnectionContext instproc get_parameter {name {default ""}} {

@@ -47,8 +47,8 @@ namespace eval ::Generic {
     my forward var uplevel #$level set 
 
     my instvar data folder_id
+    set folder_id [[$data package_id] folder_id]
     set class     [$data info class]
-    set folder_id [$data set parent_id]
 
     if {![my exists add_page_title]} {
       my set add_page_title [_ xotcl-core.create_new_type \
