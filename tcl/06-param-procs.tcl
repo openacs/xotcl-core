@@ -163,7 +163,8 @@ namespace eval ::xo {
     -package_key:required
   } {
     return [ns_cache eval xotcl_object_type_cache package_id-$package_key {
-      db_string get_package_id "select package_id from apm_packages where package_key = :package_key"
+      db_string get_package_id [::xo::db::sql select -vars package_id -from apm_packages \
+                                    -where "package_key = :package_key" -limit 1]
     }]
   }
 
