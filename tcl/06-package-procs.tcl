@@ -17,10 +17,23 @@ namespace eval ::xo {
         package_key
       }
 
-  PackageMgr ad_instproc first_instance {} {
+  PackageMgr ad_instproc first_instance {-privilege -party_id} {
     @return return first mounted instance of this type
   } {
-    ::xo::parameter get_package_id_from_package_key -package_key [my package_key]
+    my instvar package_key
+    if {[info exists privilege]} {
+      set sql [::xo::db::sql select -vars package_id \
+                   -from "apm_packages, acs_object_party_privilege_map ppm" \
+                   -where {
+                     package_key = :package_key 
+                     and ppm.object_id = package_id 
+                     and ppm.party_id = :party_id
+                     and ppm.privilege = :privilege
+                   } -limit 1]
+      db_string get_package_id $sql
+    } else {
+      ::xo::parameter get_package_id_from_package_key -package_key $package_key
+    }
   }
 
   PackageMgr ad_instproc instances {{-include_unmounted false}} {
