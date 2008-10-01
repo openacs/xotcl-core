@@ -195,7 +195,7 @@ namespace eval ::xo {
     if {$package_id == 0} {
       array set "" [site_node::get_from_url -url $url]
       set package_id $(package_id)
-      #my log "--i setting pkg tp $package_id"
+      #my msg "--i setting pkg to $package_id"
     } 
 
     # get locale; TODO at some time, we should get rid of the ad_conn init problem
@@ -209,7 +209,6 @@ namespace eval ::xo {
     } else {
       set locale [lang::system::locale -package_id $package_id]
     }
-
     if {![my isobject ::xo::cc]} {
       my create ::xo::cc \
           -package_id $package_id \
@@ -219,10 +218,10 @@ namespace eval ::xo {
           -locale $locale \
           -url $url
       #::xo::show_stack
-      #my log "--cc ::xo::cc created $url [::xo::cc serialize]"
+      #my msg "--cc ::xo::cc created $url [::xo::cc serialize]"
       ::xo::cc destroy_on_cleanup
     } else {
-      #my log "--cc ::xo::cc reused $url -package_id $package_id"
+      #my msg "--cc ::xo::cc reused $url -package_id $package_id"
       ::xo::cc configure \
           -url $url \
 	  -actual_query $actual_query \

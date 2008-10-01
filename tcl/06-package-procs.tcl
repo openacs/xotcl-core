@@ -17,6 +17,12 @@ namespace eval ::xo {
         package_key
       }
 
+  PackageMgr ad_instproc first_instance {} {
+    @return return first mounted instance of this type
+  } {
+    ::xo::parameter get_package_id_from_package_key -package_key [my package_key]
+  }
+
   PackageMgr ad_instproc instances {{-include_unmounted false}} {
     @return list of package_ids of xowiki instances
   } {
@@ -100,6 +106,8 @@ namespace eval ::xo {
   PackageMgr ad_instproc require {{-url ""} package_id} {
     Create package object if needed.
   } {
+    if {$package_id eq ""} {error "package_id must not be empty"}
+
     #my log "--R $package_id exists? [my isobject ::$package_id] url='$url'"
     if {![my isobject ::$package_id]} {
       #my log "--R we have to create ::$package_id //url='$url'"
@@ -122,7 +130,7 @@ namespace eval ::xo {
         set package_class [self]
       }
       #my log "PKG: $package_class"
-      
+
       if {$url ne ""} {
         $package_class create ::$package_id -id $package_id -url $url
       } else {
@@ -193,6 +201,7 @@ namespace eval ::xo {
     my package_url $package_url
     my package_key $info(package_key)
     my instance_name $info(instance_name)
+
     if {[my exists url] && [info exists root]} {
       regexp "^${root}(.*)$" $url _ url
     } elseif {![my exists url]} {
