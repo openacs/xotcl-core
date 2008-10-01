@@ -118,10 +118,13 @@ namespace eval ::xo {
   }
   Cluster instproc message args {
     my log "--cluster outgoing request to [my host]:[my port] // $args" 
-    set r [::xo::HttpRequest new -volatile \
+#     set r [::xo::HttpRequest new -volatile \
+#                -host [my host] -port [my port] \
+#                -path [Cluster set url]?cmd=[ns_urlencode $args]]
+#     return [$r set data]
+    set r [::xo::AsyncHttpRequest new -volatile \
                -host [my host] -port [my port] \
                -path [Cluster set url]?cmd=[ns_urlencode $args]]
-    return [$r set data]
   }
 
 
