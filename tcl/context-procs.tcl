@@ -439,7 +439,7 @@ namespace eval ::xo {
   
   ConnectionContext instproc set_parameter {name value} {
     set key [list get_parameter $name]
-    if {[my cache_exists $key]} {my cache_delete $key}
+    if {[my cache_exists $key]} {my cache_unset $key}
     my set perconnectionparam($name) $value
   }
   ConnectionContext instproc get_parameter {name {default ""}} {
