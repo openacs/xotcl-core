@@ -8,7 +8,7 @@ namespace eval ::xo {
     Return connection information similar to ad_conn
   } {
     my log "--[self class] unknown called with '$method' <$args>"
-    switch [llength $args] {
+    switch -- [llength $args] {
       0 {if {[my exists $method]} {return [my set method]}
         return [ad_conn $method]
       }

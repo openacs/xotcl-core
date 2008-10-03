@@ -140,7 +140,7 @@ namespace eval ::xo {
     if {$permission ne ""} {
       foreach {kind p} [my get_privilege -query_context $ctx $permission $object $method] break
       #my msg "--privilege = $p kind = $kind"
-      switch $kind {
+      switch -- $kind {
 	primitive {return [my check_privilege -login false \
 			       -package_id $package_id -user_id $user_id \
 			       $p $object $method]}
@@ -173,7 +173,7 @@ namespace eval ::xo {
     set permission [my get_permission $object $method]
     if {$permission ne ""} {
       foreach {kind p} [my get_privilege $permission $object $method] break
-      switch $kind {
+      switch -- $kind {
 	primitive {
 	  set allowed [my check_privilege \
 			   -user_id $user_id -package_id $package_id \

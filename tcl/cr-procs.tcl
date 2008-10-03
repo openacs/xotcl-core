@@ -470,7 +470,7 @@ namespace eval ::xo::db {
       lappend atts $fq
     }
     foreach {slot_name slot} [my array get db_slot] {
-      switch $slot {
+      switch -- $slot {
 	::xo::db::CrItem::slot::text {
 	  # We need the rule, since insert the handling of the sql
 	  # attribute "text" is somewhat magic. On insert, one can use the

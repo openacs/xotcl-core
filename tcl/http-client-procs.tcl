@@ -221,7 +221,7 @@ namespace eval ::xo {
   }
 
   HttpCore instproc set_default_port {protocol} {
-    switch $protocol {
+    switch -- $protocol {
       http  {my set port 80}
       https {my set port 443}
     }
