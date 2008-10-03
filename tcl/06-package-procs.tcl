@@ -145,11 +145,10 @@ namespace eval ::xo {
       #my log "PKG: $package_class"
 
       if {$url ne ""} {
-        $package_class create ::$package_id -id $package_id -url $url
+        $package_class create ::$package_id -destroy_on_cleanup -id $package_id -url $url
       } else {
-        $package_class create ::$package_id -id $package_id
+        $package_class create ::$package_id -destroy_on_cleanup -id $package_id
       }
-      ::$package_id destroy_on_cleanup
     } else {
       if {$url ne ""} {
         ::$package_id set_url -url $url
