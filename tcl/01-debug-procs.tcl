@@ -351,13 +351,26 @@ namespace eval ::xo {
       #ns_log notice "*** cleanup $cmd"
       if {[catch {eval $cmd} errorMsg]} {
         set obj [lindex $cmd 0]
-        ns_log notice "Error during ::xo::cleanup: $errorMsg $::errorInfo"
+        ns_log error "Error during ::xo::cleanup: $errorMsg $::errorInfo"
         catch {
           ns_log notice "... analyze: cmd = $cmd"
           ns_log notice "... analyze: $obj is_object? [::xotcl::Object isobject $obj]"
           ns_log notice "... analyze: class [$obj info class]"
           ns_log notice "... analyze: precedence [$obj info precedence]"
           ns_log notice "... analyze: methods [lsort [$obj info methods]]"
+          #
+          # In case, we want to destroy some objects, and the destructor fails,
+          # make sure to destroy them even then. We reclass the object to something
+          # the base classen and try again.
+          #
+          if {[lindex $cmd 1] eq "destroy"} {
+            ns_log error "... forcing object destroy without application level destuctors"
+            if {[$obj isclass]} {
+              $obj class ::xotcl::Class; $obj destroy
+            } else {
+              $obj class ::xotcl::Object; $obj destroy
+            }
+          }
         }
       }
     }
