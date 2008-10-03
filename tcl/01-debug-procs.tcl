@@ -359,9 +359,10 @@ namespace eval ::xo {
           ns_log notice "... analyze: precedence [$obj info precedence]"
           ns_log notice "... analyze: methods [lsort [$obj info methods]]"
           #
-          # In case, we want to destroy some objects, and the destructor fails,
-          # make sure to destroy them even then. We reclass the object to something
-          # the base classen and try again.
+          # In case, we want to destroy some objects, and the
+          # destructor fails, make sure to destroy them even
+          # then. Half-deleted zombies can produce harm. We reclass
+          # the object to the base classe and try again.
           #
           if {[lindex $cmd 1] eq "destroy"} {
             ns_log error "... forcing object destroy without application level destuctors"
