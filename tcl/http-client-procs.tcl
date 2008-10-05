@@ -305,7 +305,6 @@ namespace eval ::xo {
     if {[catch {
       set method [expr {$post_data eq "" ? "GET" : "POST"}]
       puts $S "$method [my path] HTTP/1.0"
-      puts $S "Accept: */*"
       puts $S "Host: $host"
       puts $S "User-Agent: [my user_agent]"
       foreach {tag value} [my request_header_fields] {
@@ -727,14 +726,13 @@ namespace eval ::xo {
   nsv_set HttpRequestTrace count 0
 
   HttpRequestTrace instproc init {} {
-    my instvar F post_data 
+    my instvar F post_data
     my set meta [list]
     my set requestCount [nsv_incr HttpRequestTrace count]  ;# make it an instvar to find it in the log file
     set F [open /tmp/req-[format %.4d [my set requestCount]] w]
     
     set method [expr {$post_data eq "" ? "GET" : "POST"}]
     puts $F "$method [my path] HTTP/1.0"
-    puts $F "Accept: */*"
     puts $F "Host: [my host]"
     puts $F "User-Agent: [my user_agent]"
     foreach {tag value} [my request_header_fields] { puts $F "$tag: $value" }
