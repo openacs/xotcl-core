@@ -584,6 +584,7 @@ namespace eval ::xo::db {
     {-publish_status}
     {-count:boolean false}
     {-folder_id}
+    {-parent_id}
     {-page_size 20}
     {-page_number ""}
     {-base_table "cr_revisions"}
@@ -602,6 +603,7 @@ namespace eval ::xo::db {
     @return sql query
   } {
     if {![info exists folder_id]} {my instvar folder_id}
+    if {![info exists parent_id]} {set parent_id $folder_id}
 
     if {$base_table eq "cr_revisions"} {
       set attributes [list ci.item_id ci.name ci.publish_status acs_objects.object_type] 
@@ -634,10 +636,13 @@ namespace eval ::xo::db {
       set acs_objects_table ""
     }
     lappend cond "coalesce(ci.live_revision,ci.latest_revision) = bt.revision_id"
-    if {$with_children} { 
-      lappend cond "(ci.parent_id = $folder_id or ci.parent_id in (select item_id from cr_items where parent_id = $folder_id))"
-    } else {
-      lappend cond "ci.parent_id = $folder_id"
+    if {$parent_id ne ""} {
+      set parent_clause "ci.parent_id = $parent_id"
+      if {$with_children} { 
+        lappend cond "($parent_clause or ci.parent_id in (select item_id from cr_items where parent_id = $parent_id))"
+      } else {
+        lappend cond $parent_clause
+      }
     }
 
     if {$page_number ne ""} {
