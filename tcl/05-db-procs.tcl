@@ -1489,15 +1489,16 @@ namespace eval ::xo::db {
 
     @return ordered composite
   } {
-    set s [my instantiate_objects -sql \
-	       [my instance_select_query \
-		    -select_attributes $select_attributes \
-		    -from_clause $from_clause \
-		    -where_clause $where_clause \
-		    -orderby $orderby \
-		    -page_size $page_size \
-		    -page_number $page_number \
-		   ]]
+    set s [my instantiate_objects \
+               -object_class [self] \
+               -sql [my instance_select_query \
+                         -select_attributes $select_attributes \
+                         -from_clause $from_clause \
+                         -where_clause $where_clause \
+                         -orderby $orderby \
+                         -page_size $page_size \
+                         -page_number $page_number \
+                        ]]
     return $s
   }
   ##############

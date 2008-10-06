@@ -892,14 +892,14 @@ namespace eval ::xo::db {
   #
   # CrItem set insert_view_operation db_0or1row
 
-  CrItem instproc update_revision {revision_id attribute value} {
+  CrItem instproc update_revision {{-quoted false} revision_id attribute value} {
     #
     # This method can be use to update arbitrary fields of 
     # an revision.
     #
-    
+    if {$quoted} {set val $value} {set val :value}
     db_dml [my qn update_content] "update cr_revisions \
-                set $attribute = :value \
+                set $attribute = $val \
 		where revision_id = $revision_id"
   }
  
@@ -1009,6 +1009,7 @@ namespace eval ::xo::db {
     ::xo::db::sql::content_item set_live_revision \
         -revision_id $revision_id \
         -publish_status $publish_status
+    ::xo::clusterwide ns_cache flush xotcl_object_cache ::[my item_id]
   }
 
 
