@@ -1065,10 +1065,10 @@ namespace eval ::xo::db {
 	# we have an autonamed item, use a unique value for the name
 	set name [expr {[my exists __autoname_prefix] ? 
                         "[my set __autoname_prefix]$revision_id" : $revision_id}]
-        if {$title eq ""} {
-          set title [expr {[my exists __title_prefix] ? 
-                          "[my set __title_prefix] ($name)" : $name}]
-        }
+      }
+      if {$title eq ""} {
+        set title [expr {[my exists __title_prefix] ? 
+                         "[my set __title_prefix] ($name)" : $name}]
       }
       #my msg --[subst [[self class] set content_item__new_args]]
       set item_id [eval ::xo::db::sql::content_item new \
