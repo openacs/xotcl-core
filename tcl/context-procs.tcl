@@ -202,7 +202,7 @@ namespace eval ::xo {
     if {[ns_conn isconnected]} {
       # This can be called, before ad_conn is initialized. 
       # Since it is not possible to pass the user_id and ad_conn barfs
-      # when  it tries to detect it, we use the catch and reset it later
+      # when it tries to detect it, we use the catch and reset it later
       if {[catch {set locale [lang::conn::locale -package_id $package_id]}]} {
         set locale en_US
       }
@@ -234,6 +234,9 @@ namespace eval ::xo {
       ::xo::cc set_user_id $user_id
       ::xo::cc process_query_parameter
     }
+  }
+  ConnectionContext instproc lang {} {
+    return [string range [my locale] 0 1]
   }
   ConnectionContext instproc set_user_id {user_id} {
     if {$user_id == -1} {  ;# not specified
