@@ -940,7 +940,7 @@ namespace eval ::xo::db {
     set creation_user [expr {[info exists modifying_user] ?
                              $modifying_user :
                              [my current_user_id]}]
-    set old_revision_id [my set revision_id]
+    #set old_revision_id [my set revision_id]
 
     foreach {__slot_name __slot} [[my info class] array get db_slot] {
       if {
