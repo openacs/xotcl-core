@@ -223,6 +223,15 @@ namespace eval ::xo {
     }
   }
 
+  proc render_localizer {} {
+    if {[my exists __localizer]} {
+      foreach l [my set __localizer] {
+	$l render
+	$l destroy
+      }
+    }
+  }
+
   Class Localizer -parameter {type key url}
 
   Localizer instproc render {} {
@@ -238,8 +247,8 @@ namespace eval ::xo {
   Localizer instproc render {} {
      html::a -title [my key] -href [my url] {
        set path /resources/acs-templating/xinha-nightly/plugins/
-       switch [my type] {
- 	localized {set img ImageManager/img/btn_ok.gif}
+       switch -- [my type] {
+	 localized {set img ImageManager/img/btn_ok.gif}
          us_only  {set img Filter/img/ed_filter.gif}
          missing  {set img LangMarks/img/en.gif}
        }
