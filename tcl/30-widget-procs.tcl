@@ -236,7 +236,7 @@ namespace eval ::xo {
 
   Localizer instproc render {} {
     html::a -title [my key] -href [my url] {
-      switch [my type] {
+      switch -- [my type] {
 	localized {set char o; set style "color: green"}
         us_only   {set char *; set style "background-color: yellow; color: red;"}
         missing   {set char @; set style "background-color: red; color: white;"}

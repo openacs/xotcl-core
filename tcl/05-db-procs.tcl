@@ -296,7 +296,7 @@ namespace eval ::xo::db {
     }
     sql proc datatype_constraint {type table att} {
       set constraint ""
-      switch $type {
+      switch -- $type {
         boolean {
           set cname [::xo::db::mk_sql_constraint_name $table $att _ck]
           set constraint "constraint $cname check ($att in ('t','f'))"}
