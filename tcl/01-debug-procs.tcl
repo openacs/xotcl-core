@@ -245,7 +245,7 @@ namespace eval ::xo {
     append _ [exec sh -c "ls -ld [ns_info home]/lib/tcll*"] \n\n
     foreach pk $pkg_list {
       if {[apm_package_installed_p $pk]} {
-        append _ "[format %-22s $pk:] " [apm_version_get -package_key $pk -array ""; set x "$(version_name), $(release_date)"] \n
+        append _ "[format %-22s $pk:] " [apm_version_get -package_key $pk -array ""; set x "$(release_date), $(version_name)"] \n
       }
     }
     return $_
