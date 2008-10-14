@@ -173,7 +173,7 @@ proc superclass_hierarchy {cl scope} {
 # document the class or the object"
 #
 set index [::xotcl::api object_index $scope $object]
-append output "<blockquote>\n"
+append output "<p>\n"
 
 if {$isclass} {
   append output "<h4>Class Hierarchy of $object</h4>"
@@ -238,7 +238,7 @@ append obj_create_source \
 if {$class_references ne ""} {
   append output "<h4>Class Relations</h4><ul>\n$class_references</ul>\n"
 }
-append output "</blockquote>\n"
+append output "</p>\n"
 
 if {$show_source} {
   append output [::xotcl::api source_to_html $obj_create_source] \n
@@ -311,9 +311,9 @@ if {$isclass} {
   set instances [string trimright $instances ", "]
   if {$instances ne ""} {
     append output "<h3>Instances</h3>\n" \
-	<blockquote>\n \
+	<p>\n \
 	$instances \
-	</blockquote>\n
+	</p>\n
   }
 }
 
