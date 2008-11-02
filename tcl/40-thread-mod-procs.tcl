@@ -124,8 +124,9 @@ Class create ::xotcl::THREAD \
       package req XOTcl
       namespace import -force ::xotcl::*
     }
-  } 
+  }
   append initcmd {
+    ns_thread name SELF
     ::xotcl::Object setExitHandler {
       #my log "EXITHANDLER of slave thread SELF [pid]"
     }
