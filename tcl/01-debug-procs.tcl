@@ -294,6 +294,7 @@ namespace eval ::xo {
     if {[ns_ictl epoch] == 0} {
       ns_ictl oncleanup ::xo::at_cleanup
       ns_ictl oninit [list ns_atclose ::xo::at_close]
+      ns_ictl ondelete ::xo::at_delete
     }
     
 #     proc trace_cleanup {args} {
@@ -310,6 +311,9 @@ namespace eval ::xo {
     if {[lsearch $registered ::xo::cleanup] == -1} {
       ns_ictl trace freeconn ::xo::freeconn
     }
+    if {[lsearch [ns_ictl gettraces delete] ::xo::at_delete] == -1} {
+      ns_ictl ondelete ::xo::at_delete
+    }    
 
     proc ::xo::freeconn {} {
       catch {::xo::at_close}
@@ -383,6 +387,44 @@ namespace eval ::xo {
     #ns_log notice "*** end of cleanup"
   }
 
+  proc ::xo::at_delete args {
+    #
+    # Delete all object and classes at a time, where the thread is
+    # fully functioning. During interp exit, the commands would be
+    # deleted anyhow, but there exists a potential memory leak, when
+    # e.g. a destroy method (or an exit handler) writes to ns_log.
+    # ns_log requires the thread name, but it is cleared already
+    # earlier (after the interp deletion trace). Aolserver recreated
+    # the name and the an entry in the thread list, but this elements
+    # will not be freed. If we destroy the objects here, the mentioned
+    # problem will not occur.
+    #
+    ns_log notice "ON DELETE $args"
+    set t0 [clock clicks -milliseconds]
+    #
+    # Check, if we have a new XOTcl implementation with ::xotcl::finalize
+    # 
+    if {[info command ::xotcl::finalize] ne ""} {
+      ::xotcl::finalize
+    } else {
+      # Delete the objects and classes manually
+      set objs [::xotcl::Object allinstances]
+      ns_log notice "deleting [llength $objs] objects"
+      foreach o $objs {
+        if {![::xotcl::Object isobject $o]} continue
+        if {[$o istype ::xotcl::Class]} continue
+        $o destroy
+      }
+      foreach o [::xotcl::Class allinstances] {
+        if {![::xotcl::Object isobject $o]} continue
+        if {$o eq "::xotcl::Object" || $o eq "::xotcl::Class"} continue
+        $o destroy
+      }
+    }
+    set t1 [clock clicks -milliseconds]
+    ns_log notice "ON DELETE done ([expr {$t1-$t0}]ms)"
+  }
+  
 }
 
 #ns_log notice "*** FREECONN? [ns_ictl gettraces freeconn]"
