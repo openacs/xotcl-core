@@ -201,7 +201,6 @@ if {[ns_info name] eq "NaviServer"} {
   bgdelivery forward write_headers ns_headers DUMMY
 }
 
-
 bgdelivery ad_proc returnfile {statuscode mime_type filename} {
   Deliver the given file to the requestor in the background. This proc uses the
   background delivery thread to send the file in an event-driven manner without
@@ -214,8 +213,27 @@ bgdelivery ad_proc returnfile {statuscode mime_type filename} {
   #ns_log notice "expires-set $filename"
 
   if {[my write_headers $statuscode $mime_type $size]} {
-    set ch [ns_conn channel]
-    thread::transfer [my get_tid] $ch
+    set errorMsg ""
+    # Get the thread id and make sure the bgdelivery thread is already
+    # running.
+    set tid [my get_tid]
+
+    # my log "+++ lock [my set bgmutex]"
+    ::thread::mutex lock [my set mutex]
+    #ns_mutex lock [my set bgmutex]
+
+    catch {
+      set ch [ns_conn channel]
+      thread::transfer $tid $ch
+    } errorMsg
+
+    ::thread::mutex unlock  [my set mutex]
+    #ns_mutex unlock [my set bgmutex]
+    # my log "+++ unlock [my set bgmutex]"
+
+    if {$errorMsg ne ""} {
+      error ERROR=$errorMsg
+    }
     if {![my isobject ::xo:cc]} {
       ::xo::ConnectionContext require
     }
@@ -232,7 +250,12 @@ ad_proc -public ad_returnfile_background {statuscode mime_type filename} {
   blocking a request thread. This is especially important when large files are 
   requested over slow (e.g. dial-ip) connections.
 } {
-  bgdelivery returnfile $statuscode $mime_type $filename
+  #my log "driver=[ns_conn driver]"
+  if {[ns_conn driver] ne "nssock"} {
+    ns_returnfile $statuscode $mime_type $filename
+  } else {
+    bgdelivery returnfile $statuscode $mime_type $filename
+  }
 }
 
 #####################################
