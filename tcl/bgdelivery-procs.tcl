@@ -224,10 +224,15 @@ bgdelivery ad_proc returnfile {statuscode mime_type filename} {
 
     catch {
       set ch [ns_conn channel]
-      thread::transfer $tid $ch
+      if {[catch {thread::transfer $tid $ch} innerError]} {
+        set channels_in_use "??"
+        catch {set channels_in_use [bgdelivery do file channels]}
+        ns_log error "thread transfer failed, channel=$ch, channels_in_use=$channels_in_use"
+        error $innerError
+      }
     } errorMsg
 
-    ::thread::mutex unlock  [my set mutex]
+    ::thread::mutex unlock [my set mutex]
     #ns_mutex unlock [my set bgmutex]
     # my log "+++ unlock [my set bgmutex]"
 
