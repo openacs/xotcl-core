@@ -237,10 +237,11 @@ namespace eval ::xo {
     } else {
       append _ [db_driverkey {}]\n
     }
-    append _ "Server:   [ns_info patchlevel] ([ns_info name])\n"
-    append _ "Tcl:      $::tcl_patchLevel\n"
-    append _ "XOTcl:    $::xotcl::version$::xotcl::patchlevel\n"
-    append _ "Tdom:     [package req tdom]\n"
+    append _ "Server:    [ns_info patchlevel] ([ns_info name])\n"
+    append _ "Tcl:       $::tcl_patchLevel\n"
+    append _ "XOTcl:     $::xotcl::version$::xotcl::patchlevel\n"
+    append _ "Tdom:      [package req tdom]\n"
+    append _ "libthread: [ns_config ns/server/[ns_info server]/modules libthread]\n"
     append _ "Tcllib: \n"
     append _ [exec sh -c "ls -ld [ns_info home]/lib/tcll*"] \n\n
     foreach pk $pkg_list {
