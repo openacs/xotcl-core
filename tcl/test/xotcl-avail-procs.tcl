@@ -19,11 +19,11 @@ aa_register_case -cats {api smoke} check_xotcl {
 
   ? {expr {$::xotcl::version < 1.5}} 0 "XOTcl Version $::xotcl::version >= 1.5"
 
-  set ns_cache_version_old [catch {ns_cache names xowiki_cache xxx}]
+  set ns_cache_version_old [catch {ns_cache names util_memoize xxx}]
   if {$ns_cache_version_old} {
     ? {set x old} new "upgrade ns_cache: cvs -z3 -d:pserver:anonymous@aolserver.cvs.sourceforge.net:/cvsroot/aolserver co nscache"
   } else {
-    ? {set x new} new "ns_cache version seems up to date"
+    ? {set x new} new "ns_cache version seems sufficiently up to date"
   }
   
   ? {expr {[::xotcl::Object info methods serialize] ne ""}} 1 "Serialize method available"

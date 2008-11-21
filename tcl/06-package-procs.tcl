@@ -17,6 +17,25 @@ namespace eval ::xo {
         package_key
       }
 
+  PackageMgr ad_instproc first_instance {-privilege -party_id} {
+    @return return first mounted instance of this type
+  } {
+    my instvar package_key
+    if {[info exists privilege]} {
+      set sql [::xo::db::sql select -vars package_id \
+                   -from "apm_packages, acs_object_party_privilege_map ppm" \
+                   -where {
+                     package_key = :package_key 
+                     and ppm.object_id = package_id 
+                     and ppm.party_id = :party_id
+                     and ppm.privilege = :privilege
+                   } -limit 1]
+      db_string get_package_id $sql
+    } else {
+      ::xo::parameter get_package_id_from_package_key -package_key $package_key
+    }
+  }
+
   PackageMgr ad_instproc instances {{-include_unmounted false}} {
     @return list of package_ids of xowiki instances
   } {
@@ -42,10 +61,9 @@ namespace eval ::xo {
     {-init_url true}
     {-form_parameter}
   } {
-    Create a connection context if there is none available.
-    The connection context should be reclaimed after the request
-    so we create it as a volatile object in the toplevel scope,
-    it will be destroyed automatically with destroy_on_cleanup, 
+    Create the connection context ::xo::cc and a package object 
+    if these are none defined yet. The connection context ::xo::cc
+    and the package object will be destroyed on cleanup,
     when the global variables are reclaimed.
     
     As a side effect this method sets in the calling context
@@ -101,15 +119,42 @@ namespace eval ::xo {
   PackageMgr ad_instproc require {{-url ""} package_id} {
     Create package object if needed.
   } {
+    if {$package_id eq ""} {error "package_id must not be empty"}
+
     #my log "--R $package_id exists? [my isobject ::$package_id] url='$url'"
     if {![my isobject ::$package_id]} {
       #my log "--R we have to create ::$package_id //url='$url'"
-      if {$url ne ""} {
-        my create ::$package_id -url $url
-      } else {
-        my create ::$package_id
+      #
+      # To make initialization code more generic,
+      #
+      set package_key [apm_package_key_from_id $package_id]
+      set package_class ""
+      foreach p [::xo::PackageMgr allinstances] {
+        # Sanity check for old apps, having not set the package key.
+        # TODO: remove this in future versions, when package_keys are enforced
+        if {![$p exists package_key]} {
+          ns_log notice "!!! You should provide a package_key for $p [$p info class] !!!"
+          continue
+        }
+        if {[$p package_key] eq $package_key} {
+          set package_class $p
+          break
+        }
       }
-      ::$package_id destroy_on_cleanup
+      if {$package_class eq ""} {
+        # For some unknown reason, we did not find the key.
+        # Be conservative, behave like in older versions,
+        # but complain in ns_log. E.g. hypermail2xowiki uses this.
+        ns_log notice "Could not find ::xo::Package with key $package_key ($package_id)"
+        set package_class [self]
+      }
+      #my log "PKG: $package_class"
+
+      if {$url ne ""} {
+        $package_class create ::$package_id -destroy_on_cleanup -id $package_id -url $url
+      } else {
+        $package_class create ::$package_id -destroy_on_cleanup -id $package_id
+      }
     } else {
       if {$url ne ""} {
         ::$package_id set_url -url $url
@@ -142,6 +187,7 @@ namespace eval ::xo {
         package_url
 	{force_refresh_login false}
       }
+
   ::xo::Package instforward query_parameter        {%my set context} %proc
   ::xo::Package instforward exists_query_parameter {%my set context} %proc
   ::xo::Package instforward form_parameter         {%my set context} %proc
@@ -160,7 +206,6 @@ namespace eval ::xo {
   ::xo::Package instproc init args {
     #my log "--R creating"
     my instvar id url
-    set id [namespace tail [self]]
     array set info [site_node::get_from_object_id -object_id $id]
     set package_url $info(url)
     if {[ns_conn isconnected]} {
@@ -174,6 +219,7 @@ namespace eval ::xo {
     my package_url $package_url
     my package_key $info(package_key)
     my instance_name $info(instance_name)
+
     if {[my exists url] && [info exists root]} {
       regexp "^${root}(.*)$" $url _ url
     } elseif {![my exists url]} {
@@ -202,10 +248,13 @@ namespace eval ::xo {
   }
 
   ::xo::Package instproc reply_to_user {text} {
+    #my log "REPLY [::xo::cc exists __continuation]"
     if {[::xo::cc exists __continuation]} {
+      #my log "REPLY [::xo::cc set __continuation]"
       eval [::xo::cc set __continuation]
     } else {
       if {[string length $text] > 1} {
+        #my log "REPLY [my set delivery] 200 [my set mime_type]"
         [my set delivery] 200 [my set mime_type] $text
       }
     }

@@ -25,9 +25,18 @@ namespace eval ::xo::db {
   #
   if {[catch {ns_cache flush xotcl_object_cache NOTHING}]} {
     ns_log notice "xotcl-core: creating xotcl-object caches"
-    
-    ns_cache create xotcl_object_cache -size 200000
-    ns_cache create xotcl_object_type_cache -size 10000
+
+    ns_cache create xotcl_object_cache \
+        -size [parameter::get_from_package_key \
+                   -package_key xotcl-core \
+                   -parameter XOTclObjectCacheSize \
+                   -default 400000]
+
+    ns_cache create xotcl_object_type_cache \
+        -size [parameter::get_from_package_key \
+                   -package_key xotcl-core \
+                   -parameter XOTclObjectTypeCacheSize \
+                   -default 10000]
   }
   #
   # A few helper functions
@@ -233,7 +242,7 @@ namespace eval ::xo::db {
       switch -- $type {
         string    { set type text }
         long_text { set type text }
-        date      { set type timestampz }
+        date      { set type "timestamp with time zone" }
         ltree     { set type [expr {[::xo::db::has_ltree] ? "ltree" : "text" }] }
       }
       return $type
@@ -287,7 +296,7 @@ namespace eval ::xo::db {
     }
     sql proc datatype_constraint {type table att} {
       set constraint ""
-      switch $type {
+      switch -- $type {
         boolean {
           set cname [::xo::db::mk_sql_constraint_name $table $att _ck]
           set constraint "constraint $cname check ($att in ('t','f'))"}
@@ -362,6 +371,7 @@ namespace eval ::xo::db {
 	{security_inherit_p t}
 	{auto_save false}
 	{with_table true}
+	{sql_package_name}
       } -ad_doc {
 	::xo::db::Class is a meta class for interfacing with acs_object_types.
 	acs_object_types are instances of this meta class. The meta class defines
@@ -519,6 +529,7 @@ namespace eval ::xo::db {
           -pretty_name $pretty_name \
           -id_column $id_column \
           -table_name $table_name \
+          -sql_package_name [namespace tail $classname] \
 	  -noinit
     } else {
       #my log "--db we have a class $classname"
@@ -845,7 +856,11 @@ namespace eval ::xo::db {
       my log "We cannot handle object_name = '$object_name' in this version"  
       return
     }
-    set package_name   [namespace tail [self]]
+    #
+    # Object names have the form of e.g. ::xo::db::apm_parameter.
+    # Therefore, we use the namspace tail as sql_package_name.
+    #
+    set package_name   [my sql_package_name [namespace tail [self]]]
     set sql_command    [my generate_psql $package_name $object_name] 
     set proc_body      [my generate_proc_body] 
 
@@ -1000,7 +1015,8 @@ namespace eval ::xo::db {
         -table_name $table_name \
         -id_column $id_column \
         -abstract_p $abstract_p \
-        -name_method $name_method
+        -name_method $name_method \
+        -package_name [my sql_package_name]
   }
   
   ::xo::db::Class ad_instproc drop_object_type {{-cascade true}} {
@@ -1119,17 +1135,28 @@ namespace eval ::xo::db {
     my check_default_values
     set table_name_error_tail ""
     set id_column_error_tail ""
-    if {![my exists table_name]} {
-      if {[regexp {^::([^:]+)::} [self] _ head]} {
-	set tail [namespace tail [self]]
-	my set table_name [string tolower ${head}_$tail]
-	set table_name_error_tail ", or use different namespaces/class names"
-	#my log "-- created table_name '[my table_name]'"
-      } else {
-	error "Cannot determine automatically table name for class [self]. \
-		Use namespaces for classes."
-      }
+    my instvar sql_package_name
+
+    if {![my exists sql_package_name]} {
+      set sql_package_name [self]
+      my log "-- sql_package_name of [self] is '$sql_package_name'"
     }
+    if {[string length $sql_package_name] > 30} {
+      error "SQL package_name '$sql_package_name' can be maximal 30 characters long!\
+		Please specify a shorter sql_package_name in the class definition."
+    }
+    if {$sql_package_name eq ""} {
+      error "Cannot determine SQL package_name. Please specify it explicitely!"
+    }
+
+    if {![my exists table_name]} {
+      set tail [namespace tail [self]]
+      regexp {^::([^:]+)::} [self] _ head
+      my table_name [string tolower ${head}_$tail]
+      #my log "-- table_name of [self] is '[my table_name]'"
+      set table_name_error_tail ", or use different namespaces/class names"
+    }
+
     if {![my exists id_column]} {
       my set id_column [string tolower [namespace tail [self]]]_id
       set id_column_error_tail ", or use different class names"
@@ -1139,6 +1166,11 @@ namespace eval ::xo::db {
     if {![regexp {^[[:alpha:]_][[:alnum:]_]*$} [my table_name]]} {
       error "Table name '[my table_name]' is unsafe in SQL: \
 	Please specify a different table_name$table_name_error_tail." 
+    }
+
+    if {[string length [my table_name]] > 30} {
+      error "SQL table_name '[my table_name]' can be maximal 30 characters long!\
+		Please specify a shorter table_name in the class definition."
     }
 
     if {![regexp {^[[:alpha:]_][[:alnum:]_]*$} [my id_column]]} {
@@ -1290,7 +1322,7 @@ namespace eval ::xo::db {
     be only partially instantiated.
 
     @param as_ordered_composite return an ordered composite object
-    preserving the order. If the flag is calse, one has to use
+    preserving the order. If the flag is false, one has to use
     "info instances" to access the resulted objects.
 
     @param object_class specifies the XOTcl class, for which instances
@@ -1350,7 +1382,7 @@ namespace eval ::xo::db {
     set tables [list]
     set attributes [list]
     set id_column [my id_column]
-    set join_expressions [list "$id_column = $id"]
+    set join_expressions [list "[my table_name].$id_column = $id"]
     foreach cl [concat [self] [my info heritage]] {
       #if {$cl eq "::xo::db::Object"} break
       if {$cl eq "::xotcl::Object"} break
@@ -1457,15 +1489,16 @@ namespace eval ::xo::db {
 
     @return ordered composite
   } {
-    set s [my instantiate_objects -sql \
-	       [my instance_select_query \
-		    -select_attributes $select_attributes \
-		    -from_clause $from_clause \
-		    -where_clause $where_clause \
-		    -orderby $orderby \
-		    -page_size $page_size \
-		    -page_number $page_number \
-		   ]]
+    set s [my instantiate_objects \
+               -object_class [self] \
+               -sql [my instance_select_query \
+                         -select_attributes $select_attributes \
+                         -from_clause $from_clause \
+                         -where_clause $where_clause \
+                         -orderby $orderby \
+                         -page_size $page_size \
+                         -page_number $page_number \
+                        ]]
     return $s
   }
   ##############
@@ -1687,8 +1720,12 @@ namespace eval ::xo::db {
   } {
     upvar $tz_var tz
     set tz 00
-    if {![regexp {^([^.]+)[.][0-9]*([+-][0-9]*)$} $timestamp _ timestamp tz]} {
-      regexp {^([^.]+)([+-][0-9]*)$} $timestamp _ timestamp tz
+    # Oracle style format like 2008-08-25 (no TZ)
+    if {![regexp {^([0-9]+-[0-9]+-[0-9]+)$} $timestamp _ timestamp]} {
+      # PostgreSQL type ANSI format
+      if {![regexp {^([^.]+)[.][0-9]*([+-][0-9]*)$} $timestamp _ timestamp tz]} {
+        regexp {^([^.]+)([+-][0-9]*)$} $timestamp _ timestamp tz
+      }
     }
     return $timestamp
   }

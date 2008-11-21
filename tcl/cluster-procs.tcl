@@ -23,6 +23,7 @@ namespace eval ::xo {
 
   Class Cluster -parameter {host {port 80}}
   Cluster set allowed_host_patterns [list]
+  Cluster set url /xotcl-cluster-do 
   Cluster array set allowed_host {
     "127.0.0.1" 1
   }
@@ -117,10 +118,13 @@ namespace eval ::xo {
   }
   Cluster instproc message args {
     my log "--cluster outgoing request to [my host]:[my port] // $args" 
-    set r [::xo::HttpRequest new -volatile \
+#     set r [::xo::HttpRequest new -volatile \
+#                -host [my host] -port [my port] \
+#                -path [Cluster set url]?cmd=[ns_urlencode $args]]
+#     return [$r set data]
+    set r [::xo::AsyncHttpRequest new -volatile \
                -host [my host] -port [my port] \
-               -path /xotcl/do?cmd=[ns_urlencode $args]]
-    return [$r set data]
+               -path [Cluster set url]?cmd=[ns_urlencode $args]]
   }
 
 

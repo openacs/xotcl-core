@@ -75,7 +75,7 @@ namespace eval ::xo {
       if {[regexp {^::([^:]+)::} $object_type _ head]} {
 	set tail [namespace tail $object_type]
 	set pretty_name "#$head.$tail-$name#"
-	my log "--created pretty_name = $pretty_name"
+	#my log "--created pretty_name = $pretty_name"
       } else {
 	error "Cannot determine automatically message key for pretty name. \
 		Use namespaces for classes"
@@ -169,9 +169,14 @@ namespace eval ::xo {
 ::xotcl::Object instproc debug msg {
   ns_log debug "[self] [self callingclass]->[self callingproc]: $msg"
 }
-::xotcl::Object instproc msg msg {
+::xotcl::Object instproc msg {{-html false} msg} {
   if {[ns_conn isconnected]} {
-    util_user_message -message "$msg  ([self] [self callingclass]->[self callingproc])"
+    set msg "$msg  ([self] [self callingclass]->[self callingproc])"
+    if {$html} {
+        util_user_message -html -message $msg
+    } else {
+      util_user_message -message $msg
+    }
   }
 }
 ::xotcl::Object instproc qn query_name {
@@ -220,18 +225,33 @@ namespace eval ::xo {
 
 }
 
-
-# ::xotcl::Class instproc import {class pattern} {
-#   namespace eval [self] [list \
-#   namespace import [list import [$class self]]::$pattern;
-#     my log "--namespace [list import [$class self]]::$pattern"
-#   ]
-# }
-
-# ::xotcl::Class instproc export args {
-#   my log "--namespace eval [self] {eval namespace export $args}"
-#   namespace eval [self] [list eval namespace export $args]
-# }
+namespace eval ::xo {
+  # 
+  # Make reporting back of the version numbers of the most important 
+  # nvolved components easier.
+  #
+  proc report_version_numbers {{pkg_list {acs-kernel xotcl-core xotcl-request-monitor xowiki s5 xoportal xowf}}} {
+    append _ "Database: "
+    if {[db_driverkey {}] eq "postgresql"} {
+      append _ [db_string dbqd.null.get_version {select version() from dual}] \n
+    } else {
+      append _ [db_driverkey {}]\n
+    }
+    append _ "Server:    [ns_info patchlevel] ([ns_info name])\n"
+    append _ "Tcl:       $::tcl_patchLevel\n"
+    append _ "XOTcl:     $::xotcl::version$::xotcl::patchlevel\n"
+    append _ "Tdom:      [package req tdom]\n"
+    append _ "libthread: [ns_config ns/server/[ns_info server]/modules libthread]\n"
+    append _ "Tcllib: \n"
+    append _ [exec sh -c "ls -ld [ns_info home]/lib/tcll*"] \n\n
+    foreach pk $pkg_list {
+      if {[apm_package_installed_p $pk]} {
+        append _ "[format %-22s $pk:] " [apm_version_get -package_key $pk -array ""; set x "$(release_date), $(version_name)"] \n
+      }
+    }
+    return $_
+  }
+}
 
 #ns_log notice "--T [info command ::ttrace::isenabled]"
 # tell ttrace to put these to the blueprint
@@ -275,6 +295,7 @@ namespace eval ::xo {
     if {[ns_ictl epoch] == 0} {
       ns_ictl oncleanup ::xo::at_cleanup
       ns_ictl oninit [list ns_atclose ::xo::at_close]
+      ns_ictl ondelete ::xo::at_delete
     }
     
 #     proc trace_cleanup {args} {
@@ -291,6 +312,9 @@ namespace eval ::xo {
     if {[lsearch $registered ::xo::cleanup] == -1} {
       ns_ictl trace freeconn ::xo::freeconn
     }
+    if {[lsearch [ns_ictl gettraces delete] ::xo::at_delete] == -1} {
+      ns_ictl ondelete ::xo::at_delete
+    }    
 
     proc ::xo::freeconn {} {
       catch {::xo::at_close}
@@ -332,13 +356,27 @@ namespace eval ::xo {
       #ns_log notice "*** cleanup $cmd"
       if {[catch {eval $cmd} errorMsg]} {
         set obj [lindex $cmd 0]
-        ns_log notice "Error during ::xo::cleanup: $errorMsg $::errorInfo"
+        ns_log error "Error during ::xo::cleanup: $errorMsg $::errorInfo"
         catch {
           ns_log notice "... analyze: cmd = $cmd"
           ns_log notice "... analyze: $obj is_object? [::xotcl::Object isobject $obj]"
           ns_log notice "... analyze: class [$obj info class]"
           ns_log notice "... analyze: precedence [$obj info precedence]"
           ns_log notice "... analyze: methods [lsort [$obj info methods]]"
+          #
+          # In case, we want to destroy some objects, and the
+          # destructor fails, make sure to destroy them even
+          # then. Half-deleted zombies can produce harm. We reclass
+          # the object to the base classe and try again.
+          #
+          if {[lindex $cmd 1] eq "destroy"} {
+            ns_log error "... forcing object destroy without application level destuctors"
+            if {[$obj isclass]} {
+              $obj class ::xotcl::Class; $obj destroy
+            } else {
+              $obj class ::xotcl::Object; $obj destroy
+            }
+          }
         }
       }
     }
@@ -349,6 +387,45 @@ namespace eval ::xo {
     array unset ::xo::cleanup
     #ns_log notice "*** end of cleanup"
   }
+
+  proc ::xo::at_delete args {
+    #
+    # Delete all object and classes at a time, where the thread is
+    # fully functioning. During interp exit, the commands would be
+    # deleted anyhow, but there exists a potential memory leak, when
+    # e.g. a destroy method (or an exit handler) writes to ns_log.
+    # ns_log requires the thread name, but it is cleared already
+    # earlier (after the interp deletion trace). Aolserver recreated
+    # the name and the an entry in the thread list, but this elements
+    # will not be freed. If we destroy the objects here, the mentioned
+    # problem will not occur.
+    #
+    ns_log notice "ON DELETE $args"
+    set t0 [clock clicks -milliseconds]
+    #
+    # Check, if we have a new XOTcl implementation with ::xotcl::finalize
+    # 
+    if {[info command ::xotcl::finalize] ne ""} {
+      ::xotcl::finalize
+    } else {
+      # Delete the objects and classes manually
+      set objs [::xotcl::Object allinstances]
+      ns_log notice "deleting [llength $objs] objects"
+      foreach o $objs {
+        if {![::xotcl::Object isobject $o]} continue
+        if {[$o istype ::xotcl::Class]} continue
+        $o destroy
+      }
+      foreach o [::xotcl::Class allinstances] {
+        if {![::xotcl::Object isobject $o]} continue
+        if {$o eq "::xotcl::Object" || $o eq "::xotcl::Class"} continue
+        $o destroy
+      }
+    }
+    set t1 [clock clicks -milliseconds]
+    ns_log notice "ON DELETE done ([expr {$t1-$t0}]ms)"
+  }
+  
 }
 
 #ns_log notice "*** FREECONN? [ns_ictl gettraces freeconn]"

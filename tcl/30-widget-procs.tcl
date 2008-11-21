@@ -223,11 +223,20 @@ namespace eval ::xo {
     }
   }
 
+  proc render_localizer {} {
+    if {[my exists __localizer]} {
+      foreach l [my set __localizer] {
+	$l render
+	$l destroy
+      }
+    }
+  }
+
   Class Localizer -parameter {type key url}
 
   Localizer instproc render {} {
     html::a -title [my key] -href [my url] {
-      switch [my type] {
+      switch -- [my type] {
 	localized {set char o; set style "color: green"}
         us_only   {set char *; set style "background-color: yellow; color: red;"}
         missing   {set char @; set style "background-color: red; color: white;"}
@@ -238,8 +247,8 @@ namespace eval ::xo {
   Localizer instproc render {} {
      html::a -title [my key] -href [my url] {
        set path /resources/acs-templating/xinha-nightly/plugins/
-       switch [my type] {
- 	localized {set img ImageManager/img/btn_ok.gif}
+       switch -- [my type] {
+	 localized {set img ImageManager/img/btn_ok.gif}
          us_only  {set img Filter/img/ed_filter.gif}
          missing  {set img LangMarks/img/en.gif}
        }
@@ -359,8 +368,8 @@ namespace eval ::xo {
   Table instproc write_csv {} {
     set output ""
     set line [list]
-    my msg columns=[[self]::__columns children]
     foreach column [[self]::__columns children] {
+      if {[$column exists no_csv]} continue
       set label [$column label]
       if {[regexp {^#(.*)#$} $label _ message_key]} {
         set label [_ $message_key]
@@ -372,6 +381,7 @@ namespace eval ::xo {
     foreach row [my children] {
       set line [list]
       foreach column [[self]::__columns children] {
+        if {[$column exists no_csv]} continue
 	set value [string map {\" \\\"} [$row set [$column set name]]]
 	lappend line \"$value\"
       }
@@ -414,7 +424,7 @@ namespace eval ::xo {
 
     Class Field \
 	-superclass ::xo::OrderedComposite::Child \
-	-parameter {label {html {}} {orderby ""} name {richtext false}} \
+	-parameter {label {html {}} {orderby ""} name {richtext false} no_csv} \
 	-instproc init {} {
 	  my set name [namespace tail [self]]
 	} \
@@ -837,8 +847,12 @@ namespace eval ::xo {
   # templating and CSS
   #
   Class create Page
-  Page proc requireCSS name {set ::_xo_need_css($name) 1}
-  Page proc requireStyle s {set ::_xo_need_style($s) 1}
+  Page proc requireCSS {{-order 1} name} {
+    set ::_xo_need_css($name) [expr {[array size ::_xo_need_css]+1000*$order}]
+  }
+  Page proc requireStyle {{-order 1} s} {
+    set ::_xo_need_style($s) [expr {[array size ::_xo_need_style]+1000*$order}]
+  }
   Page proc requireJS  name {
     if {![info exists ::_xo_need_js($name)]} {lappend ::_xo_js_order $name}
     set ::_xo_need_js($name)  1
@@ -858,15 +872,26 @@ namespace eval ::xo {
     }
     return [list]
   }
+  Page proc sort_keys_by_value {{-comparison integer} {-direction increasing} pairs} {
+    set result [list]
+    set a [list]
+    foreach {key value} $pairs {
+      lappend a [list $key $value]
+    }
+    foreach pair [lsort -index 1 -$comparison -$direction $a] {
+      lappend result [lindex $pair 0]
+    }
+    return $result
+  }
   Page proc header_stuff {} {
     set result ""
     foreach link [array names ::_xo_need_link] {
       append result "<link $link>\n"
     }
-    foreach style [array names ::_xo_need_style] {
+    foreach style [my sort_keys_by_value [array get ::_xo_need_style]] {
       append result "<style type='text/css'>$style</style>\n"
     }
-    foreach file [array names ::_xo_need_css] {
+    foreach file [my sort_keys_by_value [array get ::_xo_need_css]] {
       append result "<link type='text/css' rel='stylesheet' href='$file' media='all' >\n"
     }
     if {[info exists ::_xo_js_order]} {

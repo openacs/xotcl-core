@@ -74,7 +74,7 @@ namespace eval ::xo {
 	set name [string range $param 1 end]
 	if {![info exists passed_args($param)] &&
 	    [my exists_form_parameter $name]} {
-	  my log "--cc adding passed_args(-$name) [my form_parameter $name]"
+	  #my log "--cc adding passed_args(-$name) [my form_parameter $name]"
 	  set passed_args($param) [my form_parameter $name]
 	}
       }
@@ -189,26 +189,26 @@ namespace eval ::xo {
       #my log "--CONN ns_conn url"
       set url [ns_conn url]
     }
-    #my log "--i [self args] URL='$url'"
+    #my log "--i [self args] URL='$url', pkg=$package_id"
 
     # create connection context if necessary
     if {$package_id == 0} {
       array set "" [site_node::get_from_url -url $url]
       set package_id $(package_id)
+      #my msg "--i setting pkg to $package_id"
     } 
 
     # get locale; TODO at some time, we should get rid of the ad_conn init problem
     if {[ns_conn isconnected]} {
       # This can be called, before ad_conn is initialized. 
       # Since it is not possible to pass the user_id and ad_conn barfs
-      # when  it tries to detect it, we use the catch and reset it later
+      # when it tries to detect it, we use the catch and reset it later
       if {[catch {set locale [lang::conn::locale -package_id $package_id]}]} {
         set locale en_US
       }
     } else {
       set locale [lang::system::locale -package_id $package_id]
     }
-
     if {![my isobject ::xo::cc]} {
       my create ::xo::cc \
           -package_id $package_id \
@@ -217,19 +217,26 @@ namespace eval ::xo {
 	  -actual_query $actual_query \
           -locale $locale \
           -url $url
-      #my log "--cc ::xo::cc created $url [::xo::cc serialize]"
+      #::xo::show_stack
+      #my msg "--cc ::xo::cc created $url [::xo::cc serialize]"
       ::xo::cc destroy_on_cleanup
     } else {
-      #my log "--cc ::xo::cc reused $url"
+      #my msg "--cc ::xo::cc reused $url -package_id $package_id"
       ::xo::cc configure \
-          -package_id $package_id \
           -url $url \
 	  -actual_query $actual_query \
           -locale $locale \
           [list -parameter_declaration $parameter]
+      #if {$package_id ne ""} {
+      #  ::xo::cc package_id $package_id 
+      #}
+      ::xo::cc package_id $package_id 
       ::xo::cc set_user_id $user_id
       ::xo::cc process_query_parameter
     }
+  }
+  ConnectionContext instproc lang {} {
+    return [string range [my locale] 0 1]
   }
   ConnectionContext instproc set_user_id {user_id} {
     if {$user_id == -1} {  ;# not specified
@@ -293,8 +300,20 @@ namespace eval ::xo {
 
   ConnectionContext instproc cache {cmd} {
     set key cache($cmd)
-    if {![my exists $key]} {my set $key [uplevel $cmd]}
+    if {![my exists $key]} {my set $key [my uplevel $cmd]}
     return [my set $key]
+  }
+  ConnectionContext instproc cache_exists {cmd} {
+    return [my exists cache($cmd)]
+  }
+  ConnectionContext instproc cache_get {cmd} {
+    return [my set cache($cmd)]
+  }
+  ConnectionContext instproc cache_set {cmd value} {
+    return [my set cache($cmd) $value]
+  }
+  ConnectionContext instproc cache_unset {cmd} {
+    return [my unset cache($cmd)]
   }
 
   ConnectionContext instproc role=all {-user_id:required -package_id} {
@@ -340,6 +359,7 @@ namespace eval ::xo {
     if {![info exists party_id]} {
       set party_id [my user_id]
     }
+    # my log "--  context permission user_id=$party_id uid=[::xo::cc user_id] untrusted=[::xo::cc set untrusted_user_id]"
     if {$party_id == 0} {
       set key permission($object_id,$privilege,$party_id)
       if {[my exists $key]} {return [my set $key]}
@@ -353,7 +373,8 @@ namespace eval ::xo {
       }
       # The permission is not granted for the public.
       # We force the user to login
-      auth::require_login
+      #my log "-- require login"
+      #auth::require_login
       return 0
     }
 
@@ -364,6 +385,8 @@ namespace eval ::xo {
                      -party_id $party_id \
                      -object_id $object_id \
                      -privilege $privilege]
+    #my log "--  context return [my set $key]"
+    #my set $key
   }
   
 #   ConnectionContext instproc destroy {} {
@@ -417,6 +440,8 @@ namespace eval ::xo {
   }
   
   ConnectionContext instproc set_parameter {name value} {
+    set key [list get_parameter $name]
+    if {[my cache_exists $key]} {my cache_unset $key}
     my set perconnectionparam($name) $value
   }
   ConnectionContext instproc get_parameter {name {default ""}} {
@@ -444,6 +469,4 @@ namespace eval ::xo {
     return $query
   }
 
-
 }
-

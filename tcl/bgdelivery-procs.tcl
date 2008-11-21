@@ -134,12 +134,12 @@ if {![string match *contentsentlength* $msg]} {
     $request destroy
     if {$running == 0 && $release} {my all_done}
   }
-  ::HttpSpooler instproc deliver {data request} {
+  ::HttpSpooler instproc deliver {data request {encoding binary}} {
     my instvar spooling 
     my log "-- spooling $spooling"
     if {$spooling} {
       my log "--enqueue"
-      my lappend queue $data $request
+      my lappend queue $data $request $encoding
     } else {
       #my log "--send"
       set spooling 1
@@ -147,12 +147,12 @@ if {![string match *contentsentlength* $msg]} {
       # my done
       set filename [ns_tmpnam]
       set fd [open $filename w]
-      fconfigure $fd -translation binary
+      fconfigure $fd -translation binary -encoding $encoding
       puts -nonewline $fd $data
       close $fd
       set fd [open $filename]
-      fconfigure $fd -translation binary
-      fconfigure [my channel] -translation binary
+      fconfigure $fd -translation binary -encoding $encoding
+      fconfigure [my channel] -translation binary  -encoding $encoding
       fcopy $fd [my channel] -command \
 	  [list [self] end-delivery $filename $fd [my channel] $request]
     }
@@ -166,8 +166,9 @@ if {![string match *contentsentlength* $msg]} {
       my log "--dequeue"
       set data [lindex $queue 0]
       set req  [lindex $queue 1]
-      set queue [lreplace $queue 0 1]
-      my deliver $data $req
+      set enc  [lindex $queue 2]
+      set queue [lreplace $queue 0 2]
+      my deliver $data $req $enc
     }
     my done delivered $request
   }
@@ -200,7 +201,6 @@ if {[ns_info name] eq "NaviServer"} {
   bgdelivery forward write_headers ns_headers DUMMY
 }
 
-
 bgdelivery ad_proc returnfile {statuscode mime_type filename} {
   Deliver the given file to the requestor in the background. This proc uses the
   background delivery thread to send the file in an event-driven manner without
@@ -213,8 +213,32 @@ bgdelivery ad_proc returnfile {statuscode mime_type filename} {
   #ns_log notice "expires-set $filename"
 
   if {[my write_headers $statuscode $mime_type $size]} {
-    set ch [ns_conn channel]
-    thread::transfer [my get_tid] $ch
+    set errorMsg ""
+    # Get the thread id and make sure the bgdelivery thread is already
+    # running.
+    set tid [my get_tid]
+
+    # my log "+++ lock [my set bgmutex]"
+    ::thread::mutex lock [my set mutex]
+    #ns_mutex lock [my set bgmutex]
+
+    catch {
+      set ch [ns_conn channel]
+      if {[catch {thread::transfer $tid $ch} innerError]} {
+        set channels_in_use "??"
+        catch {set channels_in_use [bgdelivery do file channels]}
+        ns_log error "thread transfer failed, channel=$ch, channels_in_use=$channels_in_use"
+        error $innerError
+      }
+    } errorMsg
+
+    ::thread::mutex unlock [my set mutex]
+    #ns_mutex unlock [my set bgmutex]
+    # my log "+++ unlock [my set bgmutex]"
+
+    if {$errorMsg ne ""} {
+      error ERROR=$errorMsg
+    }
     if {![my isobject ::xo:cc]} {
       ::xo::ConnectionContext require
     }
@@ -231,7 +255,12 @@ ad_proc -public ad_returnfile_background {statuscode mime_type filename} {
   blocking a request thread. This is especially important when large files are 
   requested over slow (e.g. dial-ip) connections.
 } {
-  bgdelivery returnfile $statuscode $mime_type $filename
+  #my log "driver=[ns_conn driver]"
+  if {[ns_conn driver] ne "nssock"} {
+    ns_returnfile $statuscode $mime_type $filename
+  } else {
+    bgdelivery returnfile $statuscode $mime_type $filename
+  }
 }
 
 #####################################

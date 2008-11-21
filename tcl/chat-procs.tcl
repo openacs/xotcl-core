@@ -29,7 +29,9 @@ namespace eval ::xo {
     }
     if {![nsv_exists $array-seen newest]} {::xo::clusterwide nsv_set $array-seen newest 0}
     if {![nsv_exists $array-color idx]}   {::xo::clusterwide nsv_set $array-color idx 0}
-    my init_user_color
+    if {[my user_id] != 0 || [my session_id] != 0} {
+      my init_user_color
+    }
   }
 
 

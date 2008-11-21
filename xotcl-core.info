@@ -8,17 +8,17 @@
     <singleton-p>t</singleton-p>
     <auto-mount>xotcl</auto-mount>
 
-    <version name="0.83" url="http://media.wu-wien.ac.at/download/xotcl-core-0.83.apm">
+    <version name="0.100" url="http://media.wu-wien.ac.at/download/xotcl-core-0.100.apm">
         <owner url="mailto:neumann@wu-wien.ac.at">Gustaf Neumann</owner>
         <summary>XOTcl library functionality (e.g. thread handling, online documentation, Generic Form and List Classes)</summary>
-        <release-date>2008-03-14</release-date>
+        <release-date>2008-11-21</release-date>
         <vendor>Gustaf Neumann, WU Wien</vendor>
-        <description format="text/html">This component contains some core functionality for OACS
+        <description format="text/html">This component contains some core functionality for OpenACS
 applications using XOTcl. It includes
-XOTcl thread handling for OACS (supporting persistent and
+XOTcl thread handling for OpenACS (supporting persistent and
 volatile threads) and a definitions for
 documenting XOTcl object, classes and methods 
-integrated with the api-browser of OACS. Documented
+integrated with the api-browser of OpenACS. Documented
 procs and instproc an be created using the methods ad_proc
 and ad_instproc. This component  provides as 
 well an XOTcl Object and Class browser, as well as
@@ -36,18 +36,20 @@ when components are reloaded.
 0.49: stored procedures object proxies (postgres and Oracle)
 0.51: require package
 0.52: distinguish between ImageField and ImageAnchorField, start using slots, multivalued form entries, bulk-actions, improved localization, improved sql layer (:.xo::db::sql)
-0.70: oo interface to acs-object, acs-object-types and cr-items/revisions based on xotcl slots 
+0.70: oo interface to acs-object, acs-object-types and cr-items/revisions based on XOTcl slots 
 </description>
         <license>BSD-Style</license>
         <maturity>0</maturity>
 
-        <provides url="xotcl-core" version="0.83"/>
+        <provides url="xotcl-core" version="0.100"/>
 
         <callbacks>
-            <callback type="before-install"  proc="::xotcl::before_install_callback"/>
+            <callback type="after-upgrade"  proc="::xotcl-core::after_upgrade_callback"/>
+            <callback type="before-install"  proc="::xotcl-core::before_install_callback"/>
         </callbacks>
         <parameters>
-        <!-- No version parameters -->
+            <parameter datatype="number"  min_n_values="1"  max_n_values="1"  name="XOTclObjectCacheSize"  default="400000" description="Size of the ns_cache xotcl_object_cache (used for caching XOTcl objects fetched from the database)"/>
+            <parameter datatype="number"  min_n_values="1"  max_n_values="1"  name="XOTclObjectTypeCacheSize"  default="10000" description="Size of the ns_cache xotcl_object_type_cache (used for caching types of XOTcl objects)"/>
         </parameters>
 
     </version>

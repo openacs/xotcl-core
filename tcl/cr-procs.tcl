@@ -104,11 +104,12 @@ namespace eval ::xo::db {
     @return item_id
   } {
     if {[db_0or1row [my qn entry_exists_select] "\
-       select item_id from cr_items where name = :name and parent_id = :parent_id"]} {
+      select item_id from cr_items where name = :name and parent_id = :parent_id"]} {
       return $item_id
     }
     return 0
   }
+  
 
   CrClass ad_proc delete {
     -item_id 
@@ -469,7 +470,7 @@ namespace eval ::xo::db {
       lappend atts $fq
     }
     foreach {slot_name slot} [my array get db_slot] {
-      switch $slot {
+      switch -- $slot {
 	::xo::db::CrItem::slot::text {
 	  # We need the rule, since insert the handling of the sql
 	  # attribute "text" is somewhat magic. On insert, one can use the
@@ -579,9 +580,11 @@ namespace eval ::xo::db {
     {-where_clause ""}
     {-from_clause ""}
     {-with_subtypes:boolean true}
+    {-with_children:boolean false}
     {-publish_status}
     {-count:boolean false}
     {-folder_id}
+    {-parent_id}
     {-page_size 20}
     {-page_number ""}
     {-base_table "cr_revisions"}
@@ -592,13 +595,15 @@ namespace eval ::xo::db {
     @param orderby for ordering the solution set
     @param where_clause clause for restricting the answer set
     @param with_subtypes return subtypes as well
+    @param with_children return immediate child objects of all objects as well
     @param count return the query for counting the solutions
     @param folder_id parent_id
-    @param publish_status one of 'live', 'ready' or 'production'
+    @param publish_status one of 'live', 'ready', or 'production'
     @param base_table typically automatic view, must contain title and revision_id
     @return sql query
   } {
     if {![info exists folder_id]} {my instvar folder_id}
+    if {![info exists parent_id]} {set parent_id $folder_id}
 
     if {$base_table eq "cr_revisions"} {
       set attributes [list ci.item_id ci.name ci.publish_status acs_objects.object_type] 
@@ -631,7 +636,14 @@ namespace eval ::xo::db {
       set acs_objects_table ""
     }
     lappend cond "coalesce(ci.live_revision,ci.latest_revision) = bt.revision_id"
-    lappend cond "ci.parent_id = $folder_id"
+    if {$parent_id ne ""} {
+      set parent_clause "ci.parent_id = $parent_id"
+      if {$with_children} { 
+        lappend cond "($parent_clause or ci.parent_id in (select item_id from cr_items where parent_id = $parent_id))"
+      } else {
+        lappend cond $parent_clause
+      }
+    }
 
     if {$page_number ne ""} {
       set limit $page_size
@@ -824,7 +836,7 @@ namespace eval ::xo::db {
         lappend values $v
       }
       return "insert into [my set table_name]i ([join $attributes ,]) \
-                values ([join $values ,])"
+                values (:[join $values ,:])"
     }
 
     CrItem instproc fix_content {{-only_text false} revision_id content} {
@@ -873,8 +885,8 @@ namespace eval ::xo::db {
         set sql "update [$domain table_name] \
                 set $att = :value \
 		where [$domain id_column] = $revision_id"
+        db_dml [my qn update_attribute-$att] $sql
       }
-      db_dml [my qn update_attribute-$att] $sql
     }
   }
   
@@ -885,14 +897,14 @@ namespace eval ::xo::db {
   #
   # CrItem set insert_view_operation db_0or1row
 
-  CrItem instproc update_revision {revision_id attribute value} {
+  CrItem instproc update_revision {{-quoted false} revision_id attribute value} {
     #
     # This method can be use to update arbitrary fields of 
     # an revision.
     #
-    
+    if {$quoted} {set val $value} {set val :value}
     db_dml [my qn update_content] "update cr_revisions \
-                set $attribute = :value \
+                set $attribute = $val \
 		where revision_id = $revision_id"
   }
  
@@ -928,7 +940,7 @@ namespace eval ::xo::db {
     set creation_user [expr {[info exists modifying_user] ?
                              $modifying_user :
                              [my current_user_id]}]
-    set old_revision_id [my set revision_id]
+    #set old_revision_id [my set revision_id]
 
     foreach {__slot_name __slot} [[my info class] array get db_slot] {
       if {
@@ -1002,6 +1014,7 @@ namespace eval ::xo::db {
     ::xo::db::sql::content_item set_live_revision \
         -revision_id $revision_id \
         -publish_status $publish_status
+    ::xo::clusterwide ns_cache flush xotcl_object_cache ::[my item_id]
   }
 
 
@@ -1052,10 +1065,10 @@ namespace eval ::xo::db {
 	# we have an autonamed item, use a unique value for the name
 	set name [expr {[my exists __autoname_prefix] ? 
                         "[my set __autoname_prefix]$revision_id" : $revision_id}]
-        if {$title eq ""} {
-          set title [expr {[my exists __title_prefix] ? 
-                          "[my set __title_prefix] ($name)" : $name}]
-        }
+      }
+      if {$title eq ""} {
+        set title [expr {[my exists __title_prefix] ? 
+                         "[my set __title_prefix] ($name)" : $name}]
       }
       #my msg --[subst [[self class] set content_item__new_args]]
       set item_id [eval ::xo::db::sql::content_item new \
@@ -1092,6 +1105,13 @@ namespace eval ::xo::db {
   } {
     # delegate deletion to the class
     [my info class] delete -item_id [my set item_id]
+  }
+
+  CrItem ad_instproc rename {-old_name:required -new_name:required} {
+    Rename a content item 
+  } {
+    db_dml [my qn update_rename] "update cr_items set name = :new_name \
+                where item_id = [my item_id]"
   }
 
   CrItem instproc revisions {} {
@@ -1260,6 +1280,26 @@ namespace eval ::xo::db {
     # we should probably flush as well cached revisions
   }
 
+  ::xotcl::Class create CrCache::Class
+  CrCache::Class instproc lookup {
+    -name:required
+    {-parent_id -100}
+  } {
+    # We need here the strange logic to avoid caching of lookup fails.
+    # In order to cache fails as well, we would have to flush the fail
+    # on new added items and renames.
+    while {1} {
+      set item_id [ns_cache eval xotcl_object_type_cache $parent_id-$name {
+        set item_id [next]
+        if {$item_id == 0} break ;# don't cache
+        return $item_id
+      }]
+      break
+    }
+    #my msg "lookup $parent_id-$name -> item_id=$item_id"
+    return $item_id
+  }
+
   ::xotcl::Class create CrCache::Item
   CrCache::Item set name_pattern {^::[0-9]+$}
   CrCache::Item instproc flush_from_cache_and_refresh {} {
@@ -1268,7 +1308,13 @@ namespace eval ::xo::db {
     if {[regexp [[self class] set name_pattern] $obj]} {
       #my log "--CACHE saving $obj in cache"
       ::xo::clusterwide ns_cache flush xotcl_object_cache $obj
+      # We do not want to cache per object mixins for the time being
+      # (some classes might be volatile). So save mixin-list, cache
+      # and resore them later for the current session.
+      set mixins [$obj info mixin]
+      $obj mixin [list]
       ns_cache set xotcl_object_cache $obj [$obj serialize]
+      $obj mixin $mixins
     }
   }
   CrCache::Item instproc update_attribute_from_slot args {
@@ -1292,10 +1338,18 @@ namespace eval ::xo::db {
   }
   CrCache::Item instproc delete args {
     ::xo::clusterwide ns_cache flush xotcl_object_cache [self]
+    #my msg "delete flush xotcl_object_type_cache [my parent_id]-[my name]"
+    ::xo::clusterwide ns_cache flush xotcl_object_type_cache [my parent_id]-[my name]
+    next
+  }
+  CrCache::Item instproc rename {-old_name:required -new_name:required} {
+    #my msg "rename flush xotcl_object_type_cache [my parent_id]-$old_name"
+    ::xo::clusterwide ns_cache flush xotcl_object_type_cache [my parent_id]-$old_name
     next
   }
   
   CrClass instmixin CrCache
+  CrClass mixin CrCache::Class
   CrItem instmixin CrCache::Item
 }  
 
