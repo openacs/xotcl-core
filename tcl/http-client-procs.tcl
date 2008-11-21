@@ -327,6 +327,11 @@ namespace eval ::xo {
 
   HttpCore instproc POST {} {
     my instvar S post_data
+    if {[string match "text/*" [my content_type]]} {
+      # Make sure, "string range" and "string length" return the right
+      # values for UTF-8 and other encodings.
+      set post_data [encoding convertto $post_data]
+    }
     puts $S "Content-Length: [string length $post_data]"
     puts $S "Content-Type: [my content_type]"
     puts $S ""
@@ -469,7 +474,7 @@ namespace eval ::xo {
 		   -mixin ::xo::AsyncHttpRequest::RequestManager \
 		   -url [my url] \
 		   -timeout [my timeout] \
-		   -post_data [my post_data] \
+		   -post_data [encoding convertto [my post_data]] \
 		   -request_header_fields [my request_header_fields] \
 		   -content_type [my content_type] \
 		   -user_agent [my user_agent] \
