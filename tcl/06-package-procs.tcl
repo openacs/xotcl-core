@@ -130,6 +130,12 @@ namespace eval ::xo {
       set package_key [apm_package_key_from_id $package_id]
       set package_class ""
       foreach p [::xo::PackageMgr allinstances] {
+        # Sanity check for old apps, having not set the package key.
+        # TODO: remove this in future versions, when package_keys are enforced
+        if {![$p exists package_key]} {
+          ns_log notice "!!! You should provide a package_key for $p [$p info class] !!!"
+          continue
+        }
         if {[$p package_key] eq $package_key} {
           set package_class $p
           break
@@ -138,8 +144,8 @@ namespace eval ::xo {
       if {$package_class eq ""} {
         # For some unknown reason, we did not find the key.
         # Be conservative, behave like in older versions,
-        # but complain in ns_log
-        ns_log error "Could not find ::xo::Package with key $package_key ($package_id)"
+        # but complain in ns_log. E.g. hypermail2xowiki uses this.
+        ns_log notice "Could not find ::xo::Package with key $package_key ($package_id)"
         set package_class [self]
       }
       #my log "PKG: $package_class"
