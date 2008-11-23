@@ -176,7 +176,15 @@ namespace eval ::xo {
     url
   }
   
-  # TODO edit revision loop
+  ConnectionContext proc require_package_id_from_url {{-package_id 0} url} {
+    # get package_id from url in case it is not known
+    if {$package_id == 0} {
+      array set "" [site_node::get_from_url -url $url]
+      set package_id $(package_id)
+      #my msg "--i setting pkg to $package_id"
+    }
+    return $package_id
+  }
 
   ConnectionContext proc require {
     -url
@@ -184,19 +192,22 @@ namespace eval ::xo {
     {-parameter ""}
     {-user_id -1}
     {-actual_query " "}
+    {-keep_cc false}
   } {
+    set exists_cc [my isobject ::xo::cc]
+
+    # if we have a connection context and we want to keep it, do
+    # nothing and return.
+    if {$exists_cc && $keep_cc} {
+      return
+    }
+
     if {![info exists url]} {
       #my log "--CONN ns_conn url"
       set url [ns_conn url]
     }
+    set package_id [my require_package_id_from_url -package_id $package_id $url]
     #my log "--i [self args] URL='$url', pkg=$package_id"
-
-    # create connection context if necessary
-    if {$package_id == 0} {
-      array set "" [site_node::get_from_url -url $url]
-      set package_id $(package_id)
-      #my msg "--i setting pkg to $package_id"
-    } 
 
     # get locale; TODO at some time, we should get rid of the ad_conn init problem
     if {[ns_conn isconnected]} {
@@ -209,7 +220,7 @@ namespace eval ::xo {
     } else {
       set locale [lang::system::locale -package_id $package_id]
     }
-    if {![my isobject ::xo::cc]} {
+    if {!$exists_cc} {
       my create ::xo::cc \
           -package_id $package_id \
           [list -parameter_declaration $parameter] \

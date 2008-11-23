@@ -59,6 +59,7 @@ namespace eval ::xo {
     {-actual_query " "}
     {-original_url_and_query}
     {-init_url true}
+    {-keep_cc false}
     {-form_parameter}
   } {
     Create the connection context ::xo::cc and a package object 
@@ -71,27 +72,32 @@ namespace eval ::xo {
     "defaults" for default values.
 
     init_url false requires the package_id to be specified and
-    a call to Package instproc set_url to complete initialization
+    a call to Package instproc set_url to complete initialization.
+
+    keep_cc true means that the original connection context
+    is preserved (i.e. not altered) in case it exists already.
   } {
     #my msg "--i [self args], URL=$url, init_url=$init_url"
 
     if {$url eq "" && $init_url} {
-      #set url [ns_conn url]
-      #my log "--CONN ns_conn url"
       set url [root_of_host [ad_host]][ns_conn url]
+      #my log "--CONN ns_conn url -> $url"
     }
-    #my log "--cc actual_query = <$actual_query>"
 
-    # require connection context
+    # get package_id from url in case it is not known
+    set package_id [ConnectionContext require_package_id_from_url \
+                        -package_id $package_id $url]
+
+    # require connection context if needed
     ConnectionContext require \
-	-package_id $package_id -user_id $user_id \
-	-parameter $parameter -url $url -actual_query $actual_query
-
+        -keep_cc $keep_cc \
+        -package_id $package_id -user_id $user_id \
+        -parameter $parameter -url $url -actual_query $actual_query
+      
     if {[info exists original_url_and_query]} {
       ::xo::cc original_url_and_query $original_url_and_query
     }
 
-    set package_id [::xo::cc package_id]
     if {[info exists form_parameter]} {
       ::xo::cc array set form_parameter $form_parameter
     }
@@ -114,6 +120,7 @@ namespace eval ::xo {
     }
 
     ::xo::cc export_vars -level 2
+    return $package_id
   }
 
   PackageMgr ad_instproc require {{-url ""} package_id} {
