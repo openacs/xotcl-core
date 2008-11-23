@@ -123,20 +123,13 @@ namespace eval ::xo::tdom {
     set level [my incr_level -1]
     return $me
   }
-  
-  #
-  # ::xo::tdom::Object
-  # is the top of the class hierarchies for tdom objects
-  #
-  ::xotcl::Class create ::xo::tdom::Object \
-      -superclass ::xo::OrderedComposite \
-      -parameter {{autorender true}}
 
-  ::xo::tdom::Object instproc render {} {
-    foreach o [my children] { $o render }
-  }
-
-  ::xo::tdom::Object ad_instproc get_attributes {
+  #
+  # The tdom attribute manager makes it syntactically easier to
+  # specify a list of attributes for rendering via tDOM.
+  #
+  ::xotcl::Class create ::xo::tdom::AttributeManager
+  ::xo::tdom::AttributeManager ad_instproc get_attributes {
     args
   } {
     Get a list of attribute value pairs
@@ -160,6 +153,43 @@ namespace eval ::xo::tdom {
     }
     return $pairs
   }
+  ::xo::tdom::AttributeManager ad_instproc get_local_attributes {
+    args
+  } {
+    Get a list of attribute value pairs
+    of instance attributes. It returns only those
+    pairs for which a value exists.
+
+    @return flattened list of attribute value pairs
+  } {
+    set pairs [list]
+    foreach attribute $args {
+      set l [split $attribute]
+      if {[llength $l] > 1} {
+        foreach {attribute HTMLattribute} $l break
+      } else {
+        set HTMLattribute $attribute
+      }
+      #my msg "[my name] check for $attribute => [my exists $attribute]"
+      if {[my uplevel info exists $attribute]} {
+        lappend pairs $HTMLattribute [my uplevel set $attribute]
+      }
+    }
+    return $pairs
+  }
+  
+  #
+  # ::xo::tdom::Object
+  # is the top of the class hierarchies for tdom objects
+  #
+  ::xotcl::Class create ::xo::tdom::Object \
+      -superclass {::xo::tdom::AttributeManager ::xo::OrderedComposite} \
+      -parameter {{autorender true}}
+
+  ::xo::tdom::Object instproc render {} {
+    foreach o [my children] { $o render }
+  }
+
 }
 
 
@@ -257,7 +287,9 @@ namespace eval ::xo {
    }
 
   ## todo : make these checks only in trn mode (additional mixin)
+  
   Class Drawable \
+      -superclass ::xo::tdom::AttributeManager \
       -instproc _ {attr} {
 	my set $attr
       } \
@@ -424,12 +456,12 @@ namespace eval ::xo {
 
     Class Field \
 	-superclass ::xo::OrderedComposite::Child \
-	-parameter {label {html {}} {orderby ""} name {richtext false} no_csv} \
+	-parameter {label {html {}} {orderby ""} name {richtext false} no_csv {CSSclass ""}} \
 	-instproc init {} {
 	  my set name [namespace tail [self]]
 	} \
 	-instproc get-slots {} {
-	  return -[my name]
+	  return [list -[my name] -[my name].CSSclass]
 	}
 
     Class BulkAction \
@@ -453,7 +485,7 @@ namespace eval ::xo {
 	-superclass ::xo::Table::Field \
 	-instproc get-slots {} {
 	  set slots [list -[my name]]
-	  foreach subfield {href text} {
+	  foreach subfield {href text CSSclass} {
 	    lappend slots [list -[my name].$subfield ""]
 	  }
 	  return $slots
@@ -465,6 +497,7 @@ namespace eval ::xo {
 	-instproc get-slots {} {
 	  set slots [list -[my name]]
 	  lappend slots [list -[my name].src [my src]]
+	  lappend slots [list -[my name].CSSclass [my CSSclass]]
 	  foreach att {width height border title alt} {
 	    if {[my exists $att]} {
 	      lappend slots [list -[my name].$att [my $att]]
@@ -687,7 +720,8 @@ namespace eval ::xo::Table {
       -instproc render-data {line} {
 	if {[$line exists [my name].href] && 
 	    [set href [$line set [my name].href]] ne ""} {
-	  html::a -href $href { 
+          $line instvar [list [my name].CSSclass CSSclass] [list [my name].title title]
+          html::a [my get_local_attributes href title {CSSclass class}] {
 	    return [next]
 	  }
 	}
@@ -698,7 +732,8 @@ namespace eval ::xo::Table {
   Class create TABLE::ImageField \
       -superclass TABLE::Field \
       -instproc render-data {line} {
-        html::a -style "border-bottom: none;" {
+        $line instvar [list [my name].CSSclass CSSclass]
+        html::a [my get_local_attributes href {style "border-bottom: none;"} {CSSclass class}] {
           html::img [$line attlist [my name] {src width height border title alt}] {}
         }
         $line render_localizer
@@ -709,7 +744,9 @@ namespace eval ::xo::Table {
       -instproc render-data {line} {
         set href [$line set [my name].href]
         if {$href ne ""} {
-          html::a -href $href -style "border-bottom: none;" {
+          #if {$line exists [my name].CSSclass} {set CSSclass [$line set [my name].CSSclass]}
+          $line instvar [list [my name].CSSclass CSSclass]
+          html::a [my get_local_attributes href {style "border-bottom: none;"} {CSSclass class}] {
             html::img [$line attlist [my name] {src width height border title alt}] {}
           }
           $line render_localizer
