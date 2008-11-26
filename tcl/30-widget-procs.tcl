@@ -600,7 +600,7 @@ namespace eval ::xo::Table {
       }
     } else {
       set name [[self]::__bulkactions set __identifier]
-      html::form -name $name { 
+      html::form -name $name -method POST { 
         html::table -class [my set css.table-class] {
           my render-actions
           my render-body
