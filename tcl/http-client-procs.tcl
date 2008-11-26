@@ -89,37 +89,19 @@ namespace eval ::xo {
   # incoming connections. The disadvantage is the higher
   # complexity, one needs means to collect the received data.
   #
+  #
   # The following example uses the background delivery thread for
-  # spooling and defines in this thread a listener object (a). 
-  # Then in the second step, the listener object is used in te
-  # asynchronous request (b).
+  # spooling and defines in this thread a listener. This generic
+  # listener can be subclasses in applications.
   #
-  # (a) Create a listener/callback object in the background. Provide
-  # the two needed methods, one being invoked upon success (deliver),
-  # the other upon failure or cancellation (done).
-  #
-  #  ::bgdelivery do Object ::listener \
-  #     -proc start_request {payload obj} {
-  #       my log "request $obj started"
-  #     } -proc request_data {payload obj} {
-  #       my log "partial or complete post"
-  #     } -proc start_reply {payload obj} {
-  #       my log "reply $obj started"
-  #     } -proc reply_data {payload obj} {
-  #       my log "partial or complete delivery"
-  #     } -proc success {data obj} {
-  #       my log "Asynchronous request successfully completed"
-  #     } -proc failure {reason obj} {
-  #       my log "Asynchronous request failed: $reason"
-  #     }
-  #
-  # (b)  Create the actual asynchronous request object in the background. 
-  # Make sure that you specify the previously created listener/callback 
-  # object as "request_manager" to the request object.
+  # When using asynchronous requests, make sure to specify a listener
+  # for the callbacks and delete finally the request object in the
+  # bgdelivery thread.
   #
   #  ::bgdelivery do ::xo::AsyncHttpRequest new \
   #     -url "https://oacs-dotlrn-conf2007.wu-wien.ac.at/conf2007/" \
-  #     -request_manager ::listener
+  #     -mixin ::xo::AsyncHttpRequest::SimpleListener
+  #     -proc finalize {obj status value} { my destroy }
   #
   ######################
   #
@@ -242,6 +224,7 @@ namespace eval ::xo {
 
   HttpCore instproc open_connection {} {
     my instvar host port S
+    my log "OPENING to $host $port"
     set S [socket -async $host $port]
   }
 
@@ -344,14 +327,15 @@ namespace eval ::xo {
     my request_done
   }
   HttpCore instproc request_done {} {
+    my msg "FLUSH"
     my instvar S
     flush $S
     my reply_first_line
   }
 
   HttpCore instproc close {} {
-    my debug "--- closing socket"
-    catch {close [my set S]}
+    catch {close [my set S]} errMsg
+    my log "--- closing socket socket?[my exists S] => $errMsg"
   }
 
   HttpCore instproc cancel {reason} {
@@ -461,6 +445,7 @@ namespace eval ::xo {
   }
 
   HttpRequest instproc init {} {
+    my log "[my exists timeout]"
     if {[my exists timeout] && [my timeout] > 0} {
       # create a cond and mutex
       set cond  [thread::cond create]
@@ -512,6 +497,7 @@ namespace eval ::xo {
       # test whether open_connection yielded
       # a socket ...
       #
+      my log "after core init, S?[my exists S]"
       if {[my exists S]} {
 	my send_request
       }
@@ -528,7 +514,7 @@ namespace eval ::xo {
   }
   AsyncHttpRequest instproc set_timeout {} {
     my cancel_timeout
-    my debug "--- setting socket timeout: [my set timeout]"
+    my log "--- setting socket timeout: [my set timeout]"
     my set timeout_handle [after [my set timeout] [self] cancel timeout]
   }
   AsyncHttpRequest instproc cancel_timeout {} {
@@ -599,6 +585,7 @@ namespace eval ::xo {
     my notify start_reply
     my set_timeout
     my instvar S
+    my msg "flush"
     flush $S
     fconfigure $S -blocking false
     fileevent $S readable [list [self] reply_first_line]
@@ -617,7 +604,7 @@ namespace eval ::xo {
   }
   AsyncHttpRequest instproc receive_reply_data {} {
     my instvar S
-    my debug "JOB receive_reply_data eof=[eof $S]"
+    my log "JOB receive_reply_data eof=[eof $S]"
     if {[eof $S]} {
       my finish
     } else {
@@ -630,6 +617,51 @@ namespace eval ::xo {
   }
 
   #
+  # SimpleListener defines a mixin class for providing a stub
+  # implementaton for callbacks of the asynchrous HTTP requests. 
+  # This class is typically run in the scope of bgdelivery
+  #
+
+  Class create AsyncHttpRequest::SimpleListener \
+      -instproc init {} {
+	my log "INIT- NEXT=[self next]"
+	# register request object as its own request_manager
+	my request_manager [self]
+	next
+
+      } -instproc start_request {payload obj} {
+	my log "request $obj started"
+
+      } -instproc request_data {payload obj} {
+	my log "partial or complete post"
+
+      } -instproc start_reply {payload obj} {
+	my log "reply $obj started"
+
+      } -instproc reply_data {payload obj} {
+	#my log "partial or complete delivery"
+
+      } -instproc finalize {obj status value} {
+	my log "finalize $obj $status"
+	# this is called as a single method after success or failure
+	next
+
+      } -instproc success {payload obj} {
+	my log "[string length $payload] bytes payload"
+	if {[string length $payload]<80} {my log payload=$payload}
+	# this is called as after a succesful request
+	my finalize $obj "JOB_COMPLETED" $payload
+
+      } -instproc failure {reason obj} {
+	my log "[self proc] [self args]"
+	# this is called as after an unsuccesful request
+	my finalize $obj "JOB_FAILED" $reason
+
+      } -instproc unknown {method args} {
+	my log "[self proc] [self args]"
+	my log "UNKNOWN $method"
+      }
+ 
   # Mixin class, used to turn instances of
   # AsyncHttpRequest into result callbacks
   # in the scope of bgdelivery, realising
@@ -637,6 +669,7 @@ namespace eval ::xo {
   #
 
   Class create AsyncHttpRequest::RequestManager \
+      -superclass AsyncHttpRequest::SimpleListener \
       -slots {
 	Attribute condition
       } -instproc finalize {obj status value} {
@@ -679,24 +712,6 @@ namespace eval ::xo {
 	my debug "JOB reply data $obj [string length $payload]"
 	my set_cond_timeout
 
-      } -instproc success {payload obj} {
-	my finalize $obj "JOB_COMPLETED" $payload
-
-      } -instproc failure {reason obj} {
-	my finalize $obj "JOB_FAILED" $reason
-
-      } -instproc init {} {
-	# register request object as its own request_manager
-	my request_manager [self]
-	next
-
-      } -instproc cancel {reason} {
-	next
-	my debug "--- destroying after cancel"
-	my destroy
-
-      } -instproc unknown {method args} {
-	my log "UNKNOWN $method"
       }
   
   # 

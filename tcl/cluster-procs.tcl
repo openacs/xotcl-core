@@ -122,10 +122,16 @@ namespace eval ::xo {
 #                -host [my host] -port [my port] \
 #                -path [Cluster set url]?cmd=[ns_urlencode $args]]
 #     return [$r set data]
+
     set r [::xo::AsyncHttpRequest new -volatile \
-               -host [my host] -port [my port] \
-               -path [Cluster set url]?cmd=[ns_urlencode $args]]
+	       -host [my host] -port [my port] \
+	       -path [Cluster set url]?cmd=[ns_urlencode $args]]
+  
+#     ::bgdelivery do ::xo::AsyncHttpRequest new \
+# 	-host [my host] -port [my port] \
+#         -path [Cluster set url]?cmd=[ns_urlencode $args] \
+# 	-mixin ::xo::AsyncHttpRequest::SimpleListener \
+# 	-proc finalize {obj status value} { my destroy }
+
   }
-
-
 }
