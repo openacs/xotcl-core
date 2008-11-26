@@ -213,6 +213,14 @@ bgdelivery ad_proc returnfile {statuscode mime_type filename} {
   #ns_log notice "expires-set $filename"
 
   if {[my write_headers $statuscode $mime_type $size]} {
+
+    if {$size == 0} {
+      # Tcl behaves differnt, when one tries to send 0 bytes via
+      # file_copy. So, we handle this special case here...
+      # There is actualy nothing to deliver....
+      return
+    }
+
     set errorMsg ""
     # Get the thread id and make sure the bgdelivery thread is already
     # running.
