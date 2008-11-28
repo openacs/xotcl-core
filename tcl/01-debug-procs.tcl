@@ -414,12 +414,12 @@ namespace eval ::xo {
       foreach o $objs {
         if {![::xotcl::Object isobject $o]} continue
         if {[$o istype ::xotcl::Class]} continue
-        $o destroy
+        catch {$o destroy} errorMsg
       }
       foreach o [::xotcl::Class allinstances] {
         if {![::xotcl::Object isobject $o]} continue
         if {$o eq "::xotcl::Object" || $o eq "::xotcl::Class"} continue
-        $o destroy
+        catch {$o destroy} errorMsg
       }
     }
     set t1 [clock clicks -milliseconds]
