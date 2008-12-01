@@ -327,7 +327,6 @@ namespace eval ::xo {
     my request_done
   }
   HttpCore instproc request_done {} {
-    my msg "FLUSH"
     my instvar S
     flush $S
     my reply_first_line
@@ -585,7 +584,6 @@ namespace eval ::xo {
     my notify start_reply
     my set_timeout
     my instvar S
-    my msg "flush"
     flush $S
     fconfigure $S -blocking false
     fileevent $S readable [list [self] reply_first_line]
