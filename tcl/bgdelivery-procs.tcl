@@ -36,21 +36,21 @@ if {![string match *contentsentlength* $msg]} {
   ###############
   set ::delivery_count 0
 
-  proc deliver {ch filename context} {
+  Object fileSpooler
+  fileSpooler proc spool {-channel -filename -context} {
     set fd [open $filename]
     fconfigure $fd -translation binary
-    fconfigure $ch -translation binary
+    fconfigure $channel -translation binary
     #ns_log notice "--- start of delivery of $filename (running:[array size ::running])"
-    fcopy $fd $ch -command [list end-delivery $filename $fd $ch]
-    set ::running($ch,$filename) $context
+    fcopy $fd $channel -command [list [self] end-delivery $filename $fd $channel]
+    set ::running($channel,$filename) $context
     incr ::delivery_count
   }
-
-  proc end-delivery {filename fd ch bytes args} {
+  fileSpooler proc end-delivery {filename fd channel bytes args} {
     #ns_log notice "--- end of delivery of $filename, $bytes bytes written $args"
-    if {[catch {close $ch} e]} {ns_log notice "bgdelivery, closing channel for $filename, error: $e"}
+    if {[catch {close $channel} e]} {ns_log notice "bgdelivery, closing channel for $filename, error: $e"}
     if {[catch {close $fd} e]} {ns_log notice "bgdelivery, closing file $filename, error: $e"}
-    unset ::running($ch,$filename)
+    unset ::running($channel,$filename)
   }
 
   ###############
@@ -251,8 +251,8 @@ bgdelivery ad_proc returnfile {statuscode mime_type filename} {
       ::xo::ConnectionContext require
     }
     #my log [::xo::cc serialize]
-    my do -async deliver $ch $filename \
-	[list [::xo::cc requestor],[::xo::cc url] [ns_conn start]]
+    my do -async ::fileSpooler spool -channel $ch -filename $filename \
+	-context [list [::xo::cc requestor],[::xo::cc url] [ns_conn start]]
     ns_conn contentsentlength $size       ;# maybe overly optimistic
   }
 }
