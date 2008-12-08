@@ -19,13 +19,13 @@ catch {ns_conn xxxxx} msg
 if {![string match *contentsentlength* $msg]} {
   ns_log notice "AOLserver is not patched for bgdelivery, NOT loading bgdelivery"
 
-  ad_proc -public ad_returnfile_background {statuscode mime_type filename} {
+  ad_proc -public ad_returnfile_background {-client_data status_code mime_type filename} {
     Deliver the given file to the requestor in the background. This proc uses the
     background delivery thread to send the file in an event-driven manner without
     blocking a request thread. This is especially important when large files are 
     requested over slow (e.g. dial-ip) connections.
   } {
-    ns_returnfile $statuscode $mime_type $filename
+    ns_returnfile $status_code $mime_type $filename
   }
   return
 }
@@ -37,16 +37,16 @@ if {![string match *contentsentlength* $msg]} {
   set ::delivery_count 0
 
   Object fileSpooler
-  fileSpooler proc spool {-channel -filename -context} {
+  fileSpooler proc spool {-channel -filename -context {-client_data ""}} {
     set fd [open $filename]
     fconfigure $fd -translation binary
     fconfigure $channel -translation binary
     #ns_log notice "--- start of delivery of $filename (running:[array size ::running])"
-    fcopy $fd $channel -command [list [self] end-delivery $filename $fd $channel]
+    fcopy $fd $channel -command [list [self] end-delivery -client_data $client_data $filename $fd $channel]
     set ::running($channel,$filename) $context
     incr ::delivery_count
   }
-  fileSpooler proc end-delivery {filename fd channel bytes args} {
+  fileSpooler proc end-delivery {{-client_data ""} filename fd channel bytes args} {
     #ns_log notice "--- end of delivery of $filename, $bytes bytes written $args"
     if {[catch {close $channel} e]} {ns_log notice "bgdelivery, closing channel for $filename, error: $e"}
     if {[catch {close $fd} e]} {ns_log notice "bgdelivery, closing file $filename, error: $e"}
@@ -201,18 +201,18 @@ if {[ns_info name] eq "NaviServer"} {
   bgdelivery forward write_headers ns_headers DUMMY
 }
 
-bgdelivery ad_proc returnfile {statuscode mime_type filename} {
+bgdelivery ad_proc returnfile {{-client_data ""} status_code mime_type filename} {
   Deliver the given file to the requestor in the background. This proc uses the
   background delivery thread to send the file in an event-driven manner without
   blocking a request thread. This is especially important when large files are 
   requested over slow (e.g. dial-ip) connections.
 } {
-  #ns_log notice "statuscode = $statuscode, filename=$filename"
+  #ns_log notice "status_code = $status_code, filename=$filename"
   set size [file size $filename]
   #ns_setexpires 1000000
   #ns_log notice "expires-set $filename"
 
-  if {[my write_headers $statuscode $mime_type $size]} {
+  if {[my write_headers $status_code $mime_type $size]} {
 
     if {$size == 0} {
       # Tcl behaves differnt, when one tries to send 0 bytes via
@@ -252,12 +252,13 @@ bgdelivery ad_proc returnfile {statuscode mime_type filename} {
     }
     #my log [::xo::cc serialize]
     my do -async ::fileSpooler spool -channel $ch -filename $filename \
-	-context [list [::xo::cc requestor],[::xo::cc url] [ns_conn start]]
+	-context [list [::xo::cc requestor],[::xo::cc url] [ns_conn start]] \
+	-client_data $client_data
     ns_conn contentsentlength $size       ;# maybe overly optimistic
   }
 }
 
-ad_proc -public ad_returnfile_background {statuscode mime_type filename} {
+ad_proc -public ad_returnfile_background {{-client_data ""} status_code mime_type filename} {
   Deliver the given file to the requestor in the background. This proc uses the
   background delivery thread to send the file in an event-driven manner without
   blocking a request thread. This is especially important when large files are 
@@ -265,9 +266,9 @@ ad_proc -public ad_returnfile_background {statuscode mime_type filename} {
 } {
   #my log "driver=[ns_conn driver]"
   if {[ns_conn driver] ne "nssock"} {
-    ns_returnfile $statuscode $mime_type $filename
+    ns_returnfile $status_code $mime_type $filename
   } else {
-    bgdelivery returnfile $statuscode $mime_type $filename
+    bgdelivery returnfile -client_data $client_data $status_code $mime_type $filename
   }
 }
 
