@@ -165,13 +165,17 @@ namespace eval ::xo {
 ::xotcl::Object instproc log msg {
   ns_log notice "$msg, [self] [self callingclass]->[self callingproc] ([my __timediff])"
 }
+::xotcl::Object instproc ds msg {
+  ds_comment "[self]: $msg, ([self callingclass]->[self callingproc] [my __timediff])"
+}
+
 
 ::xotcl::Object instproc debug msg {
   ns_log debug "[self] [self callingclass]->[self callingproc]: $msg"
 }
 ::xotcl::Object instproc msg {{-html false} msg} {
   if {[ns_conn isconnected]} {
-    set msg "$msg  ([self] [self callingclass]->[self callingproc])"
+    set msg "[self]: $msg  ([self callingclass]->[self callingproc])"
     if {$html} {
         util_user_message -html -message $msg
     } else {

@@ -685,7 +685,10 @@ namespace eval ::xo::Table {
 
   TABLE::Field instproc renderSortLabels {} {
     set field [my set orderby]
-    upvar #[template::adp_level] orderby orderby
+    set lvl [template::adp_level]
+    if {$lvl ne ""} {
+      upvar #$lvl orderby orderby
+    }
     if {![info exists orderby]} {set orderby ""}
     set new_orderby $orderby
     if {$orderby eq "$field,desc"} {
