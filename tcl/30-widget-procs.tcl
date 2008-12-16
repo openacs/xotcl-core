@@ -485,7 +485,7 @@ namespace eval ::xo {
 	-superclass ::xo::Table::Field \
 	-instproc get-slots {} {
 	  set slots [list -[my name]]
-	  foreach subfield {href text CSSclass} {
+	  foreach subfield {href title CSSclass} {
 	    lappend slots [list -[my name].$subfield ""]
 	  }
 	  return $slots
@@ -723,7 +723,9 @@ namespace eval ::xo::Table {
       -instproc render-data {line} {
 	if {[$line exists [my name].href] && 
 	    [set href [$line set [my name].href]] ne ""} {
-          $line instvar [list [my name].CSSclass CSSclass] [list [my name].title title]
+          # use the CSS class rather from the Field than not the line
+          my instvar CSSclass
+          $line instvar [list [my name].title title]
           html::a [my get_local_attributes href title {CSSclass class}] {
 	    return [next]
 	  }
