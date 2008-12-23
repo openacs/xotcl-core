@@ -224,7 +224,6 @@ namespace eval ::xo {
 
   HttpCore instproc open_connection {} {
     my instvar host port S
-    my log "OPENING to $host $port"
     set S [socket -async $host $port]
   }
 
@@ -334,7 +333,7 @@ namespace eval ::xo {
 
   HttpCore instproc close {} {
     catch {close [my set S]} errMsg
-    my log "--- closing socket socket?[my exists S] => $errMsg"
+    #my log "--- closing socket socket?[my exists S] => $errMsg"
   }
 
   HttpCore instproc cancel {reason} {
@@ -496,7 +495,7 @@ namespace eval ::xo {
       # test whether open_connection yielded
       # a socket ...
       #
-      my log "after core init, S?[my exists S]"
+      #my log "after core init, S?[my exists S]"
       if {[my exists S]} {
 	my send_request
       }
