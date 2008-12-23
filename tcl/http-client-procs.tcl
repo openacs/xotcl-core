@@ -32,7 +32,7 @@ namespace eval ::xo {
   # about the requests, such as e.g. status_code or 
   # data (the response body from the server). For details
   # look into the output of [$r serialize]. The result 
-  # object in $r is automatically deleted at cleanup of
+  # object $r is automatically deleted at cleanup of
   # a connection thread.
   #
   # Example of a POST request with a form with var1 and var2
