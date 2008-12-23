@@ -9,7 +9,7 @@ if {[server_cluster_enabled_p]} {
     ::xo::Cluster create CS_${host}_$port -host $host -port $port
   }
   
-  foreach ip [ad_parameter -package_id [ad_acs_kernel_id] ClusterAuthorizedIP server-cluster] {
+  foreach ip [parameter::get -package_id [ad_acs_kernel_id] -parameter ClusterAuthorizedIP] {
     if {[string first * $ip] > -1} {
       ::xo::Cluster lappend allowed_host_patterns $ip
     } else {

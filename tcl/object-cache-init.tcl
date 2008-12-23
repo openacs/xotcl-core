@@ -10,5 +10,5 @@
 
 # should provide parameter at some time...
 
-#    [ad_parameter -package_id [ad_acs_kernel_id] MaxSize memoize 200000]
+#    [parameter::get -package_id [ad_acs_kernel_id] -parameter MaxSize -default 200000]
 
