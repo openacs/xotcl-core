@@ -103,8 +103,12 @@ namespace eval ::xo {
     }
 
     # create package object if necessary
-    my require -url $url $package_id
-
+    if {$keep_cc} {
+      my require $package_id
+    } else {
+      my require -url $url $package_id
+    }
+      
     #
     # In case the login expired, we can force an early login to
     # prevent later login redirects, which can cause problems
@@ -123,6 +127,23 @@ namespace eval ::xo {
     return $package_id
   }
 
+  PackageMgr ad_proc get_package_class_from_package_key {package_key} {
+    Obtain the package class from a package key
+  } {
+    foreach p [::xo::PackageMgr allinstances] {
+      # Sanity check for old apps, having not set the package key.
+      # TODO: remove this in future versions, when package_keys are enforced
+      if {![$p exists package_key]} {
+        ns_log notice "!!! You should provide a package_key for $p [$p info class] !!!"
+        continue
+      }
+      if {[$p package_key] eq $package_key} {
+        return $p
+      }
+    }
+    return ""
+  }
+
   PackageMgr ad_instproc require {{-url ""} package_id} {
     Create package object if needed.
   } {
@@ -132,30 +153,23 @@ namespace eval ::xo {
     if {![my isobject ::$package_id]} {
       #my log "--R we have to create ::$package_id //url='$url'"
       #
-      # To make initialization code more generic,
+      # To make initialization code generic, we obtain from the
+      # package_id the class of the package.
       #
       set package_key [apm_package_key_from_id $package_id]
-      set package_class ""
-      foreach p [::xo::PackageMgr allinstances] {
-        # Sanity check for old apps, having not set the package key.
-        # TODO: remove this in future versions, when package_keys are enforced
-        if {![$p exists package_key]} {
-          ns_log notice "!!! You should provide a package_key for $p [$p info class] !!!"
-          continue
-        }
-        if {[$p package_key] eq $package_key} {
-          set package_class $p
-          break
-        }
-      }
+      set package_class [[self class] get_package_class_from_package_key $package_key]
       if {$package_class eq ""} {
-        # For some unknown reason, we did not find the key.
-        # Be conservative, behave like in older versions,
-        # but complain in ns_log. E.g. hypermail2xowiki uses this.
+        #
+        # For some unknown reason, we did not find the key.  We want
+        # to be conservative, behave like in older versions that did
+        # not provide a package_key, but required for this call to be
+        # invoked on the actual class of the package. We provide
+        # compatibility, but complain in ns_log. 
+        #
+        # (E.g. hypermail2xowiki uses this)
         ns_log notice "Could not find ::xo::Package with key $package_key ($package_id)"
         set package_class [self]
       }
-      #my log "PKG: $package_class"
 
       if {$url ne ""} {
         $package_class create ::$package_id -destroy_on_cleanup -id $package_id -url $url
@@ -251,7 +265,7 @@ namespace eval ::xo {
   ::xo::Package instproc set_url {-url} {
     my url $url
     my set object [string range [my url] [string length [my package_url]] end]
-    #my log "--R object set to [my set object], [my serialize]"
+    #my msg "--R object set to [my set object], url=$url, [my serialize]"
   }
 
   ::xo::Package instproc reply_to_user {text} {
