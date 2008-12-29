@@ -645,7 +645,7 @@ namespace eval ::xo {
 
       } -instproc success {payload obj} {
 	my log "[string length $payload] bytes payload"
-	if {[string length $payload]<80} {my log payload=$payload}
+	#if {[string length $payload]<600} {my log payload=$payload}
 	# this is called as after a succesful request
 	my finalize $obj "JOB_COMPLETED" $payload
 
