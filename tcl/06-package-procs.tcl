@@ -23,9 +23,10 @@ namespace eval ::xo {
     my instvar package_key
     if {[info exists privilege]} {
       set sql [::xo::db::sql select -vars package_id \
-                   -from "apm_packages, acs_object_party_privilege_map ppm" \
+                   -from "apm_packages, acs_object_party_privilege_map ppm, site_nodes s" \
                    -where {
                      package_key = :package_key 
+                     and s.object_id = package_id 
                      and ppm.object_id = package_id 
                      and ppm.party_id = :party_id
                      and ppm.privilege = :privilege
