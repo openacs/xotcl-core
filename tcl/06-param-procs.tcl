@@ -356,12 +356,38 @@ namespace eval ::xo {
     # all parameter changes and update accordingly the values in the new
     # interface.
     #
-    set parameter_obj [ ::xo::parameter get_parameter_object \
-                           -package_key [apm_package_key_from_id $package_id] \
-                           -parameter_name $parameter]
-    $parameter_obj clear_per_package_instance_value $package_id $value
-    if {[$parameter_obj default_value] ne $value} {
-      $parameter_obj set_per_package_instance_value $package_id $value
+    set package_key [apm_package_key_from_id $package_id]
+    set parameter_obj [::xo::parameter get_parameter_object \
+                            -package_key $package_key \
+                            -parameter_name $parameter]
+    if {$parameter_obj eq ""} {
+      #
+      # The parameter_obj was not found. Maybe we have a new parameter?
+      #
+      # Try to fetch parameter definition ....
+      ::xo::db::apm_parameter instantiate_objects \
+          -sql [::xo::db::apm_parameter instance_select_query \
+                    -where_clause {
+                      and parameter_name = :parameter 
+                      and package_key = :package_key
+                    }] \
+          -object_class ::xo::db::apm_parameter \
+          -as_ordered_composite false -named_objects true -destroy_on_cleanup false
+      #
+      # .... and get the parameter object
+      #
+      set parameter_obj [::xo::parameter get_parameter_object \
+                             -package_key $package_key \
+                             -parameter_name $parameter]
+    }
+    if {$parameter_obj eq ""} {
+      # We have still no parameter. There must be something significantly wrong.
+      error "--parameter $parameter for package $package_key, package_id $package_id does not exist"
+    } else {
+      $parameter_obj clear_per_package_instance_value $package_id $value
+      if {[$parameter_obj default_value] ne $value} {
+        $parameter_obj set_per_package_instance_value $package_id $value
+      }
     }
   }
 
