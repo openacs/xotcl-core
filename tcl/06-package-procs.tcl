@@ -94,7 +94,7 @@ namespace eval ::xo {
         -keep_cc $keep_cc \
         -package_id $package_id -user_id $user_id \
         -parameter $parameter -url $url -actual_query $actual_query
-      
+
     if {[info exists original_url_and_query]} {
       ::xo::cc original_url_and_query $original_url_and_query
     }

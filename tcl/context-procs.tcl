@@ -178,10 +178,22 @@ namespace eval ::xo {
   
   ConnectionContext proc require_package_id_from_url {{-package_id 0} url} {
     # get package_id from url in case it is not known
-    if {$package_id == 0} {
+    if {$package_id == 0 || ![info exists ::ad_conn(node_id)]} {
       array set "" [site_node::get_from_url -url $url]
       set package_id $(package_id)
       #my msg "--i setting pkg to $package_id"
+      # 
+      # The following should not be necessary, but is is here for
+      # cases, where some oacs-code assumes wrongly it is running in a
+      # connection thread (e.g. the site master requires to have a
+      # node_id and a url accessible via ad_conn)
+      #
+      if {![info exists ::ad_conn(node_id)]} {
+	set ::ad_conn(node_id) $(node_id)
+	set ::ad_conn(url) $url
+        set ::ad_conn(extra_url) [string range $url [string length $(url)] end]
+      }
+
     }
     return $package_id
   }
@@ -245,6 +257,11 @@ namespace eval ::xo {
       ::xo::cc set_user_id $user_id
       ::xo::cc process_query_parameter
     }
+    if {![info exists ::ad_conn(charset)]} {
+      set ::ad_conn(charset) [lang::util::charset_for_locale $locale] 
+      set ::ad_conn(language) [::xo::cc lang]
+      set ::ad_conn(file) ""
+    }
   }
   ConnectionContext instproc lang {} {
     return [string range [my locale] 0 1]
@@ -259,10 +276,14 @@ namespace eval ::xo {
       } else {
         my set user_id 0
         my set untrusted_user_id 0
+	array set ::ad_conn [list user_id $user_id untrusted_user_id $user_id session_id ""]
       }
     } else {
       my set user_id $user_id
       my set untrusted_user_id $user_id
+      if {![info exists ::ad_conn(user_id)]} {
+	array set ::ad_conn [list user_id $user_id untrusted_user_id $user_id session_id ""]
+      }
     }
   }
 
