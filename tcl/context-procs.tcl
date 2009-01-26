@@ -180,8 +180,10 @@ namespace eval ::xo {
     # get package_id from url in case it is not known
     if {$package_id == 0 || ![info exists ::ad_conn(node_id)]} {
       array set "" [site_node::get_from_url -url $url]
-      set package_id $(package_id)
-      #my msg "--i setting pkg to $package_id"
+      if {$package_id == 0} {
+	set package_id $(package_id)
+	#my msg "--i setting pkg to $package_id"
+      }
       # 
       # The following should not be necessary, but is is here for
       # cases, where some oacs-code assumes wrongly it is running in a
