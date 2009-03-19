@@ -983,6 +983,11 @@ namespace eval ::xo::db {
         # and let CrCache save it ...... TODO: is this still needed? comment out for testing
         #set revision_id $old_revision_id
       }
+      my set modifying_user $creation_user
+      my db_1row [my qn get_dates] {
+        select last_modified 
+        from acs_objects where object_id = :revision_id
+      }
     }
     return $item_id
   }
@@ -1294,6 +1299,7 @@ namespace eval ::xo::db {
         if {$item_id == 0} break ;# don't cache
         return $item_id
       }]
+      
       break
     }
     #my msg "lookup $parent_id-$name -> item_id=$item_id"
