@@ -89,6 +89,10 @@ namespace eval ::xo {
         return [list [expr {[llength $p] == 1 ? "primitive" : "complex"}] $p]
       }
     }
+    # In cases, where is no permission defined, or all conditions
+    # fail, and no unconditional privilege is defined, reject access.
+    # Maybe, we should search the class hierarchy up in the future.
+    return [list primitive nobody]
   }
 
   Policy instproc get_permission {{-check_classes true} object method} {
