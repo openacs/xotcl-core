@@ -190,6 +190,7 @@ namespace eval ::xo {
     -parameter_name:required
     -package_id
     -package_key
+    {-retry true}
   } {
     ::xo::PackageMgr instvar package_class
     if {![info exists package_key]} {
@@ -219,6 +220,35 @@ namespace eval ::xo {
       }
       if {!$success} break
     }
+    #
+    # The parameter object was not found. Maybe this is a new 
+    # parameter, not known in this thread. We try to load it
+    #
+    set r [::xo::db::apm_parameter instantiate_objects \
+               -sql [::xo::db::apm_parameter instance_select_query \
+                         -where_clause {
+                           and parameter_name = :parameter_name
+                           and package_key = :package_key
+                         }] \
+               -object_class ::xo::db::apm_parameter \
+               -as_ordered_composite false -named_objects true -destroy_on_cleanup false]
+    #
+    # Check for "retry" to avoid potential recursive loops
+    #
+    if {$retry && [llength $r] > 0} {
+      #
+      # seems as if this parameter was newly defined
+      #
+      if {![info exists package_id]} {set package_id ""}
+      return [my get_parameter_object \
+                  -retry false \
+                  -parameter_name $parameter_name \
+                  -package_id $package_id \
+                  -package_key $package_key]
+    }
+    #
+    # if everything fails, return empty
+    #
     return ""
   }
 
@@ -360,26 +390,7 @@ namespace eval ::xo {
     set parameter_obj [::xo::parameter get_parameter_object \
                             -package_key $package_key \
                             -parameter_name $parameter]
-    if {$parameter_obj eq ""} {
-      #
-      # The parameter_obj was not found. Maybe we have a new parameter?
-      #
-      # Try to fetch parameter definition ....
-      ::xo::db::apm_parameter instantiate_objects \
-          -sql [::xo::db::apm_parameter instance_select_query \
-                    -where_clause {
-                      and parameter_name = :parameter 
-                      and package_key = :package_key
-                    }] \
-          -object_class ::xo::db::apm_parameter \
-          -as_ordered_composite false -named_objects true -destroy_on_cleanup false
-      #
-      # .... and get the parameter object
-      #
-      set parameter_obj [::xo::parameter get_parameter_object \
-                             -package_key $package_key \
-                             -parameter_name $parameter]
-    }
+    
     if {$parameter_obj eq ""} {
       # We have still no parameter. There must be something significantly wrong.
       error "--parameter $parameter for package $package_key, package_id $package_id does not exist"

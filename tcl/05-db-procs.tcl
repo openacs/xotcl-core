@@ -1343,7 +1343,7 @@ namespace eval ::xo::db {
       set __result [::xo::OrderedComposite new]
       if {$destroy_on_cleanup} {$__result destroy_on_cleanup}
     } else {
-      set __result ""
+      set __result [list]
     }
 
     db_with_handle -dbn $dbn db {
@@ -1359,8 +1359,11 @@ namespace eval ::xo::db {
         }
         if {$as_ordered_composite} {
           $__result add $o
-        } elseif {$destroy_on_cleanup} {
-          $o destroy_on_cleanup
+        } else {
+          if {$destroy_on_cleanup} {
+            $o destroy_on_cleanup
+          }
+          lappend __result $o
         }
         foreach {att val} [ns_set array $selection] {$o set $att $val}
         if {[$o exists object_type]} {
@@ -1375,6 +1378,7 @@ namespace eval ::xo::db {
         #my log "--DB more = $continue [$o serialize]" 
       }
     }
+
     return $__result
   }
  
