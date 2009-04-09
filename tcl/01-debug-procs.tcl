@@ -246,8 +246,16 @@ namespace eval ::xo {
     append _ "XOTcl:     $::xotcl::version$::xotcl::patchlevel\n"
     append _ "Tdom:      [package req tdom]\n"
     append _ "libthread: [ns_config ns/server/[ns_info server]/modules libthread]\n"
-    append _ "Tcllib: \n"
-    append _ [exec sh -c "ls -ld [ns_info home]/lib/tcll*"] \n\n
+    append _ "Tcllib:    "
+    foreach dir $::auto_path {
+      set p [glob -nocomplain $dir/tcllib*]
+      if {$p ne ""} {
+        append _ "$p"
+        # just show first occurances on path
+        break
+      }
+    }
+    append _ \n
     foreach pk $pkg_list {
       if {[apm_package_installed_p $pk]} {
         append _ "[format %-22s $pk:] " [apm_version_get -package_key $pk -array ""; set x "$(release_date), $(version_name)"] \n
