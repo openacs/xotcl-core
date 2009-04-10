@@ -57,12 +57,12 @@ if {![string match *contentsentlength* $msg]} {
   fileSpooler proc cleanup {} {
     # This method should not be necessary. However, under unclear conditions,
     # some fcopies seem to go into a stasis. After 2000 seconds, we will kill it.
-    foreach {index entry} [array get running] {
+    foreach {index entry} [array get ::running] {
       foreach {key elapsed} $entry break
       set t [ns_time diff [ns_time get] $elapsed]
       if {[ns_time seconds $t] > 2000} {
         if {[regexp {^([^,]+),([^,]+),(.+)$} $index _ channel fd filename]} {
-          ns_log notice "bgdelivery, cleanup after [ns_time seconds $t] seconds, $key"
+          ns_log notice "bgdelivery, fileSpooler cleanup after [ns_time seconds $t] seconds, $key"
           my end-delivery $filename $fd $channel -1
         }
       }
