@@ -54,7 +54,7 @@ if {![string match *contentsentlength* $msg]} {
     unset ::running($channel,$fd,$filename)
   }
   
-  fileSpooler cleanup {} {
+  fileSpooler proc cleanup {} {
     # This method should not be necessary. However, under unclear conditions,
     # some fcopies seem to go into a stasis. After 2000 seconds, we will kill it.
     foreach {index entry} [array get running] {
@@ -68,7 +68,7 @@ if {![string match *contentsentlength* $msg]} {
       }
     }
   }
-  fileSpooler tick {} {
+  fileSpooler proc tick {} {
     my cleanup
     my set to [after [my set tick_interval] [list [self] tick]]
   }
