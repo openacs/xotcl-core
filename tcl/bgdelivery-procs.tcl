@@ -69,7 +69,7 @@ if {![string match *contentsentlength* $msg]} {
     }
   }
   fileSpooler proc tick {} {
-    my cleanup
+    if {[catch {my cleanup} errorMsg]} {ns_log notice "Error during filespooler cleanup: $errorMsg"}
     my set to [after [my set tick_interval] [list [self] tick]]
   }
   fileSpooler tick
