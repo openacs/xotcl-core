@@ -37,21 +37,44 @@ if {![string match *contentsentlength* $msg]} {
   set ::delivery_count 0
 
   Object fileSpooler
+  fileSpooler set tick_interval 60000 ;# 1 min
   fileSpooler proc spool {-channel -filename -context {-client_data ""}} {
     set fd [open $filename]
     fconfigure $fd -translation binary
     fconfigure $channel -translation binary
     #ns_log notice "--- start of delivery of $filename (running:[array size ::running])"
     fcopy $fd $channel -command [list [self] end-delivery -client_data $client_data $filename $fd $channel]
-    set ::running($channel,$filename) $context
+    set ::running($channel,$fd,$filename) $context
     incr ::delivery_count
   }
   fileSpooler proc end-delivery {{-client_data ""} filename fd channel bytes args} {
     #ns_log notice "--- end of delivery of $filename, $bytes bytes written $args"
     if {[catch {close $channel} e]} {ns_log notice "bgdelivery, closing channel for $filename, error: $e"}
     if {[catch {close $fd} e]} {ns_log notice "bgdelivery, closing file $filename, error: $e"}
-    unset ::running($channel,$filename)
+    unset ::running($channel,$fd,$filename)
   }
+  
+  fileSpooler cleanup {} {
+    # This method should not be necessary. However, under unclear conditions,
+    # some fcopies seem to go into a stasis. After 2000 seconds, we will kill it.
+    foreach {index entry} [array get running] {
+      foreach {key elapsed} $entry break
+      set t [ns_time diff [ns_time get] $elapsed]
+      if {[ns_time seconds $t] > 2000} {
+        if {[regexp {^([^,]+),([^,]+),(.+)$} $index _ channel fd filename]} {
+          ns_log notice "bgdelivery, cleanup after [ns_time seconds $t] seconds, $key"
+          my end-delivery $filename $fd $channel -1
+        }
+      }
+    }
+  }
+  fileSpooler tick {} {
+    my cleanup
+    my set to [after [my set tick_interval] [list [self] tick]]
+  }
+  fileSpooler tick
+
+
 
   ###############
   # Subscriptions
