@@ -410,15 +410,17 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::Class ad_proc get_object_type {
-    -id:required
+    -id:integer,required
   } {
     Return the object type for the give id.
 
     @return object_type, typically an XOTcl class
   } {
-    db_1row [my qn get_class] \
-	"select object_type from acs_objects where object_id=$id"
-    return $object_type
+    return [ns_cache eval xotcl_object_type_cache $id {
+      db_1row [my qn get_class] "select object_type from acs_objects where object_id=$id"
+      db_1row [my qn get_class] "select object_type from acs_objects where object_id=$id"
+      return $object_type
+    }]
   }
 
   ::xo::db::Class ad_proc get_instance_from_db {
