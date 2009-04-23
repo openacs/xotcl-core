@@ -1311,16 +1311,34 @@ namespace eval ::xo::db {
   CrCache::Item instproc flush_from_cache_and_refresh {} {
     # cache only names with IDs
     set obj [self]
-    if {[regexp [[self class] set name_pattern] $obj]} {
+    set canonical_name ::[$obj item_id]
+    ::xo::clusterwide ns_cache flush xotcl_object_cache $obj
+    if {$obj eq $canonical_name} {
       #my log "--CACHE saving $obj in cache"
-      ::xo::clusterwide ns_cache flush xotcl_object_cache $obj
-      # We do not want to cache per object mixins for the time being
-      # (some classes might be volatile). So save mixin-list, cache
-      # and resore them later for the current session.
+      #
+      # The object name is eq to the item_id; we assume, this is a
+      # fully loaded object, containing all relevant instance
+      # variables. We can restore it. after the flash
+      # 
+      # We do not want to cache per object mixins for the
+      # time being (some classes might be volatile). So save
+      # mixin-list, cache and resore them later for the current
+      # session.
       set mixins [$obj info mixin]
       $obj mixin [list]
       ns_cache set xotcl_object_cache $obj [$obj serialize]
       $obj mixin $mixins
+    } else {
+      # in any case, flush the canonical name
+      ::xo::clusterwide ns_cache flush xotcl_object_cache $canonical_name
+    }
+    # To be on he safe side, delete the revison as well from the
+    # cache, if possible.
+    if {[$obj exists revision_id]} {
+      set revision_name ::[$obj revision_id]
+      if {$obj ne $revision_name} {
+        ::xo::clusterwide ns_cache flush xotcl_object_cache $revision_name
+      }
     }
   }
   CrCache::Item instproc update_attribute_from_slot args {

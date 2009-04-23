@@ -215,15 +215,15 @@ namespace eval ::xo {
     if {[ns_conn isconnected]} {
       append msg "flags=[ad_conn flags] status=[ad_conn status] req=[ad_conn request]"
     }
-    my log $msg
+    ::xotcl::Object log $msg
     set max [info level]  
     if {$m<$max} {set max $m}
-    my log "### Call Stack (level: command)"
+    ::xotcl::Object  log "### Call Stack (level: command)"
     for {set i 0} {$i < $max} {incr i} {
       if {[catch {set s [uplevel $i self]} msg]} {
 	set s ""
       }
-      my log "### [format %5d -$i]:\t$s [info level [expr {-$i}]]"
+      ::xotcl::Object  log "### [format %5d -$i]:\t$s [info level [expr {-$i}]]"
     }
   }
 
@@ -437,7 +437,22 @@ namespace eval ::xo {
     set t1 [clock clicks -milliseconds]
     ns_log notice "ON DELETE done ([expr {$t1-$t0}]ms)"
   }
-  
+ 
+  #
+  # ::xo::Module is very similar to a plain tcl namespace: When it is
+  # created/recreated, it does not perform a cleanup of its
+  # contents. This means that preexisting procs, objects classes,
+  # variables etc. will survive a recreation. As a consequence,
+  # ::xo::Modules can easily span multiple files an they can be used
+  # like a namespace. However, the modules have the advantage that it
+  # is possible to define procs, instprocs with non-positional
+  # arguments directly in it. It is as well possible to use mixins
+  # etc.
+  #
+  Class create Module 
+  Module instproc cleanup args {
+    ns_log notice "create/recreate [self] without cleanup"
+  }
 }
 
 #ns_log notice "*** FREECONN? [ns_ictl gettraces freeconn]"

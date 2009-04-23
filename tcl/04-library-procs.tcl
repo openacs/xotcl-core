@@ -61,6 +61,7 @@ namespace eval ::xo {
     set dirname [file dirname [info script]]
     set otherfile $dirname/$filename.tcl
     set vn [self]
+    #my log "--exists otherfile $otherfile => [nsv_exists $vn $otherfile]"
     if {[nsv_exists $vn $otherfile]} {
       nsv_set $vn $otherfile [lsort -unique [concat [nsv_get $vn $otherfile] $myfile]]
       #my log "--setting nsv_set $vn $otherfile [lsort -unique [concat [nsv_get $vn $otherfile] $myfile]]"
@@ -69,6 +70,8 @@ namespace eval ::xo {
       #my log "--setting nsv_set $vn $otherfile $myfile"
     }
     #my log "--source when not loaded [self]-loaded $otherfile: [nsv_exists [self]-loaded $otherfile]"
+    #my log "--loaded = [lsort [nsv_array names [self]-loaded]]"
+
     if {![nsv_exists [self]-loaded $otherfile]} {
       my log "--sourcing $otherfile"
       apm_source $otherfile
@@ -90,7 +93,7 @@ namespace eval ::xo {
     set myfile [file tail [info script]]
     set dirname [file dirname [info script]]
     set vn [self]
-    #my log "--check nsv_exists $vn $dirname/$myfile"
+    #my log "--check nsv_exists $vn $dirname/$myfile [nsv_exists $vn $dirname/$myfile]"
     if {[nsv_exists $vn $dirname/$myfile]} {
       foreach file [nsv_get $vn $dirname/$myfile] {
         my log "--sourcing dependent $dirname/$file"
