@@ -450,8 +450,32 @@ namespace eval ::xo {
   # etc.
   #
   Class create Module 
-  Module instproc cleanup args {
-    ns_log notice "create/recreate [self] without cleanup"
+  Module instproc init    args {my requireNamespace}
+  Module instproc cleanup args {ns_log notice "create/recreate [self] without cleanup"}
+}
+
+# per default, deactivated
+if {0} {
+  if {[info command ::xo::ns_log] eq ""} {
+    #
+    # provide an XOTcl stub for ns_log
+    #
+    rename ::ns_log ::xo::ns_log
+    ::xotcl::Object create ns_log
+    ns_log proc unknown {m args} {::xo::ns_log notice "Warning ns_log called with unknown severity '$m' $args"}
+    foreach flag {notice warning error fatal bug debug dev} {
+      ns_log forward [string totitle $flag] %self $flag
+      ns_log forward $flag ::xo::ns_log $flag
+    }
+    #
+    # we want ns_log error be reported as well via ds_comment
+    #
+    ::xotcl::Class create ::xo::DS
+    ::xo::DS instproc error args {
+      catch {ds_comment "[self proc]: [join $args { }]"}
+      ::xo::ns_log [self proc] [join $args " "]
+    }
+    ::ns_log mixin ::xo::DS
   }
 }
 
