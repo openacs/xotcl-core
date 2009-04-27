@@ -1313,6 +1313,7 @@ namespace eval ::xo::db {
     {-as_ordered_composite:boolean true}
     {-object_class "::xotcl::Object"}
     {-named_objects:boolean false}
+    {-object_named_after ""}
     {-destroy_on_cleanup:boolean true}
   } {
 
@@ -1347,6 +1348,11 @@ namespace eval ::xo::db {
     } else {
       set __result [list]
     }
+    if {$named_objects} {
+      if {$object_named_after eq ""} {
+        set object_named_after [my id_column]
+      }
+    }
 
     db_with_handle -dbn $dbn db {
       set selection [db_exec select $db $full_statement_name $sql]
@@ -1354,7 +1360,7 @@ namespace eval ::xo::db {
         set continue [ns_db getrow $db $selection]
         if {!$continue} break
         if {$named_objects} {
-          set object_name ::[ns_set get $selection [my id_column]]
+          set object_name ::[ns_set get $selection $object_named_after]
           set o [$object_class create $object_name]
         } else {
           set o [$object_class new]

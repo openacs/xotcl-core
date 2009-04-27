@@ -455,7 +455,7 @@ namespace eval ::xo {
 }
 
 # per default, deactivated
-if {0} {
+if {1} {
   if {[info command ::xo::ns_log] eq ""} {
     #
     # provide an XOTcl stub for ns_log
@@ -472,6 +472,10 @@ if {0} {
     #
     ::xotcl::Class create ::xo::DS
     ::xo::DS instproc error args {
+      catch {ds_comment "[self proc]: [join $args { }]"}
+      ::xo::ns_log [self proc] [join $args " "]
+    }
+    ::xo::DS instproc notice args {
       catch {ds_comment "[self proc]: [join $args { }]"}
       ::xo::ns_log [self proc] [join $args " "]
     }
