@@ -455,7 +455,7 @@ namespace eval ::xo {
 }
 
 # per default, deactivated
-if {1} {
+if {0} {
   if {[info command ::xo::ns_log] eq ""} {
     #
     # provide an XOTcl stub for ns_log
