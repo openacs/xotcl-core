@@ -227,10 +227,21 @@ namespace eval ::xo {
   }
  
   ::xo::Package instproc init args {
-    #my log "--R creating"
     my instvar id url
-    array set info [site_node::get_from_object_id -object_id $id]
-    set package_url $info(url)
+    set package_url [site_node::get_url_from_object_id -object_id $id]
+    #my log "--R creating package_url='$package_url'"
+    if {$package_url ne ""} {
+      array set info [site_node::get -url $package_url]
+      #set package_url $info(url)
+      my package_key $info(package_key)
+      my instance_name $info(instance_name)
+    } else {
+      db_1row [my qn package_info] {
+        select package_key, instance_name from apm_packages where package_id = :id
+      }
+      my package_key $package_key
+      my instance_name $instance_name
+    }
     if {[ns_conn isconnected]} {
       # in case of of host-node map, simplify the url to avoid redirects
       # .... but ad_host works only, when we are connected.... 
@@ -240,8 +251,6 @@ namespace eval ::xo {
     }
     #my log "--R package_url= $package_url (was $info(url))"
     my package_url $package_url
-    my package_key $info(package_key)
-    my instance_name $info(instance_name)
 
     if {[my exists url] && [info exists root]} {
       regexp "^${root}(.*)$" $url _ url
@@ -249,11 +258,11 @@ namespace eval ::xo {
       #my log "--R we have no url, use package_url '$package_url'"
       # if we have no more information, we use the package_url as actual url
       set url $package_url
-    } 
+    }
     my set_url -url $url
     my set mime_type text/html
     my set delivery ns_return
-    set target_class ::$info(package_key)::Package
+    set target_class ::[my package_key]::Package
     if {[my info class] ne $target_class && [my isclass $target_class]} {
       my class $target_class
     }

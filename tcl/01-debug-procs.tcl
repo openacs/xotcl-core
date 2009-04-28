@@ -454,32 +454,113 @@ namespace eval ::xo {
   Module instproc cleanup args {ns_log notice "create/recreate [self] without cleanup"}
 }
 
-# per default, deactivated
-if {0} {
-  if {[info command ::xo::ns_log] eq ""} {
+namespace eval ::xo {
+  #
+  # ns_log_redirector_manager manages the ns_log-redirector, which can
+  # be used to direct debugging output from the error log file as well
+  # to the developer support. The behavior is controlled via a package
+  # parameter.
+  #
+  Object ns_log_redirector_manager 
+
+  ns_log_redirector_manager proc clean {} {
+    #
+    # check if nothing to do
+    #
+    if {[info command ::xo::ns_log] eq ""} return
+    if {![my isobject ::ns_log]} return
+    #
+    # remove the stub
+    #
+    ::ns_log destroy
+    rename ::xo::ns_log ::ns_log
+  }
+
+  ns_log_redirector_manager proc require_stub {} {
+    #
+    # check if nothing to do
+    #
+    if {[info command ::xo::ns_log] ne ""} return
+    if {[my isobject ::ns_log]} return
     #
     # provide an XOTcl stub for ns_log
     #
     rename ::ns_log ::xo::ns_log
-    ::xotcl::Object create ns_log
-    ns_log proc unknown {m args} {::xo::ns_log notice "Warning ns_log called with unknown severity '$m' $args"}
+    ::xotcl::Object create ::ns_log
+    ::ns_log proc unknown {m args} {::xo::ns_log notice "Warning ns_log called with unknown severity '$m' $args"}
     foreach flag {notice warning error fatal bug debug dev} {
-      ns_log forward [string totitle $flag] %self $flag
-      ns_log forward $flag ::xo::ns_log $flag
+      ::ns_log forward [string totitle $flag] %self $flag
+      ::ns_log forward $flag ::xo::ns_log $flag
     }
+  }
+
+  ns_log_redirector_manager proc set_level {new_logging_level} {
+    ::ns_log notice "SET LEVEL $new_logging_level"
     #
-    # we want ns_log error be reported as well via ds_comment
+    # We want ns_log error be reported as well via ds_comment;
+    # severity new_logging_level defines the amount of logging
     #
     ::xotcl::Class create ::xo::DS
-    ::xo::DS instproc error args {
-      catch {ds_comment "[self proc]: [join $args { }]"}
-      ::xo::ns_log [self proc] [join $args " "]
+    switch -- $new_logging_level {
+      1 {set severities [list error]}
+      2 {set severities [list error notice]}
+      default {set severities [list]}
     }
-    ::xo::DS instproc notice args {
-      catch {ds_comment "[self proc]: [join $args { }]"}
-      ::xo::ns_log [self proc] [join $args " "]
+    if {[llength $severities] > 0} {
+      my require_stub
+      foreach severity $severities {
+        ::xo::DS instproc $severity args {
+          catch {ds_comment "[self proc]: [join $args { }]"}
+          ::xo::ns_log [self proc] [join $args " "]
+        }
+      }
+      ::ns_log mixin ::xo::DS
+    } else {
+      my clean
     }
-    ::ns_log mixin ::xo::DS
+  }
+
+  #
+  # per default, the redirector is deactivated
+  #
+  ns_log_redirector_manager set_level [::parameter::get_from_package_key \
+                                           -package_key xotcl-core \
+                                           -parameter NslogRedirector \
+                                           -default 0]
+  
+
+  #
+  # For the time being: catch changed parameter values; it would be nice
+  # to have in the future a more generic interface to trigger actions
+  # directly on all parameter changes.
+  #
+  ad_proc -public -callback subsite::parameter_changed -impl xotcl-core_param_changed {
+    -package_id:required
+    -parameter:required
+    -value:required
+  } {
+    Implementation of subsite::parameter_changed for xotcl-core parameters
+    
+    @param package_id the package_id of the package the parameter was changed for
+    @param parameter  the parameter name
+    @param value      the new value
+  } {
+    set package_key [apm_package_key_from_id $package_id]
+    if {$package_key eq "xotcl-core" && $parameter eq "NslogRedirector"} {
+      ::xo::ns_log_redirector_manager set_level $value
+      #
+      # Update the blueprint to reflect the parameter change
+      # immediately.
+      #
+      # This is a heavy solution, but the NslogRedirector is not
+      # likely to be changed frequently on a production system. The
+      # alternative, a server restart, is even more expensive.
+      #
+      set blueprint [ns_ictl get]
+      set last [string last "\n::xo::ns_log_redirector_manager" $blueprint]
+      if {$last > -1} { set blueprint [string range $blueprint 0 [expr {$last-1}]]}
+      ns_ictl save "$blueprint\n::xo::ns_log_redirector_manager set_level $value"
+    }
   }
 }
 

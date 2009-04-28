@@ -10,10 +10,10 @@
     <inherit-templates-p>t</inherit-templates-p>
     <auto-mount>xotcl</auto-mount>
 
-    <version name="0.105" url="http://media.wu-wien.ac.at/download/xotcl-core-0.105.apm">
+    <version name="0.106" url="http://media.wu-wien.ac.at/download/xotcl-core-0.106.apm">
         <owner url="mailto:neumann@wu-wien.ac.at">Gustaf Neumann</owner>
         <summary>XOTcl library functionality (e.g. thread handling, online documentation, Generic Form and List Classes)</summary>
-        <release-date>2009-04-23</release-date>
+        <release-date>2009-04-28</release-date>
         <vendor>Gustaf Neumann, WU Wien</vendor>
         <description format="text/html">This component contains some core functionality for OpenACS
 applications using XOTcl. It includes
@@ -43,13 +43,16 @@ when components are reloaded.
         <license>BSD-Style</license>
         <maturity>0</maturity>
 
-        <provides url="xotcl-core" version="0.105"/>
+        <provides url="xotcl-core" version="0.106"/>
 
         <callbacks>
             <callback type="after-upgrade"  proc="::xotcl-core::after_upgrade_callback"/>
             <callback type="before-install"  proc="::xotcl-core::before_install_callback"/>
         </callbacks>
         <parameters>
+            <parameter datatype="number"  min_n_values="1"  max_n_values="1"  name="NslogRedirector"  default="0" description="Allow redirections of nslog. The redirector filters ns_log messages and sends these not only to the error log (standard behaviour) but also to ds_comments in the developer support. This way, a developer can view the log messages for the current request directly in the browser when the developer support is activated, without having to watch the log file. 
+
+The value of 0 means &quot;no redirecting&quot; (deactivation), 1 means &quot;redirecting errors&quot;, 2 means &quot;redirect errors and notices&quot;"/>
             <parameter datatype="number"  min_n_values="1"  max_n_values="1"  name="XOTclObjectCacheSize"  default="400000" description="Size of the ns_cache xotcl_object_cache (used for caching XOTcl objects fetched from the database)"/>
             <parameter datatype="number"  min_n_values="1"  max_n_values="1"  name="XOTclObjectTypeCacheSize"  default="10000" description="Size of the ns_cache xotcl_object_type_cache (used for caching types of XOTcl objects)"/>
         </parameters>

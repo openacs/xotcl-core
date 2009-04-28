@@ -1141,7 +1141,7 @@ namespace eval ::xo::db {
 
     if {![my exists sql_package_name]} {
       set sql_package_name [self]
-      my log "-- sql_package_name of [self] is '$sql_package_name'"
+      #my log "-- sql_package_name of [self] is '$sql_package_name'"
     }
     if {[string length $sql_package_name] > 30} {
       error "SQL package_name '$sql_package_name' can be maximal 30 characters long!\
