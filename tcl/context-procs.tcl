@@ -288,6 +288,18 @@ namespace eval ::xo {
       }
     }
   }
+  ConnectionContext instproc get_user_id {} {
+    #
+    # If the untrusted user_id exists, return it. This will return
+    # consistently the user_id also in situations, where the login
+    # cookie was expired. If no untrusted_user_id exists Otherwise
+    # (maybe in a remoting setup), return the user_id.
+    #
+    if {[my exists untrusted_user_id]} {
+      return [my set untrusted_user_id]
+    }
+    return [my user_id]
+  }
 
   ConnectionContext instproc returnredirect {url} {
     #my log "--rp"
