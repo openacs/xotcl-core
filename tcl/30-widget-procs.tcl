@@ -705,7 +705,10 @@ namespace eval ::xo::Table {
       set img /resources/acs-templating/sort-neither.png
     }
     set query [list [list orderby $new_orderby]]
-    foreach pair [split [ns_conn query] &] {
+    if {[catch {set actual_query [ns_conn query]}]} {
+      set actual_query ""
+    }
+    foreach pair [split $actual_query &] {
       foreach {key value} [split $pair =] break
       if {$key eq "orderby"} continue
       lappend query [list [ns_urldecode $key] [ns_urldecode $value]]
