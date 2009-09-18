@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
   XOTcl for the Content Repository 
 
   @author Gustaf Neumann
@@ -266,7 +266,6 @@ namespace eval ::xo::db {
           -id_column $id_column \
           -name_method $name_method
       
-      #my create_attributes
       my folder_type register
     }
   }
@@ -1250,6 +1249,30 @@ namespace eval ::xo::db {
     return $allowed
   }
 
+  ::xo::db::CrClass create ::xo::db::CrFolder \
+      -superclass ::xo::db::CrItem  \
+      -pretty_name "Folder" -pretty_plural "Folders" \
+      -table_name "cr_folders" -id_column "folder_id" \
+      -object_type content_folder \
+      -form CrFolderForm \
+      -edit_form CrFolderForm \
+      -slots {
+        ::xo::db::CrAttribute create folder_id -datatype integer -pretty_name "Folder ID" \
+            -references "cr_items on delete cascade"
+        ::xo::db::CrAttribute create label -datatype text -pretty_name "Label"
+        ::xo::db::CrAttribute create description \
+            -datatype text -pretty_name "Description" -spec "textarea,cols=80,rows=2"
+        # the package_id in folders is deprecated, the one in acs_objects should be used
+      } \
+\
+      -ad_doc {
+        This is a generic class that represents a "cr_folder"
+        XoWiki specific methods are currently directly mixed
+        into all instances of this class.
+
+        @see ::xowiki::Folder
+    }
+
   #
   # Caching interface
   #
@@ -1377,7 +1400,7 @@ namespace eval ::xo::db {
   CrItem instmixin CrCache::Item
 }  
 
-
+#::xo::library source_dependent 
 
 
 

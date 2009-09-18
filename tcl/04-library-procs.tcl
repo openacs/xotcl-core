@@ -23,6 +23,9 @@ ad_library {
 #
 #     ::xo::library require filename
 #
+#   The library to be loaded must be defined with a 
+#   ::xo::library doc {...}
+#
 # Source files extending classes of the current file.
 #
 #    When classes are defined in the current file and (some) of their methods
@@ -42,7 +45,7 @@ namespace eval ::xo {
     #my log "--loaded nsv_set [self]-loaded [info script] 1"
   }
 
-  library ad_proc require {filename} {
+  library ad_proc require {{-package ""} filename} {
 
     Use this method to indicate when some other files (from the same
     package) are needed to be sourced before the current file.  This
@@ -59,14 +62,18 @@ namespace eval ::xo {
     nsv_set [self]-loaded [info script] 1
     set myfile [file tail [info script]]
     set dirname [file dirname [info script]]
-    set otherfile $dirname/$filename.tcl
+    if {$package eq ""} {
+      set otherfile $dirname/$filename.tcl
+    } else {
+      set otherfile [acs_root_dir]/packages/$package/tcl/$filename.tcl
+    }
     set vn [self]
     #my log "--exists otherfile $otherfile => [nsv_exists $vn $otherfile]"
     if {[nsv_exists $vn $otherfile]} {
-      nsv_set $vn $otherfile [lsort -unique [concat [nsv_get $vn $otherfile] $myfile]]
+      nsv_set $vn $otherfile [lsort -unique [concat [nsv_get $vn $otherfile] [info script]]]
       #my log "--setting nsv_set $vn $otherfile [lsort -unique [concat [nsv_get $vn $otherfile] $myfile]]"
     } else {
-      nsv_set $vn $otherfile $myfile
+      nsv_set $vn $otherfile [info script]
       #my log "--setting nsv_set $vn $otherfile $myfile"
     }
     #my log "--source when not loaded [self]-loaded $otherfile: [nsv_exists [self]-loaded $otherfile]"
@@ -96,8 +103,10 @@ namespace eval ::xo {
     #my log "--check nsv_exists $vn $dirname/$myfile [nsv_exists $vn $dirname/$myfile]"
     if {[nsv_exists $vn $dirname/$myfile]} {
       foreach file [nsv_get $vn $dirname/$myfile] {
-        my log "--sourcing dependent $dirname/$file"
-        apm_source $dirname/$file
+        #my log "--sourcing dependent $dirname/$file"
+        #apm_source $dirname/$file
+        #my log "--sourcing dependent $file"
+        apm_source $file
       }
     }
   }

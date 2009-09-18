@@ -918,10 +918,11 @@ namespace eval ::xo::db {
     }
     # Standard mapping rules
     switch -glob -- $name {
-      ::xo::db::Object {return acs_object}
-      ::xo::db::CrItem {return content_revision}
-      ::xo::db::*      {return [string range $name 10 end]}
-      default          {return $name}
+      ::xo::db::Object   {return acs_object}
+      ::xo::db::CrItem   {return content_revision}
+      ::xo::db::CrFolder {return content_folder}
+      ::xo::db::*        {return [string range $name 10 end]}
+      default            {return $name}
     }
   }
 
@@ -929,6 +930,7 @@ namespace eval ::xo::db {
     switch -glob -- $name {
       acs_object       {return ::xo::db::Object}
       content_revision {return ::xo::db::CrItem}
+      content_folder   {return ::xo::db::CrFolder}
       ::*              {return $name}
       default          {return ::xo::db::$name}
     }
@@ -1669,19 +1671,25 @@ namespace eval ::xo::db {
     my instvar name column_name datatype pretty_name domain
     set object_type [$domain object_type]
 
+    if {$object_type eq "content_folder"} {
+      # content_folder does NOT allow to use create_attribute etc.
+      return
+    }
+
+    my log "check attribute $column_name ot=$object_type, domain=$domain"
     if {[db_string dbqd..check_att {select 0 from acs_attributes where 
       attribute_name = :column_name and object_type = :object_type} -default 1]} {
-
+      
       if {![::xo::db::Class object_type_exists_in_db -object_type $object_type]} {
-	$domain create_object_type
+        $domain create_object_type
       }
-
+      
       ::xo::db::sql::content_type create_attribute \
-	  -content_type $object_type \
-	  -attribute_name $column_name \
-	  -datatype $datatype \
-	  -pretty_name $pretty_name \
-	  -column_spec [my column_spec]
+          -content_type $object_type \
+          -attribute_name $column_name \
+          -datatype $datatype \
+          -pretty_name $pretty_name \
+          -column_spec [my column_spec]
     }
   }
 
