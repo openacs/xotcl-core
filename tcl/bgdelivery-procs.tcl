@@ -235,10 +235,19 @@ bgdelivery ad_proc returnfile {{-client_data ""} status_code mime_type filename}
   #ns_setexpires 1000000
   #ns_log notice "expires-set $filename"
 
+  #
+  # Make sure to set "connection close" for the reqests (in other
+  # words, don't allow keep-alive, which is does not make sense, when
+  # we close the connections manually in the bgdeliverfy thread).
+  #
+  if {[ns_info name] eq "NaviServer"} {
+    ns_conn keepalive 0
+  }
+
   if {[my write_headers $status_code $mime_type $size]} {
 
     if {$size == 0} {
-      # Tcl behaves differnt, when one tries to send 0 bytes via
+      # Tcl behaves different, when one tries to send 0 bytes via
       # file_copy. So, we handle this special case here...
       # There is actualy nothing to deliver....
       return
