@@ -47,7 +47,8 @@ namespace eval ::Generic {
     my forward var uplevel #$level set 
 
     my instvar data folder_id
-    set folder_id [[$data package_id] folder_id]
+    set package_id [$data package_id]
+    set folder_id [expr {[$data exists parent_id] ? [$data parent_id] : [$package_id folder_id]}]
     set class     [$data info class]
 
     if {![my exists add_page_title]} {
@@ -162,7 +163,7 @@ namespace eval ::Generic {
     if {$link eq "view"} {
       set link [export_vars -base $link {item_id}]
     }
-    ns_log notice "-- redirect to $link // [string match *\?* $link]"
+    #ns_log notice "-- redirect to $link // [string match *\?* $link]"
     ad_returnredirect $link
     ad_script_abort
   }
@@ -180,6 +181,7 @@ namespace eval ::Generic {
     # set form name for adp file
     my set $template [my name]
     my instvar data folder_id
+
     set object_type [[$data info class] object_type]
     if {[catch {set object_name [$data set name]}]} {set object_name ""}
     #my log "-- $data, cl=[$data info class] [[$data info class] object_type]"
@@ -189,6 +191,7 @@ namespace eval ::Generic {
                      [list folder_id $folder_id] \
                      [list __object_name $object_name]] 
     if {[info exists export]} {foreach pair $export {lappend exports $pair}}
+
     ad_form -name [my name] -form [my fields] \
         -export $exports -action [my action] -html [my html]
 
@@ -234,7 +237,6 @@ namespace eval ::Generic {
         -new_request $new_request -edit_request $edit_request \
         -on_validation_error $on_validation_error -after_submit $after_submit
   }
-
 }
 namespace import -force ::Generic::*
 

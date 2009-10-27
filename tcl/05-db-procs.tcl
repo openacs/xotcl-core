@@ -1676,7 +1676,7 @@ namespace eval ::xo::db {
       return
     }
 
-    my log "check attribute $column_name ot=$object_type, domain=$domain"
+    #my log "check attribute $column_name ot=$object_type, domain=$domain"
     if {[db_string dbqd..check_att {select 0 from acs_attributes where 
       attribute_name = :column_name and object_type = :object_type} -default 1]} {
       
