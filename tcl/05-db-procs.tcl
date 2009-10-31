@@ -418,7 +418,6 @@ namespace eval ::xo::db {
   } {
     return [ns_cache eval xotcl_object_type_cache $id {
       db_1row [my qn get_class] "select object_type from acs_objects where object_id=$id"
-      db_1row [my qn get_class] "select object_type from acs_objects where object_id=$id"
       return $object_type
     }]
   }
@@ -681,7 +680,7 @@ namespace eval ::xo::db {
       set function_args [my get_function_args $package_name $object_name]
       set function_args [my fix_function_args $function_args $package_name $object_name]
       set psql_args [my sql-arguments $function_args $package_name $object_name]
-      #ns_log notice "-- psql-args=$psql_args"
+      #ns_log notice "-- select ${package_name}__${object_name} ($psql_args)"
       my set sql [subst {
         select ${package_name}__${object_name}($psql_args)
       }]
@@ -930,6 +929,7 @@ namespace eval ::xo::db {
     switch -glob -- $name {
       acs_object       {return ::xo::db::Object}
       content_revision {return ::xo::db::CrItem}
+      content_item     {return ::xo::db::CrItem}
       content_folder   {return ::xo::db::CrFolder}
       ::*              {return $name}
       default          {return ::xo::db::$name}
