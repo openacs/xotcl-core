@@ -346,7 +346,7 @@ namespace eval ::xo {
   
   Table instproc destroy {} {
     #my log "-- "
-    foreach c {:__bulkactions __actions __columns} {
+    foreach c {__bulkactions __actions __columns} {
       #my log "-- namespace eval [self]::$c {namespace forget *}"
       namespace eval [self]::$c {namespace forget *}
     }
