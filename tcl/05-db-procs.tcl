@@ -928,7 +928,7 @@ namespace eval ::xo::db {
   ::xo::db::Class proc object_type_to_class {name} {
     switch -glob -- $name {
       acs_object       {return ::xo::db::Object}
-      content_revision {return ::xo::db::CrItem}
+      content_revision -
       content_item     {return ::xo::db::CrItem}
       content_folder   {return ::xo::db::CrFolder}
       ::*              {return $name}

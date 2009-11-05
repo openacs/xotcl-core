@@ -1249,6 +1249,9 @@ namespace eval ::xo::db {
     return $allowed
   }
 
+  #
+  # CrFolder
+  #
   ::xo::db::CrClass create ::xo::db::CrFolder \
       -superclass ::xo::db::CrItem  \
       -pretty_name "Folder" -pretty_plural "Folders" \
@@ -1272,6 +1275,210 @@ namespace eval ::xo::db {
 
         @see ::xowiki::Folder
     }
+
+  # TODO: the following block should not be necessary We should get
+  # rid of the old "folder object" in xowiki and use parameter pages
+  # instead. The primary usage of the xowiki folder object is for
+  #
+  #  a) specifying richt-text properties for an instance
+  #  b) provide a title for the instance
+  # 
+  # We should provide either a minimal parameter page for this
+  # purposes, or - more conservative - provide simply package
+  # parameters for this. The only thing we are loosing are "computed
+  # parameters", what most probably no-one uses. The delegation based
+  # parameters are most probably good replacement to manage such
+  # parameters site-wide.
+
+  ::xo::db::CrFolder ad_proc instance_select_query {
+    {-select_attributes ""}
+    {-orderby ""}
+    {-where_clause ""}
+    {-from_clause ""}
+    {-with_subtypes:boolean true}
+    {-with_children:boolean true}
+    {-publish_status}
+    {-count:boolean false}
+    {-folder_id}
+    {-parent_id}
+    {-page_size 20}
+    {-page_number ""}
+    {-base_table "cr_folders"}
+  } {
+    returns the SQL-query to select the CrItems of the specified object_type
+    @select_attributes attributes for the sql query to be retrieved, in addition
+    to item_id, name, publish_status, and object_type, which are always returned
+    @param orderby for ordering the solution set
+    @param where_clause clause for restricting the answer set
+    @param with_subtypes return subtypes as well
+    @param with_children return immediate child objects of all objects as well
+    @param count return the query for counting the solutions
+    @param folder_id parent_id
+    @param publish_status one of 'live', 'ready', or 'production'
+    @param base_table typically automatic view, must contain title and revision_id
+    @return sql query
+  } {
+    if {![info exists folder_id]} {my instvar folder_id}
+    if {![info exists parent_id]} {set parent_id $folder_id}
+
+    if {$base_table eq "cr_folders"} {
+      set attributes [list ci.item_id ci.name ci.publish_status acs_objects.object_type] 
+    } else {
+      set attributes [list bt.item_id ci.name ci.publish_status bt.object_type] 
+    }
+    foreach a $select_attributes {
+      # if {$a eq "title"} {set a bt.title}
+      lappend attributes $a
+    }
+    # FIXME: This is dirty: We "fake" the base table for this function, so we can reuse the code
+    set type_selection_clause [my type_selection_clause -base_table cr_revisions -with_subtypes false]
+    #my log "type_selection_clause -with_subtypes $with_subtypes returns $type_selection_clause"
+    if {$count} {
+      set attribute_selection "count(*)"
+      set orderby ""      ;# no need to order when we count
+      set page_number  ""      ;# no pagination when count is used
+    } else {
+      set attribute_selection [join $attributes ,]
+    }
+
+    set cond [list]
+    if {$type_selection_clause ne ""} {lappend cond $type_selection_clause}
+    if {$where_clause ne ""}          {lappend cond $where_clause}
+    if {[info exists publish_status]} {lappend cond "ci.publish_status eq '$publish_status'"}
+    if {$base_table eq "cr_folders"} {
+      lappend cond "acs_objects.object_id = cf.folder_id and ci.item_id = cf.folder_id"
+      set acs_objects_table "acs_objects, cr_items ci, "
+    } else {
+      lappend cond "ci.item_id = bt.item_id"
+      set acs_objects_table ""
+    }
+    if {$parent_id ne ""} {
+      set parent_clause "ci.parent_id = $parent_id"
+      if {$with_children} {
+        lappend cond "ci.item_id in (
+                select children.item_id from cr_items parent, cr_items children
+                where children.tree_sortkey between parent.tree_sortkey and tree_right(parent.tree_sortkey)
+                and parent.item_id = $parent_id and parent.tree_sortkey <> children.tree_sortkey)"
+      } else {
+        lappend cond $parent_clause
+      }
+    }
+
+    if {$page_number ne ""} {
+      set limit $page_size
+      set offset [expr {$page_size*($page_number-1)}]
+    } else {
+      set limit ""
+      set offset ""
+    }
+
+    set sql [::xo::db::sql select \
+		 -vars $attribute_selection \
+		 -from "$acs_objects_table cr_folders cf $from_clause" \
+		 -where [join $cond " and "] \
+		 -orderby $orderby \
+		 -limit $limit -offset $offset]
+    return $sql
+  }
+
+  ::xo::db::CrFolder ad_proc get_instance_from_db {
+    {-item_id 0}
+    {-revision_id 0}
+  } {
+    The "standard" get_instance_from_db methods return objects following the
+    naming convention "::<acs_object_id>", e.g. ::1234
+
+    Usually, the id of the item that is fetched from the database is used. However,
+    XoWiki's "folder objects" (i.e. an ::xowiki::Object instance that can be used
+    to configure the respective instance) are created using the acs_object_id of the
+    root folder of the xowiki instance, which is actually the id of another acs_object.
+
+    Because of this, we cannot simply create the instances of CrFolder using the
+    "standard naming convention". Instead we create them as ::cr_folder<acs_object_id>
+  } {
+    set object ::cr_folder$item_id
+    if {![my isobject $object]} {
+      my fetch_object -object $object -item_id $item_id
+      $object destroy_on_cleanup
+    }
+    return $object
+  }
+
+
+  ::xo::db::CrFolder ad_proc fetch_object {
+    -item_id:required
+    {-revision_id 0}
+    -object:required
+  } {
+    We overwrite the default fetch_object method here.
+    We join acs_objects, cr_items and cr_folders and fetch
+    all attributes. The revision_id is completely ignored.
+    @see CrClass fetch_object
+  } {
+    if {![::xotcl::Object isobject $object]} {
+      my create $object
+    }
+    
+    $object db_1row [my qn fetch_folder] "
+        SELECT * FROM cr_folders
+        JOIN cr_items on cr_folders.folder_id = cr_items.item_id
+        JOIN acs_objects on cr_folders.folder_id = acs_objects.object_id
+        WHERE folder_id = $item_id"
+
+    $object initialize_loaded_object
+    return $object
+  }
+
+  ::xo::db::CrFolder ad_instproc save_new {-creation_user} {
+  } {
+    my instvar parent_id package_id folder_id
+    [my info class] get_context package_id creation_user creation_ip
+    set folder_id [content::folder::new \
+		       -name [my set name] \
+		       -label [my set label] \
+		       -description [my set description] \
+		       -parent_id $parent_id \
+		       -package_id $package_id \
+		       -creation_user $creation_user \
+		       -creation_ip $creation_ip]
+    #parent_s has_child_folders attribute could have become outdated
+    if { [my isobject ::$parent_id] } {
+      ::$parent_id set has_child_folders t
+    }
+    ::xo::clusterwide ns_cache flush xotcl_object_cache ::$parent_id
+    # who is setting sub_folder_list?
+    #db_flush_cache -cache_key_pattern sub_folder_list_*
+    return $folder_id
+  }
+
+  ::xo::db::CrFolder ad_instproc save {args} { }  {
+    my instvar folder_id
+    content::folder::update \
+        -folder_id $folder_id \
+        -attributes [list \
+			 [list name [my set name]] \
+			 [list label [my set label]] \
+			 [list description [my set description]]\
+			]
+    my get_context package_id user_id ip
+    db_1row _ "select acs_object__update_last_modified(:folder_id,$user,'$ip')"
+  }
+
+  ::xo::db::CrFolder instproc is_package_root_folder {} {
+    my instvar package_id folder_id
+    return [expr {$folder_id eq [::$package_id folder_id]} ? true : false]
+  }
+  
+  ::xo::db::CrFolder instproc delete {} {
+    my instvar package_id name parent_id folder_id
+    if {[my is_package_root_folder]} {
+      ad_return_error "Removal denied" "Dont delete the package root folder, delete the package"
+      return
+    }
+    ::xo::db::sql::content_folder del -folder_id $folder_id -cascade_p t
+    ad_returnredirect [my query_parameter return_url]
+  }
+  
 
   #
   # Caching interface
