@@ -1070,23 +1070,22 @@ namespace eval ::xo::db {
     set base [$package_id url]
     set sql [::xo::db::sql select \
 		 -map_function_names true \
-		 -vars "ci.name, n.revision_id as version_id,\
-                        person__name(n.creation_user) as author, \
-                        n.creation_user as author_id, \
-                        to_char(n.last_modified,'YYYY-MM-DD HH24:MI:SS') as last_modified_ansi,\
-                        n.description,\
-                        acs_permission__permission_p(n.revision_id,:user_id,'admin') as admin_p,\
-                        acs_permission__permission_p(n.revision_id,:user_id,'delete') as delete_p,\
+		 -vars "ci.name, r.revision_id as version_id,\
+                        person__name(o.creation_user) as author, \
+                        o.creation_user as author_id, \
+                        to_char(o.last_modified,'YYYY-MM-DD HH24:MI:SS') as last_modified_ansi,\
+                        r.description,\
+                        acs_permission__permission_p(r.revision_id,:user_id,'admin') as admin_p,\
+                        acs_permission__permission_p(r.revision_id,:user_id,'delete') as delete_p,\
                         r.content_length,\
-                        content_revision__get_number(n.revision_id) as version_number " \
-		 -from "cr_revisionsi n, cr_items ci, cr_revisions r" \
-		 -where "ci.item_id = n.item_id and ci.item_id = :page_id
-             and r.revision_id = n.revision_id 
+                        content_revision__get_number(r.revision_id) as version_number " \
+		 -from  "cr_items ci, cr_revisions r, acs_objects o" \
+		 -where "ci.item_id = :page_id and r.item_id = ci.item_id and o.object_id = r.revision_id 
              and exists (select 1 from acs_object_party_privilege_map m
-                         where m.object_id = n.revision_id
+                         where m.object_id = r.revision_id
                           and m.party_id = :user_id
                           and m.privilege = 'read')" \
-		 -orderby "n.revision_id desc"]
+		 -orderby "r.revision_id desc"]
     
     db_foreach [my qn revisions_select] $sql {
       if {$content_length < 1024} {
