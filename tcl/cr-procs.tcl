@@ -287,80 +287,6 @@ namespace eval ::xo::db {
     }
   }
 
-  CrClass ad_instproc require_folder {
-    {-parent_id -100} 
-    {-content_types}
-    -package_id 
-    -name
-  } {
-    Get folder_id for a community id or the actual package.
-    If everything fails, return -100
-
-    @return folder_id
-  } {
-    my instvar object_type table_name
-
-    if {[info exists package_id]} {
-      set cid $package_id
-    } else {
-      if {[my isobject ::xo::cc]} {
-        set package_id [::xo::cc package_id]
-        set url [::xo::cc url]
-      } elseif {[ad_conn isconnected]} {
-        set package_id [ad_conn package_id]
-        set url [ad_conn url]
-      }
-
-      if {[info exists package_id]} {
-        set cid ""
-        if {[info command dotlrn_community::get_community_id_from_url] ne ""} {
-          set cid [dotlrn_community::get_community_id_from_url -url $url]
-        }
-        if {$cid eq ""} {
-          set cid $package_id
-        }
-      } else {
-        error "Could not determine package id or community id"
-      }
-    }
-    set folder_id [ns_cache eval xotcl_object_type_cache root_folder-$cid {
-      set folder_name "$name: $cid"
-      
-      if {[info command content::item::get_id_by_name] eq ""} {
-        set folder_id ""
-        db_0or1row [my qn get_id_by_name] "select item_id as folder_id from cr_items \
-         where name = :folder_name and parent_id = :parent_id"
-      } else {
-        set folder_id [content::item::get_id_by_name \
-                           -name $folder_name -parent_id $parent_id]
-      }
-      if {$folder_id eq ""} {
-        set folder_id [content::folder::new \
-                           -name $folder_name \
-                           -parent_id $parent_id \
-                           -package_id $package_id -context_id $cid]
-      }
-      if {![info exists content_types]} {
-        set content_types [::xo::db::Class class_to_object_type [self]]*
-        #ns_log notice "CONTENT TYPES = '$content_types'"
-      }
-
-      # register all specified content types
-      foreach content_type $content_types {
-	# if a content_type ends with a *, include subtypes
-	set with_subtypes [expr {[regexp {^(.*)[*]$} $content_type _ content_type] ? 
-                                 "t" : "f"}]
-	::xo::db::sql::content_folder register_content_type \
-	    -folder_id $folder_id \
-	    -content_type $content_type \
-	    -include_subtypes $with_subtypes
-      }
-      return $folder_id
-    }]
-    
-    return $folder_id
-  }
-
   CrClass ad_proc require_folder_object {
     -folder_id
     -package_id 
@@ -1404,6 +1330,21 @@ namespace eval ::xo::db {
     return $object
   }
 
+  ::xo::db::CrFolder ad_proc register_content_types {
+    {-folder_id:required}
+    {-content_types ""}
+  } {
+    Register the specified content types for the folder.
+    If a content_type ends with a *, include its subtypes
+  } {
+    foreach content_type $content_types {
+      set with_subtypes [expr {[regexp {^(.*)[*]$} $content_type _ content_type] ? "t" : "f"}]
+      ::xo::db::sql::content_folder register_content_type \
+          -folder_id $folder_id \
+          -content_type $content_type \
+          -include_subtypes $with_subtypes
+    }
+  }
 
   ::xo::db::CrFolder ad_proc fetch_object {
     -item_id:required
@@ -1433,17 +1374,25 @@ namespace eval ::xo::db {
   } {
     my instvar parent_id package_id folder_id
     [my info class] get_context package_id creation_user creation_ip
-    set folder_id [content::folder::new \
-		       -name [my set name] \
-		       -label [my set label] \
-		       -description [my set description] \
-		       -parent_id $parent_id \
-		       -package_id $package_id \
+    set folder_id [::xo::db::sql::content_folder new \
+                       -name [my name] -label [my label] \
+                       -description [my description] \
+                       -parent_id $parent_id \
+                       -package_id $package_id \
 		       -creation_user $creation_user \
 		       -creation_ip $creation_ip]
     #parent_s has_child_folders attribute could have become outdated
     if { [my isobject ::$parent_id] } {
       ::$parent_id set has_child_folders t
+    }
+    # well, obtaining the allowed content_types this way is not very
+    # straightforward, but since we currently create these folders via
+    # ad_forms, and we have no form variable, this should be at least
+    # robust.
+    if {[[self class] exists allowed_content_types]} {
+      ::xo::db::CrFolder register_content_types \
+          -folder_id $folder_id \
+          -content_types [[self class] set allowed_content_types]
     }
     ::xo::clusterwide ns_cache flush xotcl_object_cache ::$parent_id
     # who is setting sub_folder_list?
@@ -1476,7 +1425,6 @@ namespace eval ::xo::db {
       return
     }
     ::xo::db::sql::content_folder del -folder_id $folder_id -cascade_p t
-    ad_returnredirect [my query_parameter return_url]
   }
   
 

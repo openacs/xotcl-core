@@ -273,6 +273,41 @@ namespace eval ::xo {
     # empty hook for user level initialization
   }
 
+  Package ad_instproc require_root_folder {
+    {-parent_id -100} 
+    {-content_types {}}
+    -name:required
+  } {
+    Make sure, the root folder for the given package exists. If not, 
+    create it and register all allowed content types.
+
+    @return folder_id
+  } {
+    my instvar id
+
+    set folder_id [ns_cache eval xotcl_object_type_cache root_folder-$id {
+      
+      set folder_id [::xo::db::CrClass lookup -name $name -parent_id $parent_id]
+      if {$folder_id == 0} {
+        my log "folder with name '$name' and parent $parent_id does NOT EXIST"
+        set folder_id [::xo::db::sql::content_folder new \
+                           -name $name -label $name \
+                           -parent_id $parent_id \
+                           -package_id $id -context_id $id]
+        my log "CREATED folder '$name' and parent $parent_id ==> $folder_id"
+      }
+
+      # register all specified content types
+      ::xo::db::CrFolder register_content_types \
+          -folder_id $folder_id \
+          -content_types $content_types
+      my log "returning from cache folder_id $folder_id"
+      return $folder_id
+    }]
+    my log "returning from require folder_id $folder_id"
+    return $folder_id
+  }
+
   ::xo::Package instproc set_url {-url} {
     my url $url
     my set object [string range [my url] [string length [my package_url]] end]
