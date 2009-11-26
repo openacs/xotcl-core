@@ -31,7 +31,7 @@ namespace eval ::xo {
                      and ppm.party_id = :party_id
                      and ppm.privilege = :privilege
                    } -limit 1]
-      db_string get_package_id $sql
+      db_string [my qn get_package_id] $sql
     } else {
       ::xo::parameter get_package_id_from_package_key -package_key $package_key
     }

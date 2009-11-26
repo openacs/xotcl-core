@@ -156,15 +156,17 @@ namespace eval ::xo {
     -package_id:required
   } {
     return [ns_cache eval xotcl_object_type_cache package_key-$package_id {
-      db_string get_package_key "select package_key from apm_packages where package_id = $package_id"
+      db_string [my qn get_package_key] \
+          "select package_key from apm_packages where package_id = $package_id"
     }]
   }
   parameter proc get_package_id_from_package_key {
     -package_key:required
   } {
     return [ns_cache eval xotcl_object_type_cache package_id-$package_key {
-      db_string get_package_id [::xo::db::sql select -vars package_id -from apm_packages \
-                                    -where "package_key = :package_key" -limit 1]
+      db_string [my qn get_package_id] \
+          [::xo::db::sql select -vars package_id -from apm_packages \
+               -where "package_key = :package_key" -limit 1]
     }]
   }
 
@@ -353,7 +355,7 @@ namespace eval ::xo {
   parameter proc initialize_parameters {} {
     # Get those parameter values, which are different from the default and
     # remember theses per package_id.
-    db_foreach get_non_default_values {
+    db_foreach [my qn get_non_default_values] {
       select p.parameter_id, p.package_key, v.package_id, p.parameter_name, 
              p.default_value, v.attr_value 
       from apm_parameters p, apm_parameter_values v 

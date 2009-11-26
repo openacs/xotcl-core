@@ -105,7 +105,7 @@ namespace eval ::xo::db {
     if {[my isobject ::$item_id]} {
       return [::$item_id parent_id]
     }
-    db_1row "get_parent" "select parent_id from cr_items where item_id = :item_id"
+    db_1row [my qn "get_parent"] "select parent_id from cr_items where item_id = :item_id"
     return $parent_id
   }
 
@@ -121,7 +121,7 @@ namespace eval ::xo::db {
     if {[my isobject ::$item_id]} {
       return [::$item_id parent_id]
     }
-    db_1row "get_name" "select name from cr_items where item_id = :item_id"
+    db_1row  [my qn "get_name"] "select name from cr_items where item_id = :item_id"
     return $name
   }
 
@@ -135,7 +135,7 @@ namespace eval ::xo::db {
     @return list of item_ids
   } {
     set items [list]
-    foreach item_id [db_list "get_child_items" \
+    foreach item_id [db_list [my qn "get_child_items"] \
                          "select item_id from cr_items where parent_id = :item_id"] {
       eval lappend items $item_id [my [self proc] -item_id $item_id]
     }

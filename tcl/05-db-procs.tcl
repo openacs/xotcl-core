@@ -192,7 +192,7 @@ namespace eval ::xo::db {
       }
       if {[info exists check_function]} {
 	set check_function [string toupper $check_function]
-	set function_exists [db_string query_version {
+	set function_exists [db_string [my qn query_version] {
 	  select 1 from acs_function_args where function = :check_function 
 	  limit 1
 	} -default 0]
