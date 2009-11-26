@@ -86,12 +86,60 @@ namespace eval ::xo::db {
     CrItem. The XOTcl object is destroyed automatically on cleanup 
     (end of a connection request).
 
-    @return fully qualified object
-    @return object containing the attributes of the CrItem
+    @return fully qualified object containing the attributes of the CrItem
   } { 
     set object_type [my get_object_type -item_id $item_id -revision_id $revision_id]
     set class [::xo::db::Class object_type_to_class $object_type]
     return [$class get_instance_from_db -item_id $item_id -revision_id $revision_id]
+  }
+
+  CrClass ad_proc get_parent_id {
+    -item_id:required
+  } {
+    Get the parent_id of a content item either from an already instantiated
+    object or from the database without instantiating it. If item_id is not 
+    a valid item_id, we throw an error.
+
+    @return parent_id
+  } { 
+    if {[my isobject ::$item_id]} {
+      return [::$item_id parent_id]
+    }
+    db_1row "get_parent" "select parent_id from cr_items where item_id = :item_id"
+    return $parent_id
+  }
+
+  CrClass ad_proc get_name {
+    -item_id:required
+  } {
+    Get the name of a content item either from an already instantiated object 
+    or from the database without instantiating it. If item_id is not a valid 
+    item_id, we throw an error.
+
+    @return parent_id
+  } { 
+    if {[my isobject ::$item_id]} {
+      return [::$item_id parent_id]
+    }
+    db_1row "get_name" "select name from cr_items where item_id = :item_id"
+    return $name
+  }
+
+  CrClass ad_proc get_child_item_ids {
+    -item_id:required
+  } {
+    Return a list of content items having the provided item_id as 
+    direct or indirect parent. The method returns recursively all 
+    item_ids.
+
+    @return list of item_ids
+  } {
+    set items [list]
+    foreach item_id [db_list "get_child_items" \
+                         "select item_id from cr_items where parent_id = :item_id"] {
+      eval lappend items $item_id [my [self proc] -item_id $item_id]
+    }
+    return $items
   }
 
   CrClass ad_proc lookup {
