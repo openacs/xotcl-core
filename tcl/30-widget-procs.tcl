@@ -461,7 +461,11 @@ namespace eval ::xo {
 	  my set name [namespace tail [self]]
 	} \
 	-instproc get-slots {} {
-	  return [list -[my name] -[my name].CSSclass]
+	  set slots [list -[my name]]
+	  foreach subfield {richtext CSSclass} {
+	    lappend slots [list -[my name].$subfield ""]
+	  }
+          return $slots
 	}
 
     Class BulkAction \
@@ -665,7 +669,11 @@ namespace eval ::xo::Table {
 
   Class create TABLE::Field -superclass ::xo::Drawable 
   TABLE::Field instproc render-data {line} {
-    if {[my richtext]} {
+    $line instvar [list [my name].richtext richtext]
+    if {![info exists richtext] || $richtext eq ""} {
+      set richtext [my richtext]
+    }
+    if {$richtext} {
       html::t -disableOutputEscaping [$line set [my name]]
     } else {
       html::t [$line set [my name]] 
