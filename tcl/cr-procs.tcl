@@ -102,9 +102,8 @@ namespace eval ::xo::db {
 
     @return parent_id
   } { 
-    if {[my isobject ::$item_id]} {
-      return [::$item_id parent_id]
-    }
+    # TODO: the following line is deactivated, until we get rid of the "folder object" in xowiki
+    #if {[my isobject ::$item_id]} {return [::$item_id parent_id]}
     db_1row [my qn "get_parent"] "select parent_id from cr_items where item_id = :item_id"
     return $parent_id
   }
@@ -118,9 +117,8 @@ namespace eval ::xo::db {
 
     @return parent_id
   } { 
-    if {[my isobject ::$item_id]} {
-      return [::$item_id parent_id]
-    }
+    # TODO: the following line is deactivated, until we get rid of the "folder object" in xowiki
+    #if {[my isobject ::$item_id]} {return [::$item_id parent_id]}
     db_1row  [my qn "get_name"] "select name from cr_items where item_id = :item_id"
     return $name
   }

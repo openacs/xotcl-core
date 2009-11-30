@@ -301,10 +301,10 @@ namespace eval ::xo {
       ::xo::db::CrFolder register_content_types \
           -folder_id $folder_id \
           -content_types $content_types
-      my log "returning from cache folder_id $folder_id"
+      #my log "returning from cache folder_id $folder_id"
       return $folder_id
     }]
-    my log "returning from require folder_id $folder_id"
+    #my log "returning from require folder_id $folder_id"
     return $folder_id
   }
 
