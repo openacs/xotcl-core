@@ -74,6 +74,41 @@ if {![string match *contentsentlength* $msg]} {
   }
   fileSpooler tick
 
+  # 
+  # A first draft of a h264 pseudo streaming spooler.
+  # Like for the fileSpooler, we create a single spooler object
+  # that handles spooling for all active streams. The per-stream context
+  # is passed via argument lists.
+  #
+
+  Object h264Spooler
+  h264Spooler set blockCount 0
+  h264Spooler proc spool {-channel -filename -context {-client_data ""} -query} {
+    #ns_log notice "h264 SPOOL gets filename '$filename'"
+    incr ::delivery_count
+    fconfigure $channel -translation binary -blocking false
+    set handle [h264open $filename $query]
+    fileevent $channel writable [list [self] writeBlock $client_data $filename $handle $channel]
+    set ::running($channel,$handle,$filename) $context
+  }
+  h264Spooler proc writeBlock {client_data filename handle channel} {
+    h264Spooler incr blockCount
+    #ns_log notice "h264 WRITE BLOCK $channel $handle"
+    if {[eof $channel] || [h264eof $handle]} {
+      my finish $client_data $filename $handle $channel
+    } else {
+      if {[catch {puts -nonewline $channel [h264read $handle]} errorMsg]} {
+        ns_log notice "h264: error on writing to channel $channel: $errorMsg"
+        my finish $client_data $filename $handle $channel
+      }
+    }
+  }
+  h264Spooler proc finish {client_data filename handle channel} {
+    ns_log notice "h264 FINISH $channel $handle"
+    if {[catch {close $channel} e]} {ns_log notice "bgdelivery, closing h264 for $filename, error: $e"}
+    if {[catch {h264close $handle} e]} {ns_log notice "bgdelivery, closing h264 $filename, error: $e"}
+    unset ::running($channel,$handle,$filename)
+  }
 
 
   ###############
@@ -283,9 +318,23 @@ bgdelivery ad_proc returnfile {{-client_data ""} status_code mime_type filename}
       ::xo::ConnectionContext require
     }
     #my log [::xo::cc serialize]
-    my do -async ::fileSpooler spool -channel $ch -filename $filename \
-	-context [list [::xo::cc requestor],[::xo::cc url] [ns_conn start]] \
-	-client_data $client_data
+
+    set query [::xo::cc actual_query]
+    set contentType [ns_set iget [ns_conn outputheaders] content-type]
+    if {[string match video/mp4* $contentType] && $query ne "" 
+        && [info command h264open] ne ""
+      } {
+      #my log "MP4 q=[::xo::cc actual_query], h=[ns_set array [ns_conn outputheaders]]"
+      my do -async ::h264Spooler spool -channel $ch -filename $filename \
+          -context [list [::xo::cc requestor],[::xo::cc url] [ns_conn start]] \
+          -query $query \
+          -client_data $client_data
+    } else {
+      #my log "FILE SPOOL $filename"
+      my do -async ::fileSpooler spool -channel $ch -filename $filename \
+          -context [list [::xo::cc requestor],[::xo::cc url] [ns_conn start]] \
+          -client_data $client_data
+    }
     ns_conn contentsentlength $size       ;# maybe overly optimistic
   }
 }

@@ -406,7 +406,7 @@ namespace eval ::xo {
       if {[regexp {^#(.*)#$} $label _ message_key]} {
         set label [_ $message_key]
       }
-      set value [string map {\" \\\"} $label]
+      set value [string map {\" \\\" \n \r)} $label]
       lappend line \"$value\"
     }
     append output [join $line ,] \n
@@ -414,7 +414,7 @@ namespace eval ::xo {
       set line [list]
       foreach column [[self]::__columns children] {
         if {[$column exists no_csv]} continue
-	set value [string map {\" \\\"} [$row set [$column set name]]]
+	set value [string map {\" \\\" \n \r} [$row set [$column set name]]]
 	lappend line \"$value\"
       }
       append output [join $line ,] \n
