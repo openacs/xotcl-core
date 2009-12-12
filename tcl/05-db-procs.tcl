@@ -1317,6 +1317,7 @@ namespace eval ::xo::db {
     {-named_objects:boolean false}
     {-object_named_after ""}
     {-destroy_on_cleanup:boolean true}
+    {-initialize true}
   } {
 
     Retrieve multiple objects from the database using the given SQL
@@ -1341,6 +1342,11 @@ namespace eval ::xo::db {
     @destroy_on_cleanup If this flag is true, the objects (and ordered
     composite) will be automatically destroyed on cleaup (typically
     after the request was processed).
+
+    @initialize can be used to avoid full initialization, when
+    a large series of of objects is loaded. Per default, these objects
+    are initialized via initialize_loaded_object, when the are 
+    of type ::xo::db::Object
   } {
     if {$object_class eq ""} {set object_class [self]}
     if {$sql eq ""} {set sql [my instance_select_query]}
@@ -1382,7 +1388,7 @@ namespace eval ::xo::db {
             $o class $ot
           }
         }
-        if {[$o istype ::xo::db::Object]} {
+        if {$initialize && [$o istype ::xo::db::Object]} {
           $o initialize_loaded_object
         }
         #my log "--DB more = $continue [$o serialize]" 
