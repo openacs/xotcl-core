@@ -32,11 +32,20 @@ if {![string match *contentsentlength* $msg]} {
 
 ::xotcl::THREAD create bgdelivery {
   ###############
+  # FileSpooler 
+  ###############  
+  # Class FileSpooler makes it easier to overload the 
+  # per-object methods of the concrete file spoolers
+  # (such has fileSpooler or h264Spooler)
+
+  Class create FileSpooler
+
+  ###############
   # File delivery
   ###############
   set ::delivery_count 0
 
-  Object fileSpooler
+  FileSpooler create fileSpooler
   fileSpooler set tick_interval 60000 ;# 1 min
   fileSpooler proc spool {-channel -filename -context {-client_data ""}} {
     set fd [open $filename]
@@ -81,33 +90,45 @@ if {![string match *contentsentlength* $msg]} {
   # is passed via argument lists.
   #
 
-  Object h264Spooler
+  FileSpooler create h264Spooler
   h264Spooler set blockCount 0
+  h264Spooler set byteCount 0
   h264Spooler proc spool {-channel -filename -context {-client_data ""} -query} {
     #ns_log notice "h264 SPOOL gets filename '$filename'"
+    if {[catch {set handle [h264open $filename $query]} errorMsg]} {
+      ns_log error "h264: error opening h264 channel for $filename $query: $errorMsg"
+      if {[catch {close $channel} e]} {ns_log notice "bgdelivery, closing h264 for $filename, error: $e"}
+      return
+    }
     incr ::delivery_count
     fconfigure $channel -translation binary -blocking false
-    set handle [h264open $filename $query]
     fileevent $channel writable [list [self] writeBlock $client_data $filename $handle $channel]
     set ::running($channel,$handle,$filename) $context
+    set ::bytes($channel,$handle,$filename) 0
   }
   h264Spooler proc writeBlock {client_data filename handle channel} {
     h264Spooler incr blockCount
+    set bytesVar ::bytes($channel,$handle,$filename)
     #ns_log notice "h264 WRITE BLOCK $channel $handle"
     if {[eof $channel] || [h264eof $handle]} {
-      my finish $client_data $filename $handle $channel
+      my end-delivery -client_data $client_data $filename $handle $channel [set $bytesVar]
     } else {
-      if {[catch {puts -nonewline $channel [h264read $handle]} errorMsg]} {
+      set block [h264read $handle]
+      set len [string bytelength $block]
+      incr $bytesVar $len
+      h264Spooler incr byteCount $len
+      if {[catch {puts -nonewline $channel $block} errorMsg]} {
         ns_log notice "h264: error on writing to channel $channel: $errorMsg"
-        my finish $client_data $filename $handle $channel
+        my end-delivery -client_data $client_data $filename $handle $channel [set $bytesVar]
       }
     }
   }
-  h264Spooler proc finish {client_data filename handle channel} {
+  h264Spooler proc end-delivery {{-client_data ""} filename handle channel bytes args} {
     ns_log notice "h264 FINISH $channel $handle"
     if {[catch {close $channel} e]} {ns_log notice "bgdelivery, closing h264 for $filename, error: $e"}
     if {[catch {h264close $handle} e]} {ns_log notice "bgdelivery, closing h264 $filename, error: $e"}
     unset ::running($channel,$handle,$filename)
+    unset ::bytes($channel,$handle,$filename)
   }
 
 
@@ -265,12 +286,35 @@ bgdelivery ad_proc returnfile {{-client_data ""} status_code mime_type filename}
   blocking a request thread. This is especially important when large files are 
   requested over slow (e.g. dial-ip) connections.
 } {
-  #ns_log notice "status_code = $status_code, filename=$filename"
-  set size [file size $filename]
+
   #ns_setexpires 1000000
   #ns_log notice "expires-set $filename"
+  #ns_log notice "status_code = $status_code, filename=$filename"
 
-  #
+  if {![my isobject ::xo:cc]} {
+    ::xo::ConnectionContext require
+  }
+  set query [::xo::cc actual_query]
+  set use_h264 [expr {[string match video/mp4* $mime_type] && $query ne "" 
+                      && ([string match "*start=*" $query] || [string match "*end=*" $query])
+                      && [info command h264open] ne ""}]
+
+  if {$use_h264} {
+    # we have to obtain the size from the file; unfortunately, this
+    # requires a duplicate open+close of the h264 stream. If the
+    # application is performance sensitive, one might consider to use
+    # the possibly incorrect size form the file system instead (works
+    # perfectly for e.g. flowplayer)
+    if {[catch {set handle [h264open $filename $query]} errorMsg]} {
+      ns_log error "h264: error opening h264 channel for $filename $query: $errorMsg"
+      return
+    }
+    set size [h264length $handle]
+    h264close $handle
+  } else {
+    set size [file size $filename]
+  }
+
   # Make sure to set "connection close" for the reqests (in other
   # words, don't allow keep-alive, which is does not make sense, when
   # we close the connections manually in the bgdeliverfy thread).
@@ -295,7 +339,15 @@ bgdelivery ad_proc returnfile {{-client_data ""} status_code mime_type filename}
 
     # my log "+++ lock [my set bgmutex]"
     ::thread::mutex lock [my set mutex]
-    #ns_mutex lock [my set bgmutex]
+
+    #
+    # Transfer the channel to the bgdelivery thread and report errors
+    # in detail. 
+    #
+    # Notice, that Tcl versions up to 8.5.4 have a bug in this area.
+    # If one uses an earlier version of Tcl, please apply:
+    # http://tcl.cvs.sourceforge.net/viewvc/tcl/tcl/generic/tclIO.c?r1=1.61.2.29&r2=1.61.2.30&pathrev=core-8-4-branch
+    #
 
     catch {
       set ch [ns_conn channel]
@@ -314,16 +366,8 @@ bgdelivery ad_proc returnfile {{-client_data ""} status_code mime_type filename}
     if {$errorMsg ne ""} {
       error ERROR=$errorMsg
     }
-    if {![my isobject ::xo:cc]} {
-      ::xo::ConnectionContext require
-    }
-    #my log [::xo::cc serialize]
 
-    set query [::xo::cc actual_query]
-    set contentType [ns_set iget [ns_conn outputheaders] content-type]
-    if {[string match video/mp4* $contentType] && $query ne "" 
-        && [info command h264open] ne ""
-      } {
+    if {$use_h264} {
       #my log "MP4 q=[::xo::cc actual_query], h=[ns_set array [ns_conn outputheaders]]"
       my do -async ::h264Spooler spool -channel $ch -filename $filename \
           -context [list [::xo::cc requestor],[::xo::cc url] [ns_conn start]] \
