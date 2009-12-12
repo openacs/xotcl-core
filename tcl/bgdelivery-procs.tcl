@@ -114,7 +114,8 @@ if {![string match *contentsentlength* $msg]} {
       my end-delivery -client_data $client_data $filename $handle $channel [set $bytesVar]
     } else {
       set block [h264read $handle]
-      set len [string bytelength $block]
+      # one should not use "bytelength" on binary data: http://wiki.tcl.tk/8455
+      set len [string length $block]
       incr $bytesVar $len
       h264Spooler incr byteCount $len
       if {[catch {puts -nonewline $channel $block} errorMsg]} {
@@ -296,7 +297,7 @@ bgdelivery ad_proc returnfile {{-client_data ""} status_code mime_type filename}
   }
   set query [::xo::cc actual_query]
   set use_h264 [expr {[string match video/mp4* $mime_type] && $query ne "" 
-                      && ([string match "*start=*" $query] || [string match "*end=*" $query])
+                      && ([string match {*start=[1-9]*} $query] || [string match {*end=[1-9]*} $query])
                       && [info command h264open] ne ""}]
 
   if {$use_h264} {
