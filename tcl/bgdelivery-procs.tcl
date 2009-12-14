@@ -95,16 +95,37 @@ if {![string match *contentsentlength* $msg]} {
   h264Spooler set byteCount 0
   h264Spooler proc spool {-channel -filename -context {-client_data ""} -query} {
     #ns_log notice "h264 SPOOL gets filename '$filename'"
-    if {[catch {set handle [h264open $filename $query]} errorMsg]} {
+    if {[catch {
+      set handle [h264open $filename $query]
+    } errorMsg]} {
       ns_log error "h264: error opening h264 channel for $filename $query: $errorMsg"
       if {[catch {close $channel} e]} {ns_log notice "bgdelivery, closing h264 for $filename, error: $e"}
       return
     }
+    # set up book-keeping info
     incr ::delivery_count
+    set bytesVar ::bytes($channel,$handle,$filename)
+    set ::running($channel,$handle,$filename) $context
+    set $bytesVar 0
+    #
+    # h264open is quite expensive; in order to output the HTTP headers
+    # in the connection thread, we would have to use h264open in the
+    # connection thread as well to determine the proper size. To avoid
+    # this overhead, we don't write the headers in the connection
+    # thread and write it here instead (note that this is different to
+    # the fileSpooler above).
+    #
+    if {[catch {
+      set length [h264length $handle] 
+      puts $channel "HTTP/1.0 200 OK\nContent-Type: video/mp4\nContent-Length: $length\n"
+      flush $channel
+    } errorMsg]} {
+      ns_log notice "h264: error writing headers in h264 channel for $filename $query: $errorMsg"
+      my end-delivery -client_data $client_data $filename $handle $channel [set $bytesVar]
+    }
+    # setup async delivery
     fconfigure $channel -translation binary -blocking false
     fileevent $channel writable [list [self] writeBlock $client_data $filename $handle $channel]
-    set ::running($channel,$handle,$filename) $context
-    set ::bytes($channel,$handle,$filename) 0
   }
   h264Spooler proc writeBlock {client_data filename handle channel} {
     h264Spooler incr blockCount
@@ -299,19 +320,22 @@ bgdelivery ad_proc returnfile {{-client_data ""} status_code mime_type filename}
   set use_h264 [expr {[string match video/mp4* $mime_type] && $query ne "" 
                       && ([string match {*start=[1-9]*} $query] || [string match {*end=[1-9]*} $query])
                       && [info command h264open] ne ""}]
-
   if {$use_h264} {
-    # we have to obtain the size from the file; unfortunately, this
-    # requires a duplicate open+close of the h264 stream. If the
-    # application is performance sensitive, one might consider to use
-    # the possibly incorrect size form the file system instead (works
-    # perfectly for e.g. flowplayer)
-    if {[catch {set handle [h264open $filename $query]} errorMsg]} {
-      ns_log error "h264: error opening h264 channel for $filename $query: $errorMsg"
-      return
+    if {0} {
+      # we have to obtain the size from the file; unfortunately, this
+      # requires a duplicate open+close of the h264 stream. If the
+      # application is performance sensitive, one might consider to use
+      # the possibly incorrect size form the file system instead (works
+      # perfectly for e.g. flowplayer)
+      if {[catch {set handle [h264open $filename $query]} errorMsg]} {
+        ns_log error "h264: error opening h264 channel for $filename $query: $errorMsg"
+        return
+      }
+      set size [h264length $handle]
+      h264close $handle
+    } else {
+      set size [file size $filename]
     }
-    set size [h264length $handle]
-    h264close $handle
   } else {
     set size [file size $filename]
   }
@@ -324,64 +348,72 @@ bgdelivery ad_proc returnfile {{-client_data ""} status_code mime_type filename}
     ns_conn keepalive 0
   }
 
-  if {[my write_headers $status_code $mime_type $size]} {
-
-    if {$size == 0} {
-      # Tcl behaves different, when one tries to send 0 bytes via
-      # file_copy. So, we handle this special case here...
-      # There is actualy nothing to deliver....
-      return
-    }
-
-    set errorMsg ""
-    # Get the thread id and make sure the bgdelivery thread is already
-    # running.
-    set tid [my get_tid]
-
-    # my log "+++ lock [my set bgmutex]"
-    ::thread::mutex lock [my set mutex]
-
-    #
-    # Transfer the channel to the bgdelivery thread and report errors
-    # in detail. 
-    #
-    # Notice, that Tcl versions up to 8.5.4 have a bug in this area.
-    # If one uses an earlier version of Tcl, please apply:
-    # http://tcl.cvs.sourceforge.net/viewvc/tcl/tcl/generic/tclIO.c?r1=1.61.2.29&r2=1.61.2.30&pathrev=core-8-4-branch
-    #
-
-    catch {
-      set ch [ns_conn channel]
-      if {[catch {thread::transfer $tid $ch} innerError]} {
-        set channels_in_use "??"
-        catch {set channels_in_use [bgdelivery do file channels]}
-        ns_log error "thread transfer failed, channel=$ch, channels_in_use=$channels_in_use"
-        error $innerError
-      }
-    } errorMsg
-
-    ::thread::mutex unlock [my set mutex]
-    #ns_mutex unlock [my set bgmutex]
-    # my log "+++ unlock [my set bgmutex]"
-
-    if {$errorMsg ne ""} {
-      error ERROR=$errorMsg
-    }
-
-    if {$use_h264} {
-      #my log "MP4 q=[::xo::cc actual_query], h=[ns_set array [ns_conn outputheaders]]"
-      my do -async ::h264Spooler spool -channel $ch -filename $filename \
-          -context [list [::xo::cc requestor],[::xo::cc url] [ns_conn start]] \
-          -query $query \
-          -client_data $client_data
-    } else {
-      #my log "FILE SPOOL $filename"
-      my do -async ::fileSpooler spool -channel $ch -filename $filename \
-          -context [list [::xo::cc requestor],[::xo::cc url] [ns_conn start]] \
-          -client_data $client_data
-    }
-    ns_conn contentsentlength $size       ;# maybe overly optimistic
+  #
+  # For the time being, we write the headers in a simplified version
+  # directly in the spooling thread to avoid the overhead of double
+  # h264opens.
+  if {!$use_h264} {
+    my write_headers $status_code $mime_type $size
   }
+
+  if {$size == 0} {
+    # Tcl behaves different, when one tries to send 0 bytes via
+    # file_copy. So, we handle this special case here...
+    # There is actualy nothing to deliver....
+    return
+  }
+
+  set errorMsg ""
+  # Get the thread id and make sure the bgdelivery thread is already
+  # running.
+  set tid [my get_tid]
+  
+  # my log "+++ lock [my set bgmutex]"
+  ::thread::mutex lock [my set mutex]
+
+  #
+  # Transfer the channel to the bgdelivery thread and report errors
+  # in detail. 
+  #
+  # Notice, that Tcl versions up to 8.5.4 have a bug in this area.
+  # If one uses an earlier version of Tcl, please apply:
+  # http://tcl.cvs.sourceforge.net/viewvc/tcl/tcl/generic/tclIO.c?r1=1.61.2.29&r2=1.61.2.30&pathrev=core-8-4-branch
+  #
+
+  catch {
+    set ch [ns_conn channel]
+    if {[catch {thread::transfer $tid $ch} innerError]} {
+      set channels_in_use "??"
+      catch {set channels_in_use [bgdelivery do file channels]}
+      ns_log error "thread transfer failed, channel=$ch, channels_in_use=$channels_in_use"
+      error $innerError
+    }
+  } errorMsg
+  
+  ::thread::mutex unlock [my set mutex]
+  #ns_mutex unlock [my set bgmutex]
+  # my log "+++ unlock [my set bgmutex]"
+  
+  if {$errorMsg ne ""} {
+    error ERROR=$errorMsg
+  }
+  
+  if {$use_h264} {
+    #my log "MP4 q=[::xo::cc actual_query], h=[ns_set array [ns_conn outputheaders]]"
+    my do -async ::h264Spooler spool -channel $ch -filename $filename \
+        -context [list [::xo::cc requestor],[::xo::cc url] [ns_conn start]] \
+        -query $query \
+        -client_data $client_data
+  } else {
+    #my log "FILE SPOOL $filename"
+    my do -async ::fileSpooler spool -channel $ch -filename $filename \
+        -context [list [::xo::cc requestor],[::xo::cc url] [ns_conn start]] \
+        -client_data $client_data
+  }
+  #
+  # set the length for the access log (which is written when the
+  # connection thread is done)
+  ns_conn contentsentlength $size       ;# maybe overly optimistic
 }
 
 ad_proc -public ad_returnfile_background {{-client_data ""} status_code mime_type filename} {
