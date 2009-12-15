@@ -313,7 +313,7 @@ bgdelivery ad_proc returnfile {{-client_data ""} status_code mime_type filename}
   #ns_log notice "expires-set $filename"
   #ns_log notice "status_code = $status_code, filename=$filename"
 
-  if {![my isobject ::xo:cc]} {
+  if {![my isobject ::xo::cc]} {
     ::xo::ConnectionContext require
   }
   set query [::xo::cc actual_query]
