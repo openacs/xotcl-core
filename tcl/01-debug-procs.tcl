@@ -132,13 +132,15 @@ namespace eval ::xo {
   #::xotcl::Object instmixin add ::xo::InstanceManager
 }
 
-::xotcl::nonposArgs proc integer args {
-  if {[llength $args] < 2} return
-  foreach {name value} $args break
-  if {![string is integer $value]} {error "value '$value' of $name not an integer"}
-}
-::xotcl::nonposArgs proc optional {name args} {
-  ;
+if {[info command ::xotcl::nonposArgs] ne ""} {
+  ::xotcl::nonposArgs proc integer args {
+    if {[llength $args] < 2} return
+    foreach {name value} $args break
+    if {![string is integer $value]} {error "value '$value' of $name not an integer"}
+  }
+  ::xotcl::nonposArgs proc optional {name args} {
+    ;
+  }
 }
 
 ::xotcl::Object instproc __timediff {} {
