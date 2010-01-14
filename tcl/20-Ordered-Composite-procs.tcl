@@ -94,11 +94,14 @@ namespace eval ::xo {
   }
   Class OrderedComposite::ChildManager -instproc init args {
     set r [next]
-    [my info parent] lappend __children [self]
-    #[self callingobject] lappend __children [self]
-    my set __parent [self callingobject]
+    #set parent [self callingobject] ;# not a true calling object (ns-eval), but XOTcl 1 honors it
+    #set parent [my info parent] ;# is ok in XOTcl 2, since the namespace is honored correctly
+    set parent [uplevel 1 {namespace current}]
+    #ns_log notice "-- CONTAINS r=$r p=$parent, ns=[uplevel 1 {namespace current}]"
+    $parent lappend __children [self]
+    my set __parent $parent
     #my __after_insert
-    #my log "-- adding __parent  [self callingobject] to [self]"
+    #my log "-- adding __parent  $parent to [self]"
     return $r
   }
 
