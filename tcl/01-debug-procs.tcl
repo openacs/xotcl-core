@@ -36,7 +36,7 @@ if {$::xotcl::version < 1.5} {
         {domain "[lindex [regexp -inline {^(.*)::slot::[^:]+$} [::xotcl::self]] 1]"}
         {multivalued false}
         {required false}
-        default 
+        default
         type
         spec
         pretty_name 
@@ -65,6 +65,13 @@ if {$::xotcl::version < 1.5} {
   }
 }
 
+if {[info command ::xotcl2::Object] ne ""} {
+  ns_log notice "Defining minimal XOTcl 1 compatibility for XOTcl 2 Classes"
+  ::xotcl::alias ::xo::Attribute instvar ::xotcl::cmd::Object::instvar
+  ::xotcl::alias ::xo::Attribute set -objscope ::set
+  ::xotcl::Slot method istype {class}  {::xotcl::is [self] type $class}
+}
+
 namespace eval ::xo {
   ::xo::Attribute instproc init {} {
     my instvar name pretty_name
@@ -73,11 +80,11 @@ namespace eval ::xo {
     if {![info exists pretty_name]} {
       set object_type [my domain] 
       if {[regexp {^::([^:]+)::} $object_type _ head]} {
-	set tail [namespace tail $object_type]
-	set pretty_name "#$head.$tail-$name#"
-	#my log "--created pretty_name = $pretty_name"
+        set tail [namespace tail $object_type]
+        set pretty_name "#$head.$tail-$name#"
+        #my log "--created pretty_name = $pretty_name"
       } else {
-	error "Cannot determine automatically message key for pretty name. \
+        error "Cannot determine automatically message key for pretty name. \
 		Use namespaces for classes"
       }
     }

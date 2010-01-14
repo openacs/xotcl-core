@@ -38,6 +38,7 @@ namespace eval ::xo::db {
                    -parameter XOTclObjectTypeCacheSize \
                    -default 10000]
   }
+
   #
   # A few helper functions
   #
@@ -351,6 +352,7 @@ namespace eval ::xo::db {
   }
 }
 
+
 namespace eval ::xo::db {
   #
   # ::xo::db::Class is a meta class for interfacing with acs_object_types.
@@ -381,7 +383,7 @@ namespace eval ::xo::db {
 	@see ::xo::db::Object
       }
   
-  ::xo::db::Class set __default_superclass ::xo::db::Object  ;# will be supported in XOTcl 1.6
+  #::xo::db::Class set __default_superclass ::xo::db::Object  ;# will be supported in XOTcl 1.6
 
   #
   # Define an XOTcl interface for creating new object types
@@ -842,8 +844,6 @@ namespace eval ::xo::db {
   }
 
   
-
-
   ::xo::db::Class instproc dbproc_nonposargs {object_name} {
     #
     # This method compiles a stored procedure into a xotcl method 
@@ -1034,6 +1034,7 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::Class instproc db_slots {} {
+
     my instvar id_column db_slot
     array set db_slot [list]
     #
@@ -1190,6 +1191,7 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::Class instproc init {} {
+
     if {![::xo::db::Class object_type_exists_in_db -object_type [my object_type]]} {
       my create_object_type
     }
@@ -1303,7 +1305,6 @@ namespace eval ::xo::db {
     return ::$id
   }
 
-
   ##################
   # query interface
   ##################
@@ -1348,6 +1349,7 @@ namespace eval ::xo::db {
     are initialized via initialize_loaded_object, when the are 
     of type ::xo::db::Object
   } {
+
     if {$object_class eq ""} {set object_class [self]}
     if {$sql eq ""} {set sql [my instance_select_query]}
     if {$as_ordered_composite} {

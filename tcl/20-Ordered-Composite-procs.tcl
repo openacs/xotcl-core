@@ -94,7 +94,8 @@ namespace eval ::xo {
   }
   Class OrderedComposite::ChildManager -instproc init args {
     set r [next]
-    [self callingobject] lappend __children [self]
+    [my info parent] lappend __children [self]
+    #[self callingobject] lappend __children [self]
     my set __parent [self callingobject]
     #my __after_insert
     #my log "-- adding __parent  [self callingobject] to [self]"

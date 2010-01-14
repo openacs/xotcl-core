@@ -141,8 +141,15 @@ namespace eval ::xo {
     #
     # Complete some slot definitions:
     #
-    package_key   configure -required true
-    default_value configure -required true
+    # TODO: the following two settings making package_key and
+    # default_value required are semantically correct. However, this
+    # prohibits that apm_parameters can be created via ::xo::db::Class
+    # instantiate_objects, since this functions tries to create
+    # objects first without parameters.
+    #
+    #package_key   configure -required true
+    #default_value configure -required true
+
     section_name  configure -default ""
   }
 

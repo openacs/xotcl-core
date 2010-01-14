@@ -121,15 +121,15 @@ namespace eval ::xo {
 
   Class create HttpCore \
       -slots {
-        Attribute host
-        Attribute protocol -default "http" 
-        Attribute port 
-        Attribute path -default "/"
-        Attribute url
-        Attribute post_data -default ""
-        Attribute content_type -default "text/plain"
-        Attribute request_header_fields -default {}
-        Attribute user_agent -default "xohttp/0.2"
+        Attribute create host
+        Attribute create protocol -default "http" 
+        Attribute create port 
+        Attribute create path -default "/"
+        Attribute create url
+        Attribute create post_data -default ""
+        Attribute create content_type -default "text/plain"
+        Attribute create request_header_fields -default {}
+        Attribute create user_agent -default "xohttp/0.2"
       }
 
   # Provide for mapping from HTTP charset encoding labels
@@ -439,7 +439,7 @@ namespace eval ::xo {
   #
 
   Class HttpRequest -superclass HttpCore -slots {
-    Attribute timeout -type integer
+    Attribute create timeout -type integer
   }
 
   HttpRequest instproc init {} {
@@ -507,8 +507,8 @@ namespace eval ::xo {
   #
 
   Class AsyncHttpRequest -superclass HttpCore -slots {
-    Attribute timeout -type integer -default 10000 ;# 10 seconds
-    Attribute request_manager
+    Attribute create timeout -type integer -default 10000 ;# 10 seconds
+    Attribute create request_manager
   }
   AsyncHttpRequest instproc set_timeout {} {
     my cancel_timeout
@@ -668,7 +668,7 @@ namespace eval ::xo {
   Class create AsyncHttpRequest::RequestManager \
       -superclass AsyncHttpRequest::SimpleListener \
       -slots {
-	Attribute condition
+	Attribute create condition
       } -instproc finalize {obj status value} {
 	# set the result and do the notify
 	my instvar condition

@@ -382,10 +382,10 @@ namespace eval ::xo {
     set cl [self class]
     [self] mixin ${cl}::$renderer 
     foreach child [$cl info classchildren] {
-      #my log "-- $child heritage [$child info heritage]"
-      if {[$child info heritage ::xo::OrderedComposite::Child] eq ""} continue
+      #my log "-- $child class [$child info class] "
       set mixinname ${cl}::${renderer}::[namespace tail $child]
       if {[::xotcl::Object isclass $mixinname]} {
+        #if {![$child istype ::xo::OrderedComposite::Child]} continue
 	$child instmixin $mixinname
 	if {$trn_mixin ne ""} {$child instmixin add $trn_mixin}
 	#my log "-- $child using instmixin <[$child info instmixin]>"
