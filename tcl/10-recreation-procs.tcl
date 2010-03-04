@@ -66,9 +66,8 @@ if {![::xotcl::Object isclass ::xotcl::RecreationClass]} {
 	if {[my exists instreconfigure]} {
 	  # before we set defaults, we must unset vars
 	  foreach var [$obj info vars] {$obj unset $var}
-	  set pcl [my info parameterclass]
 	  # set defaults and run configure
-	  $pcl searchDefaults $obj
+          $obj set_instance_vars_defaults
 	  eval $obj configure $args
 	  #my log "### instproc recreate $obj + configure $args ..."
 	}
@@ -85,9 +84,8 @@ if {![::xotcl::Object isclass ::xotcl::RecreationClass]} {
 	if {[my exists reconfigure]} {
 	  # before we set defaults, we must unset vars
 	  foreach var [$obj info vars] {$obj unset $var}
-	  set pcl [my info parameterclass]
-	  $pcl searchDefaults $obj
 	  # set defaults and run configure
+          $obj set_instance_vars_defaults
 	  eval $obj configure $args
 	}
 	if {[my exists reinit]} {
@@ -148,8 +146,8 @@ if {[string match "1.3.*" $version]} {
     }
     # set p new values
     $obj class $cl 
-    set pcl [$cl info parameterclass]
-    $pcl searchDefaults $obj
+    $obj set_instance_vars_defaults
+
     # we use uplevel to handle -volatile correctly
     set pos [my uplevel $obj configure $args]
     if {[lsearch -exact $args -init] == -1} {

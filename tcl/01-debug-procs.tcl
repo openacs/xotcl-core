@@ -5,6 +5,7 @@ package require xotcl::serializer
 
 ::Serializer exportMethods {
   ::xotcl::Object instproc log 
+  ::xotcl::Object instproc ds
   ::xotcl::Object instproc msg
   ::xotcl::Object instproc __timediff
   ::xotcl::Object instproc debug
@@ -12,6 +13,7 @@ package require xotcl::serializer
   ::xotcl::Object instproc serialize
   ::xotcl::Object instforward db_1row
   ::xotcl::Object instproc destroy_on_cleanup
+  ::xotcl::Object instproc set_instance_vars_defaults
   ::xotcl::nonposArgs proc integer
   ::xotcl::nonposArgs proc optional
 }
@@ -70,6 +72,21 @@ if {[info command ::xotcl2::Object] ne ""} {
   ::xotcl::alias ::xo::Attribute instvar ::xotcl::cmd::Object::instvar
   ::xotcl::alias ::xo::Attribute set -objscope ::set
   ::xotcl::Slot method istype {class}  {::xotcl::is [self] type $class}
+  ::xotcl2::Object method serialize {} { ::Serializer deepSerialize [self] }
+  ::xotcl2::Object method set_instance_vars_defaults {} {:configure}
+  ::xotcl::Object  method set_instance_vars_defaults {} {:configure}
+
+  ::Serializer exportMethods {
+    ::xotcl2::Object method serialize
+    ::xotcl2::Object method set_instance_vars_defaults
+    ::xotcl::Slot method istype
+  }
+
+} else {
+  ::xotcl::Object instproc set_instance_vars_defaults {} {
+    set pcl [[my info class] info parameterclass]
+    $pcl searchDefaults [self]
+  }
 }
 
 namespace eval ::xo {
