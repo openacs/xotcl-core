@@ -96,8 +96,8 @@ namespace eval ::xo {
     set r [next]
     #set parent [self callingobject] ;# not a true calling object (ns-eval), but XOTcl 1 honors it
     #set parent [my info parent] ;# is ok in XOTcl 2, since the namespace is honored correctly
-    set parent [uplevel 1 {namespace current}]
-    #ns_log notice "-- CONTAINS r=$r p=$parent, ns=[uplevel 1 {namespace current}]"
+    set parent [uplevel 2 self] ;# should work everywhere
+    #puts stderr "-- CONTAINS p=$parent, co=[self callingobject] n=[uplevel 2 self]"
     $parent lappend __children [self]
     my set __parent $parent
     #my __after_insert
