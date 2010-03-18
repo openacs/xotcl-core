@@ -228,7 +228,7 @@ namespace eval ::xo {
  
   ::xo::Package instproc init args {
     my instvar id url
-    set package_url [site_node::get_url_from_object_id -object_id $id]
+    set package_url [lindex [site_node::get_url_from_object_id -object_id $id] 0]
     #my log "--R creating package_url='$package_url'"
     if {$package_url ne ""} {
       array set info [site_node::get -url $package_url]
