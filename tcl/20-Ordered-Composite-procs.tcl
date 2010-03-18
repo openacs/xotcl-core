@@ -94,9 +94,9 @@ namespace eval ::xo {
   }
   Class OrderedComposite::ChildManager -instproc init args {
     set r [next]
-    #set parent [self callingobject] ;# not a true calling object (ns-eval), but XOTcl 1 honors it
+    set parent [self callingobject] ;# not a true calling object (ns-eval), but XOTcl 1 honors it
     #set parent [my info parent] ;# is ok in XOTcl 2, since the namespace is honored correctly
-    set parent [uplevel 2 self] ;# should work everywhere
+    #set parent [uplevel 2 self] ;# should work everywhere
     #puts stderr "-- CONTAINS p=$parent, co=[self callingobject] n=[uplevel 2 self]"
     $parent lappend __children [self]
     my set __parent $parent
