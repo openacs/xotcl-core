@@ -301,9 +301,11 @@ namespace eval ::xo {
     return [my user_id]
   }
 
-  ConnectionContext instproc returnredirect {url} {
+  ConnectionContext instproc returnredirect {-allow_complete_url:switch url} {
     #my log "--rp"
-    my set __continuation [list ad_returnredirect $url]
+    my set __continuation [expr {$allow_complete_url 
+                                 ? [list ad_returnredirect -allow_complete_url $url] 
+                                 : [list ad_returnredirect $url]}]
     return ""
   }
 
