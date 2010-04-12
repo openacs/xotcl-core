@@ -63,19 +63,21 @@ namespace eval ::xo {
     ad_conn -reset
     set uri [ns_urldecode [ns_conn url]]
     set url_regexp "^[my url]"
+    #my log "--conn_setup: uri '$uri' my url='[my url]' con='[ns_conn url]'"
     regsub $url_regexp $uri {} uri
-    if {$uri eq ""} {
-      set uri "/"
-    }
+    if {![regexp {^[./]} $uri]} {set uri /$uri}
     my set_user_id
 
     set method [string toupper [ns_conn method]]
     #my log "--conn_setup: uri '$uri' method $method"
     set urlv [split [string trimright $uri "/"] "/"]
     set destination [ns_urldecode [ns_set iget [ns_conn headers] Destination]]
-    regsub {https?://[^/]+/} $destination {/} dest
-    regsub $url_regexp $dest {} destination
-    #my log "--conn_setup: destination = $destination"
+    if {$destination ne ""} {
+      regsub {https?://[^/]+/} $destination {/} dest
+      regsub $url_regexp $dest {} destination
+      if {![regexp {^[./]} $destination]} {set destination /$destination}
+    }
+    #my log "--conn_setup: method $method destination '$destination' uri '$uri'"
   }
 
   ProtocolHandler ad_instproc preauth { args } {
@@ -119,7 +121,7 @@ namespace eval ::xo {
     set url [my url]/*
     foreach method {
       GET HEAD PUT POST MKCOL COPY MOVE PROPFIND PROPPATCH
-      DELETE LOCK UNLOCK
+      DELETE LOCK UNLOCK OPTIONS
     } {
       ns_register_filter preauth $method $filter_url  [self]
       ns_register_proc $method $url [self] handle_request
@@ -146,9 +148,9 @@ namespace eval ::xo {
     my instvar uri method user_id
   
     #my log "--handle_request method=$method uri=$uri\
-    #	userid=$user_id -ns_conn query '[ns_conn query]'"
+    # 	userid=$user_id -ns_conn query '[ns_conn query]'"
     if {[my exists package]} {
-      my get_package_id
+      my set package_id [my get_package_id]
     }
     if {[my procsearch $method] ne ""} {
       my $method
