@@ -130,7 +130,7 @@ namespace eval ::xo {
   } {
     if {![info exists user_id]} {set user_id [::xo::cc user_id]}
     if {![info exists package_id]} {set package_id [::xo::cc package_id]}
-
+    #my msg [info exists package_id]=>$package_id-[my exists logical_package_id]
     set ctx ""
     if {$link ne ""} {
       set query [lindex [split $link ?] 1]
@@ -140,6 +140,7 @@ namespace eval ::xo {
 
     set permission [my get_permission $object $method]
     #my log "--permission for o=$object, m=$method => $permission"
+
     #my log "--     user_id=$user_id uid=[::xo::cc user_id] untrusted=[::xo::cc set untrusted_user_id]"
     if {$permission ne ""} {
       foreach {kind p} [my get_privilege -query_context $ctx $permission $object $method] break

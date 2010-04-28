@@ -141,7 +141,7 @@ namespace eval ::xo {
 
 
   Context ad_instproc get_parameters {} {
-    Conveniance routine for includelets. It combines the actual
+    Convenience routine for includelets. It combines the actual
     parameters from the call in the page (highest priority) wit
     the values from the url (second priority) and the default
     values from the signature
