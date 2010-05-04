@@ -219,9 +219,10 @@ namespace eval ::xo {
 
   ::xo::Package instproc get_parameter {attribute {default ""}} {
     set param [::xo::parameter get \
-                -parameter $attribute \
-                -package_id [my id] \
-                -default $default]
+                   -parameter $attribute \
+                   -package_id [my id] \
+                   -default $default \
+                   -retry false]
     #my log "--get_parameter <$attribute> <$default> returned <$param>"
     return $param
   }

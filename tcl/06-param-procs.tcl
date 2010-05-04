@@ -229,31 +229,33 @@ namespace eval ::xo {
       }
       if {!$success} break
     }
-    #
-    # The parameter object was not found. Maybe this is a new 
-    # parameter, not known in this thread. We try to load it
-    #
-    set r [::xo::db::apm_parameter instantiate_objects \
-               -sql [::xo::db::apm_parameter instance_select_query \
-                         -where_clause {
-                           and parameter_name = :parameter_name
-                           and package_key = :package_key
-                         }] \
-               -object_class ::xo::db::apm_parameter \
-               -as_ordered_composite false -named_objects true -destroy_on_cleanup false]
-    #
-    # Check for "retry" to avoid potential recursive loops
-    #
-    if {$retry && [llength $r] > 0} {
+    if {$retry} {
       #
-      # seems as if this parameter was newly defined
+      # The parameter object was not found. Maybe this is a new 
+      # parameter, not known in this thread. We try to load it
       #
-      if {![info exists package_id]} {set package_id ""}
-      return [my get_parameter_object \
-                  -retry false \
-                  -parameter_name $parameter_name \
-                  -package_id $package_id \
-                  -package_key $package_key]
+      set r [::xo::db::apm_parameter instantiate_objects \
+                 -sql [::xo::db::apm_parameter instance_select_query \
+                           -where_clause {
+                             and parameter_name = :parameter_name
+                             and package_key = :package_key
+                           }] \
+                 -object_class ::xo::db::apm_parameter \
+                 -as_ordered_composite false -named_objects true -destroy_on_cleanup false]
+      #
+      # Check for "retry" to avoid potential recursive loops
+      #
+      if {$r ne ""} {
+        #
+        # seems as if this parameter was newly defined
+        #
+        if {![info exists package_id]} {set package_id ""}
+        return [my get_parameter_object \
+                    -retry false \
+                    -parameter_name $parameter_name \
+                    -package_id $package_id \
+                    -package_key $package_key]
+      }
     }
     #
     # if everything fails, return empty
@@ -281,6 +283,7 @@ namespace eval ::xo {
     -package_id
     -parameter:required
     -default
+    {-retry true}
   } {
     if {![info exists package_id]} {
       # try to get the package id; 
@@ -289,16 +292,14 @@ namespace eval ::xo {
 		    [::xo::cc package_id] : 
 		    [ns_conn isconnected] ? [ad_conn package_id] : [ad_acs_kernel_id]}]
     }
-    set parameter_obj [my get_parameter_object -parameter_name $parameter -package_id $package_id]
-    if {$parameter_obj eq ""} {
-      if {[info exists default]} {return $default}
-      error "No parameter '$parameter' for package_id '$package_id' defined"
-    }
-    set value [$parameter_obj get -package_id $package_id]
-    #my log "--get <$parameter> <$default> returned <$value> s=[$parameter_obj set __success]"
-    #if {$value eq ""} {return $default}
-    if {$value eq "" && [$parameter_obj set __success] == 0} {return $default}
-    return $value
+    set parameter_obj [my get_parameter_object -parameter_name $parameter -package_id $package_id -retry $retry]
+    if {$parameter_obj ne ""} {
+      set value [$parameter_obj get -package_id $package_id]
+      if {$value eq "" && [$parameter_obj set __success] == 0} {return $default}
+      return $value
+    } else {
+      return $default
+    } 
   }
   
   #
