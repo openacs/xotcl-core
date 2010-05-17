@@ -178,24 +178,26 @@ namespace eval ::xo {
   
   ConnectionContext proc require_package_id_from_url {{-package_id 0} url} {
     # get package_id from url in case it is not known
-    if {$package_id == 0 || ![info exists ::ad_conn(node_id)]} {
+    if {$package_id == 0} {
       array set "" [site_node::get_from_url -url $url]
-      if {$package_id == 0} {
-	set package_id $(package_id)
-	#my msg "--i setting pkg to $package_id"
-      }
+      set package_id $(package_id)
+    }
+    if {![info exists ::ad_conn(node_id)]} {
       # 
       # The following should not be necessary, but is is here for
       # cases, where some oacs-code assumes wrongly it is running in a
       # connection thread (e.g. the site master requires to have a
       # node_id and a url accessible via ad_conn)
       #
-      if {![info exists ::ad_conn(node_id)]} {
-	set ::ad_conn(node_id) $(node_id)
-	set ::ad_conn(url) $url
-        set ::ad_conn(extra_url) [string range $url [string length $(url)] end]
+      if {![info exists (node_id)]} {
+        if {$url eq ""} {
+          set url [lindex [site_node::get_url_from_object_id -object_id $package_id] 0]
+        }
+        array set "" [site_node::get_from_url -url $url]
       }
-
+      set ::ad_conn(node_id) $(node_id)
+      set ::ad_conn(url) $url
+      set ::ad_conn(extra_url) [string range $url [string length $(url)] end]
     }
     return $package_id
   }
