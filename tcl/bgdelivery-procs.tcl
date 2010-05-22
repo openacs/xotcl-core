@@ -47,20 +47,27 @@ if {![string match *contentsentlength* $msg]} {
 
   FileSpooler create fileSpooler
   fileSpooler set tick_interval 60000 ;# 1 min
-  fileSpooler proc spool {-channel -filename -context {-client_data ""}} {
+  fileSpooler proc spool {{-delete false} -channel -filename -context {-client_data ""}} {
     set fd [open $filename]
     fconfigure $fd -translation binary
     fconfigure $channel -translation binary
     #ns_log notice "--- start of delivery of $filename (running:[array size ::running])"
     fcopy $fd $channel -command [list [self] end-delivery -client_data $client_data $filename $fd $channel]
-    set ::running($channel,$fd,$filename) $context
+    set key $channel,$fd,$filename
+    set ::running($key) $context
+    if {$delete} {set ::delete_file($key) 1}
     incr ::delivery_count
   }
   fileSpooler proc end-delivery {{-client_data ""} filename fd channel bytes args} {
     #ns_log notice "--- end of delivery of $filename, $bytes bytes written $args"
     if {[catch {close $channel} e]} {ns_log notice "bgdelivery, closing channel for $filename, error: $e"}
     if {[catch {close $fd} e]} {ns_log notice "bgdelivery, closing file $filename, error: $e"}
-    unset ::running($channel,$fd,$filename)
+    set key $channel,$fd,$filename
+    unset ::running($key)
+    if {[info exists ::delete_file($key)]} {
+      file delete $filename
+      unset ::delete_file($key)
+    }
   }
   
   fileSpooler proc cleanup {} {
@@ -93,7 +100,7 @@ if {![string match *contentsentlength* $msg]} {
   FileSpooler create h264Spooler
   h264Spooler set blockCount 0
   h264Spooler set byteCount 0
-  h264Spooler proc spool {-channel -filename -context {-client_data ""} -query} {
+  h264Spooler proc spool {{-delete false} -channel -filename -context {-client_data ""} -query} {
     #ns_log notice "h264 SPOOL gets filename '$filename'"
     if {[catch {
       set handle [h264open $filename $query]
@@ -104,9 +111,10 @@ if {![string match *contentsentlength* $msg]} {
     }
     # set up book-keeping info
     incr ::delivery_count
-    set bytesVar ::bytes($channel,$handle,$filename)
-    set ::running($channel,$handle,$filename) $context
-    set $bytesVar 0
+    set key $channel,$handle,$filename
+    set ::bytes($key) 0
+    set ::running($key) $context
+    if {$delete} {set ::delete_file($key) 1}
     #
     # h264open is quite expensive; in order to output the HTTP headers
     # in the connection thread, we would have to use h264open in the
@@ -121,7 +129,7 @@ if {![string match *contentsentlength* $msg]} {
       flush $channel
     } errorMsg]} {
       ns_log notice "h264: error writing headers in h264 channel for $filename $query: $errorMsg"
-      my end-delivery -client_data $client_data $filename $handle $channel [set $bytesVar]
+      my end-delivery -client_data $client_data $filename $handle $channel 0
     }
     # setup async delivery
     fconfigure $channel -translation binary -blocking false
@@ -149,8 +157,13 @@ if {![string match *contentsentlength* $msg]} {
     ns_log notice "h264 FINISH $channel $handle"
     if {[catch {close $channel} e]} {ns_log notice "bgdelivery, closing h264 for $filename, error: $e"}
     if {[catch {h264close $handle} e]} {ns_log notice "bgdelivery, closing h264 $filename, error: $e"}
-    unset ::running($channel,$handle,$filename)
-    unset ::bytes($channel,$handle,$filename)
+    set key $channel,$handle,$filename
+    unset ::running($key)
+    unset ::bytes($key)
+    if {[info exists ::delete_file($key)]} {
+      file delete $filename
+      unset ::delete_file($key)
+    }
   }
 
 
@@ -302,7 +315,11 @@ if {[ns_info name] eq "NaviServer"} {
   bgdelivery forward write_headers ns_headers DUMMY
 }
 
-bgdelivery ad_proc returnfile {{-client_data ""} status_code mime_type filename} {
+bgdelivery ad_proc returnfile {
+  {-client_data ""} 
+  {-delete false} 
+  {-content_disposition} 
+  status_code mime_type filename} {
   Deliver the given file to the requestor in the background. This proc uses the
   background delivery thread to send the file in an event-driven manner without
   blocking a request thread. This is especially important when large files are 
@@ -320,6 +337,11 @@ bgdelivery ad_proc returnfile {{-client_data ""} status_code mime_type filename}
   set use_h264 [expr {[string match video/mp4* $mime_type] && $query ne "" 
                       && ([string match {*start=[1-9]*} $query] || [string match {*end=[1-9]*} $query])
                       && [info command h264open] ne ""}]
+
+  if {[info exists content_disposition]} {
+    ns_set put [ns_conn outputheaders] Content-Disposition "attachment;filename=$content_disposition"
+  }
+
   if {$use_h264} {
     if {0} {
       # we have to obtain the size from the file; unfortunately, this
@@ -400,13 +422,13 @@ bgdelivery ad_proc returnfile {{-client_data ""} status_code mime_type filename}
   
   if {$use_h264} {
     #my log "MP4 q=[::xo::cc actual_query], h=[ns_set array [ns_conn outputheaders]]"
-    my do -async ::h264Spooler spool -channel $ch -filename $filename \
+    my do -async ::h264Spooler spool -delete $delete -channel $ch -filename $filename \
         -context [list [::xo::cc requestor],[::xo::cc url] [ns_conn start]] \
         -query $query \
         -client_data $client_data
   } else {
     #my log "FILE SPOOL $filename"
-    my do -async ::fileSpooler spool -channel $ch -filename $filename \
+    my do -async ::fileSpooler spool -delete $delete -channel $ch -filename $filename \
         -context [list [::xo::cc requestor],[::xo::cc url] [ns_conn start]] \
         -client_data $client_data
   }
