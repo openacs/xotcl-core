@@ -90,6 +90,30 @@ if {![string match *contentsentlength* $msg]} {
   }
   fileSpooler tick
 
+
+  # StreamSpooler object:
+  # This single spooler object is useful for forwarding a given stream of data (fd) 
+  # to a connection channel (ch) in the background. 
+
+  FileSpooler create streamSpooler
+
+  streamSpooler proc spool {-channel -fd -context -query {-client_data ""}} {
+    set filename ""
+    fconfigure $fd -translation binary
+    fconfigure $channel -translation binary
+      fcopy $fd $channel -command [list [self] end-delivery -client_data $client_data $filename $fd $channel]
+    set ::running($channel,$fd,$filename) $context
+    incr ::delivery_count
+  }
+  
+  streamSpooler proc end-delivery {{-client_data ""} filename fd channel bytes args} {
+    ns_log Warning "streamSpooler end-delivery $fd"
+      if {[catch {close $channel} e]} {ns_log notice "bgdelivery, closing channel for $fd, error: $e"}
+      if {[catch {close $fd} e]} {ns_log notice "bgdelivery, closing fd $fd, error: $e"}
+    unset ::running($channel,$fd,$filename)
+  }
+
+
   # 
   # A first draft of a h264 pseudo streaming spooler.
   # Like for the fileSpooler, we create a single spooler object
