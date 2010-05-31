@@ -207,7 +207,7 @@ namespace eval ::xo {
       } else {
 	ns_log notice "enforce_permissions: $user_id doesn't have $privilege on $object"
       }
-      ad_return_forbidden  "Permission Denied" [_ xotcl-core.policy-error-insufficient_permissions]
+	ad_return_forbidden  "[_ xotcl-core.permission_denied]" [_ xotcl-core.policy-error-insufficient_permissions]
       ad_script_abort
     }
   

@@ -6,6 +6,10 @@
   <msg key="edit_item">Editieren</msg>
   <msg key="has_entered_the_room">has entered the room</msg>
   <msg key="live_revision">Aktuelle Version</msg>
+  <msg key="permission_denied">Zugriff verweigert</msg>
+  <msg key="policy-error-insufficient_permissions">&lt;blockquote&gt;
+Sie haben keine ausreichende Berechtigung, um die Methode %method% am Objekt %object% auszuf<FC>hren.
+&lt;/blockquote&gt;</msg>
   <msg key="revision_title">Versionen des Eintrags</msg>
   <msg key="revisions">Verlauf</msg>
 </message_catalog>
