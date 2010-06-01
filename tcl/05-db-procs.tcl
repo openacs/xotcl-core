@@ -885,6 +885,10 @@ namespace eval ::xo::db {
       }
       lappend nonposarg_list $arg
     }
+    # When the new method is executed within a contains, -childof is
+    # appended. we have to added it here to avoid complains. xotcl 2.0
+    # should find better ways to handle contain or the news invocation.
+    if {$object_name eq "new"} {lappend nonposarg_list -childof}
     #my log "-- define $object_name $nonposarg_list"
 
     my ad_proc $object_name $nonposarg_list {Automatically generated method} [subst -novariables $proc_body]
