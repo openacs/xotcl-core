@@ -232,12 +232,6 @@ namespace eval ::xo {
       # when it tries to detect it, we use the catch and reset it later
       if {[catch {set locale [lang::conn::locale -package_id $package_id]}]} {
         set locale en_US
-      } else {
-        if {[string length $locale] < 5} {
-           ns_log error "[list lang::conn::locale -package_id $package_id] returned invalid locale '$locale' is connected: [ns_conn isconnected] conn_locales [lang::conn::get_accept_language_header]"
-	   ::xo::show_stack
-           set locale en_US
-        }
       }
     } else {
       set locale [lang::system::locale -package_id $package_id]
@@ -268,11 +262,7 @@ namespace eval ::xo {
       ::xo::cc process_query_parameter
     }
     if {![info exists ::ad_conn(charset)]} {
-      if {[catch {set ::ad_conn(charset) [lang::util::charset_for_locale $locale]} errorMsg]} {
-        ns_log error "Cannot determine charset for locale '$locale'\n$errorMsg\nis connected: [ns_conn isconnected], package_id $package_id"
-	::xo::show_stack
-        set ::ad_conn(charset) UTF-8
-      }
+      set ::ad_conn(charset) [lang::util::charset_for_locale $locale] 
       set ::ad_conn(language) [::xo::cc lang]
       set ::ad_conn(file) ""
     }
