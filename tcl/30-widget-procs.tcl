@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
   XOTcl HTML Widget Classes based on tdom
 
   @author Gustaf Neumann (neumann@wu-wien.ac.at)
@@ -960,3 +960,4 @@ namespace eval ::xo {
     return $result
   }
 }
+::xo::library source_dependent
