@@ -608,11 +608,10 @@ namespace eval ::xo::db {
     }
     lappend cond "coalesce(ci.live_revision,ci.latest_revision) = bt.revision_id"
     if {$parent_id ne ""} {
-      set parent_clause "ci.parent_id = $parent_id"
-      if {$with_children} { 
-        lappend cond "($parent_clause or ci.parent_id in (select item_id from cr_items where parent_id = $parent_id))"
+      if {$with_children} {
+        lappend cond "ci.parent_id in (select $parent_id from dual union select item_id from cr_items where parent_id = $parent_id)"
       } else {
-        lappend cond $parent_clause
+        lappend cond "ci.parent_id = $parent_id"
       }
     }
 
