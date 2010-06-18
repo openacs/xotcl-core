@@ -152,7 +152,7 @@ namespace eval ::xo {
 	complex {
 	  foreach {attribute privilege} $p break
 	  set id [$object set $attribute]
-	  #my msg "--p checking permission -object_id $id -privilege $privilege -party_id $user_id\
+	  #my msg "--p checking permission -object_id /$id/ -privilege $privilege -party_id $user_id\
 	  #	==> [::xo::cc permission -object_id $id -privilege $privilege -party_id $user_id]"
 	  return [::xo::cc permission -object_id $id -privilege $privilege -party_id $user_id]
 	}
