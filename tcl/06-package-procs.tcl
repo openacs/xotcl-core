@@ -322,8 +322,9 @@ namespace eval ::xo {
       eval [::xo::cc set __continuation]
     } else {
       if {[string length $text] > 1} {
+	set status_code [expr {[::xo::cc exists status_code] ? [::xo::cc set status_code] : 200}]
         #my log "REPLY [my set delivery] 200 [my set mime_type]"
-        [my set delivery] 200 [my set mime_type] $text
+        [my set delivery] $status_code [my set mime_type] $text
       }
     }
   }
