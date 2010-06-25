@@ -948,13 +948,17 @@ namespace eval ::xo {
       append result "<link type='text/css' rel='stylesheet' href='$file' media='all' >\n"
     }
     if {[info exists ::_xo_js_order]} {
+      set statements ""
       foreach file $::_xo_js_order  {
         if {[string match "*;*" $file]} {
           # it is not a file, but some javascipt statements
-          append result "<script type='text/javascript' >" $file "</script>\n"
+          append statements $file \n
         } else {
           append result "<script src='$file' type='text/javascript'></script>\n"
         }
+      }
+      if {$statements ne ""} {
+	append result \n "<script type='text/javascript' >$statements</script>\n"
       }
     }
     return $result
