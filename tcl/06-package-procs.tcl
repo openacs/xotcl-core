@@ -37,18 +37,28 @@ namespace eval ::xo {
     }
   }
 
-  PackageMgr ad_instproc instances {{-include_unmounted false}} {
+  PackageMgr ad_instproc instances {{-include_unmounted false} {-closure false}} {
+    @param include_unmounted include unmounted package instances
+    @param closure include instances of subclasses of the package 
     @return list of package_ids of xowiki instances
   } {
     my instvar package_key
     if {$include_unmounted} {
-      return [db_list [my qn get_xowiki_packages] {select package_id \
+      set result [db_list [my qn get_xowiki_packages] {select package_id \
         from apm_packages where package_key = :package_key}]
     } else {
-      return [db_list [my qn get_mounted_packages] {select package_id \
+      set result [db_list [my qn get_mounted_packages] {select package_id \
         from apm_packages p, site_nodes s  \
         where package_key = :package_key and s.object_id = p.package_id}]
     }
+    if {$closure} {
+      foreach subclass [my info subclass] {
+	foreach id [$subclass instances -include_unmounted $include_unmounted -closure true] {
+	  lappend result $id
+	}
+      }
+    }
+    return [lsort -integer $result]
   }
 
   PackageMgr ad_instproc initialize {
