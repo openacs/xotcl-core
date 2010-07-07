@@ -8,16 +8,6 @@
 
 namespace eval ::xo::db {
 
-# 	{supertype content_revision}
-# 	form
-# 	edit_form
-# 	{description " "}
-# 	{mime_type text/plain}
-# 	{nls_language ""}
-# 	{text " "}
-# 	{storage_type "text"}
-# 	{folder_id -100}
-
   ::xotcl::Class create ::xo::db::CrClass \
       -superclass ::xo::db::Class \
       -parameter {
@@ -579,7 +569,7 @@ namespace eval ::xo::db {
     if {$base_table eq "cr_revisions"} {
       set attributes [list ci.item_id ci.name ci.publish_status acs_objects.object_type] 
     } else {
-      set attributes [list bt.item_id ci.name ci.publish_status bt.object_type] 
+      set attributes [list bt.item_id ci.name ci.publish_status bt.object_type "bt.object_package_id as package_id"] 
     }
     foreach a $select_attributes {
       if {$a eq "title"} {set a bt.title}
