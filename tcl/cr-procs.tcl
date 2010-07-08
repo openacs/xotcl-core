@@ -567,7 +567,7 @@ namespace eval ::xo::db {
     if {![info exists parent_id]} {set parent_id $folder_id}
 
     if {$base_table eq "cr_revisions"} {
-      set attributes [list ci.item_id ci.name ci.publish_status acs_objects.object_type] 
+      set attributes [list ci.item_id ci.name ci.publish_status acs_objects.object_type acs_objects.package_id] 
     } else {
       set attributes [list bt.item_id ci.name ci.publish_status bt.object_type "bt.object_package_id as package_id"] 
     }
