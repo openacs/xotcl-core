@@ -54,7 +54,8 @@ namespace eval ::xo {
     #my log "--P processing actual query $actual_query"
     foreach querypart [split $actual_query &] {
       set name_value_pair [split $querypart =]
-      set att_name  [ns_urldecode [lindex $name_value_pair 0]]
+      set att_name [ns_urldecode [lindex $name_value_pair 0]]
+      if {$att_name eq ""} continue
       if {[llength $name_value_pair] == 1} { 
         set att_value 1 
       }  else {
@@ -101,7 +102,7 @@ namespace eval ::xo {
     
     #my log "--cc calling parser eval [self] __parse $parse_args"
     eval [self] __parse $parse_args
-    #my log "--cc qp [array names queryparm] // $actual_query"
+    #my msg "--cc qp [array get queryparm] // $actual_query"
   }
 
   Context instproc original_url_and_query args {
@@ -131,6 +132,7 @@ namespace eval ::xo {
     @param level target level
   } {
     my instvar queryparm package_id
+
     foreach p [my array names queryparm] {
       set value [my set queryparm($p)]
       uplevel $level [list set $p [my set queryparm($p)]]
