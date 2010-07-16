@@ -126,6 +126,7 @@ namespace eval ::xo {
         Attribute create port 
         Attribute create path -default "/"
         Attribute create url
+        Attribute create method
         Attribute create post_data -default ""
         Attribute create content_type -default "text/plain"
         Attribute create request_header_fields -default {}
@@ -256,8 +257,12 @@ namespace eval ::xo {
   HttpCore instproc init {} {
     my instvar S post_data host port protocol
     my destroy_on_cleanup
+
     my set meta [list]
     my set data ""
+    if {![my exists method]} {
+      my set method [expr {$post_data eq "" ? "GET" : "POST"}]
+    }
     if {[my exists url]} {
       my parse_url
     } else {
@@ -283,9 +288,8 @@ namespace eval ::xo {
   }
 
   HttpCore instproc send_request {} {
-    my instvar S post_data host
+    my instvar S post_data host method
     if {[catch {
-      set method [expr {$post_data eq "" ? "GET" : "POST"}]
       puts $S "$method [my path] HTTP/1.0"
       puts $S "Host: $host"
       puts $S "User-Agent: [my user_agent]"
