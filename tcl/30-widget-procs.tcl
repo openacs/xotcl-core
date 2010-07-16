@@ -495,6 +495,12 @@ namespace eval ::xo {
 	  return $slots
 	}
 
+    Class HiddenField \
+	-superclass ::xo::Table::Field \
+	-instproc get-slots {} {
+	  return [list -[my name]]
+	}
+
     Class ImageField \
 	-parameter {src width height border title alt} \
 	-superclass ::xo::Table::Field \
@@ -542,7 +548,7 @@ namespace eval ::xo {
 	}
     
     # export table elements
-    namespace export Field AnchorField  Action ImageField ImageAnchorField \
+    namespace export Field AnchorField HiddenField Action ImageField ImageAnchorField \
 	ImageField_EditIcon ImageField_ViewIcon ImageField_DeleteIcon ImageField_AddIcon \
         BulkAction
   }
@@ -744,6 +750,10 @@ namespace eval ::xo::Table {
 	next
       }
 
+  Class create TABLE::HiddenField \
+      -instproc render {} {;} \
+      -instproc render-data {line} {;}
+	
  
   Class create TABLE::ImageField \
       -superclass TABLE::Field \
@@ -826,6 +836,7 @@ namespace eval ::xo::Table {
   Class create TABLE2::Action -superclass TABLE::Action
   Class create TABLE2::Field -superclass TABLE::Field
   Class create TABLE2::AnchorField -superclass TABLE::AnchorField
+  Class create TABLE2::HiddenField -superclass TABLE::HiddenField
   Class create TABLE2::ImageField -superclass TABLE::ImageField
   Class create TABLE2::ImageAnchorField -superclass TABLE::ImageAnchorField
   Class create TABLE2::BulkAction -superclass TABLE::BulkAction
@@ -842,6 +853,7 @@ namespace eval ::xo::Table {
   Class create TABLE3::Action -superclass TABLE::Action
   Class create TABLE3::Field -superclass TABLE::Field
   Class create TABLE3::AnchorField -superclass TABLE::AnchorField
+  Class create TABLE3::HiddenField -superclass TABLE::HiddenField
   Class create TABLE3::ImageField -superclass TABLE::ImageField
   Class create TABLE3::ImageAnchorField -superclass TABLE::ImageAnchorField
   Class create TABLE3::BulkAction -superclass TABLE::BulkAction
