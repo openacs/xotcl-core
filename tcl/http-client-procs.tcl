@@ -41,7 +41,7 @@ namespace eval ::xo {
   #  set r [::xo::HttpRequest new \
   #             -url http://yourhost.yourdomain/yourpath \
   #             -post_data [export_vars {var1 var2}] \
-  #             -content_type application/x-www-form-urlencoded]
+  #             -content_type "application/x-www-form-urlencoded; charset=UTF-8"]
   #
   # More recently, we added timeout support for blocking http
   # requests. By passing a timeout parameter, you gain control
@@ -133,76 +133,6 @@ namespace eval ::xo {
         Attribute create user_agent -default "xohttp/0.2"
       }
 
-  # Provide for mapping from HTTP charset encoding labels
-  # to Tcl-specific ones (see http://naviserver.cvs.sourceforge.net/naviserver/naviserver/nsd/encoding.c?view=markup)
-
-  HttpCore array set http_to_tcl_encodings {
-    iso-2022-jp     	iso2022-jp
-    iso-2022-kr   	iso2022-kr
-    iso-8859-1         	iso8859-1
-    iso-8859-2         	iso8859-2
-    iso-8859-3         	iso8859-3
-    iso-8859-4         	iso8859-4
-    iso-8859-5         	iso8859-5
-    iso-8859-6         	iso8859-6
-    iso-8859-7         	iso8859-7
-    iso-8859-8         	iso8859-8
-    iso-8859-9         	iso8859-9
-    korean             	ksc5601
-    ksc_5601           	ksc5601
-    mac                	macRoman
-    mac-centeuro       	macCentEuro
-    mac-centraleupore  	macCentEuro
-    mac-croatian       	macCroatian
-    mac-cyrillic       	macCyrillic
-    mac-greek          	macGreek
-    mac-iceland        	macIceland
-    mac-japan          	macJapan
-    mac-roman          	macRoman
-    mac-romania        	macRomania
-    mac-thai            macThai
-    mac-turkish        	macTurkish
-    mac-ukraine        	macUkraine
-    maccenteuro        	macCentEuro
-    maccentraleupore   	macCentEuro
-    maccroatian        	macCroatian
-    maccyrillic         macCyrillic
-    macgreek           	macGreek
-    maciceland         	macIceland
-    macintosh          	macRoman
-    macjapan           	macJapan
-    macroman           	macRoman
-    macromania         	macRomania
-    macthai            	macThai
-    macturkish          macTurkish
-    macukraine         	macUkraine
-    shift_jis          	shiftjis
-    us-ascii           	ascii
-    windows-1250       	cp1250
-    windows-1251       	cp1251
-    windows-1252       	cp1252
-    windows-1253       	cp1253
-    windows-1254       	cp1254
-    windows-1255       	cp1255
-    windows-1256       	cp1256
-    windows-1257       	cp1257
-    windows-1258       	cp1258
-    x-mac              	macRoman
-    x-mac-centeuro      macCentEuro
-    x-mac-centraleupore macCentEuro
-    x-mac-croatian      macCroatian
-    x-mac-cyrillic      macCyrillic
-    x-mac-greek         macGreek
-    x-mac-iceland       macIceland
-    x-mac-japan         macJapan
-    x-mac-roman         macRoman
-    x-mac-romania       macRomania
-    x-mac-thai          macThai
-    x-mac-turkish       macTurkish
-    x-mac-ukraine       macUkraine
-    x-macintosh         macRoman
-  }
-
   HttpCore instproc set_default_port {protocol} {
     switch -- $protocol {
       http  {my set port 80}
@@ -228,31 +158,86 @@ namespace eval ::xo {
     set S [socket -async $host $port]
   }
 
-  HttpCore instproc set_encoding {
-    {-text_translation {auto binary}} 
-    content_type
-  } {
+  HttpCore instproc set_encoding {{-text_translation {auto binary}} content_type} {
     #
-    # for text, use translation with optional encodings, 
-    # else set translation binary
+    # 1. NOTE: We have to treat translation and encoding settings
+    # separately. "Defaulting" to "binary" translation would imply a
+    # "binary" encoding: [fconfigure -translation binary] "[...] sets
+    # the encoding to binary (which disables encoding filtering)",
+    # i.e. it is idempotent to [fconfigure -translation binary
+    # -encoding binary].
     #
-    if {[string match "text/*" $content_type]} {
-      if {[regexp {charset=([^ ]+)$} $content_type _ encoding]} {
-	[self class] instvar http_to_tcl_encodings
-	set enc [string tolower $encoding]
-	if {[info exists http_to_tcl_encodings($enc)]} {
-          set enc $http_to_tcl_encodings($enc)
-        }
-	fconfigure [my set S] \
-	    -translation $text_translation \
-	    -encoding $enc
-      } else {
-	fconfigure [my set S] -translation $text_translation
-      }
-    } else {
-      fconfigure [my set S] -translation binary
+    # see also http://docs.activestate.com/activetcl/8.5/tcl/TclCmd/fconfigure.htm
+    #
+    # 2. TODO: I would claim here that we could stick with binary
+    # translations, effectively deactivating any eol/eof
+    # interpretations. As we use the byte-oriented [read] rathen than
+    # the line-oriented [gets] in the processing of HTTP bodies of replies
+    # ([gets] is only applied for header processing), this should be
+    # fine. Anyways, I leave it as is for the moment ...
+    #
+
+    set trl [expr {[string match "text/*" $content_type] ? $text_translation : "binary"}]
+
+    # 3. Resolve the corresponding Tcl encoding for a given IANA/MIME
+    # charset name (or alias); the main resolution scheme is
+    # implemented by [ns_encodingfortype] which is available bother
+    # under AOLserver and NaviServer (see tcl/charsets.tcl). The
+    # mappings between Tcl encoding names (as shown by [encoding
+    # names]) and IANA/MIME charset names (i.e., names and aliases in
+    # the sense of http://www.iana.org/assignments/character-sets) is
+    # provided by ...
+    # 
+    # i. a static, built-in correspondence map: see nsd/encoding.c
+    # ii. an extensible correspondence map (i.e., the ns/charsets
+    # section in config.tcl).
+    # 
+    # [ns_encodingfortype] introduces several levels of precedence when
+    # resolving the actual IANA/MIME charset and the corresponding Tcl
+    # encoding to use:
+    #
+    # i. The "content_type" string contains a charset specification,
+    # e.g.: "text/xml; charset=UTF-8". This spec fragment takes the
+    # highest precedence.
+    #
+    # ii. The "content_type" string points to a "text/*" media
+    # subtype, but does not specify a charset (e.g., "text/xml"). In
+    # this case, the charset defined by ns/parameters/OutputCharset
+    # (see config.tcl) applies. If this parameter is missing, the
+    # general default is "iso-8859-1" (see tcl/charsets.tcl; this
+    # follows from http://tools.ietf.org/html/rfc2616; Section 3.7.1).
+    #
+    # iii. If neither case i) or case ii) become effective, the encoding is
+    # resolved to "binary".
+
+    set enc [ns_encodingfortype $content_type]
+
+    #
+    # 4. We provide for a general fallback: For cases where
+    # [ns_encodingfortype] cannot resolve a valid Tcl encoding (e.g.,
+    # when an invalid, unknown or empty IANA/MIME charset is specified
+    # in the content_type string), we default to "iso8859-1" for text/*
+    # media subtypes and "binary" for all the other types. In addition,
+    # we report the incidence.
+    #
+
+    if {$enc eq ""} {
+      set enc [expr {[string match "text/*" $content_type] ? "iso8859-1" : "binary"}]
+      my log "--- Resolving a Tcl encoding for the CONTENT-TYPE '$content_type' failed; falling back to '$enc'."
     }
+
+    # Note, there are also alternatives for resolving IANA/MIME
+    # charset names to Tcl encoding names, however, they all have
+    # issues (non-extensibility from standard configuration sites,
+    # incompleteness, redundant thread-local storing, scripted
+    # implementation):
+    # 1. tcllib/mime package: ::mime::reversemapencoding()
+    # 2. tdom: tDOM::IANAEncoding2TclEncoding(); see lib/tdom.tcl
+
+    fconfigure [my set S] -translation $trl -encoding $enc
   }
+
+
 
   HttpCore instproc init {} {
     my instvar S post_data host port protocol
@@ -357,7 +342,7 @@ namespace eval ::xo {
     my instvar S
     set n [gets $S response]
     if {[eof $S]} {
-      my log "--premature eof"
+      # my log "--premature eof"
       return -2
     }
     if {$n == -1} {my debug "--input pending, no full line"; return -1}
@@ -375,7 +360,7 @@ namespace eval ::xo {
 	     responseHttpVersion status_code]} {
       my reply_first_line_done
     } else {
-      my log "--unexpected response '$response'"
+      # my log "--unexpected response '$response'"
       my cancel unexpected-response
     }
   }
@@ -447,7 +432,7 @@ namespace eval ::xo {
   }
 
   HttpRequest instproc init {} {
-    my log "[my exists timeout]"
+    # my log "[my exists timeout]"
     if {[my exists timeout] && [my timeout] > 0} {
       # create a cond and mutex
       set cond  [thread::cond create]
@@ -499,7 +484,7 @@ namespace eval ::xo {
       # test whether open_connection yielded
       # a socket ...
       #
-      #my log "after core init, S?[my exists S]"
+      # my log "after core init, S?[my exists S]"
       if {[my exists S]} {
 	my send_request
       }
@@ -516,7 +501,7 @@ namespace eval ::xo {
   }
   AsyncHttpRequest instproc set_timeout {} {
     my cancel_timeout
-    my log "--- setting socket timeout: [my set timeout]"
+    # my log "--- setting socket timeout: [my set timeout]"
     my set timeout_handle [after [my set timeout] [self] cancel timeout]
   }
   AsyncHttpRequest instproc cancel_timeout {} {
@@ -605,7 +590,7 @@ namespace eval ::xo {
   }
   AsyncHttpRequest instproc receive_reply_data {} {
     my instvar S
-    my log "JOB receive_reply_data eof=[eof $S]"
+    # my log "JOB receive_reply_data eof=[eof $S]"
     if {[eof $S]} {
       my finish
     } else {
@@ -625,42 +610,42 @@ namespace eval ::xo {
 
   Class create AsyncHttpRequest::SimpleListener \
       -instproc init {} {
-	my log "INIT- NEXT=[self next]"
+	# my log "INIT- NEXT=[self next]"
 	# register request object as its own request_manager
 	my request_manager [self]
 	next
 
       } -instproc start_request {payload obj} {
-	my log "request $obj started"
+	# my log "request $obj started"
 
       } -instproc request_data {payload obj} {
-	my log "partial or complete post"
+	# my log "partial or complete post"
 
       } -instproc start_reply {payload obj} {
-	my log "reply $obj started"
+	# my log "reply $obj started"
 
       } -instproc reply_data {payload obj} {
-	#my log "partial or complete delivery"
+	# my log "partial or complete delivery"
 
       } -instproc finalize {obj status value} {
-	my log "finalize $obj $status"
+	# my log "finalize $obj $status"
 	# this is called as a single method after success or failure
 	next
 
       } -instproc success {payload obj} {
-	my log "[string length $payload] bytes payload"
+	# my log "[string length $payload] bytes payload"
 	#if {[string length $payload]<600} {my log payload=$payload}
 	# this is called as after a succesful request
 	my finalize $obj "JOB_COMPLETED" $payload
 
       } -instproc failure {reason obj} {
-	my log "[self proc] [self args]"
+	# my log "[self proc] [self args]"
 	# this is called as after an unsuccesful request
 	my finalize $obj "JOB_FAILED" $reason
 
       } -instproc unknown {method args} {
-	my log "[self proc] [self args]"
-	my log "UNKNOWN $method"
+	# my log "[self proc] [self args]"
+	# my log "UNKNOWN $method"
       }
  
   # Mixin class, used to turn instances of
