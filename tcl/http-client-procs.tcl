@@ -322,13 +322,13 @@ namespace eval ::xo {
 
   HttpCore instproc close {} {
     catch {close [my set S]} errMsg
-    #my log "--- closing socket socket?[my exists S] => $errMsg"
+    my debug "--- closing socket socket?[my exists S] => $errMsg"
   }
 
   HttpCore instproc cancel {reason} {
     my set status canceled
     my set cancel_message $reason
-    my debug "--- $reason"
+    my debug "--- canceled for $reason"
     my close
   }
 
@@ -342,7 +342,7 @@ namespace eval ::xo {
     my instvar S
     set n [gets $S response]
     if {[eof $S]} {
-      # my log "--premature eof"
+      my debug "--premature eof"
       return -2
     }
     if {$n == -1} {my debug "--input pending, no full line"; return -1}
@@ -360,8 +360,7 @@ namespace eval ::xo {
 	     responseHttpVersion status_code]} {
       my reply_first_line_done
     } else {
-      # my log "--unexpected response '$response'"
-      my cancel unexpected-response
+      my cancel "unexpected-response '$response'"
     }
   }
   HttpCore instproc reply_first_line_done {} {
@@ -501,7 +500,7 @@ namespace eval ::xo {
   }
   AsyncHttpRequest instproc set_timeout {} {
     my cancel_timeout
-    # my log "--- setting socket timeout: [my set timeout]"
+    my debug "--- setting socket timeout: [my set timeout]"
     my set timeout_handle [after [my set timeout] [self] cancel timeout]
   }
   AsyncHttpRequest instproc cancel_timeout {} {
@@ -559,7 +558,6 @@ namespace eval ::xo {
       my cancel_timeout
     }
     next
-    my debug "--- canceled for $reason"
     my notify failure $reason
   }
   AsyncHttpRequest instproc finish {} {
@@ -590,7 +588,7 @@ namespace eval ::xo {
   }
   AsyncHttpRequest instproc receive_reply_data {} {
     my instvar S
-    # my log "JOB receive_reply_data eof=[eof $S]"
+    my debug "JOB receive_reply_data eof=[eof $S]"
     if {[eof $S]} {
       my finish
     } else {
@@ -610,42 +608,43 @@ namespace eval ::xo {
 
   Class create AsyncHttpRequest::SimpleListener \
       -instproc init {} {
-	# my log "INIT- NEXT=[self next]"
+	my debug "INIT- NEXT=[self next]"
 	# register request object as its own request_manager
 	my request_manager [self]
 	next
 
       } -instproc start_request {payload obj} {
-	# my log "request $obj started"
+	my debug "request $obj started"
 
       } -instproc request_data {payload obj} {
-	# my log "partial or complete post"
+	my debug "partial or complete post"
 
       } -instproc start_reply {payload obj} {
-	# my log "reply $obj started"
+	my debug "reply $obj started"
 
       } -instproc reply_data {payload obj} {
-	# my log "partial or complete delivery"
+	my debug "partial or complete delivery"
 
       } -instproc finalize {obj status value} {
-	# my log "finalize $obj $status"
+	my debug "finalize $obj $status"
 	# this is called as a single method after success or failure
 	next
 
       } -instproc success {payload obj} {
-	# my log "[string length $payload] bytes payload"
+	my debug "[string length $payload] bytes payload"
 	#if {[string length $payload]<600} {my log payload=$payload}
 	# this is called as after a succesful request
 	my finalize $obj "JOB_COMPLETED" $payload
 
       } -instproc failure {reason obj} {
-	# my log "[self proc] [self args]"
+	my log "[self proc] [self args]"
+	my log "failed for '$reason'"
 	# this is called as after an unsuccesful request
 	my finalize $obj "JOB_FAILED" $reason
 
       } -instproc unknown {method args} {
-	# my log "[self proc] [self args]"
-	# my log "UNKNOWN $method"
+	my log "[self proc] [self args]"
+	my log "UNKNOWN $method"
       }
  
   # Mixin class, used to turn instances of
