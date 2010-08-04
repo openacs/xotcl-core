@@ -67,19 +67,20 @@ if {$::xotcl::version < 1.5} {
   }
 }
 
-if {[info command ::xotcl2::Object] ne ""} {
-  ns_log notice "Defining minimal XOTcl 1 compatibility for XOTcl 2 Classes"
-  ::xotcl::alias ::xo::Attribute instvar ::xotcl::cmd::Object::instvar
-  ::xotcl::alias ::xo::Attribute set -objscope ::set
-  ::xotcl::Slot method istype {class}  {::xotcl::is [self] type $class}
-  ::xotcl2::Object method serialize {} { ::Serializer deepSerialize [self] }
-  ::xotcl2::Object method set_instance_vars_defaults {} {:configure}
-  ::xotcl::Object  method set_instance_vars_defaults {} {:configure}
+if {[info command ::nx::Object] ne ""} {
+  ns_log notice "Defining minimal XOTcl 1 compatibility"
+  ::nx::core::alias ::xo::Attribute instvar ::nx::core::cmd::Object::instvar
+  ::nx::core::alias ::xo::Attribute set -objscope ::set
+  ::nx::Slot method istype {class} {::nx::core::is [self] type $class}
+  ::nx::Slot method exists {var}   {::nx::core::existsvar [self] $var}
+  ::nx::Object method serialize {} {::Serializer deepSerialize [self]}
+  ::nx::Object method set_instance_vars_defaults {} {:configure}
+  ::nx::Object method set_instance_vars_defaults {} {:configure}
 
   ::Serializer exportMethods {
-    ::xotcl2::Object method serialize
-    ::xotcl2::Object method set_instance_vars_defaults
-    ::xotcl::Slot method istype
+    ::nx::Object method serialize
+    ::nx::Object method set_instance_vars_defaults
+    ::nx::Slot method istype
   }
 
 } else {
@@ -98,8 +99,8 @@ namespace eval ::xo {
       set object_type [my domain] 
       if {[regexp {^::([^:]+)::} $object_type _ head]} {
         set tail [namespace tail $object_type]
-        set pretty_name "#$head.$tail-$name#"
-        #my log "--created pretty_name = $pretty_name"
+	set pretty_name "#$head.$tail-$name#"
+	#my log "--created pretty_name = $pretty_name"
       } else {
         error "Cannot determine automatically message key for pretty name. \
 		Use namespaces for classes"
