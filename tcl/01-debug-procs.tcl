@@ -81,6 +81,7 @@ if {[info command ::nx::Object] ne ""} {
     ::nx::Object method serialize
     ::nx::Object method set_instance_vars_defaults
     ::nx::Slot method istype
+    ::nx::Slot method exists
   }
 
 } else {
@@ -457,7 +458,7 @@ namespace eval ::xo {
     } else {
       # Delete the objects and classes manually
       set objs [::xotcl::Object allinstances]
-      ns_log notice "deleting [llength $objs] objects"
+      ns_log notice "no finalize available, deleting [llength $objs] objects"
       foreach o $objs {
         if {![::xotcl::Object isobject $o]} continue
         if {[$o istype ::xotcl::Class]} continue
