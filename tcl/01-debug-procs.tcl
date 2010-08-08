@@ -75,7 +75,6 @@ if {[info command ::nx::Object] ne ""} {
   ::nx::Slot method exists {var}   {::nx::core::existsvar [self] $var}
   ::nx::Object method serialize {} {::Serializer deepSerialize [self]}
   ::nx::Object method set_instance_vars_defaults {} {:configure}
-  ::nx::Object method set_instance_vars_defaults {} {:configure}
 
   ::Serializer exportMethods {
     ::nx::Object method serialize
