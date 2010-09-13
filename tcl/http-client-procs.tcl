@@ -128,7 +128,8 @@ namespace eval ::xo {
         Attribute create url
         Attribute create method
         Attribute create post_data -default ""
-        Attribute create content_type -default "text/plain"
+        Attribute create content_type \
+	    -default "text/plain; charset=[ns_config ns/parameters OutputCharset iso-8859-1]"
         Attribute create request_header_fields -default {}
         Attribute create user_agent -default "xohttp/0.2"
       }
@@ -158,7 +159,10 @@ namespace eval ::xo {
     set S [socket -async $host $port]
   }
 
-  HttpCore instproc set_encoding {{-text_translation {auto binary}} content_type} {
+  HttpCore instproc get_channel_settings {
+    {-text_translation {auto binary}} 
+    content_type
+  } {
     #
     # 1. NOTE: We have to treat translation and encoding settings
     # separately. "Defaulting" to "binary" translation would imply a
@@ -169,21 +173,29 @@ namespace eval ::xo {
     #
     # see also http://docs.activestate.com/activetcl/8.5/tcl/TclCmd/fconfigure.htm
     #
-    # 2. TODO: I would claim here that we could stick with binary
+    # 2. Note: I would claim here that we could stick with binary
     # translations, effectively deactivating any eol/eof
     # interpretations. As we use the byte-oriented [read] rathen than
     # the line-oriented [gets] in the processing of HTTP bodies of replies
     # ([gets] is only applied for header processing), this should be
     # fine. Anyways, I leave it as is for the moment ...
     #
-
+    set content_type [string tolower $content_type]
     set trl [expr {[string match "text/*" $content_type] ? $text_translation : "binary"}]
-
-    # 3. Resolve the corresponding Tcl encoding for a given IANA/MIME
-    # charset name (or alias); the main resolution scheme is
-    # implemented by [ns_encodingfortype] which is available bother
-    # under AOLserver and NaviServer (see tcl/charsets.tcl). The
-    # mappings between Tcl encoding names (as shown by [encoding
+    
+    #
+    # 3. In the following, I realise a IANA/MIME charset resolution
+    # scheme which is compliant with RFC 3023 which deals with
+    # treating XML media types properly.
+    #
+    # see http://tools.ietf.org/html/rfc3023
+    #
+    # This makes the use of [ns_encodingfortype] obsolete as this
+    # helper proc does not consider RFC 3023 at all. In the future,
+    # RFC 3023 support should enter a revised [ns_encodingfortype],
+    # for now, we fork.
+    # 
+    # The mappings between Tcl encoding names (as shown by [encoding
     # names]) and IANA/MIME charset names (i.e., names and aliases in
     # the sense of http://www.iana.org/assignments/character-sets) is
     # provided by ...
@@ -191,41 +203,10 @@ namespace eval ::xo {
     # i. a static, built-in correspondence map: see nsd/encoding.c
     # ii. an extensible correspondence map (i.e., the ns/charsets
     # section in config.tcl).
-    # 
-    # [ns_encodingfortype] introduces several levels of precedence when
-    # resolving the actual IANA/MIME charset and the corresponding Tcl
-    # encoding to use:
     #
-    # i. The "content_type" string contains a charset specification,
-    # e.g.: "text/xml; charset=UTF-8". This spec fragment takes the
-    # highest precedence.
+    # For mapping charset to encoding names, I use
+    # [ns_encodingforcharset].
     #
-    # ii. The "content_type" string points to a "text/*" media
-    # subtype, but does not specify a charset (e.g., "text/xml"). In
-    # this case, the charset defined by ns/parameters/OutputCharset
-    # (see config.tcl) applies. If this parameter is missing, the
-    # general default is "iso-8859-1" (see tcl/charsets.tcl; this
-    # follows from http://tools.ietf.org/html/rfc2616; Section 3.7.1).
-    #
-    # iii. If neither case i) or case ii) become effective, the encoding is
-    # resolved to "binary".
-
-    set enc [ns_encodingfortype $content_type]
-
-    #
-    # 4. We provide for a general fallback: For cases where
-    # [ns_encodingfortype] cannot resolve a valid Tcl encoding (e.g.,
-    # when an invalid, unknown or empty IANA/MIME charset is specified
-    # in the content_type string), we default to "iso8859-1" for text/*
-    # media subtypes and "binary" for all the other types. In addition,
-    # we report the incidence.
-    #
-
-    if {$enc eq ""} {
-      set enc [expr {[string match "text/*" $content_type] ? "iso8859-1" : "binary"}]
-      my log "--- Resolving a Tcl encoding for the CONTENT-TYPE '$content_type' failed; falling back to '$enc'."
-    }
-
     # Note, there are also alternatives for resolving IANA/MIME
     # charset names to Tcl encoding names, however, they all have
     # issues (non-extensibility from standard configuration sites,
@@ -234,8 +215,62 @@ namespace eval ::xo {
     # 1. tcllib/mime package: ::mime::reversemapencoding()
     # 2. tdom: tDOM::IANAEncoding2TclEncoding(); see lib/tdom.tcl
 
-    fconfigure [my set S] -translation $trl -encoding $enc
+    #
+    # RFC 3023 support (at least in my reading) demands the following
+    # resolution order (see also Section 3.6 in RFC 3023), when
+    # applied along with RFC 2616 (see especially Section 3.7.1 in RFC 2616)
+    #
+    # (A) Check for the "charset" parameter on certain (!) media types:
+    # an explicitly stated, yet optional "charset" parameter is
+    # permitted for all text/* media subtypes (RFC 2616) and selected
+    # the XML media type classes listed by RFC 3023 (beyond the text/*
+    # media type; e.g. "application/xml*", "*/*+xml", etc.).
+    #
+    # (B) If the "charset" is omitted, certain default values apply (!):
+    #
+    #	(B.1) RFC 3023 text/* registrations default to us-ascii (!),
+    #	and not iso-8859-1 (overruling RFC 2616).
+    #
+    #   (B.2) RFC 3023 application/* and non-text "+xml" registrations
+    #	are to be left untreated (in our context, no encoding
+    #	filtering is to be applied -> "binary")
+    #
+    #   (B.3) RFC 2616 text/* registration (if not covered by B.1)
+    #   default to iso-8859-1
+    #
+    # (C) If neither A or B apply (e.g., because an invalid charset
+    # name was given to the charset parameter), we default to
+    # "binary". This corresponds to the behaviour of
+    # [ns_encodingfortype].  Also note, that the RFCs 3023 and 2616 do
+    # not state any procedure when "invalid" charsets etc. are
+    # identified. I assume, RFC-compliant clients have to ignore them
+    # which means keep the channel in- and output unfiltered (encoding
+    # = "binary"). This requires the client of the *HttpRequest* to
+    # treat the data accordingly.
+    #
+    
+    set enc ""
+    if {[regexp {^text/.*$|^.*/xml.*$|^.*\+xml.*$} $content_type]} {
+      # Case (A): Check for an explicitly provided charset parameter
+      if {[regexp {;\s*charset\s*=([^;]*)} $content_type _ charset]} {
+	set enc [ns_encodingforcharset [string trim $charset]]
+      } 
+      # Case (B.1)
+      if {$enc eq "" && [regexp {^text/xml.*$|text/.*\+xml.*$} $content_type]} {
+	set enc [ns_encodingforcharset us-ascii]
+      } 
+
+      # Case (B.3)
+      if {$enc eq "" && [string match "text/*" $content_type]} {
+	set enc [ns_encodingforcharset iso-8859-1]
+      }   
+    }
+
+    # Cases (C) and (B.2) are covered by the [expr] below.
+    return [list encoding [expr {$enc eq ""?"binary":$enc}] translation $trl]
   }
+  
+
 
 
 
@@ -298,15 +333,14 @@ namespace eval ::xo {
 
   HttpCore instproc POST {} {
     my instvar S post_data
-    if {[string match "text/*" [my content_type]]} {
-      # Make sure, "string range" and "string length" return the right
-      # values for UTF-8 and other encodings.
-      set post_data [encoding convertto $post_data]
+    array set "" [my get_channel_settings [my content_type]]
+    if {$(encoding) ne "binary"} {
+      set post_data [encoding convertto $(encoding) $post_data]
     }
     puts $S "Content-Length: [string length $post_data]"
     puts $S "Content-Type: [my content_type]"
     puts $S ""
-    my set_encoding [my content_type]
+    fconfigure $S -translation $(translation) -encoding binary
     my send_POST_data
   }
   HttpCore instproc send_POST_data {} {
@@ -389,9 +423,11 @@ namespace eval ::xo {
     my reply_header_done
   }
   HttpCore instproc reply_header_done {} {
+    my instvar S
     # we have received the header, including potentially the 
     # content_type of the returned data
-    my set_encoding [my content_type]
+    array set "" [my get_channel_settings [my content_type]]
+    fconfigure $S -translation $(translation) -encoding $(encoding)
     if {[my exists content_length]} {
       my set data [read [my set S] [my set content_length]]
     } else {
@@ -445,7 +481,7 @@ namespace eval ::xo {
 		   -mixin ::xo::AsyncHttpRequest::RequestManager \
 		   -url [my url] \
 		   -timeout [my timeout] \
-		   -post_data [encoding convertto [my post_data]] \
+		   -post_data [my post_data] \
 		   -request_header_fields [my request_header_fields] \
 		   -content_type [my content_type] \
 		   -user_agent [my user_agent] \
@@ -539,15 +575,15 @@ namespace eval ::xo {
   AsyncHttpRequest instproc send_POST_data {} {
     my instvar S post_data bytes_sent
     my set_timeout
-    set l [string length $post_data]
-    if {$bytes_sent < $l} {
-      set to_send [expr {$l - $bytes_sent}]
+    set total_bytes [string length $post_data]
+    if {$bytes_sent < $total_bytes} {
+      set to_send [expr {$total_bytes - $bytes_sent}]
       set block_size [expr {$to_send < 4096 ? $to_send : 4096}]
-      set bytes_sent_1 [expr {$bytes_sent + $block_size}]
-      set block [string range $post_data $bytes_sent $bytes_sent_1]
+      set next_block_size [expr {$bytes_sent + $block_size}]
+      set block [string range $post_data $bytes_sent [expr {$next_block_size-1}]]
       my notify request_data $block
       puts -nonewline $S $block
-      set bytes_sent $bytes_sent_1
+      set bytes_sent $next_block_size
     } else {
       fileevent $S writable ""
       my request_done
@@ -580,10 +616,12 @@ namespace eval ::xo {
     fileevent $S readable [list [self] header]      
   }
   AsyncHttpRequest instproc reply_header_done {} {
+    my instvar S
     my set_timeout
     # we have received the header, including potentially the 
     # content_type of the returned data
-    my set_encoding [my content_type]
+    array set "" [my get_channel_settings [my content_type]]
+    fconfigure $S -translation $(translation) -encoding $(encoding)
     fileevent [my set S] readable [list [self] receive_reply_data]
   }
   AsyncHttpRequest instproc receive_reply_data {} {
