@@ -69,13 +69,19 @@ if {$::xotcl::version < 1.5} {
 
 if {[info command ::nx::Object] ne ""} {
   ns_log notice "Defining minimal XOTcl 1 compatibility"
-  ::nx::core::alias ::xo::Attribute instvar ::nx::core::cmd::Object::instvar
-  ::nx::core::alias ::xo::Attribute set -objscope ::set
-  ::nx::Slot method istype {class} {::nx::core::is [self] type $class}
-  ::nx::Slot method exists {var}   {::nx::core::existsvar [self] $var}
-  ::nx::Object method serialize {} {::Serializer deepSerialize [self]}
+  ::nsf::alias ::xo::Attribute instvar ::nsf::methods::object::instvar
+  ::nsf::alias ::xo::Attribute set -objscope ::set
+  # the following line would cause a dependency of an nx object to xotcl (serializer)
+  #::nsf::alias ::nx::Slot istype ::nsf::classes::xotcl::Object::istype
+  ::nx::Slot public method istype {class}  {
+    return [expr {[::nsf::is class $class] && 
+		  [::nsf::dispatch [self] ::nsf::methods::object::info::hastype $class]}]
+  }
+  ::nx::Slot public method exists {var}   {::nsf::existsvar [self] $var}
+  ::nx::Object public method serialize {} {::Serializer deepSerialize [self]}
   ::nx::Object method set_instance_vars_defaults {} {:configure}
   ::xotcl::Object instproc set_instance_vars_defaults {} {:configure}
+  ::xotcl::Object proc setExitHandler {code} {::nsf::exithandler set $code}
 
   ::Serializer exportMethods {
     ::nx::Object method serialize
