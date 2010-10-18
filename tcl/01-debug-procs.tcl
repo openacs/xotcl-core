@@ -77,7 +77,7 @@ if {[info command ::nx::Object] ne ""} {
     return [expr {[::nsf::is class $class] && 
 		  [::nsf::dispatch [self] ::nsf::methods::object::info::hastype $class]}]
   }
-  ::nx::Slot public alias -objscope set ::set
+  ::nx::Slot public alias set -frame object ::set
   ::nx::Slot public method exists {var}   {::nsf::existsvar [self] $var}
   ::nx::Object public method serialize {} {::Serializer deepSerialize [self]}
   ::nx::Object method set_instance_vars_defaults {} {:configure}
