@@ -86,7 +86,16 @@ namespace eval ::xo {
     } else { 
       set insert 0
     }
+    #
+    [self class]::ChildManager instvar composite
+    # push the active composite
+    lappend composite [self]
+
     set errorOccurred [catch {namespace eval [self] $cmds} errorMsg]
+
+    # pop the last active composite
+    set composite [lrange $composite 0 end-1]
+
     if {$insert} {
       Object instmixin delete [self class]::ChildManager
     }
@@ -94,10 +103,13 @@ namespace eval ::xo {
   }
   Class OrderedComposite::ChildManager -instproc init args {
     set r [next]
-    set parent [self callingobject] ;# not a true calling object (ns-eval), but XOTcl 1 honors it
+    #set parent [self callingobject] ;# not a true calling object (ns-eval), but XOTcl 1 honors it
     #set parent [my info parent] ;# is ok in XOTcl 2, since the namespace is honored correctly
     #set parent [uplevel 2 self] ;# should work everywhere
     #puts stderr "-- CONTAINS p=$parent, co=[self callingobject] n=[uplevel 2 self]"
+    #
+    # get the top-most composite context as parent
+    set parent [lindex [[self class] set composite] end]
     $parent lappend __children [self]
     my set __parent $parent
     #my __after_insert
