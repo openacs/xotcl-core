@@ -90,8 +90,12 @@ namespace eval ::xo {
     [self class]::ChildManager instvar composite
     # push the active composite
     lappend composite [self]
-
-    set errorOccurred [catch {namespace eval [self] $cmds} errorMsg]
+    # check, if we have Tcl's apply available
+    if {$::tcl_version >= 8.5 && [info proc apply] eq ""} {
+      set errorOccurred [catch {::apply [list {} $cmds [self]]} errorMsg]
+    } else {
+      set errorOccurred [catch {namespace eval [self] $cmds} errorMsg]
+    }
 
     # pop the last active composite
     set composite [lrange $composite 0 end-1]

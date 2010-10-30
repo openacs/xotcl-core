@@ -204,8 +204,9 @@ namespace eval ::xo {
 
   proc localize {text {inline 0}} {
     #ns_log notice "--local $text $inline"
-    if {![my exists __localizer]} {
-      my set __localizer [list]
+    set obj [uplevel self]
+    if {![$obj exists __localizer]} {
+      $obj set __localizer [list]
     }
     if {[string first \x002 $text] == -1} {
       return $text
@@ -242,7 +243,7 @@ namespace eval ::xo {
 	  set type missing
 	}
         if {!$inline} {
-          my lappend __localizer [::xo::Localizer new -type $type -key $key -url $url]
+          $obj lappend __localizer [::xo::Localizer new -type $type -key $key -url $url]
         } else {
           set l [::xo::Localizer new -type $type -key $key -url $url]
           append return_text [$l asHTML]
@@ -254,8 +255,9 @@ namespace eval ::xo {
   }
 
   proc render_localizer {} {
-    if {[my exists __localizer]} {
-      foreach l [my set __localizer] {
+    set obj [uplevel self]
+    if {[$obj exists __localizer]} {
+      foreach l [$obj set __localizer] {
 	$l render
 	$l destroy
       }
@@ -354,17 +356,17 @@ namespace eval ::xo {
   }
   Table instproc actions {cmd} {
     set M [OrderedComposite create [self]::__actions]
-    namespace eval $M {namespace import -force [self class]::*}
+    namespace eval $M [list namespace import -force [self class]::*]
     $M contains $cmd
   }
   Table instproc __bulkactions {cmd} {
     set M [OrderedComposite create [self]::__bulkactions]
-    namespace eval $M {namespace import -force [self class]::*}
+    namespace eval $M [list namespace import -force [self class]::*]
     $M contains $cmd
   }
   Table instproc columns {cmd} {
     set M [OrderedComposite create [self]::__columns]
-    namespace eval $M {namespace import -force [self class]::*}
+    namespace eval $M [list namespace import -force [self class]::*]
     $M contains $cmd
     set slots [list]
     foreach c [$M children] {
@@ -472,10 +474,11 @@ namespace eval ::xo {
 	-superclass ::xo::OrderedComposite::Child \
 	-parameter {name id {html {}}} \
         -instproc actions {cmd} {
-          my init
+          #my init
           set grandParent [[my info parent] info parent]
           if {![my exists name]} {my set name [namespace tail [self]]}
-          set M [::xo::OrderedComposite create ${grandParent}::__bulkactions]
+          #set M [::xo::OrderedComposite create ${grandParent}::__bulkactions]
+          set M [::xo::OrderedComposite create ${grandParent}::__bulkactions -noinit]
           namespace eval $M {namespace import -force ::xo::Table::*}
           $M contains $cmd
           $M set __belongs_to [self]
