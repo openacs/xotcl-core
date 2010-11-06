@@ -1209,6 +1209,15 @@ namespace eval ::xo::db {
     return $allowed
   }
 
+  ::xo::db::CrClass create ::xo::db::image -superclass ::xo::db::CrItem \
+      -pretty_name "Image" \
+      -table_name "images" -id_column "image_id" \
+      -object_type image \
+      -slots {
+	::xo::db::CrAttribute create width  -datatype integer
+	::xo::db::CrAttribute create height -datatype integer
+      }
+
   #
   # CrFolder
   #

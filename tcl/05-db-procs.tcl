@@ -923,6 +923,7 @@ namespace eval ::xo::db {
     switch -glob -- $name {
       ::xo::db::Object   {return acs_object}
       ::xo::db::CrItem   {return content_revision}
+      ::xo::db::image    {return image}
       ::xo::db::CrFolder {return content_folder}
       ::xo::db::*        {return [string range $name 10 end]}
       default            {return $name}
