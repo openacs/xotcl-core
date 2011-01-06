@@ -1674,7 +1674,7 @@ namespace eval ::xo::db {
   }
 
   ##############
-  ::xotcl::Class create ::xo::db::CrAttribute \
+  ::xotcl::MetaSlot create ::xo::db::CrAttribute \
       -superclass {::xo::db::Attribute} \
 
   ::xo::db::CrAttribute instproc create_attribute {} {
