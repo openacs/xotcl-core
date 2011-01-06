@@ -1592,7 +1592,7 @@ namespace eval ::xo::db {
   }
 
   ##############
-  ::xotcl::Class create ::xo::db::Attribute \
+  ::xotcl::MetaSlot create ::xo::db::Attribute \
       -superclass {::xo::Attribute} \
       -parameter {
         {sqltype} 

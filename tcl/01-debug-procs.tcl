@@ -32,7 +32,7 @@ if {$::xotcl::version < 1.5} {
   # XOTcl 1.5 or newer supports slots. Here we have to 
   # emulate slots up to a certain point
   namespace eval ::xo {
-    Class create ::xo::Attribute \
+    ::xotcl::MetaSlot create ::xo::Attribute \
       -parameter {
         {name "[namespace tail [::xotcl::self]]"}
         {domain "[lindex [regexp -inline {^(.*)::slot::[^:]+$} [::xotcl::self]] 1]"}
@@ -52,7 +52,7 @@ if {$::xotcl::version < 1.5} {
 } else {
   namespace eval ::xo {
     # create xo::Attribute as a subclass of the slot ::xotcl::Attribute
-    Class create ::xo::Attribute \
+    ::xotcl::MetaSlot create ::xo::Attribute \
         -superclass ::xotcl::Attribute \
         -parameter {
           spec
