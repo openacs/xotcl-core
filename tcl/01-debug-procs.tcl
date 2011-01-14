@@ -82,6 +82,7 @@ if {[info command ::nx::Object] ne ""} {
   ::nx::Slot public method exists {var}   {::nsf::existsvar [self] $var}
   ::nx::Object public method serialize {} {::Serializer deepSerialize [self]}
   ::nx::Object method set_instance_vars_defaults {} {:configure}
+  ::nx::Object public method destroy_on_cleanup {} {set ::xo::cleanup([self]) [list [self] destroy]}
   ::xotcl::Object instproc set_instance_vars_defaults {} {:configure}
   ::xotcl::Object proc setExitHandler {code} {::nsf::exithandler set $code}
 
@@ -89,6 +90,7 @@ if {[info command ::nx::Object] ne ""} {
     ::nx::Object method serialize
     ::nx::Object method show-object
     ::nx::Object method set_instance_vars_defaults
+    ::nx::Object method destroy_on_cleanup
     ::nx::Slot method istype
     ::nx::Slot method exists
     ::nx::Slot method set
@@ -136,10 +138,10 @@ namespace eval ::xo {
   # Allow to show an arbitrary object via API-browser.  Per-default,
   # e.g. site-wide can use e.g. /xowiki/index?m=show-object
   #
-  rp_form_put object [self]
-  rp_form_put show_methods 2
-  rp_form_put show_source 1
-  rp_form_put show_variables 1
+  rp_form_update object [self]
+  rp_form_update show_source    [::xo::cc query_parameter "show_source" 1]
+  rp_form_update show_methods   [::xo::cc query_parameter "show_methods" 2]
+  rp_form_update show_variables [::xo::cc query_parameter "show_variables" 1]
   rp_internal_redirect /packages/xotcl-core/www/show-object
 }
 
