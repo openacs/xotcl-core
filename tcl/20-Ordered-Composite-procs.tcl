@@ -91,7 +91,7 @@ namespace eval ::xo {
     # push the active composite
     lappend composite [self]
     # check, if we have Tcl's apply available
-    if {$::tcl_version >= 8.5 && [info proc apply] eq ""} {
+    if {$::tcl_version >= 8.5 && [info proc ::apply] eq ""} {
       set errorOccurred [catch {::apply [list {} $cmds [self]]} errorMsg]
     } else {
       set errorOccurred [catch {namespace eval [self] $cmds} errorMsg]
