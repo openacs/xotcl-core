@@ -138,10 +138,11 @@ namespace eval ::xo {
   # Allow to show an arbitrary object via API-browser.  Per-default,
   # e.g. site-wide can use e.g. /xowiki/index?m=show-object
   #
-  rp_form_update object [self]
-  rp_form_update show_source    [::xo::cc query_parameter "show_source" 1]
-  rp_form_update show_methods   [::xo::cc query_parameter "show_methods" 2]
-  rp_form_update show_variables [::xo::cc query_parameter "show_variables" 1]
+  set form [rp_getform]
+  ns_set update $form object [self]
+  ns_set update $form show_source    [::xo::cc query_parameter "show_source" 1]
+  ns_set update $form show_methods   [::xo::cc query_parameter "show_methods" 2]
+  ns_set update $form show_variables [::xo::cc query_parameter "show_variables" 1]
   rp_internal_redirect /packages/xotcl-core/www/show-object
 }
 
