@@ -11,6 +11,7 @@ package require xotcl::serializer
   ::xotcl::Object instproc debug
   ::xotcl::Object instproc qn
   ::xotcl::Object instproc serialize
+  ::xotcl::Object instproc show-object
   ::xotcl::Object instforward db_1row
   ::xotcl::Object instproc destroy_on_cleanup
   ::xotcl::Object instproc set_instance_vars_defaults
@@ -86,6 +87,7 @@ if {[info command ::nx::Object] ne ""} {
 
   ::Serializer exportMethods {
     ::nx::Object method serialize
+    ::nx::Object method show-object
     ::nx::Object method set_instance_vars_defaults
     ::nx::Slot method istype
     ::nx::Slot method exists
@@ -127,6 +129,18 @@ namespace eval ::xo {
 
 ::xotcl::Object instproc serialize {} {
   ::Serializer deepSerialize [self]
+}
+
+::xotcl::Object instproc show-object {} {
+  #
+  # Allow to show an arbitrary object via API-browser.  Per-default,
+  # e.g. site-wide can use e.g. /xowiki/index?m=show-object
+  #
+  rp_form_put object [self]
+  rp_form_put show_methods 2
+  rp_form_put show_source 1
+  rp_form_put show_variables 1
+  rp_internal_redirect /packages/xotcl-core/www/show-object
 }
 
 namespace eval ::xo {
