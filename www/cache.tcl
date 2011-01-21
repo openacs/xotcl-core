@@ -78,12 +78,12 @@ if { $cache == 0 } {
   set entries "<ul>"
   set count 0
   foreach name [lsort -dictionary $item_list] {
-    set entry [ns_cache get $cache $name]
+    if {[catch {set entry [ns_cache get $cache $name]}]} continue
     if {$filter ne ""} {if {![regexp $filter $entry]} continue}
     incr count
     set n ""
     regexp -- {-set name ([^\\]+)\\} $entry _ n
-    append entries "<li><a href='?cache=$cache&item=$name'>$name</a> $n (<a href='?cache=$cache&flush=$name'>flush</a>)</li>"
+    append entries "<li><a href='?cache=$cache&item=$name'>$name</a> $n ([string length $entry] bytes, <a href='?cache=$cache&flush=$name'>flush</a>)</li>"
   }
   append entries "</ul>"
   if {$filter ne ""} {
