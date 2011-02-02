@@ -1557,14 +1557,13 @@ namespace eval ::xo::db {
     # similar mechanisms
     foreach x [my info vars __*] {if {[my array exists $x]} {my array unset $x} {my unset $x}}
   }
-  #::408415 (3014 bytes, flush)
   CrCache::Item instproc flush_from_cache_and_refresh {} {
     # cache only names with IDs
     set obj [self]
     set canonical_name ::[$obj item_id]
     ::xo::clusterwide ns_cache flush xotcl_object_cache $obj
     if {$obj eq $canonical_name} {
-      my log "--CACHE saving $obj in cache"
+      #my log "--CACHE saving $obj in cache"
       #
       # The object name is eq to the item_id; we assume, this is a
       # fully loaded object, containing all relevant instance
