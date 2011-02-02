@@ -187,6 +187,7 @@ if {$isclass} {
     if {$c eq "::xotcl::Object"} {continue}
     eval lappend class_hierarchy [$c info subclass]
   }
+  if {[llength $class_hierarchy]>5} {set class_hierarchy {}}
   eval lappend class_hierarchy [$object info heritage]
   if {[lsearch -exact $class_hierarchy $object] == -1} {lappend class_hierarchy $object}
   #::xotcl::Object msg class_hierarchy=$class_hierarchy
