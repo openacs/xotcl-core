@@ -404,6 +404,7 @@ namespace eval ::xo::db {
     -item_id:required
     {-revision_id 0}
     -object:required
+    {-initialize true}
   } {
     Load a content item into the specified object. If revision_id is
     provided, the specified revision is returned, otherwise the live
@@ -467,6 +468,9 @@ namespace eval ::xo::db {
        and    n.[my id_column] = coalesce(i.live_revision, i.latest_revision) \
        and    o.object_id = i.item_id"
     }
+    # db_1row treats all newly created variables as instance variables,
+    # so we can see vars like __db_sql, __db_lst that we do not want to keep
+    foreach v [$object info vars __db_*] {$object unset $v}
 
     if {[apm_version_names_compare [ad_acs_version] 5.2] <= -1} {
       $object set package_id [db_string [my qn get_pid] \
@@ -474,7 +478,7 @@ namespace eval ::xo::db {
     }
 
     #my log "--AFTER FETCH\n[$object serialize]"
-    $object initialize_loaded_object
+    if {$initialize} {$object initialize_loaded_object}
     return $object
   }
 
@@ -1393,6 +1397,7 @@ namespace eval ::xo::db {
     -item_id:required
     {-revision_id 0}
     -object:required
+    {-initialize true}
   } {
     We overwrite the default fetch_object method here.
     We join acs_objects, cr_items and cr_folders and fetch
@@ -1409,7 +1414,7 @@ namespace eval ::xo::db {
         JOIN acs_objects on cr_folders.folder_id = acs_objects.object_id
         WHERE folder_id = $item_id"
 
-    $object initialize_loaded_object
+    if {$initialize} {$object initialize_loaded_object}
     return $object
   }
 
@@ -1482,24 +1487,39 @@ namespace eval ::xo::db {
     -item_id:required
     {-revision_id 0}
     -object:required
+    {-initialize true}
   } {
-    set code [ns_cache eval xotcl_object_cache $object {
-      set created 1
-      #my log "--CACHE new new [self]"
-      set o [next]
+    set serialized_object [ns_cache eval xotcl_object_cache $object {
+      #my log "--CACHE true fetch [self args]" 
+      set loaded_from_db 1
+      # Call the showdowed method with initializing turned off. We
+      # want to store object before the after-load initialize in the
+      # cache to save storage.
+      set o [next -item_id $item_id -revision_id $revision_id -object $object -initialize 0]
       return [::Serializer deepSerialize $o]
     }]
     #my log "--CACHE: [self args], created [info exists created] o [info exists o]"
-    if {![info exists created]} {
+    if {[info exists loaded_from_db]} {
+      # The basic fetch_object method creates the object, we have
+      # just to run the after load init (if wanted)
+      if {$initialize} {$object initialize_loaded_object}
+    } else {
+      # The variable serialized_object contains the serialization of
+      # the object from the cache; check if the object exists already
+      # or create it.
       if {[my isobject $object]} {
-        my log "--!! $object exists already"
+	# There would have been no need to call this method. We could
+        # raise an error here.  
+	# my log "--!! $object exists already"
       } else {
-        set o [eval $code]
-	$object initialize_loaded_object
+	# Create the object from the serialization and initialize it
+        eval $serialized_object
+	if {$initialize} {$object initialize_loaded_object}
       }
     }
     return $object
   }
+
   CrCache instproc delete {-item_id} {
     next
     ::xo::clusterwide ns_cache flush xotcl_object_cache ::$item_id
@@ -1529,13 +1549,22 @@ namespace eval ::xo::db {
 
   ::xotcl::Class create CrCache::Item
   CrCache::Item set name_pattern {^::[0-9]+$}
+  CrCache::Item instproc remove_non_persistent_vars {} {
+    # we do not want to save __db__artefacts in the cache
+    foreach x [my info vars __db_*] {my unset $x}
+    # remove as well vars and array starting with "__", assuming these
+    # are volatile variables created by initialize_loaded_object or
+    # similar mechanisms
+    foreach x [my info vars __*] {if {[my array exists $x]} {my array unset $x} {my unset $x}}
+  }
+  #::408415 (3014 bytes, flush)
   CrCache::Item instproc flush_from_cache_and_refresh {} {
     # cache only names with IDs
     set obj [self]
     set canonical_name ::[$obj item_id]
     ::xo::clusterwide ns_cache flush xotcl_object_cache $obj
     if {$obj eq $canonical_name} {
-      #my log "--CACHE saving $obj in cache"
+      my log "--CACHE saving $obj in cache"
       #
       # The object name is eq to the item_id; we assume, this is a
       # fully loaded object, containing all relevant instance
@@ -1547,6 +1576,7 @@ namespace eval ::xo::db {
       # session.
       set mixins [$obj info mixin]
       $obj mixin [list]
+      $obj remove_non_persistent_vars
       ns_cache set xotcl_object_cache $obj [$obj serialize]
       $obj mixin $mixins
     } else {
