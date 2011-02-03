@@ -87,7 +87,9 @@ ad_page_contract {
       lappend reduced_sc $sc
     }
     if {$reduced_sc eq {}} continue
-    append superclasses "[my dotquote $e]->[my dotquotel $reduced_sc];\n"
+    foreach sc $reduced_sc {
+      append superclasses "[my dotquote $e]->[my dotquotel $sc];\n"
+    }
   }
   set children ""
   set mixins ""
@@ -133,12 +135,12 @@ ad_page_contract {
    dpi = $dpi;
    rankdir = BT;
    node \[$font shape=record\]; $tclasses
-   edge \[arrawohead=empty\]; $superclasses
+   edge \[arrowhead=empty\]; $superclasses
    node \[color=Green,shape=ellipse,fontcolor=Blue, style=filled, fillcolor=darkseagreen1\]; $objects
-   edge \[color=Blue,style=dotted\]; $instances
+   edge \[color=Blue,style=dotted,arrowhead=normal,label=\"instance of\",fontsize=10\]; $instances
    edge \[color=pink,arrowhead=diamond, style=dotted\]; $children
-   edge \[label=instmixin,fontsize=10,color=$imcolor,fontcolor=$imcolor,arrowhead=none,arrowtail=vee, style=dashed,dir=back, constraint=0\]; $instmixins
-   edge \[label=mixin,fontsize=10,color=$imcolor,fontcolor=$imcolor,arrowhead=none,arrowtail=vee, style=dashed,dir=back, constraint=0\]; $mixins
+   edge \[label=instmixin,fontsize=10,color=$imcolor,fontcolor=$imcolor,arrowhead=none,arrowtail=vee,style=dashed,dir=back,constraint=0\]; $instmixins
+   edge \[label=mixin,fontsize=10,color=$imcolor,fontcolor=$imcolor,arrowhead=none,arrowtail=vee,style=dashed,dir=back,constraint=0\]; $mixins
 
 }"
 }
@@ -152,9 +154,11 @@ catch {set dot [::util::which dot]}
 if {$dot eq "" && [file executable /usr/bin/dot]} {set dot /usr/bin/dot}
 if {$dot eq ""} {ns_return 404 plain/text "do dot found"; ad_script_abort}
 
-set tmpfile [ns_tmpnam].png
-set f [open "|$dot  -Tpng -o $tmpfile" w]
-puts $f $dot_code
-close $f
+set tmpnam [ns_tmpnam]
+set tmpfile $tmpnam.png
+set f [open "|$dot  -Tpng -o $tmpfile" w]; puts $f $dot_code; close $f
 ns_returnfile 200 [ns_guesstype $tmpfile] $tmpfile
 file delete $tmpfile
+
+#set f [open $tmpnam.dot w]; puts $f $dot_code; close $f
+#file delete $tmpnam.dot
