@@ -171,8 +171,8 @@ namespace eval ::xo::tdom {
         set HTMLattribute $attribute
       }
       #my msg "[my name] check for $attribute => [my exists $attribute]"
-      if {[my uplevel info exists $attribute]} {
-        lappend pairs $HTMLattribute [my uplevel set $attribute]
+      if {[my uplevel [list info exists $attribute]]} {
+        lappend pairs $HTMLattribute [my uplevel [list set $attribute]]
       }
     }
     return $pairs

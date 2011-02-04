@@ -245,7 +245,7 @@ proc ::! args {
 }
 
 ::xotcl::Object instproc qn query_name {
-  set qn "dbqd.[my uplevel self class]-[my uplevel self proc].$query_name"
+  set qn "dbqd.[my uplevel [list self class]]-[my uplevel [list self proc]].$query_name"
   return $qn
 }
 namespace eval ::xo {
