@@ -83,6 +83,9 @@ if {[info command ::nx::Object] ne ""} {
   ::nx::Object public method serialize {} {::Serializer deepSerialize [self]}
   ::nx::Object method set_instance_vars_defaults {} {:configure}
   ::nx::Object public method destroy_on_cleanup {} {set ::xo::cleanup([self]) [list [self] destroy]}
+  ::nx::Object method qn {query_name} {
+    return "dbqd.[:uplevel [list current class]]-[:uplevel [list current method]].$query_name"
+  }
   ::xotcl::Object instproc set_instance_vars_defaults {} {:configure}
   ::xotcl::Object proc setExitHandler {code} {::nsf::exithandler set $code}
 
@@ -91,6 +94,7 @@ if {[info command ::nx::Object] ne ""} {
     ::nx::Object method show-object
     ::nx::Object method set_instance_vars_defaults
     ::nx::Object method destroy_on_cleanup
+    ::nx::Object method qn
     ::nx::Slot method istype
     ::nx::Slot method exists
     ::nx::Slot method set
