@@ -532,7 +532,7 @@ namespace eval ::xo {
     set query [ns_urlencode $var]=[ns_urlencode $value]
     foreach pair [split $old_query &] {
       foreach {key value} [split $pair =] break
-      if {$key eq $var} continue
+      if {[ns_urldecode $key] eq $var} continue
       append query &$pair
     }
     return $query
