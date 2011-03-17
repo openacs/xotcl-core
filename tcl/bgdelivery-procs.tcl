@@ -47,12 +47,39 @@ if {![string match *contentsentlength* $msg]} {
 
   FileSpooler create fileSpooler
   fileSpooler set tick_interval 60000 ;# 1 min
-  fileSpooler proc spool {{-delete false} -channel -filename -context {-client_data ""}} {
+  fileSpooler proc deliver_ranges {ranges client_data filename fd channel} {
+    set first_range [lindex $ranges 0]
+    set remaining_ranges [lrange $ranges 1 end]
+    foreach {from to size} $first_range break
+    if {$remaining_ranges eq ""} {
+      # A single delivery, which is as well the last; when finished
+      # with this chunk, terminate delivery
+      set cmd [list [self] end-delivery -client_data $client_data $filename $fd $channel]
+    } else {
+      #
+      # For handling multiple ranges, HTTP/1.1 requires multipart
+      # messages (multipart media type: multipart/byteranges);
+      # currenty these are not implemented (missing test cases). The
+      # code handling the range tag switches currently to full
+      # delivery, when multiple ranges are requested.
+      #
+      set cmd [list [self] deliver_ranges $remaining_ranges $client_data $filename $fd $channel]
+    }
+    seek $fd $from
+    #ns_log notice "Range seek $from $filename // $first_range"
+    fcopy $fd $channel -size $size -command $cmd
+  }
+  fileSpooler proc spool {{-ranges ""} {-delete false} -channel -filename -context {-client_data ""}} {
     set fd [open $filename]
     fconfigure $fd -translation binary
     fconfigure $channel -translation binary
+    if {$ranges eq ""} {
+      ns_log notice "no Range spool for $filename"
+      fcopy $fd $channel -command [list [self] end-delivery -client_data $client_data $filename $fd $channel]
+    } else {
+      my deliver_ranges $ranges $client_data $filename $fd $channel
+    }
     #ns_log notice "--- start of delivery of $filename (running:[array size ::running])"
-    fcopy $fd $channel -command [list [self] end-delivery -client_data $client_data $filename $fd $channel]
     set key $channel,$fd,$filename
     set ::running($key) $context
     if {$delete} {set ::delete_file($key) 1}
@@ -371,15 +398,53 @@ bgdelivery ad_proc returnfile {
     ns_conn keepalive 0
   }
 
+  set range [ns_set iget [ns_conn headers] range]
+  ns_log notice "Range: '$range' (raw header field)"
+  if {[regexp {bytes=(.*)$} $range _ range]} {
+    set ranges [list]
+    set bytes 0
+    set pos 0
+    foreach r [split $range ,] {
+      regexp {^(\d*)-(\d*)$} $r _ from to
+      if {$from eq ""} {
+	# The last $to bytes, $to must be specified; 'to' is
+	# differently interpreted as in the case, where from is
+	# non-empty
+	set from [expr {$size - $to}]
+      } else {
+	if {$to eq ""} {set to [expr {$size-1}]}
+      }
+      set rangeSize [expr {1 + $to - $from}]
+      lappend ranges [list $from $to $rangeSize]
+      set pos [expr {$to + 1}]
+      incr bytes $rangeSize
+    }
+  } else {
+    set ranges ""
+    set bytes $size
+  }
+
+  #ns_log notice "Range=$range bytes=$bytes // $ranges"
+
+
   #
   # For the time being, we write the headers in a simplified version
   # directly in the spooling thread to avoid the overhead of double
   # h264opens.
   if {!$use_h264} {
-    my write_headers $status_code $mime_type $size
+    if {[llength $ranges] == 1 && $status_code == 200} {
+      set first_range [lindex $ranges 0]
+      foreach {from to .} $first_range break
+      ns_set put [ns_conn outputheaders] Content-Range "bytes $from-$to/$size"
+      ns_log notice "added header-field Content-Range: bytes $from-$to/$size // $ranges"
+      set status_code 206
+    } elseif {[llength $ranges]>1} {
+      ns_log warning "Multiple ranges are currently not supported, ignoring range request"
+    }
+    my write_headers $status_code $mime_type $bytes
   }
 
-  if {$size == 0} {
+  if {$bytes == 0} {
     # Tcl behaves different, when one tries to send 0 bytes via
     # file_copy. So, we handle this special case here...
     # There is actualy nothing to deliver....
@@ -429,7 +494,7 @@ bgdelivery ad_proc returnfile {
         -client_data $client_data
   } else {
     #my log "FILE SPOOL $filename"
-    my do -async ::fileSpooler spool -delete $delete -channel $ch -filename $filename \
+    my do -async ::fileSpooler spool -ranges $ranges -delete $delete -channel $ch -filename $filename \
         -context [list [::xo::cc requestor],[::xo::cc url] [ns_conn start]] \
         -client_data $client_data
   }
