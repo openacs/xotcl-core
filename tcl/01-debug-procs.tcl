@@ -70,16 +70,16 @@ if {$::xotcl::version < 1.5} {
 
 if {[info command ::nx::Object] ne ""} {
   ns_log notice "Defining minimal XOTcl 1 compatibility"
-  ::nsf::alias ::xo::Attribute instvar ::nsf::methods::object::instvar
+  ::nsf::method::alias ::xo::Attribute instvar ::nsf::methods::object::instvar
 
   # the following line would cause a dependency of an nx object to xotcl (serializer)
-  #::nsf::alias ::nx::Slot istype ::nsf::classes::xotcl::Object::istype
+  #::nsf::method::alias ::nx::Slot istype ::nsf::classes::xotcl::Object::istype
   ::nx::Slot public method istype {class}  {
     return [expr {[::nsf::is class $class] && 
 		  [::nsf::dispatch [self] ::nsf::methods::object::info::hastype $class]}]
   }
   ::nx::Slot public alias set -frame object ::set
-  ::nx::Slot public method exists {var}   {::nsf::existsvar [self] $var}
+  ::nx::Slot public method exists {var}   {::nsf::var::exists [self] $var}
   ::nx::Object public method serialize {} {::Serializer deepSerialize [self]}
   ::nx::Object method set_instance_vars_defaults {} {:configure}
   ::nx::Object public method destroy_on_cleanup {} {set ::xo::cleanup([self]) [list [self] destroy]}
