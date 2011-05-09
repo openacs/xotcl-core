@@ -448,6 +448,8 @@ bgdelivery ad_proc returnfile {
     # Tcl behaves different, when one tries to send 0 bytes via
     # file_copy. So, we handle this special case here...
     # There is actualy nothing to deliver....
+    ns_set put [ns_conn outputheaders] "Content-Length" 0
+    ns_return 200 text/plain {}
     return
   }
 
