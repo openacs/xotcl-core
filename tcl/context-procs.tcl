@@ -176,6 +176,7 @@ namespace eval ::xo {
     requestor
     user
     url
+    mobile
   }
   
   ConnectionContext proc require_package_id_from_url {{-package_id 0} url} {
@@ -263,6 +264,14 @@ namespace eval ::xo {
       ::xo::cc set_user_id $user_id
       ::xo::cc process_query_parameter
     }
+
+    # simple mobile detection
+    ::xo::cc mobile 0
+    if {[ns_conn isconnected]} {
+      set user_agent [string tolower [ns_set get [ns_conn headers] User-Agent]]
+      ::xo::cc mobile [regexp (android|webos|iphone|ipod) $user_agent]
+    }
+
     if {![info exists ::ad_conn(charset)]} {
       set ::ad_conn(charset) [lang::util::charset_for_locale $locale] 
       set ::ad_conn(language) [::xo::cc lang]
