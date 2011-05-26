@@ -10,7 +10,7 @@
     <inherit-templates-p>t</inherit-templates-p>
     <auto-mount>xotcl</auto-mount>
 
-    <version name="0.118" url="http://media.wu-wien.ac.at/download/xotcl-core-0.118.apm">
+    <version name="0.119" url="http://media.wu-wien.ac.at/download/xotcl-core-0.119.apm">
         <owner url="mailto:neumann@wu-wien.ac.at">Gustaf Neumann</owner>
         <summary>XOTcl library functionality (e.g. thread handling, online documentation, Generic Form and List Classes)</summary>
         <release-date>2011-01-14</release-date>
@@ -43,7 +43,7 @@ when components are reloaded.
         <license>BSD-Style</license>
         <maturity>0</maturity>
 
-        <provides url="xotcl-core" version="0.118"/>
+        <provides url="xotcl-core" version="0.119"/>
 
         <callbacks>
             <callback type="before-install"  proc="::xotcl-core::before_install_callback"/>
