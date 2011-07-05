@@ -597,6 +597,35 @@ namespace eval ::xo::db {
 
     ::xo::db::Class proc get_all_package_functions {} {
       #
+      # Load defintions in one swap fropm function args; only for
+      # those definitions where we do not have function args, we parse
+      # the function arg aliases.
+      #
+      set definitions [db_list_of_lists [my qn get_all_package_functions0] {
+	select 
+           args.function,
+           args.arg_name, 
+           args.arg_default
+	from acs_function_args args
+	order by function, arg_seq
+      }]
+      set last_function ""
+      set function_args {}
+      foreach definition $definitions {
+	foreach {function arg_name default} $definition break
+	if {$last_function ne "" && $last_function ne $function} {
+	  set ::xo::db::sql::fnargs($last_function) $function_args
+	  #puts stderr "$last_function [list $function_args]"
+	  set function_args {}
+	}
+	lappend function_args [list $arg_name $default]
+	set last_function $function
+      }
+      set ::xo::db::sql::fnargs($last_function) $function_args
+      #puts stderr "$last_function [list $function_args]"
+      ns_log notice "loaded [array size ::xo::db::sql::fnargs] definitions from function args [lsort [array names ::xo::db::sql::fnargs *__*]]"
+
+      #
       # Get all package functions (package name, object name) from PostgreSQL
       # system catalogs.
       #
@@ -623,6 +652,12 @@ namespace eval ::xo::db {
 #     }
 
     ::xo::db::Class instproc get_function_args {package_name object_name} {
+      set key [string toupper ${package_name}__${object_name}]
+
+      if {[info exists ::xo::db::sql::fnargs($key)]} {
+	return $::xo::db::sql::fnargs($key)
+      }
+
       #
       # Get function_args for a single sql-function from PostgreSQL
       # system catalogs. We retrieve always the longest function for
@@ -792,8 +827,9 @@ namespace eval ::xo::db {
   # is to define the correct default values in the database with
   # define_function_args()
 
-  ::xo::db::Class array set defaults {
-    "content_item__new" {RELATION_TAG null DESCRIPTION null TEXT null 
+  ::xo::db::Class array set fallback_defaults {
+    "content_item__new" {
+      RELATION_TAG null DESCRIPTION null TEXT null 
       CREATION_IP null NLS_LANGUAGE null LOCALE null CONTEXT_ID null 
       DATA null TITLE null ITEM_ID null 
       CREATION_DATE now
@@ -809,14 +845,28 @@ namespace eval ::xo::db {
     "content_type__drop_type" {
       DROP_CHILDREN_P f DROP_TABLE_P f DROP_OBJECTS_P f
     }
+    "acs_attribute__create_attribute" {
+      PRETTY_PLURAL null TABLE_NAME null COLUMN_NAME null 
+      DEFAULT_VALUE null SORT_ORDER null DATABASE_TYPE null SIZE null 
+      REFERENCES null CHECK_EXPR null COLUMN_SPEC null
+    }
+    "acs_object_type__create_type" {
+      TYPE_EXTENSION_TABLE null NAME_METHOD null
+    }
   }
 
   ::xo::db::Class instproc fix_function_args {function_args package_name object_name} {
-    if {![[self class] exists defaults(${package_name}__$object_name)]} {
+    #
+    # Load fallback defaults for buggy function args. The values
+    # provided here are only used for function args without specified
+    # defaults. This is a transitional solution; actually, the
+    # function args should be fixed.
+    #
+    if {![[self class] exists fallback_defaults(${package_name}__$object_name)]} {
       return $function_args
     }
 
-    array set additional_defaults [[self class] set defaults(${package_name}__$object_name)]
+    array set additional_defaults [[self class] set fallback_defaults(${package_name}__$object_name)]
     set result [list]
     foreach arg $function_args {
       foreach {arg_name default_value} $arg break
