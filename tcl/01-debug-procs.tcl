@@ -76,7 +76,7 @@ if {[info command ::nx::Object] ne ""} {
   #::nsf::method::alias ::nx::Slot istype ::nsf::classes::xotcl::Object::istype
   ::nx::Slot public method istype {class}  {
     return [expr {[::nsf::is class $class] && 
-		  [::nsf::dispatch [self] ::nsf::methods::object::info::hastype $class]}]
+		  [::nsf::object::dispatch [self] ::nsf::methods::object::info::hastype $class]}]
   }
   ::nx::Slot public alias set -frame object ::set
   ::nx::Slot public method exists {var}   {::nsf::var::exists [self] $var}
