@@ -72,12 +72,12 @@ if {[info command ::nx::Object] ne ""} {
   ns_log notice "Defining minimal XOTcl 1 compatibility"
   ::nsf::method::alias ::xo::Attribute instvar ::nsf::methods::object::instvar
 
-  # the following line would cause a dependency of an nx object to xotcl (serializer)
-  #::nsf::method::alias ::nx::Slot istype ::nsf::classes::xotcl::Object::istype
-  ::nx::Slot public method istype {class}  {
-    return [expr {[::nsf::is class $class] && 
-		  [::nsf::dispatch [self] ::nsf::methods::object::info::hastype $class]}]
-  }
+  # The following line would cause a dependency of an nx object to
+  # xotcl (serializer); since XOTcl depends on NX, this would be a
+  # cyclic dependency.
+  #     ::nsf::method::alias ::nx::Slot istype ::nsf::classes::xotcl::Object::istype
+  # Therefore, we just grab the body to reduce dependencies on nsf internals
+  ::nx::Slot public method istype {class}  [::nx::Object info method body ::nsf::classes::xotcl::Object::istype]
   ::nx::Slot public alias set -frame object ::set
   ::nx::Slot public method exists {var}   {::nsf::var::exists [self] $var}
   ::nx::Object public method serialize {} {::Serializer deepSerialize [self]}
