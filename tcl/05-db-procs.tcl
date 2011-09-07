@@ -623,7 +623,8 @@ namespace eval ::xo::db {
       }
       set ::xo::db::sql::fnargs($last_function) $function_args
       #puts stderr "$last_function [list $function_args]"
-      ns_log notice "loaded [array size ::xo::db::sql::fnargs] definitions from function args [lsort [array names ::xo::db::sql::fnargs *__*]]"
+      ns_log notice "loaded [array size ::xo::db::sql::fnargs] definitions from function args"
+      #ns_log notice "... [lsort [array names ::xo::db::sql::fnargs *__*]]"
 
       #
       # Get all package functions (package name, object name) from PostgreSQL
