@@ -703,7 +703,12 @@ namespace eval ::xo {
 	# this case, we do not have to perform the cond-notify.
 	if {[my exists_status $condition] && 
 	    [my get_status $condition] eq "COND_WAIT_REFRESH"} {
-          # Before, we had here COND_WAIT_TIMEOUT instead of 
+	}
+	if {[my exists_status $condition] &&
+	    (  [my get_status $condition] eq "COND_WAIT_REFRESH"
+	    || [my get_status $condition] eq "COND_WAIT_TIMEOUT")
+	  } {
+          # Before, we had here one COND_WAIT_TIMEOUT, and once
           # COND_WAIT_REFRESH
 	  my set_status $condition $status $value
 	  catch {thread::cond notify $condition}
