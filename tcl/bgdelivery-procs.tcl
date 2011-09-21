@@ -118,6 +118,9 @@ if {![string match *contentsentlength* $msg]} {
   fileSpooler tick
 
 
+  ###############
+  # h264Spooler
+  ###############
   # 
   # A first draft of a h264 pseudo streaming spooler.
   # Like for the fileSpooler, we create a single spooler object
@@ -194,6 +197,63 @@ if {![string match *contentsentlength* $msg]} {
     }
   }
 
+  #################
+  # AsyncDiskWriter
+  #################
+  ::xotcl::Class create ::AsyncDiskWriter -parameter {
+    {blocksize 4096} 
+    {autoflush false}
+    {verbose false}
+  }
+  ::AsyncDiskWriter instproc log {msg} {
+    if {[my verbose]} {ns_log notice "[self] --- $msg"}
+  }
+  ::AsyncDiskWriter instproc open {-filename {-mode w}} {
+    my set channel [open $filename $mode]
+    my set content ""
+    my set filename $filename
+    fconfigure [my set channel] -translation binary -blocking false
+    my log "open [my set filename]"
+  }
+
+  ::AsyncDiskWriter instproc close {{-sync false}} {
+    my instvar content channel
+    if {$sync || [string length $content] == 0} {
+      my log "close sync"
+      if {$content ne ""} {
+	fconfigure $channel -translation binary -blocking true
+	puts -nonewline $channel $content
+      }
+      close $channel
+      my destroy
+    } else {
+      my log "close async"
+      my set finishWhenDone 1
+    }
+  }
+  ::AsyncDiskWriter instproc async_write {block} {
+    my append content $block
+    fileevent [my set channel] writable [list [self] writeBlock]
+  }
+  ::AsyncDiskWriter instproc writeBlock {} {
+    my instvar content blocksize channel
+    if {[string length $content] < $blocksize} {
+      puts -nonewline $channel $content
+      my log "write [string length $content] bytes"
+      fileevent [my set channel] writable ""
+      set content ""
+      if {[my autoflush]} {flush $channel}
+      if {[my exists finishWhenDone]} {
+	my close -sync true
+      }
+    } else {
+      set chunk [string range $content 0 [expr {$blocksize-1}]]
+      set content [string range $content $blocksize end]
+      puts -nonewline $channel $chunk
+      my log "write [string length $chunk] bytes ([string length $content] buffered)"
+    }
+  }
+  
 
   ###############
   # Subscriptions
@@ -252,6 +312,11 @@ if {![string match *contentsentlength* $msg]} {
     incr ::subscription_count
   }
   
+
+  ###############
+  # HttpSpooler
+  ###############
+
   Class ::HttpSpooler -parameter {channel {timeout 10000} {counter 0}}
   ::HttpSpooler instproc init {} {
     my set running 0
@@ -324,6 +389,19 @@ if {![string match *contentsentlength* $msg]} {
 	  -timeout [my timeout] -post_data $post_data -request_manager [self]
     }
   }
+
+  #
+  # Add an exit handler to close all AsyncDiskWriter, when this thread goes
+  # down.
+  #
+  ::xotcl::Object setExitHandler {
+    ns_log notice "--- exit handler"
+    foreach writer [::AsyncDiskWriter info instances -closure] {
+      ns_log notice "close AsyncDiskWriter $writer"
+      $writer close
+    }
+  }
+
 } -persistent 1 ;# -lightweight 1
 
 bgdelivery ad_forward running {
