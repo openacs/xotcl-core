@@ -61,6 +61,11 @@ namespace eval ::xo {
   } {
     my instvar uri method urlv destination
     ad_conn -reset
+    # Make sure, there is no ::ad_conn(request); otherwise the
+    # developer support will add all its output to a single var, which
+    # can lead easily to running out of resources in busy sites. When
+    # unset, the developer support will create its own id.
+    catch {unset ::ad_conn(request)}
     set uri [ns_urldecode [ns_conn url]]
     set url_regexp "^[my url]"
     #my log "--conn_setup: uri '$uri' my url='[my url]' con='[ns_conn url]'"
