@@ -458,7 +458,7 @@ namespace eval ::xo {
 
     Class Field \
 	-superclass ::xo::OrderedComposite::Child \
-	-parameter {label {html {}} {orderby ""} name {richtext false} no_csv {CSSclass ""}} \
+	-parameter {label {html {}} {orderby ""} name {richtext false} no_csv {CSSclass ""} {hide 0}} \
 	-instproc init {} {
 	  my set name [namespace tail [self]]
 	} \
@@ -472,7 +472,7 @@ namespace eval ::xo {
 
     Class BulkAction \
 	-superclass ::xo::OrderedComposite::Child \
-	-parameter {name id {html {}}} \
+	-parameter {name id {html {}} {hide 0}} \
         -instproc actions {cmd} {
           #my init
           set grandParent [[my info parent] info parent]
