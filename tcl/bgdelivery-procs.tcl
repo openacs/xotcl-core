@@ -445,7 +445,8 @@ bgdelivery ad_proc returnfile {
                       && [info command h264open] ne ""}]
 
   if {[info exists content_disposition]} {
-    ns_set put [ns_conn outputheaders] Content-Disposition "attachment;filename=$content_disposition"
+    set fn [xo::backslash_escape \" $content_disposition]
+    ns_set put [ns_conn outputheaders] Content-Disposition "attachment;filename=\"$fn\""
   }
 
   if {$use_h264} {

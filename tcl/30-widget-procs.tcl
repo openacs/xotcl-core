@@ -197,6 +197,13 @@ namespace eval ::xo::tdom {
 
 namespace eval ::xo {
   #
+  # Escape provided char in provided string with backslash
+  #
+  proc backslash_escape {char string} {
+    return [string map [list $char \\$char] $string]
+  }
+
+  #
   # Localization
   #
 
@@ -424,7 +431,8 @@ namespace eval ::xo {
     #ns_return 200 text/plain $output
     my instvar name
     if {![my exists name]} {set name "table"}
-    ns_set put [ns_conn outputheaders] Content-Disposition "attachment;filename=$name.csv"
+    set fn [xo::backslash_escape \" $name.csv]
+    ns_set put [ns_conn outputheaders] Content-Disposition "attachment;filename=\"$fn\""
     ns_return 200 text/csv $output
   }
 
