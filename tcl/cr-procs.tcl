@@ -157,7 +157,10 @@ namespace eval ::xo::db {
   }
 
   CrClass instproc unknown { obj args } {
-    my log "unknown called with $obj $args"
+    # When this happens, this is most likely an error. Ease debugging
+    # by writing the call stack to the error log.
+    ::xo::show_stack
+    my log "::xo::db::CrClass: unknown called with $obj $args"
   }
 
   #
