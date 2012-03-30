@@ -46,7 +46,9 @@ namespace eval ::xo {
       set ([lindex [split [lindex $v 0] :] 0]) 1
     }
     if {$actual_query eq " "} {
-      set actual_query [ns_conn query]
+      if {[ns_conn isconnected]} {
+	set actual_query [ns_conn query]
+      }
       #my log "--CONN ns_conn query = <$actual_query>"
     }
 
