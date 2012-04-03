@@ -35,6 +35,9 @@ namespace eval ::xo {
   ical proc tcl_time_to_utc {time} {
     clock format [clock scan $time] -format "%Y%m%dT%H%M%SZ" -gmt 1
   }
+  ical proc tcl_time_to_local_day {time} {
+    VALUE=DATE:[my clock_to_local_day [clock scan $time]]
+  }
   ical proc clock_to_utc {seconds} {
     clock format $seconds -format "%Y%m%dT%H%M%SZ" -gmt 1
   }
@@ -80,6 +83,10 @@ namespace eval ::xo {
 }
 
 namespace eval ::xo {
+  #
+  # VCALITEM is the superclass of a VTODO and a VEVENT, intended as an
+  # abstract class
+  #
   Class create ::xo::ical::VCALITEM -parameter {
     creation_date
     last_modified
@@ -93,6 +100,7 @@ namespace eval ::xo {
     location
     geo
     status
+    {is_day_item false}
   }
 
   ::xo::ical::VCALITEM instproc tag {-tag -conv -value slot} {
@@ -107,14 +115,43 @@ namespace eval ::xo {
       }
     }
     if {[info exists conv]} {
-      return "$tag:[::xo::ical $conv $value]\n"
+      return "$tag:[::xo::ical $conv $value]\r\n"
     } else {
-      return "$tag:$value\n"
+      return "$tag:$value\r\n"
     }
     return ""
   }
 
+  ::xo::ical::VCALITEM instproc start_end {} {
+    if {[my is_day_item]} {
+      append result \
+	  [my tag -conv tcl_time_to_local_day dtstart] \
+	  [my tag -conv tcl_time_to_local_day dtend]
+    } else {
+      append result \
+	  [my tag -conv tcl_time_to_utc dtstart] \
+	  [my tag -conv tcl_time_to_utc dtend]
+    }
+  }
+
   ::xo::ical::VCALITEM instproc as_ical {} {
+    set item_type [namespace tail [my info class]]
+    append t "BEGIN:$item_type\r\n" \
+	[my ical_body] \
+	"END:$item_type\r\n"
+    return $t
+  }
+
+  ::xo::ical::VCALITEM instproc ical_body {} {
+    #
+    # The method ical_body returns the ical-formatted content of the
+    # variables. All variables of VEVENTs and VTODOs are listed below,
+    # since the names are distinct, and no methods are used.
+    #
+    # So far there is no handling for the repetition fields (which
+    # might occur more than once). An option would be to handle these
+    # as lists.
+    #
     my instvar creation_date last_modified dtstamp
     #
     # All date/time stamps are provided either by 
@@ -133,8 +170,7 @@ namespace eval ::xo {
     #    VTODO:    NEEDS-ACTION, COMPLETED, IN-PROCESS, CANCELLED
     #    VJOURNAL: DRAFT, FINAL, CANCELLED
 
-    set item_type [namespace tail [my info class]]
-    append t "BEGIN:$item_type\n" \
+    append t  \
 	[my tag -conv tcl_time_to_utc -value $tcl_creation_date created] \
 	[my tag -conv tcl_time_to_utc -value $tcl_last_modified last-modified] \
 	[my tag -conv tcl_time_to_utc -value $tcl_stamp dtstamp] \
@@ -142,16 +178,22 @@ namespace eval ::xo {
 	[my tag -conv tcl_time_to_utc dtend] \
 	[my tag -conv tcl_time_to_utc completed] \
 	[my tag -conv tcl_time_to_utc percent-complete] \
+	[my tag transp] \
 	[my tag uid] \
 	[my tag url] \
 	[my tag geo] \
 	[my tag priority] \
+	[my tag sequence] \
+	[my tag CLASS] \
 	[my tag location] \
 	[my tag status] \
 	[my tag -conv text_to_ical description] \
 	[my tag -conv text_to_ical summary] \
-	[my tag -conv tcl_time_to_utc due] \
-        "END:$item_type\n"
+	[my tag -conv tcl_time_to_utc due]
+    
+    if {[my exists formatted_recurrences]} {
+      append t [my set formatted_recurrences]
+    }
     return $t
   }
   #
@@ -200,7 +242,10 @@ namespace eval ::xo {
   # just a stub for now
   Class create ::xo::ical::VEVENT -superclass ::xo::ical::VCALITEM -parameter {
     dtend
-  }  
+    sequence
+    transp
+    formatted_recurrences
+  }
 
   #
   # This class is designed to be a mixin for an ordered composite
