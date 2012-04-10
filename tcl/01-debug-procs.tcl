@@ -13,6 +13,7 @@ package require xotcl::serializer
   ::xotcl::Object instproc serialize
   ::xotcl::Object instproc show-object
   ::xotcl::Object instforward db_1row
+  ::xotcl::Object instforward db_0or1row
   ::xotcl::Object instproc destroy_on_cleanup
   ::xotcl::Object instproc set_instance_vars_defaults
   ::xotcl::nonposArgs proc integer
@@ -132,6 +133,7 @@ namespace eval ::xo {
 }
 
 ::xotcl::Object instforward db_1row -objscope
+::xotcl::Object instforward db_0or1row -objscope
 
 ::xotcl::Object instproc serialize {} {
   ::Serializer deepSerialize [self]
