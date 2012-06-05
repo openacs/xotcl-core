@@ -127,6 +127,7 @@ namespace eval ::xo {
     foreach method {
       GET HEAD PUT POST MKCOL COPY MOVE PROPFIND PROPPATCH
       DELETE LOCK UNLOCK OPTIONS
+      REPORT
     } {
       ns_register_filter preauth $method $filter_url  [self]
       ns_register_proc $method $url [self] handle_request
