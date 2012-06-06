@@ -125,33 +125,49 @@ namespace eval ::xo {
     set filter_url [my url]*
     set url [my url]/*
     #
-    # Methods defined by RFC2616:
+    # Methods defined by RFC 2086 (19.6.1 Additional Request Methods):
+    #
+    #    LINK UNLINK PATCH
+    #
+    # Methods defined by RFC 2616:
     #
     #    OPTIONS GET HEAD POST PUT DELETE TRACE CONNECT
     #
-    # Methods defined by RFC2518:
+    # Methods defined by RF C2518:
     #
     #    PROPFIND PROPPATCH MKCOL COPY MOVE LOCK UNLOCK
     #
-    # Methods defined by RFC3253:
+    # Methods defined by RFC 3253 (versioning extensions):
     #
     #    VERSION-CONTROL REPORT CHECKOUT CHECKIN UNCHECKOUT 
     #    MKWORKSPACE UPDATE LABEL MERGE BASELINE-CONTROL
     #    MKACTIVITY
     #
-    # Methods defined by RFC3648:
+    # Methods defined by RFC 3648 (ordered collections):
     #
     #    ORDERPATCH
     #
-    # Methods defined by RFC3744:
+    # Methods defined by RFC 3744 (WebDAV):
     #
     #    ACL REPORT
     #
-    # Methods defined by RFC5323:
+    # Methods defined by RFC 4437 (redirect reference resources):
+    #
+    #    MKREDIRECTREF UPDATEREDIRECTREF
+    #    
+    # Methods defined by RFC $791 (CalDAV):
+    #
+    #    MKCALENDAR
+    #
+    # Methods defined by RFC 4918 (HTTP Extensions):
+    #
+    #    COPY LOCK MKCOL MOVE PROPFIND PROPPATCH UNLOCK
+    #  
+    # Methods defined by RFC 5323 (WebDAV SEARCH):
     #
     #    SEARCH
     #
-    # Methods defined by RFC5789:
+    # Methods defined by RFC 5789:
     #
     #    PATCH
     #
