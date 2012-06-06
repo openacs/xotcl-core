@@ -124,6 +124,37 @@ namespace eval ::xo {
   } {
     set filter_url [my url]*
     set url [my url]/*
+    #
+    # Methods defined by RFC2616:
+    #
+    #    OPTIONS GET HEAD POST PUT DELETE TRACE CONNECT
+    #
+    # Methods defined by RFC2518:
+    #
+    #    PROPFIND PROPPATCH MKCOL COPY MOVE LOCK UNLOCK
+    #
+    # Methods defined by RFC3253:
+    #
+    #    VERSION-CONTROL REPORT CHECKOUT CHECKIN UNCHECKOUT 
+    #    MKWORKSPACE UPDATE LABEL MERGE BASELINE-CONTROL
+    #    MKACTIVITY
+    #
+    # Methods defined by RFC3648:
+    #
+    #    ORDERPATCH
+    #
+    # Methods defined by RFC3744:
+    #
+    #    ACL REPORT
+    #
+    # Methods defined by RFC5323:
+    #
+    #    SEARCH
+    #
+    # Methods defined by RFC5789:
+    #
+    #    PATCH
+    #
     foreach method {
       GET HEAD PUT POST MKCOL COPY MOVE PROPFIND PROPPATCH
       DELETE LOCK UNLOCK OPTIONS
