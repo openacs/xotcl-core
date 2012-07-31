@@ -38,6 +38,9 @@ namespace eval ::xo {
   ical proc tcl_time_to_local_day {time} {
     VALUE=DATE:[my clock_to_local_day [clock scan $time]]
   }
+  ical proc utc_to_clock {utc_time} {
+    clock scan $utc_time -format "%Y%m%dT%H%M%SZ" -gmt 1
+  }
   ical proc clock_to_utc {seconds} {
     clock format $seconds -format "%Y%m%dT%H%M%SZ" -gmt 1
   }
