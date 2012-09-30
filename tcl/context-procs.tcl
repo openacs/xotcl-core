@@ -136,8 +136,8 @@ namespace eval ::xo {
     my instvar queryparm package_id
 
     foreach p [my array names queryparm] {
-      set value [my set queryparm($p)]
-      uplevel $level [list set $p [my set queryparm($p)]]
+      regsub -all : $p _ varName
+      uplevel $level [list set $varName [my set queryparm($p)]]
     }
     uplevel $level [list set package_id $package_id]
     #::xo::show_stack
