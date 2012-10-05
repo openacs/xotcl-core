@@ -388,7 +388,7 @@ namespace eval ::xo {
   } else {
 
     # register only once
-    if {[lsearch $registered ::xo::cleanup] == -1} {
+    if {[lsearch $registered ::xo::freeconn] == -1} {
       ns_ictl trace freeconn ::xo::freeconn
     }
     if {[lsearch [ns_ictl gettraces delete] ::xo::at_delete] == -1} {
@@ -420,6 +420,7 @@ namespace eval ::xo {
   }
 
   proc at_cleanup {args} {
+    ::xo::broadcast receive
     #ns_log notice "*** start of cleanup <$args> ([array get ::xo::cleanup])"
     set at_end ""
     foreach {name cmd} [array get ::xo::cleanup] {
@@ -480,6 +481,7 @@ namespace eval ::xo {
     # problem will not occur.
     #
     ns_log notice "ON DELETE $args"
+    ::xo::broadcast clear
     set t0 [clock clicks -milliseconds]
     #
     # Check, if we have a new XOTcl implementation with ::xotcl::finalize
@@ -627,6 +629,43 @@ namespace eval ::xo {
       set last [string last "\n::xo::ns_log_redirector_manager" $blueprint]
       if {$last > -1} { set blueprint [string range $blueprint 0 [expr {$last-1}]]}
       ns_ictl save "$blueprint\n::xo::ns_log_redirector_manager set_level $value"
+    }
+  }
+}
+
+namespace eval ::xo {
+  #
+  # xo::broadcast implements a simple mechanism to send commands to
+  # different connection and scheduled threads. The receiving threads
+  # have to call "xo::broadcast receive" when they are able to process
+  # the commands. The connection threads realize this in xo::atcleanup
+  # after a request was processed (defined in this file).
+  #
+  ::xotcl::Object create ::xo::broadcast
+  ::xo::broadcast proc send {cmd} {
+    foreach thread_info [ns_info threads] {
+      switch -glob -- [lindex $thread_info 0] {
+	-conn:* -
+	-sched:* {
+	  set tid [lindex $thread_info 2]
+	  nsv_lappend broadcast $tid $cmd
+	}
+      }
+    }
+  }
+  ::xo::broadcast proc clear {} {
+    catch {nsv_unset broadcast [ns_thread id]}
+  }
+  ::xo::broadcast proc receive {} {
+    set tid [ns_thread id]
+    if {[nsv_exists broadcast $tid]} {
+      foreach cmd [nsv_get broadcast $tid] {
+	ns_log notice "broadcast received {$cmd}"
+	if {[catch $cmd errorMsg]} {
+	  ns_log notice "broadcast receive error: $errorMsg for cmd $cmd"
+	}
+      }
+      my clear
     }
   }
 }
