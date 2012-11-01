@@ -69,6 +69,8 @@ if {$::xotcl::version < 1.5} {
   }
 }
 
+set ::xo::naviserver [expr {[ns_info name] eq "NaviServer"}]
+
 if {[info command ::nx::Object] ne ""} {
   ns_log notice "Defining minimal XOTcl 1 compatibility"
   ::nsf::method::alias ::xo::Attribute instvar ::nsf::methods::object::instvar

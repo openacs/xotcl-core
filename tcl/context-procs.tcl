@@ -52,16 +52,19 @@ namespace eval ::xo {
       #my log "--CONN ns_conn query = <$actual_query>"
     }
 
+    set decodeCmd ns_urldecode
+    if {$::xo::naviserver} {lappend decodeCmd --}
+
     # get the query parameters (from the url)
     #my log "--P processing actual query $actual_query"
     foreach querypart [split $actual_query &] {
       set name_value_pair [split $querypart =]
-      set att_name [ns_urldecode [lindex $name_value_pair 0]]
+      set att_name [{*}$decodeCmd [lindex $name_value_pair 0]]
       if {$att_name eq ""} continue
       if {[llength $name_value_pair] == 1} { 
         set att_value 1 
       }  else {
-        set att_value [ns_urldecode [lindex $name_value_pair 1]]
+        set att_value [{*}$decodeCmd [lindex $name_value_pair 1]]
       }
       if {[info exists (-$att_name)]} {
         lappend passed_args(-$att_name) $att_value
@@ -527,11 +530,14 @@ namespace eval ::xo {
     #
     # @return pairs in a form suitable for export_vars
     #
+    set decodeCmd ns_urldecode
+    if {$::xo::naviserver} {lappend decodeCmd --}
+
     set query [list [list $var $value]]
     foreach pair [split $old_query &] {
       foreach {key value} [split $pair =] break
       if {$key eq $var} continue
-      lappend query [list [ns_urldecode $key] [ns_urldecode $value]]
+      lappend query [list [{*}$decodeCmd $key] [{*}$decodeCmd $value]]
     }
     return $query
   }
@@ -542,10 +548,14 @@ namespace eval ::xo {
     #
     # @return encoded HTTP query
     #
-    set query [ns_urlencode $var]=[ns_urlencode $value]
+    set decodeCmd ns_urldecode
+    set encodeCmd ns_urlencode
+    if {$::xo::naviserver} {lappend decodeCmd --; lappend encodeCmd --}
+
+    set query [{*}$encodeCmd $var]=[{*}$encodeCmd -- $value]
     foreach pair [split $old_query &] {
       foreach {key value} [split $pair =] break
-      if {[ns_urldecode $key] eq $var} continue
+      if {[{*}$decodeCmd $key] eq $var} continue
       append query &$pair
     }
     return $query

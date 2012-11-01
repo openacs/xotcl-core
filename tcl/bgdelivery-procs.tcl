@@ -415,7 +415,7 @@ bgdelivery ad_forward nr_running {
   @return number of currently running background deliveries
 } %self do array size running
 
-if {[ns_info name] eq "NaviServer"} {
+if {$::xo::naviserver} {
   bgdelivery forward write_headers ns_headers
 } else {
   bgdelivery forward write_headers ns_headers DUMMY
@@ -473,7 +473,7 @@ bgdelivery ad_proc returnfile {
   # words, don't allow keep-alive, which is does not make sense, when
   # we close the connections manually in the bgdeliverfy thread).
   #
-  if {[ns_info name] eq "NaviServer"} {
+  if {$::xo::naviserver} {
     ns_conn keepalive 0
   }
 
