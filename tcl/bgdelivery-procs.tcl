@@ -73,6 +73,16 @@ if {![string match *contentsentlength* $msg]} {
     set fd [open $filename]
     fconfigure $fd -translation binary
     fconfigure $channel -translation binary
+
+    set k ::runningBgJob([lindex $context 0])
+    if {[info exists $k]} {
+	set value [set $k]
+	ns_log notice "resubmit: canceling currently running request $context  // closing $value"
+        lset $value fd0 channel0 client_data0 filename0
+	my end-delivery -client_data $client_data0 $filename0 $fd0 $channel0 -1 
+    }
+    set $k [list $fd $channel $client_data $filename]
+
     if {$ranges eq ""} {
       ns_log notice "no Range spool for $filename"
       fcopy $fd $channel -command [list [self] end-delivery -client_data $client_data $filename $fd $channel]
@@ -90,6 +100,7 @@ if {![string match *contentsentlength* $msg]} {
     if {[catch {close $channel} e]} {ns_log notice "bgdelivery, closing channel for $filename, error: $e"}
     if {[catch {close $fd} e]} {ns_log notice "bgdelivery, closing file $filename, error: $e"}
     set key $channel,$fd,$filename
+    unset -nocomplain ::runningBgJob([lindex $::running($key) 0])
     unset ::running($key)
     if {[info exists ::delete_file($key)]} {
       file delete $filename
