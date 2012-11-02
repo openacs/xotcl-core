@@ -1,6 +1,13 @@
 ## tell serializer to export methods, although these are methods of 
 # ::xotcl::Object
 
+if {$::tcl_version < 8.5
+    || ([regexp {8[.]5[.]([0-9]+)$} $::tcl_patchLevel _ minor] && $minor < 4)
+} {
+    ns_log error "We require for this version of xotcl-core at least Tcl 8.5.4 (avail: Tcl $::tcl_patchLevel)"
+    return
+}
+
 package require xotcl::serializer
 
 ::Serializer exportMethods {
