@@ -454,6 +454,7 @@ bgdelivery ad_proc returnfile {
   set use_h264 [expr {[string match video/mp4* $mime_type] && $query ne "" 
                       && ([string match {*start=[1-9]*} $query] || [string match {*end=[1-9]*} $query])
                       && [info command h264open] ne ""}]
+  set use_writerThread [ns_config ns/server/[ns_info server]/module/nssock writerthreads 0]
 
   if {[info exists content_disposition]} {
     set fn [xo::backslash_escape \" $content_disposition]
@@ -482,14 +483,16 @@ bgdelivery ad_proc returnfile {
 
   # Make sure to set "connection close" for the reqests (in other
   # words, don't allow keep-alive, which is does not make sense, when
-  # we close the connections manually in the bgdeliverfy thread).
+  # we close the connections manually in the bgdelivery thread).
   #
-  if {$::xo::naviserver} {
+  if {$::xo::naviserver && !$use_writerThread} {
     ns_conn keepalive 0
   }
-
   set range [ns_set iget [ns_conn headers] range]
-  ns_log notice "Range: '$range' (raw header field)"
+  if {$range ne ""} {
+     ns_log notice "Range: '$range' (raw header field)"
+  }
+
   if {[regexp {bytes=(.*)$} $range _ range]} {
     set ranges [list]
     set bytes 0
@@ -516,7 +519,6 @@ bgdelivery ad_proc returnfile {
 
   #ns_log notice "Range=$range bytes=$bytes // $ranges"
 
-
   #
   # For the time being, we write the headers in a simplified version
   # directly in the spooling thread to avoid the overhead of double
@@ -539,8 +541,19 @@ bgdelivery ad_proc returnfile {
     # file_copy. So, we handle this special case here...
     # There is actualy nothing to deliver....
     ns_set put [ns_conn outputheaders] "Content-Length" 0
-    ns_return 200 text/plain {}
+    ns_return 200 $mime_type {}
     return
+  }
+
+  if {$use_writerThread && !$use_h264} {
+      if {$status_code == 206} {
+	  ns_log notice "ns_writer submitfile -offset $from -size $size $filename"
+	  ns_writer submitfile -offset $from -size $size $filename
+      } else {
+	  ns_log notice "ns_writer submitfile $filename"
+	  ns_writer submitfile $filename
+      }
+      return
   }
 
   set errorMsg ""
