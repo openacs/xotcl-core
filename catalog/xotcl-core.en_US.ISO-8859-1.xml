@@ -10,6 +10,8 @@
   <msg key="edit_type">Edit %type%</msg>
   <msg key="has_entered_the_room">has entered the room</msg>
   <msg key="live_revision">Live Revision</msg>
+  <msg key="nobody">Guest</msg>
+  <msg key="No_Data">No Data</msg>
   <msg key="permission_denied">Permission Denied</msg>
   <msg key="policy-error-insufficient_permissions">&lt;blockquote&gt;
 You don't have sufficient permissions for performing method %method% on object %object%.

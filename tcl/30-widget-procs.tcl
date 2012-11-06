@@ -336,11 +336,11 @@ namespace eval ::xo {
       if {[catch {acs_user::get -user_id $uid -array user}]} {
         # we saw some strange cases, where after a regression,
         # a user_id was present, which was already deleted...
-        return nobody
+        return [_ xotcl-core.nobody]
       }
       return "$user(first_names) $user(last_name)"
     } else {
-      return nobody
+      return [_ xotcl-core.nobody]
     }
   }
 
@@ -349,8 +349,8 @@ namespace eval ::xo {
   #
   Class Table -superclass OrderedComposite \
       -parameter [expr {[apm_version_names_compare [ad_acs_version] 5.3.0] == 1 ? 
-			{{no_data  "No Data"} {renderer TABLE3} name} :
-			{{no_data  "No Data"} {renderer TABLE2} name} 
+			{{no_data  "#xotcl-core.No_Data#"} {renderer TABLE3} name} :
+			{{no_data  "#xotcl-core.No_Data#"} {renderer TABLE2} name} 
 		      }]
   
   Table instproc destroy {} {
