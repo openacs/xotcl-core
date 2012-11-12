@@ -552,7 +552,7 @@ namespace eval ::xo {
     set encodeCmd ns_urlencode
     if {$::xo::naviserver} {lappend decodeCmd --; lappend encodeCmd --}
 
-    set query [{*}$encodeCmd $var]=[{*}$encodeCmd -- $value]
+    set query [{*}$encodeCmd $var]=[{*}$encodeCmd $value]
     foreach pair [split $old_query &] {
       foreach {key value} [split $pair =] break
       if {[{*}$decodeCmd $key] eq $var} continue
