@@ -78,7 +78,7 @@ if {![string match *contentsentlength* $msg]} {
     if {[info exists $k]} {
 	set value [set $k]
 	ns_log notice "resubmit: canceling currently running request $context  // closing $value"
-        lset $value fd0 channel0 client_data0 filename0
+        lassign $value fd0 channel0 client_data0 filename0
 	my end-delivery -client_data $client_data0 $filename0 $fd0 $channel0 -1 
     }
     set $k [list $fd $channel $client_data $filename]
