@@ -97,6 +97,7 @@ if {![string match *contentsentlength* $msg]} {
   }
   fileSpooler proc end-delivery {{-client_data ""} filename fd channel bytes args} {
     #ns_log notice "--- end of delivery of $filename, $bytes bytes written $args"
+    if {[catch {fconfigure $channel -blocking false} e]} {ns_log notice "bgdelivery, fconfigure for channel, error: $e"}
     if {[catch {close $channel} e]} {ns_log notice "bgdelivery, closing channel for $filename, error: $e"}
     if {[catch {close $fd} e]} {ns_log notice "bgdelivery, closing file $filename, error: $e"}
     set key $channel,$fd,$filename
