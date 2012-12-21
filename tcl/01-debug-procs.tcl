@@ -513,6 +513,7 @@ namespace eval ::xo {
       }
     }
     set t1 [clock clicks -milliseconds]
+    ::xo::system_stats recordtimes
     ns_log notice "ON DELETE done ([expr {$t1-$t0}]ms)"
   }
  
@@ -643,6 +644,102 @@ namespace eval ::xo {
 }
 
 namespace eval ::xo {
+
+  ::xotcl::Object create ::xo::system_stats 
+
+  if {$::tcl_platform(os) eq "Linux"} {
+    ::xo::system_stats proc thread_info {pid tid} {
+      set fn /proc/$pid/task/$tid/stat
+      if {[file readable $fn]} {
+	set f [open $fn]; set s [read $f]; close $f
+      } elseif {[file readable /proc/$pid/task/$pid/stat]} {
+	set f [open /proc/$pid/task/$pid/stat]; set s [read $f]; close $f
+      } else {
+	return ""
+      }
+      lassign $s tid comm state ppid pgrp session tty_nr tpgid flags minflt \
+	  cminflt majflt cmajflt utime stime cutime cstime priority nice \
+	  numthreads itrealval starttime vsize rss rsslim startcode endcode \
+	  startstack kstkesp kstkeip signal blocked sigignore sigcatch wchan \
+	  nswap cnswap ext_signal processor ...
+      # utime and stimes are jiffies. Since Linux has HZ 100, we can
+      # multiply the jiffies by 10 to obtain ms
+      return [list utime [expr {$utime*10}] stime [expr {$stime*10}]]
+    }
+  } else {
+    ::xo::system_stats proc thread_info {pid tid} {
+	return ""
+    }
+  }
+
+  ::xo::system_stats proc gettid {} {
+    set hex [ns_thread getid]
+    foreach t [ns_info threads] {
+      if {[lindex $t 2] eq $hex} {
+	return [list name [lindex $t 0] tid [lindex $t 7]]
+      }
+    }
+    return ""
+  }
+
+  ::xo::system_stats proc thread_classify {name} {
+    switch -glob -- $name {
+      "-main-"    { set group main }
+      "::*"       { set group tcl:[string range $name 2 end]}
+      "-sched*"   { set group scheds  }
+      "-conn:*"   { set group conns   }
+      "-driver:*" { set group drivers }
+      "-asynclogwriter*" { set group logwriter }
+      "-writer*"  { set group writers }
+      default     { set group others  }
+    }
+    return $group
+  }
+
+  ::xo::system_stats proc recordtimes {} {
+    array set i [my gettid]
+    array set i [my thread_info [pid] $i(tid)]
+    if {[info exists i(stime)]} {
+      set group [my thread_classify $i(name)]
+      nsv_incr [self] $group,stime $i(stime)
+      nsv_incr [self] $group,utime $i(utime)
+    }
+  }
+
+  ::xo::system_stats proc aggregate {group time value} {
+    upvar $time times
+    if {![info exists times($group)]} {set times($group) 0}
+    set times($group) [expr {$times($group) + $value}]
+  }
+
+  ::xo::system_stats proc aggcpuinfo {utime stime ttime} {
+    upvar $utime utimes $stime stimes $ttime ttimes
+    set pid [pid]
+    array set varnames {utime utimes stime stimes}
+    foreach index [nsv_array names [self]] {
+      lassign [split $index ,] group kind
+      my aggregate $group $varnames($kind) [nsv_get [self] $index]
+    }
+    set threadInfo [ns_info threads]
+    if {[file readable /proc/$pid/statm] && [llength [lindex $threadInfo 0]] > 7} {
+      foreach t $threadInfo {
+	array unset s
+	array set s [my thread_info $pid [lindex $t 7]]
+	if {[info exists s(stime)]} {
+	  set group [my thread_classify [lindex $t 0]]
+	  my aggregate $group $varnames(utime) $s(utime)
+	  my aggregate $group $varnames(stime) $s(stime)
+	}
+      }
+    }
+    foreach group [array names utimes] {
+      my aggregate $group ttimes [expr {$utimes($group) + $stimes($group)}]
+    }
+  }
+}
+
+
+namespace eval ::xo {
   #
   # xo::broadcast implements a simple mechanism to send commands to
   # different connection and scheduled threads. The receiving threads
@@ -678,6 +775,9 @@ namespace eval ::xo {
     }
   }
 }
+
+
+
 
 #ns_log notice "*** FREECONN? [ns_ictl gettraces freeconn]"
 #ns_ictl trace freeconn {ns_log notice "*** FREECONN  isconnected=[ns_conn isconnected]"}
