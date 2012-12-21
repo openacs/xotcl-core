@@ -492,6 +492,7 @@ namespace eval ::xo {
     ns_log notice "ON DELETE $args"
     ::xo::broadcast clear
     set t0 [clock clicks -milliseconds]
+    ::xo::system_stats recordtimes
     #
     # Check, if we have a new XOTcl implementation with ::xotcl::finalize
     # 
@@ -513,7 +514,6 @@ namespace eval ::xo {
       }
     }
     set t1 [clock clicks -milliseconds]
-    ::xo::system_stats recordtimes
     ns_log notice "ON DELETE done ([expr {$t1-$t0}]ms)"
   }
  
