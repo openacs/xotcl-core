@@ -295,8 +295,9 @@ if {![string match *contentsentlength* $msg]} {
       foreach s $subscriptions($key) {
 	if {[catch {
 	  if {[$s mode] eq "scripted"} {
-	    set smsg "<script type='text/javascript' language='javascript'>\nvar data = $msg;\n\
-            parent.getData(data);</script>\n"
+	    set smsg "<script type='text/javascript'>\nvar data = $msg;\n\
+            parent.getData(data);</script>chunk\n"
+	    set smsg [format %x [string length $smsg]]\r\n$smsg\r\n
 	  } else {
 	    set smsg $msg
 	  }
@@ -319,9 +320,23 @@ if {![string match *contentsentlength* $msg]} {
   Subscriber instproc init {} {
     [my info class] instvar subscriptions
     lappend subscriptions([my key]) [self]
+    incr ::subscription_count
     #my log "-- cl=[my info class], subscriptions([my key]) = $subscriptions([my key])"
     fconfigure [my channel] -translation binary
-    incr ::subscription_count
+
+    if {[my mode] eq "scripted"} {
+      set content_type text/html
+      set encoding "Cache-Control: no-cache\r\nTransfer-Encoding: chunked\r\n"
+      set body "<html><body>[string repeat { } 1024]\r\n"
+      set body [format %x [string length $body]]\r\n$body\r\n
+    } else {
+      set content_type text/plain
+      set encoding ""
+      set body ""
+    }
+
+    puts -nonewline [my channel] "HTTP/1.1 200 OK\r\nContent-type: $content_type\r\n$encoding\r\n$body"
+    flush [my channel]
   }
   
 
@@ -616,7 +631,7 @@ ad_proc -public ad_returnfile_background {{-client_data ""} status_code mime_typ
   blocking a request thread. This is especially important when large files are 
   requested over slow (e.g. dial-ip) connections.
 } {
-  #my log "driver=[ns_conn driver]"
+  #ns_log notice "driver=[ns_conn driver]"
   if {[ns_conn driver] ne "nssock"} {
     ns_returnfile $status_code $mime_type $filename
   } else {
@@ -626,8 +641,6 @@ ad_proc -public ad_returnfile_background {{-client_data ""} status_code mime_typ
 
 #####################################
 bgdelivery proc subscribe {key {initmsg ""} {mode default} } {
-  set content_type [expr {$mode eq "scripted" ? "text/html" : "text/plain"}]
-  ns_write "HTTP/1.0 200 OK\r\nContent-type: $content_type\r\n\r\n[string repeat { } 1024]"
   set ch [ns_conn channel]
   thread::transfer [my get_tid] $ch
   my do ::Subscriber new -channel $ch -key $key -user_id [ad_conn user_id] -mode $mode
