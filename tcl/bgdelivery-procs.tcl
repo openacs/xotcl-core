@@ -563,8 +563,8 @@ bgdelivery ad_proc returnfile {
 
   if {$use_writerThread && !$use_h264} {
       if {$status_code == 206} {
-	  ns_log notice "ns_writer submitfile -offset $from -size $size $filename"
-	  ns_writer submitfile -offset $from -size $size $filename
+	  ns_log notice "ns_writer submitfile -offset $from -size $bytes $filename"
+	  ns_writer submitfile -offset $from -size $bytes $filename
       } else {
 	  ns_log notice "ns_writer submitfile $filename"
 	  ns_writer submitfile $filename
