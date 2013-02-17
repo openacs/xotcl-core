@@ -296,7 +296,7 @@ if {![string match *contentsentlength* $msg]} {
 	if {[catch {
 	  if {[$s mode] eq "scripted"} {
 	    set smsg "<script type='text/javascript'>\nvar data = $msg;\n\
-            parent.getData(data);</script>chunk\n"
+            parent.getData(data);</script>\n"
 	    set smsg [format %x [string length $smsg]]\r\n$smsg\r\n
 	  } else {
 	    set smsg $msg
@@ -330,7 +330,11 @@ if {![string match *contentsentlength* $msg]} {
       set body "<html><body>[string repeat { } 1024]\r\n"
       set body [format %x [string length $body]]\r\n$body\r\n
     } else {
-      set content_type text/plain
+      #set content_type text/plain 
+      # Chrome refuses to expose partial response to ajax unless we
+      # set content_type to octet stream.  Drawback is we now need to
+      # treat special characters on the client side.
+      set content_type "application/octet-stream"
       set encoding ""
       set body ""
     }
@@ -504,11 +508,8 @@ bgdelivery ad_proc returnfile {
   if {$::xo::naviserver && !$use_writerThread} {
     ns_conn keepalive 0
   }
-  set range [ns_set iget [ns_conn headers] range]
-  if {$range ne ""} {
-     ns_log notice "Range: '$range' (raw header field)"
-  }
 
+  set range [ns_set iget [ns_conn headers] range]
   if {[regexp {bytes=(.*)$} $range _ range]} {
     set ranges [list]
     set bytes 0
@@ -539,10 +540,13 @@ bgdelivery ad_proc returnfile {
   # For the time being, we write the headers in a simplified version
   # directly in the spooling thread to avoid the overhead of double
   # h264opens.
+  #
   if {!$use_h264} {
+    #
+    # Add content-range header for range requests.
+    #
     if {[llength $ranges] == 1 && $status_code == 200} {
-      set first_range [lindex $ranges 0]
-      foreach {from to .} $first_range break
+      lassign [lindex $ranges 0] from to
       ns_set put [ns_conn outputheaders] Content-Range "bytes $from-$to/$size"
       ns_log notice "added header-field Content-Range: bytes $from-$to/$size // $ranges"
       set status_code 206
