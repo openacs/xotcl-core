@@ -141,6 +141,7 @@ namespace eval ::xo {
 	nsv_unset $array-last-activity $user 
 	nsv_unset $array-login $user
 	nsv_unset $array-color $user
+	catch {::bgdelivery do ::Subscriber sweep chat-[my chat_id]}
       }
     }
     my log "-- ending"
