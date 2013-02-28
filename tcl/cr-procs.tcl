@@ -1088,6 +1088,8 @@ namespace eval ::xo::db {
 
   CrItem instproc revisions {} {
 
+    set isAdmin [acs_user::site_wide_admin_p]
+
     ::TableWidget t1 -volatile \
         -columns {
           Field version_number -label "" -html {align right}
@@ -1099,6 +1101,7 @@ namespace eval ::xo::db {
           Field content_size -label [_ file-storage.Size] -html {align right}
           Field last_modified_ansi -label [_ file-storage.Last_Modified]
           Field description -label [_ file-storage.Version_Notes] 
+          if {[acs_user::site_wide_admin_p]} {AnchorField show -label ""}
           ImageAnchorField live_revision -label [_ xotcl-core.live_revision] \
               -src /resources/acs-subsite/radio.gif \
               -width 16 -height 16 -border 0 -html {align center}
@@ -1149,6 +1152,7 @@ namespace eval ::xo::db {
       
       set live_revision_link [export_vars -base $base \
 				  {{m make-live-revision} {revision_id $version_id}}]
+
       t1 add \
 	  -version_number $version_number: \
 	  -edit.href [export_vars -base $base {{revision_id $version_id}}] \
@@ -1164,6 +1168,14 @@ namespace eval ::xo::db {
 	  -version_delete.title [_ file-storage.Delete_Version]
       
       [t1 last_child] set payload(revision_id) $version_id
+
+      if {$isAdmin} {
+	set show_revision_link [export_vars -base $base \
+				    {{m show-object} {revision_id $version_id}}]
+	[t1 last_child] set show show
+	[t1 last_child] set show.href $show_revision_link
+      }
+
     }
     
     # providing diff links to the prevision versions. This can't be done in
