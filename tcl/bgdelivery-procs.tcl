@@ -525,7 +525,12 @@ bgdelivery ad_proc returnfile {
   set use_h264 [expr {[string match video/mp4* $mime_type] && $query ne "" 
                       && ([string match {*start=[1-9]*} $query] || [string match {*end=[1-9]*} $query])
                       && [info command h264open] ne ""}]
-  set use_writerThread [ns_config ns/server/[ns_info server]/module/nssock writerthreads 0]
+
+  if {[info command ns_driversection] ne ""} {
+      set use_writerThread [ns_config [ns_driversection] writerthreads 0]
+  } else {
+      set use_writerThread 0
+  }
 
   if {[info exists content_disposition]} {
     set fn [xo::backslash_escape \" $content_disposition]
