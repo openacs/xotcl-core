@@ -55,10 +55,68 @@ namespace eval ::xo::db {
       }
       return [string toupper $name]
     }
+
+    #
+    # In case, we have no postgres, provide an adapter to the
+    # traditional db-operations
+    #
+    proc ::xo::db_0or1row {qn sql} {
+      uplevel [list ::db_0or1row [uplevel [my qn $qn]] $sql]
+    }
+    proc ::xo::db_1row {qn sql} {
+      uplevel [list ::db_1row [uplevel [my qn $qn]] $sql]
+    }
+    proc ::xo::db_string {qn sql {default ""}} {
+      uplevel [list ::db_string [uplevel [my qn $qn]] $sql -default $default]
+    }
   } else {
+
     proc mk_sql_constraint_name {table att suffix} {
       set name ${table}_${att}_$suffix
       return $name
+    }
+
+    #
+    # In case, we have postgres, we can provide an much faster
+    # interface under ::xo::*, which can make the SQL queries
+    # interface up to twice as fast (depending on the complexity of
+    # the query).  In many cases of the SQL-queries in xowiki, we see
+    # an improvement of 25-30%.
+    #
+
+    proc ::xo::db::pg_0or1row {sql} {
+      ::db_with_handle h {
+	return [uplevel [list ns_pg_bind 0or1row $h $sql]]
+      }
+    }
+
+    proc ::xo::db_0or1row {qn sql} {
+      set answers [uplevel [list ::xo::db::pg_0or1row $sql]]
+      if {$answers ne ""} {
+	foreach {att val} [ns_set array $answers] { uplevel [list set $att $val] }
+	ns_set free $answers
+	return 1
+      }
+      return 0
+    }
+
+    proc ::xo::db_1row {qn sql} {
+      set answers [uplevel [list ::xo::db::pg_0or1row $sql]]
+      if {$answers ne ""} {
+	foreach {att val} [ns_set array $answers] { uplevel [list set $att $val] }
+	ns_set free $answers
+	return 1
+      }
+      error "query $sql did not return an answer"
+    }
+
+    proc ::xo::db_string {qn sql {default ""}} {
+      set answers [uplevel [list ::xo::db::pg_0or1row $sql]]
+      if {$answers ne ""} {
+	set result [ns_set value $answers 0]
+	return $result
+      }
+      return $default
     }
   }
 
@@ -67,7 +125,7 @@ namespace eval ::xo::db {
   } {
     ns_cache eval xotcl_object_cache ::xo::has_ltree {
       if {[db_driverkey ""] eq "postgresql" && 
-          [db_string check_ltree "select count(*) from pg_proc where proname = 'ltree_in'"]} {
+          [::xo::db_string check_ltree "select count(*) from pg_proc where proname = 'ltree_in'"]} {
         return 1
       }
       return 0
@@ -79,7 +137,7 @@ namespace eval ::xo::db {
   } {
     ns_cache eval xotcl_object_cache ::xo::has_hstore {
       if {[db_driverkey ""] eq "postgresql" && 
-          [db_string check_hstore "select count(*) from pg_proc where proname = 'hstore_in'"]} {
+          [::xo::db_string check_hstore "select count(*) from pg_proc where proname = 'hstore_in'"]} {
         return 1
       }
       return 0
@@ -107,7 +165,7 @@ namespace eval ::xo::db {
     } else {
       set name [string tolower $name]
     }
-    db_0or1row [my qn ""] [subst [my set [db_driverkey ""]_table_exists]]
+    ::xo::db_0or1row "" [subst [my set [db_driverkey ""]_table_exists]]
   }
 
   require proc table {name definition} {
@@ -119,7 +177,7 @@ namespace eval ::xo::db {
 
   require proc view {name definition} {
     if {[db_driverkey ""] eq "oracle"} {set name [string toupper $name]}
-    if {![db_0or1row [my qn ""] [subst [my set [db_driverkey ""]_view_exists]]]} {
+    if {![::xo::db_0or1row "" [subst [my set [db_driverkey ""]_view_exists]]]} {
       db_dml [my qn create-view-$name] "create view $name AS $definition"
     }
   }
@@ -130,7 +188,7 @@ namespace eval ::xo::db {
     set suffix [expr {$unique ? "un_idx" : "idx"}]
     set uniquepart [expr {$unique ? "UNIQUE" : ""}]
     set name [::xo::db::mk_sql_constraint_name $table $colpart $suffix]
-    if {![db_0or1row [my qn ""] [subst [my set [db_driverkey ""]_index_exists]]]} {
+    if {![::xo::db_0or1row "" [subst [my set [db_driverkey ""]_index_exists]]]} {
       if {[db_driverkey ""] eq "oracle"} {set using ""}
       set using [expr {$using ne "" ? "using $using" : ""}]
       db_dml [my qn create-index-$name] \
@@ -193,10 +251,10 @@ namespace eval ::xo::db {
       }
       if {[info exists check_function]} {
 	set check_function [string toupper $check_function]
-	set function_exists [db_string [my qn query_version] {
+	set function_exists [::xo::db_string query_version {
 	  select 1 from acs_function_args where function = :check_function 
 	  limit 1
-	} -default 0]
+	} 0]
 	if {$function_exists} {
 	  # nothing to do
 	  return
@@ -398,9 +456,9 @@ namespace eval ::xo::db {
 
     @return 0 or 1
   } {
-    return [db_string [my qn select_object] {
+    return [::xo::db_string select_object {
       select 1 from acs_objects where object_id = :id
-    } -default 0]
+    } 0]
   }
 
   ::xo::db::Class ad_proc delete {
@@ -419,7 +477,7 @@ namespace eval ::xo::db {
     @return object_type, typically an XOTcl class
   } {
     return [ns_cache eval xotcl_object_type_cache $id {
-      db_1row [my qn get_class] "select object_type from acs_objects where object_id=$id"
+      ::xo::db_1row get_class "select object_type from acs_objects where object_id=$id"
       return $object_type
     }]
   }
@@ -440,7 +498,7 @@ namespace eval ::xo::db {
       error "no class $class defined"
     }
     set r [$class create ::$id]
-    $r db_1row dbq..get_instance [$class fetch_query $id]
+    $r db_1row get_instance [$class fetch_query $id]
     $r set object_id $id
     $r destroy_on_cleanup
     $r initialize_loaded_object
@@ -455,9 +513,9 @@ namespace eval ::xo::db {
     
     @return table_name
   } {
-    return [db_string [my qn get_table_name] {
+    return [::xo::db_string get_table_name {
       select lower(table_name) as table_name from acs_object_types where object_type = :object_type
-    } -default ""]
+    } ""]
   }
 
   ::xo::db::Class ad_proc object_type_exists_in_db {-object_type} {
@@ -465,9 +523,9 @@ namespace eval ::xo::db {
 
     @return 0 or 1
   } {
-    return [db_string [my qn check_type] {
+    return [::xo::db_string check_type {
       select 1 from acs_object_types where object_type = :object_type
-    } -default 0]
+    } 0]
   }
 
   ::xo::db::Class ad_proc drop_type {
@@ -517,7 +575,7 @@ namespace eval ::xo::db {
   } {
     # some table_names and id_columns in acs_object_types are unfortunately upper case, 
     # so we have to convert to lower case here....
-    db_1row dbqd..fetch_class {
+    ::xo::db_1row fetch_class {
       select object_type, supertype, pretty_name, lower(id_column) as id_column, lower(table_name) as table_name
       from acs_object_types where object_type = :object_type
     }
@@ -780,7 +838,7 @@ namespace eval ::xo::db {
       # 
       # in Oracle, we have to distinguish between functions and procs
       #
-      set is_function [db_0or1row [my qn is_function] {
+      set is_function [::xo::db_0or1row is_function {
         select 1 from dual
         where exists (select 1 from user_arguments where
                       package_name = upper(:package_name)
@@ -1642,6 +1700,19 @@ namespace eval ::xo::db {
     # empty body, to be refined
   }
 
+
+  if {[db_driverkey ""]  eq "postgresql"} {
+    ::xo::db::Object instproc db_1row {qn sql} {
+      set answers [uplevel [list ::xo::db::pg_0or1row $sql]]
+      if {$answers ne ""} {
+	foreach {att val} [ns_set array $answers] { my set $att $val }
+	ns_set free $answers
+	return 1
+      }
+      error "query $sql did not return an answer"
+    }
+  }
+
   ##############
   ::xotcl::MetaSlot create ::xo::db::Attribute \
       -superclass {::xo::Attribute} \
@@ -1659,8 +1730,8 @@ namespace eval ::xo::db {
 
     my instvar datatype pretty_name min_n_values max_n_values domain column_name
     set object_type [$domain object_type]
-    if {[db_string dbqd..check_att {select 0 from acs_attributes where 
-      attribute_name = :column_name and object_type = :object_type} -default 1]} {
+    if {[::xo::db_string check_att {select 0 from acs_attributes where 
+      attribute_name = :column_name and object_type = :object_type} 1]} {
 
       if {![::xo::db::Class object_type_exists_in_db -object_type $object_type]} {
 	$domain create_object_type
@@ -1741,8 +1812,8 @@ namespace eval ::xo::db {
     }
 
     #my log "check attribute $column_name ot=$object_type, domain=$domain"
-    if {[db_string dbqd..check_att {select 0 from acs_attributes where 
-      attribute_name = :column_name and object_type = :object_type} -default 1]} {
+    if {[::xo::db_string check_att {select 0 from acs_attributes where 
+      attribute_name = :column_name and object_type = :object_type} 1]} {
       
       if {![::xo::db::Class object_type_exists_in_db -object_type $object_type]} {
         $domain create_object_type

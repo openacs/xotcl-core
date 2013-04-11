@@ -58,10 +58,10 @@ namespace eval ::xo::db {
     set object_type [ns_cache eval xotcl_object_type_cache \
                          [expr {$item_id ? $item_id : $revision_id}] {
       if {$item_id} {
-        db_1row [my qn get_class] \
+        ::xo::db_1row get_class_from_item_id \
 	    "select content_type as object_type from cr_items where item_id=$item_id"
       } else {
-        db_1row [my qn get_class] \
+        ::xo::db_1row get_class_from_revision_id \
 	    "select object_type from acs_objects where object_id=$revision_id"
       }
       return $object_type
@@ -94,7 +94,7 @@ namespace eval ::xo::db {
   } { 
     # TODO: the following line is deactivated, until we get rid of the "folder object" in xowiki
     #if {[my isobject ::$item_id]} {return [::$item_id parent_id]}
-    db_1row [my qn "get_parent"] "select parent_id from cr_items where item_id = :item_id"
+    ::xo::db_1row get_parent "select parent_id from cr_items where item_id = :item_id"
     return $parent_id
   }
 
@@ -109,7 +109,7 @@ namespace eval ::xo::db {
   } { 
     # TODO: the following line is deactivated, until we get rid of the "folder object" in xowiki
     #if {[my isobject ::$item_id]} {return [::$item_id parent_id]}
-    db_1row  [my qn "get_name"] "select name from cr_items where item_id = :item_id"
+    ::xo::db_1row get_name "select name from cr_items where item_id = :item_id"
     return $name
   }
 
@@ -139,11 +139,9 @@ namespace eval ::xo::db {
 
     @return item_id
   } {
-    if {[db_0or1row [my qn entry_exists_select] "\
-      select item_id from cr_items where name = :name and parent_id = :parent_id"]} {
-      return $item_id
-    }
-    return 0
+    return [::xo::db_string entry_exists_select {
+      select item_id from cr_items where name = :name and parent_id = :parent_id
+    } 0]
   }
   
 
@@ -170,7 +168,7 @@ namespace eval ::xo::db {
     #
     # PostgreSQL
     #
-    set pg_version [db_string dbqd.null.get_version {
+    set pg_version [::xo::db_string get_version {
       select substring(version() from 'PostgreSQL #"[0-9]+.[0-9+]#".%' for '#')   }]
     ns_log notice "--Postgres Version $pg_version"      
     if {$pg_version < 8.2} {
@@ -476,7 +474,7 @@ namespace eval ::xo::db {
     foreach v [$object info vars __db_*] {$object unset $v}
 
     if {[apm_version_names_compare [ad_acs_version] 5.2] <= -1} {
-      $object set package_id [db_string [my qn get_pid] \
+      $object set package_id [::xo::db_string get_pid \
                    "select package_id from cr_folders where folder_id = [$object set parent_id]"]
     }
 
@@ -1473,7 +1471,7 @@ namespace eval ::xo::db {
 			 [list description [my set description]]\
 			]
     my get_context package_id user_id ip
-    db_1row _ "select acs_object__update_last_modified(:folder_id,$user,'$ip')"
+    ::xo::db_1row _ "select acs_object__update_last_modified(:folder_id,$user,'$ip')"
   }
 
   ::xo::db::CrFolder instproc is_package_root_folder {} {
