@@ -123,9 +123,9 @@ namespace eval ::xo::db {
     @return list of item_ids
   } {
     set items [list]
-    foreach item_id [db_list [my qn "get_child_items"] \
+    foreach item_id [::xo::db_list get_child_items \
                          "select item_id from cr_items where parent_id = :item_id"] {
-      eval lappend items $item_id [my [self proc] -item_id $item_id]
+      lappend items $item_id {*}[my [self proc] -item_id $item_id]
     }
     return $items
   }

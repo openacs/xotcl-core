@@ -61,13 +61,19 @@ namespace eval ::xo::db {
     # traditional db-operations
     #
     proc ::xo::db_0or1row {qn sql} {
-      uplevel [list ::db_0or1row [uplevel [my qn $qn]] $sql]
+      uplevel [list ::db_0or1row [uplevel [list my qn $qn]] $sql]
     }
     proc ::xo::db_1row {qn sql} {
-      uplevel [list ::db_1row [uplevel [my qn $qn]] $sql]
+      uplevel [list ::db_1row [uplevel [list my qn $qn]] $sql]
     }
     proc ::xo::db_string {qn sql {default ""}} {
-      uplevel [list ::db_string [uplevel [my qn $qn]] $sql -default $default]
+      uplevel [list ::db_string [uplevel [list my qn $qn]] $sql -default $default]
+    }
+    proc ::xo::db_list {qn sql} {
+      uplevel [list ::db_list [uplevel [list my qn $qn]] $sql]
+    }
+    proc ::xo::db_list_of_lists {qn sql} {
+      uplevel [list ::db_list_of_lists [uplevel [list my qn $qn]] $sql]
     }
   } else {
 
@@ -118,38 +124,64 @@ namespace eval ::xo::db {
       }
       return $default
     }
-  }
 
-  ad_proc has_ltree {} {
-    Check, whether ltree is available (postgres only)
-  } {
-    ns_cache eval xotcl_object_cache ::xo::has_ltree {
-      if {[db_driverkey ""] eq "postgresql" && 
-          [::xo::db_string check_ltree "select count(*) from pg_proc where proname = 'ltree_in'"]} {
-        return 1
+    proc ::xo::db_list {qn sql} {
+      db_with_handle db {
+        set result [list]
+        set answers [uplevel [list ns_pg_bind select $db $sql]]
+        while { [::db_getrow $db $answers] } {
+	  lappend result [ns_set value $answers 0]
+        }
+	ns_set free $answers
       }
-      return 0
+      return $result
+    }
+
+    proc ::xo::db_list_of_lists {qn sql} {
+      db_with_handle db {
+        set result [list]
+        set answers [uplevel [list ns_pg_bind select $db $sql]]
+        while { [db_getrow $db $answers] } {
+	  set row [list]
+	  foreach {att value} [ns_set array $answers] {lappend row $value}
+	  lappend result $row
+	}
+	ns_set free $answers
+      }
+      return $result
+    }
+
+    ad_proc has_ltree {} {
+      Check, whether ltree is available (postgres only)
+    } {
+      ns_cache eval xotcl_object_cache ::xo::has_ltree {
+	if {[db_driverkey ""] eq "postgresql" && 
+	    [::xo::db_string check_ltree "select count(*) from pg_proc where proname = 'ltree_in'"]} {
+	  return 1
+	}
+	return 0
+      }
+    }
+    
+    ad_proc has_hstore {} {
+      Check, whether hstore is available (postgres only)
+    } {
+      ns_cache eval xotcl_object_cache ::xo::has_hstore {
+	if {[db_driverkey ""] eq "postgresql" && 
+	    [::xo::db_string check_hstore "select count(*) from pg_proc where proname = 'hstore_in'"]} {
+	  return 1
+	}
+	return 0
+      }
     }
   }
-
-  ad_proc has_hstore {} {
-    Check, whether hstore is available (postgres only)
-  } {
-    ns_cache eval xotcl_object_cache ::xo::has_hstore {
-      if {[db_driverkey ""] eq "postgresql" && 
-          [::xo::db_string check_hstore "select count(*) from pg_proc where proname = 'hstore_in'"]} {
-        return 1
-      }
-      return 0
-    }
-  }
-
+    
   #
   # The object require provides an interface to create certain
   # resources in case they are not created already.
   #
   ::xotcl::Object create require
-
+  
   #require set postgresql_table_exists {select 1 from pg_tables    where tablename  = '$name'}
   require set postgresql_table_exists {select 1 from pg_class     where relname    = '$name' and\
                                            pg_table_is_visible(oid)}
@@ -158,7 +190,7 @@ namespace eval ::xo::db {
   require set oracle_table_exists     {select 1 from user_tables  where table_name = '$name'}
   require set oracle_view_exists      {select 1 from user_views   where view_name  = '$name'}
   require set oracle_index_exists     {select 1 from user_indexes where index_name = '$name'}
-
+  
   require proc exists_table {name} {
     if {[db_driverkey ""] eq "oracle"} {
       set name [string toupper $name]
@@ -167,7 +199,7 @@ namespace eval ::xo::db {
     }
     ::xo::db_0or1row "" [subst [my set [db_driverkey ""]_table_exists]]
   }
-
+  
   require proc table {name definition} {
     if {![my exists_table $name]} {
       #my log "--table $name does not exist, creating with $definition"
@@ -595,7 +627,7 @@ namespace eval ::xo::db {
     } else {
       #my log "--db we have a class $classname"
     }
-    set attributes [db_list_of_lists dbqd..get_atts {
+    set attributes [::xo::db_list_of_lists get_atts {
       select attribute_name, pretty_name, pretty_plural, datatype, 
       default_value, min_n_values, max_n_values
       from acs_attributes where object_type = :object_type
@@ -659,7 +691,7 @@ namespace eval ::xo::db {
       # those definitions where we do not have function args, we parse
       # the function arg aliases.
       #
-      set definitions [db_list_of_lists [my qn get_all_package_functions0] {
+      set definitions [::xo::db_list_of_lists get_all_package_functions0 {
 	select 
            args.function,
            args.arg_name, 
@@ -688,7 +720,7 @@ namespace eval ::xo::db {
       # Get all package functions (package name, object name) from PostgreSQL
       # system catalogs.
       #
-      return [db_list_of_lists [my qn [self proc]] {
+      return [::xo::db_list_of_lists [self proc] {
         select distinct 
           upper(substring(proname from 0 for position('__' in proname))) as package_name,
           upper(substring(proname from position('__' in proname)+2)) as object_name 
@@ -813,7 +845,7 @@ namespace eval ::xo::db {
       # Get all package functions (package name, object name) from Oracle
       # system catalogs.
       #
-      return [db_list_of_lists [my qn [self proc]] {
+      return [::xo::db_list_of_lists [self proc] {
         select distinct package_name, object_name
           from user_arguments args
           where args.position > 0 and package_name is not null
@@ -824,7 +856,7 @@ namespace eval ::xo::db {
       # In Oracle, args.default_value appears to be defunct and useless.
       # for now, we simply return a constant "unknown", otherwise the
       # argument would be required
-      return [db_list_of_lists [my qn get_function_params] {
+      return [::xo::db_list_of_lists get_function_params {
 	select args.argument_name, 'NULL'
         from user_arguments args
         where args.position > 0
@@ -1073,7 +1105,7 @@ namespace eval ::xo::db {
     }
     ::xo::db::Class instproc init_type_hierarchy {} {
       my instvar object_type
-      my set object_type_key [db_list [my qn get_tree_sortkey] {
+      my set object_type_key [::xo::db_list get_tree_sortkey {
         select tree_sortkey from acs_object_types 
         where object_type = :object_type
       }]
@@ -1105,7 +1137,7 @@ namespace eval ::xo::db {
     
     @return list of object_types
   } {
-    return [db_list [my qn get_object_types] \
+    return [::xo::db_list get_object_types \
 		[my object_types_query -subtypes_first $subtypes_first]]
   }
 
