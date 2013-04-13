@@ -759,6 +759,9 @@ namespace eval ::xo {
       }
     }
   }
+  ::xo::broadcast proc blueprint {cmd} {
+    ns_eval ${cmd}\n::xo::at_cleanup
+  }
   ::xo::broadcast proc clear {} {
     catch {nsv_unset broadcast [ns_thread id]}
   }
