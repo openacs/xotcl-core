@@ -760,6 +760,9 @@ namespace eval ::xo {
     }
   }
   ::xo::broadcast proc blueprint {cmd} {
+    foreach t [::xotcl::THREAD info instances] {
+      $t do eval $cmd
+    }
     ns_eval ${cmd}\n::xo::at_cleanup
   }
   ::xo::broadcast proc clear {} {
