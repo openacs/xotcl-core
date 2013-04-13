@@ -150,7 +150,7 @@ Class create ::xotcl::THREAD \
   $obj set recreate 1
   next
   $obj init [lindex $args 0]
-  if {[nsv_exists [self] $obj]} {
+  if {[nsv_exists [self] $obj] && [$obj exists initcmd]} {
     set tid [nsv_get [self] $obj]
     ::thread::send $tid [$obj set initcmd]
     $obj set tid $tid
