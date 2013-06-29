@@ -131,7 +131,7 @@ namespace eval ::xo {
     if {![info exists user_id]} {set user_id [::xo::cc user_id]}
     if {![info exists package_id]} {set package_id [::xo::cc package_id]}
     #my msg [info exists package_id]=>$package_id-[my exists logical_package_id]
-    set ctx ""
+    set ctx "::xo::cc"
     if {$link ne ""} {
       set query [lindex [split $link ?] 1]
       set ctx [::xo::Context new -destroy_on_cleanup -actual_query $query]
