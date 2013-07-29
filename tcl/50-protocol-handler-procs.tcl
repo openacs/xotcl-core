@@ -27,8 +27,7 @@ namespace eval ::xo {
       # get the second bit, the base64 encoded bit
       set up [lindex [split $ah " "] 1]
       # after decoding, it should be user:password; get the username
-      set user [lindex [split [ns_uudecode $up] ":"] 0]
-      set password [lindex [split [ns_uudecode $up] ":"] 1]
+      lassign [split [ns_uudecode $up] ":"] user password
       array set auth [auth::authenticate \
                           -username $user \
                           -authority_id [::auth::get_register_authority] \
@@ -59,7 +58,7 @@ namespace eval ::xo {
   ProtocolHandler ad_instproc initialize {} {
     Setup connection object and authenticate user
   } {
-    my instvar uri method urlv destination
+    my instvar uri method url urlv destination
     ad_conn -reset
     # Make sure, there is no ::ad_conn(request); otherwise the
     # developer support will add all its output to a single var, which
@@ -67,15 +66,17 @@ namespace eval ::xo {
     # unset, the developer support will create its own id.
     catch {unset ::ad_conn(request)}
     set uri [ns_urldecode [ns_conn url]]
+    if {[string length $uri] < [string length $url]} {append uri /}
     set url_regexp "^[my url]"
-    #my log "--conn_setup: uri '$uri' my url='[my url]' con='[ns_conn url]'"
     regsub $url_regexp $uri {} uri
     if {![regexp {^[./]} $uri]} {set uri /$uri}
+    #my log "--conn_setup: uri '$uri' my url='[my url]' con='[ns_conn url]'"
     my set_user_id
 
     set method [string toupper [ns_conn method]]
     #my log "--conn_setup: uri '$uri' method $method"
     set urlv [split [string trimright $uri "/"] "/"]
+    my set user_agent [ns_set iget [ns_conn headers] user-agent]
     set destination [ns_urldecode [ns_set iget [ns_conn headers] Destination]]
     if {$destination ne ""} {
       regsub {https?://[^/]+/} $destination {/} dest
@@ -124,6 +125,7 @@ namespace eval ::xo {
   } {
     set filter_url [my url]*
     set url [my url]/*
+    set root [string trimright [my url] /]
     #
     # Methods defined by RFC 2086 (19.6.1 Additional Request Methods):
     #
@@ -176,11 +178,17 @@ namespace eval ::xo {
       DELETE LOCK UNLOCK OPTIONS
       REPORT
     } {
-      ns_register_filter preauth $method $filter_url  [self]
-      ns_register_proc $method $url [self] handle_request
+      ns_register_filter preauth $method $filter_url [self]
+      ns_register_filter preauth $method $root       [self]
+      ns_register_proc $method $url  [self] handle_request
+      ns_register_proc $method $root [self] handle_request
+
+      
       #my log "--ns_register_filter preauth $method $filter_url  [self]"
       #my log "--ns_register_proc $method $url [self] handle_request"
     }
+    ns_register_proc OPTIONS  / ::xo::minimalProctocolHandler OPTIONS
+    ns_register_proc PROPFIND / ::xo::minimalProctocolHandler PROPFIND
   }
 
   ProtocolHandler ad_instproc get_package_id {} {
@@ -213,18 +221,121 @@ namespace eval ::xo {
   }
 
   #
+  # Formatting methods
+  #
+  ProtocolHandler instproc tcl_time_to_iso8601 {datetime} {
+    # RFC2518 requires this just for creationdate
+    if {$datetime eq ""} return ""
+    set tcl_time [::xo::db::tcl_date $datetime tz]
+    return [clock format [clock scan $tcl_time] -format "%Y-%m-%dT%H:%M:%SZ" -gmt 1]
+  }
+
+  ProtocolHandler instproc http_date {seconds} {
+    # HTTP-Date as defined in RFC2068#section-3.3.1
+    return "[clock format $seconds -format {%a, %d %b %Y %T} -gmt 1] GMT"
+  }
+
+  ProtocolHandler instproc tcl_time_to_http_date {datetime} {
+    # RFC2518 requires this e.g. for getlastmodified
+    if {$datetime eq ""} return ""
+    return [my http_date [clock scan [::xo::db::tcl_date $datetime tz]]]
+  }
+
+  ProtocolHandler instproc multiStatus {body} {
+    append _ {<?xml version="1.0" encoding="utf-8" ?>} \n \
+	{<D:multistatus xmlns:D="DAV:">} $body \n </D:multistatus> \n
+  }
+
+  ProtocolHandler instproc multiStatusResonse {
+    -href:required 
+    -propstats:required 
+    {-propstatus true}
+  } {
+    #my log "multiStatusResonse href $href propstats $propstats"
+    append reply \n \
+	{<D:response xmlns:lp1="DAV:" xmlns:lp2="http://apache.org/dav/props/" xmlns:g0="DAV:">} \
+	"\n<D:href>$href</D:href>\n"
+    # The multi-status respons has 2 formats
+    # - with <D:propstat> (used in PROPFIND and PROPPATCH)
+    # - without <D:propstat> (used in other cases, e.g. DELETE, COPY, MOVE for collections)
+    # http://www.webdav.org/specs/rfc4918.html#multi-status.response
+    #
+    foreach {props status} $propstats {
+      if {$propstatus} {
+	append reply <D:propstat>\n
+	if {[llength $props] > 0} {
+	  append reply <D:prop>\n
+	  foreach {name value} $props {
+	    if {$value ne ""} { 
+	      append reply <$name>$value</$name>\n
+	    } else {
+	      append reply <$name/>\n
+	    }
+	  }
+	  append reply </D:prop>\n
+	} else {
+	  append reply <D:prop/>\n
+	}
+	append reply <D:status>$status</D:status>\n</D:propstat>\n
+      } else {
+	append reply <D:status>$status</D:status>\n
+      }
+    }
+    append reply </D:response>\n
+  }
+
+  ProtocolHandler instproc multiStatusError {status} {
+    lappend davprops \
+	D:getlastmodified "" \
+	D:getcontentlength "" \
+	D:creationdate "" \
+	D:resourcetype ""
+    set r [my multiStatus [my multiStatusResonse \
+			       -href [ns_urldecode [ns_conn url]] \
+			       -propstats [list $davprops $status]]]
+    my log multiStatusError=$r
+    ns_return 207 text/xml $r
+  }
+
+  #
   # Some dummy HTTP methods
   #
   ProtocolHandler instproc GET {} {
     my log "--GET method"
-    ns_return 200 text/plain GET-[my uri]
+    ns_return 200 text/plain GET-[my set uri]
   }
   ProtocolHandler instproc PUT {} {
     my log "--PUT method [ns_conn content]"
     ns_return 201 text/plain "received put with content-length [string length [ns_conn content]]"
   }
+
+  ProtocolHandler instproc OPTIONS {} {
+    ns_set put [ns_conn outputheaders] Allow OPTIONS
+    ns_return 200 text/plain {}
+  }
+ 
   ProtocolHandler instproc PROPFIND {} {
-    my log "--PROPFIND [ns_conn content]"
-    ns_return 204 text/xml {<?xml version="1.0" encoding="utf-8" ?>}
+    #my log "--ProtocolHandler PROPFIND [ns_conn content]"
+    # when GET is not supported on this resource, the get* properties are not be sent
+    # see http://www.webdav.org/specs/rfc4918.html, 9.1.5
+    lappend davprops \
+	lp1:resourcetype    <D:collection/> \
+	lp1:creationdate    [my tcl_time_to_iso8601 "2013-06-30 01:21:22.648325+02"] \
+	D:supportedlock     {} \
+	D:lockdiscovery     {}
+	
+     ns_return 207 text/xml [my multiStatus \
+				 [my multiStatusResonse \
+				      -href [my set uri] \
+				      -propstats [list $davprops "HTTP/1.1 200 OK"]]]
+  }
+
+  ::xo::ProtocolHandler create ::xo::minimalProctocolHandler
+  ::xo::minimalProctocolHandler proc OPTIONS {args} {
+    ns_set put [ns_conn outputheaders] Allow OPTIONS
+    ns_return 200 text/plain {}
+  }
+  ::xo::minimalProctocolHandler proc PROPFIND {args} {
+    my multiStatusError "HTTP/1.1 403 Forbidden"
   }
 }
