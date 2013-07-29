@@ -1537,7 +1537,13 @@ namespace eval ::xo::db {
           }
         }
         if {$initialize && [$o istype ::xo::db::Object]} {
-          $o initialize_loaded_object
+	  if {![$o exists package_id]} {
+	    ns_log error "$o has no package_id but [$o exists object_package_id]"
+	    if {[$o exists object_package_id]} {$o set package_id [$o set object_package_id]}
+	  }
+          if {[catch {$o initialize_loaded_object} errorMsg]} {
+	    ns_log error "$o initialize_loaded_object => [$o info vars] -> $errorMsg"
+	  }
         }
         #my log "--DB more = $continue [$o serialize]" 
       }
