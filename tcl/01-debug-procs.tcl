@@ -397,10 +397,10 @@ namespace eval ::xo {
   } else {
 
     # register only once
-    if {[lsearch $registered ::xo::freeconn] == -1} {
+    if {"::xo::freeconn" ni $registered} {
       ns_ictl trace freeconn ::xo::freeconn
     }
-    if {[lsearch [ns_ictl gettraces delete] ::xo::at_delete] == -1} {
+    if {"::xo::at_delete" ni [ns_ictl gettraces delete]} {
       ns_ictl ondelete ::xo::at_delete
     }    
 

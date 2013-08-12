@@ -106,7 +106,7 @@ namespace eval ::xo {
     }
     
     #my log "--cc calling parser eval [self] __parse $parse_args"
-    eval [self] __parse $parse_args
+    [self] __parse {*}$parse_args
     #my msg "--cc qp [array get queryparm] // $actual_query"
   }
 

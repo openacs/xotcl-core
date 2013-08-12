@@ -287,6 +287,6 @@ Class create ::xotcl::THREAD \
  
 Class create ::xotcl::THREAD::Client -parameter {server {serverobj [self]}}
 ::xotcl::THREAD::Client instproc do args {
-  eval [my server] do [my serverobj] $args
+  [my server] do [my serverobj] {*}$args
 }
 

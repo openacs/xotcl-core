@@ -80,7 +80,7 @@ namespace eval ::xo {
   OrderedComposite instproc contains cmds {
     my requireNamespace ;# legacy for older xotcl versions
     set m [Object info instmixin]
-    if {[lsearch $m [self class]::ChildManager] == -1} {
+    if {"[self class]::ChildManager" ni $m} {
       set insert 1
       Object instmixin add [self class]::ChildManager
     } else { 

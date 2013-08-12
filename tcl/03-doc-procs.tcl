@@ -157,7 +157,7 @@ ad_library {
   set doc_elements(private_p) $private
   set doc_elements(deprecated_p) $deprecated
   set doc_elements(warn_p) $deprecated
-  set doc_elements(varargs_p) [expr {[lsearch args [my info ${inst}args $proc_name]]>-1}] 
+  set doc_elements(varargs_p) [expr {"args" in [my info ${inst}args $proc_name]}] 
   set doc_elements(flags) [list]
   set doc_elements(switches) [list]
   foreach f [my info ${inst}nonposargs $proc_name] {

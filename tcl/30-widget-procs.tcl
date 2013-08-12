@@ -377,7 +377,7 @@ namespace eval ::xo {
     $M contains $cmd
     set slots [list]
     foreach c [$M children] {
-      eval lappend slots [$c get-slots]
+      lappend slots {*}[$c get-slots]
     }
     my proc add $slots {
       set __self [::xo::Table::Line new]

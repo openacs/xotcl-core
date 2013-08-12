@@ -68,12 +68,12 @@ if {![::xotcl::Object isclass ::xotcl::RecreationClass]} {
 	  foreach var [$obj info vars] {$obj unset $var}
 	  # set defaults and run configure
           $obj set_instance_vars_defaults
-	  eval $obj configure $args
+	  $obj configure {*}$args
 	  #my log "### instproc recreate $obj + configure $args ..."
 	}
 	if {[my exists instreinit]} {
 	  #my log "### instreinit for $obj <$args>"
-	  eval $obj init 
+	  $obj init 
 	  #my log "### instproc recreate $obj + init ..."
 	}
       } -proc recreate {obj args} {
@@ -86,10 +86,10 @@ if {![::xotcl::Object isclass ::xotcl::RecreationClass]} {
 	  foreach var [$obj info vars] {$obj unset $var}
 	  # set defaults and run configure
           $obj set_instance_vars_defaults
-	  eval $obj configure $args
+	  $obj configure {*}$args
 	}
 	if {[my exists reinit]} {
-	  eval $obj init 
+	  $obj init
 	}
       }
 
@@ -150,9 +150,9 @@ if {[string match "1.3.*" $version]} {
 
     # we use uplevel to handle -volatile correctly
     set pos [my uplevel $obj configure $args]
-    if {[lsearch -exact $args -init] == -1} {
+    if {"-init" ni $args} {
       incr pos -1
-      eval $obj init [lrange $args 0 $pos]
+      $obj init {*}[lrange $args 0 $pos]
     }
   }
 
