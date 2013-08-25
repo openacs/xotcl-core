@@ -1541,7 +1541,7 @@ namespace eval ::xo::db {
 	    if {[$o exists object_package_id]} {
 	      $o set package_id [$o set object_package_id]
 	    } else {
-	      ns_log warning "[namespace tail [$o info type]] $o has no package_id and no object_package_id"
+	      ns_log warning "[namespace tail [$o info class]] $o has no package_id and no object_package_id"
 	    }
 	  }
           if {[catch {$o initialize_loaded_object} errorMsg]} {
