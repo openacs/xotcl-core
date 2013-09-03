@@ -44,7 +44,8 @@ when components are reloaded.
         <maturity>0</maturity>
 
         <provides url="xotcl-core" version="0.126"/>
-        <requires url="acs-kernel" version="5.2.0"/>
+	<requires url="acs-kernel" version="5.8.0"/>
+        
 
         <callbacks>
             <callback type="before-install"  proc="::xotcl-core::before_install_callback"/>
