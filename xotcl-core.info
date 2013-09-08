@@ -13,7 +13,7 @@
     <version name="0.126" url="http://media.wu-wien.ac.at/download/xotcl-core-0.126.apm">
         <owner url="mailto:neumann@wu-wien.ac.at">Gustaf Neumann</owner>
         <summary>XOTcl library functionality (e.g. thread handling, online documentation, Generic Form and List Classes)</summary>
-        <release-date>2013-08-30</release-date>
+        <release-date>2013-09-08</release-date>
         <vendor>Gustaf Neumann, WU Wien</vendor>
         <description format="text/html">This component contains some core functionality for OpenACS
 applications using XOTcl. It includes
@@ -44,7 +44,7 @@ when components are reloaded.
         <maturity>0</maturity>
 
         <provides url="xotcl-core" version="0.126"/>
-	<requires url="acs-kernel" version="5.8.0"/>
+	<requires url="acs-kernel" version="5.8.1d1"/>
         
 
         <callbacks>
