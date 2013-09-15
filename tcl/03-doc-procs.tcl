@@ -33,7 +33,7 @@ ad_library {
       if {[nsv_exists api_proc_doc $proc_index]} {
         return "<a href='/api-doc/proc-view?proc=[ns_urlencode $proc_index]'>$method</a>"
       } else {
-        if {[$obj info ${kind}s $method] eq ""} {
+        if {[::xo::getObjectProperty $obj ${kind} $method] eq ""} {
           return $method<SUP>C</SUP>
         } else {
           return $method
@@ -42,12 +42,12 @@ ad_library {
     } \
     -proc isclass {scope obj} {
       expr {$scope eq "" ? 
-            [::xotcl::Object isclass $obj] : 
-            [$scope do ::xotcl::Object isclass $obj]}
+            [xo::getObjectProperty $obj isclass] : 
+            [$scope do xo::getObjectProperty $obj isclass]}
     } -proc isobject {scope obj} {
       expr {$scope eq "" ? 
-            [::xotcl::Object isobject $obj] : 
-            [$scope do ::xotcl::Object isobject $obj]}
+            [xo::getObjectProperty $obj isobject] : 
+            [$scope do xo::getObjectProperty $obj isobject]}
     } -proc scope {} {
       if {[info exists ::xotcl::currentThread]} {
 	# we are in an xotcl thread; the body won't be accessible directly
@@ -66,7 +66,7 @@ ad_library {
       return $scope
 
     } -proc inscope {scope args} {
-      expr {$scope eq "" ? [eval $args] : [eval $scope do $args]}
+      expr {$scope eq "" ? [eval $args] : [$scope do {*}$args]}
 
     } -proc script_name {scope} {
       #set kind [expr {[my istype ::xotcl::Class] ? "Class" : "Object"}]
@@ -149,15 +149,15 @@ ad_library {
     ad_parse_documentation_string $doc doc_elements
   }
   set defaults [list]
-  foreach a [my info ${inst}args $proc_name] {
-    if {[my info ${inst}default $proc_name $a d]} {lappend defaults $a $d}
+  foreach a [::xo::getObjectProperty [self] ${inst}args $proc_name] {
+    if {[::xo::getObjectProperty [self] ${inst}argdefault $proc_name $a d]} {lappend defaults $a $d}
   }
   set public [expr {$private ? false : true}]
   set doc_elements(public_p) $public
   set doc_elements(private_p) $private
   set doc_elements(deprecated_p) $deprecated
   set doc_elements(warn_p) $deprecated
-  set doc_elements(varargs_p) [expr {"args" in [my info ${inst}args $proc_name]}] 
+  set doc_elements(varargs_p) [expr {"args" in [::xo::getObjectProperty [self] ${inst}args $proc_name]}] 
   set doc_elements(flags) [list]
   set doc_elements(switches) [list]
   foreach f [my info ${inst}nonposargs $proc_name] {
@@ -175,7 +175,7 @@ ad_library {
     lappend defaults $sw $default
   }
   set doc_elements(default_values) $defaults
-  set doc_elements(positionals) [my info ${inst}args $proc_name] 
+  set doc_elements(positionals) [::xo::getObjectProperty [self] ${inst}args $proc_name] 
   # argument documentation finished
   set scope [::xotcl::api scope]
   set doc_elements(script) [::xotcl::api script_name $scope]

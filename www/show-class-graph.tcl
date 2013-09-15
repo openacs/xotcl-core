@@ -23,7 +23,7 @@ ad_page_contract {
   set infokind $kind
   if {$kind eq "instproc"} {append infokind s}
   ::xotcl::api scope_from_object_reference scope e
-  foreach method [$e info $infokind] {
+  foreach method [xo::getObjectProperty $e $kind] {
     if {$documented_methods} {
       set proc_index [::xotcl::api proc_index $scope $e $kind $method]
       #my msg "check $method => [nsv_exists api_proc_doc $proc_index]"
@@ -39,7 +39,11 @@ ad_page_contract {
   set definition ""
   append definition "[my dotquote $e] \[label=\"\{$e|"
   foreach slot [$e info slots] {
-    append definition "[$slot name]\\l"
+    set name ""
+    catch {set name $slot name}
+    if {$name ne ""} {
+       append definition "[$slot name]\\l"
+    }
   }
   append definition "|"
   ::xotcl::api scope_from_object_reference scope e
@@ -102,7 +106,7 @@ ad_page_contract {
         append children "[my dotquote $c]->[my dotquote $e];\n"
       }
     }
-    set m [$e info mixin]
+    set m [xo::getObjectProperty $e mixin]
     #puts "-- $e mixin $m"
     if {$m eq ""} continue
     append mixins "[my dotquote $e]->[my dotquotel $m];\n"
@@ -110,7 +114,7 @@ ad_page_contract {
   set tclasses ""
   set instmixins ""
   foreach e $classes {
-    set m [$e info instmixin]
+    set m [xo::getObjectProperty $e instmixin]
     #puts "-- $e instmixin $m"
     if {$m eq ""} continue
     #foreach mixin $m {
@@ -152,10 +156,13 @@ set dot ""
 catch {set dot [::util::which dot]}
 # final ressort for cases, where ::util::which is not available
 if {$dot eq "" && [file executable /usr/bin/dot]} {set dot /usr/bin/dot}
-if {$dot eq ""} {ns_return 404 plain/text "do dot found"; ad_script_abort}
-
+if {$dot eq ""} {ns_return 404 plain/text "dot dot found"; ad_script_abort}
+ 
 set tmpnam [ns_tmpnam]
 set tmpfile $tmpnam.png
+set f [open $tmpnam.dot w]; puts $f $dot_code; close $f
+
+#ns_log notice "png $tmpnam dot $tmpnam.dot"
 set f [open "|$dot  -Tpng -o $tmpfile" w]; puts $f $dot_code; close $f
 ns_returnfile 200 [ns_guesstype $tmpfile] $tmpfile
 file delete $tmpfile

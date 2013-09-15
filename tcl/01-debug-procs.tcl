@@ -783,7 +783,137 @@ namespace eval ::xo {
   }
 }
 
+proc ::xo::getObjectProperty {o what args} {
+    switch $what {
+	"mixin" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info mixin]}
+	    return [$o info object mixin classes]
+	}
+	"instmixin" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instmixin]}
+	    return [$o info mixin classes]
+	}
+	"instproc" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instprocs {*}args]}
+	    return [$o info methods -type scripted {*}args]
+	}
+	"instcommand" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instcommands {*}args]}
+	    return [$o info methods {*}args]
+	}
+	"instforward" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instforward {*}args]}
+	    return [$o info methods -type forwarder {*}args]
+	}
+	"proc" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}args]}
+	    return [$o info object methods -type scripted {*}args]
+	}
+	"command" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}args]}
+	    return [$o info object methods {*}args]
+	}
+	"forward" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info forward {*}args]}
+	    return [$o info object methods -type forwarder {*}args]
+	}
+	"slots" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info slots]}
+	    return [$o info object methods -type forwarder]
+	}
+	"class" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info class]}
+	    return [$o info class]
+	}
+	"superclass" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info superclass]}
+	    return [$o info superclass]
+	}
+	"subclass" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info subclass]}
+	    return [$o info subclass]
+	}
+	"parameter" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info parameter]}
+	    set result ""
+	    foreach p [$o info configure parameters] {lappend result [$o info parameter name $p]}
+	    return $result
+	}
+	"isclass" {
+	    if {[info command $o] eq ""} {return 0}
+	    if {"::xotcl::Object" in [$o info precedence]} {return [expr {"::xotcl::Class" in [$o info precedence]}]}
+	    return [nsf::is class $o]
+	}
+	"isobject" {
+	    if {[info command $o] eq ""} {return 0}
+	    if {"::xotcl::Object" in [$o info precedence]} {return 1}
+	    return [nsf::is object $o]
+	}
+	"instargs" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instargs {*}$args]}
+	    return [$o info method args {*}$args]
+	}
+	"args" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info args {*}$args]}
+	    return [$o info object method args {*}$args]
+	}
+	"instargdefault" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instdefault {*}$args]}
+	    set parameter [$o info method parameter [lindex $args 0]]
+	    foreach p $parameter {
+	      if {[llength $p]>1} {
+		lassign $p name default
+	      } else {
+		lassign [list $p ""] name default
+	      }
+	      if {$name eq [lindex $args 1]} {
+		return $default
+	      }
+	   }
+	}
+	"argdefault" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info default {*}$args]}
+	    set parameter [$o info object method parameter [lindex $args 0]]
+	    foreach p $parameter {
+	      if {[llength $p]>1} {
+		lassign $p name default
+	      } else {
+		lassign [list $p ""] name default
+	      }
+	      if {$name eq [lindex $args 1]} {
+		return $default
+	      }
+	   }
+	}
 
+	"array-exists" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o array exists {*}$args]}
+	    return [$o eval [list array exists :{*}$args]]
+	}
+	"array-get" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o array get {*}$args]}
+	    return [$o eval [list array get :{*}$args]]
+	}
+	"array-set" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o array set {*}$args]}
+	    return [$o eval [list array set :{*}$args]]
+	}
+	"set" {
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o set {*}$args]}
+	    return [$o eval [list set :[lindex $args 0]]]
+	}
+	"isnxobject" {
+	    if {[info command ::nsf::dispatch] ne "" && [info command $o] ne ""} {
+		return [::nsf::dispatch $o ::nsf::methods::object::info::hastype ::nx::Object]
+	    } {
+		return 0
+	    }
+	}
+	default {
+	    error "no idea how to return $what"
+	}
+    }
+}
 
 
 #ns_log notice "*** FREECONN? [ns_ictl gettraces freeconn]"
