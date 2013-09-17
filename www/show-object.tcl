@@ -16,8 +16,13 @@ ad_page_contract {
 
 set context [list "XOTcl"]
 set output ""
+
 ::xotcl::api scope_from_object_reference scope object
-set isobject [::xotcl::api isobject $scope $object]
+if {$scope ne "" && ![xo::getObjectProperty $scope isobject]} {
+    set isobject 0
+} else {
+    set isobject [::xotcl::api isobject $scope $object]
+}
 
 if {!$isobject} {
   ad_return_complaint 1 "Unable to access object $object. 
