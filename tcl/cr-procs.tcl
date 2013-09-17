@@ -1583,7 +1583,7 @@ namespace eval ::xo::db {
     return [list $arrays $scalars]
   }
   CrCache::Item instproc set_non_persistent_vars {vars} {
-    foreach {arrays scalars} $vars break
+    lassign $vars arrays scalars
     foreach {var value} $arrays {my array set $var $value}
     foreach {var value} $scalars {my set $var $value}
   }

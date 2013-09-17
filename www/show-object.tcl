@@ -123,7 +123,7 @@ proc class_summary {c scope} {
     set pretty [list]
     foreach p $parameters {
       if {[llength $p]>1} {
-        foreach {p default} $p break
+        lassign $p p default
         lappend pretty "$p (default <span style='color: green; font-style: italic'>\"$default\"</span>)"
       } else {
         lappend pretty "$p"

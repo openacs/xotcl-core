@@ -274,7 +274,7 @@ namespace eval ::xo::db {
 	  error "package_key_and_version_older_than should be\
 		of the form 'package_key version'"
 	}
-	foreach {package_key version} $p break
+	lassign $p package_key version
 	set installed_version [apm_highest_version_name $package_key]
 	if {[apm_version_names_compare $installed_version $version] > -1} {
 	  # nothing to do
@@ -635,8 +635,8 @@ namespace eval ::xo::db {
     
     set slots ""
     foreach att_info $attributes {
-      foreach {attribute_name pretty_name pretty_plural datatype default_value
-        min_n_values max_n_values} $att_info break
+      lassign $att_info attribute_name pretty_name pretty_plural datatype \
+	  default_value min_n_values max_n_values
 
       # ignore some erroneous definitions in the acs meta model
       if {[my exists exclude_attribute($table_name,$attribute_name)]} continue
@@ -702,7 +702,7 @@ namespace eval ::xo::db {
       set last_function ""
       set function_args {}
       foreach definition $definitions {
-	foreach {function arg_name default} $definition break
+	lassign $definition function arg_name default
 	if {$last_function ne "" && $last_function ne $function} {
 	  set ::xo::db::sql::fnargs($last_function) $function_args
 	  #puts stderr "$last_function [list $function_args]"
@@ -960,7 +960,7 @@ namespace eval ::xo::db {
     array set additional_defaults [[self class] set fallback_defaults(${package_name}__$object_name)]
     set result [list]
     foreach arg $function_args {
-      foreach {arg_name default_value} $arg break
+      lassign $arg arg_name default_value
       if {$default_value eq "" && [info exists additional_defaults($arg_name)]} {
         lappend result [list $arg_name $additional_defaults($arg_name)]
       } else {
@@ -976,7 +976,7 @@ namespace eval ::xo::db {
     my set arg_order [list]
     my set function_args $function_args
     foreach arg $function_args {
-      foreach {arg_name default_value} $arg break
+      lassign $arg arg_name default_value
       lappend psql_args \$_$arg_name
       my lappend arg_order $arg_name
       my set defined($arg_name) $default_value
@@ -1041,7 +1041,7 @@ namespace eval ::xo::db {
  
   ::xo::db::Class proc create_all_functions {} {
     foreach item [my get_all_package_functions] {
-      foreach {package_name object_name} $item break
+      lassign $item package_name object_name
       set class_name ::xo::db::sql::[string tolower $package_name] 
       if {![my isobject $class_name]} { ::xo::db::Class create $class_name }
       $class_name dbproc_nonposargs [string tolower $object_name]

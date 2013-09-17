@@ -104,7 +104,7 @@ namespace eval ::xo {
     if {[nsv_get $array-seen newest]>$last} {
       #my log "--c must check $session_id: [nsv_get $array-seen newest] > $last"
       foreach {key value} [nsv_array get $array] {
-	foreach {timestamp secs user msg color} $value break
+	lassign $value timestamp secs user msg color
 	if {$timestamp > $last} {
 	  my add [Message new -time $secs -user_id $user -msg $msg -color $color]
 	} else {
@@ -122,7 +122,7 @@ namespace eval ::xo {
   Chat instproc get_all {} {
     my instvar array now session_id
     foreach {key value} [nsv_array get $array] {
-      foreach {timestamp secs user msg color} $value break
+      lassign $value timestamp secs user msg color
       if {[my check_age $key [expr {($now - $timestamp) / 1000}]]} {
 	my add [Message new -time $secs -user_id $user -msg $msg -color $color]
       }

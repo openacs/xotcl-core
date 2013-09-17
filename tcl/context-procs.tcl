@@ -535,7 +535,7 @@ namespace eval ::xo {
 
     set query [list [list $var $value]]
     foreach pair [split $old_query &] {
-      foreach {key value} [split $pair =] break
+      lassign [split $pair =] key value
       if {$key eq $var} continue
       lappend query [list [{*}$decodeCmd $key] [{*}$decodeCmd $value]]
     }
@@ -554,7 +554,7 @@ namespace eval ::xo {
 
     set query [{*}$encodeCmd $var]=[{*}$encodeCmd $value]
     foreach pair [split $old_query &] {
-      foreach {key value} [split $pair =] break
+      lassign [split $pair =] key value
       if {[{*}$decodeCmd $key] eq $var} continue
       append query &$pair
     }

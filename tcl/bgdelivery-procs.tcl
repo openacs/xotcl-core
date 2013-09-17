@@ -50,7 +50,7 @@ if {![string match *contentsentlength* $msg]} {
   fileSpooler proc deliver_ranges {ranges client_data filename fd channel} {
     set first_range [lindex $ranges 0]
     set remaining_ranges [lrange $ranges 1 end]
-    foreach {from to size} $first_range break
+    lassign $first_range from to size
     if {$remaining_ranges eq ""} {
       # A single delivery, which is as well the last; when finished
       # with this chunk, terminate delivery
@@ -113,7 +113,7 @@ if {![string match *contentsentlength* $msg]} {
     # This method should not be necessary. However, under unclear conditions,
     # some fcopies seem to go into a stasis. After 2000 seconds, we will kill it.
     foreach {index entry} [array get ::running] {
-      foreach {key elapsed} $entry break
+      lassign $entry key elapsed
       set t [ns_time diff [ns_time get] $elapsed]
       if {[ns_time seconds $t] > 2000} {
         if {[regexp {^([^,]+),([^,]+),(.+)$} $index _ channel fd filename]} {

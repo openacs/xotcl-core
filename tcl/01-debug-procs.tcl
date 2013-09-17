@@ -201,7 +201,7 @@ namespace eval ::xo {
 if {[info command ::xotcl::nonposArgs] ne ""} {
   ::xotcl::nonposArgs proc integer args {
     if {[llength $args] < 2} return
-    foreach {name value} $args break
+    lassign $args name value
     if {![string is integer $value]} {error "value '$value' of $name not an integer"}
   }
   ::xotcl::nonposArgs proc optional {name args} {
@@ -277,7 +277,7 @@ namespace eval ::xo {
   }
 
   Timestamp instproc report {{string ""}} {
-    foreach {start_diff last_diff} [my diffs] break
+    lassign [my diffs] start_diff last_diff
     my log "--$string (${start_diff}ms, diff ${last_diff}ms)"
   }
 

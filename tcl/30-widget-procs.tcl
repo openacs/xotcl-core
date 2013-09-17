@@ -142,7 +142,7 @@ namespace eval ::xo::tdom {
     foreach attribute $args {
       set l [split $attribute]
       if {[llength $l] > 1} {
-        foreach {attribute HTMLattribute} $l break
+        lassign $l attribute HTMLattribute
       } else {
         set HTMLattribute $attribute
       }
@@ -166,7 +166,7 @@ namespace eval ::xo::tdom {
     foreach attribute $args {
       set l [split $attribute]
       if {[llength $l] > 1} {
-        foreach {attribute HTMLattribute} $l break
+        lassign $l attribute HTMLattribute
       } else {
         set HTMLattribute $attribute
       }
@@ -232,7 +232,7 @@ namespace eval ::xo {
       while {[regexp {^([^\x002]*)\x002\(\x001([^\x001]*)\x001\)\x002(.*)$} $text _ \
                   before key text]} {
 	append return_text $before
-	foreach {package_key message_key} [split $key .] break
+	lassign [split $key .] package_key message_key
 	set url [export_vars -base $::xo::acs_lang_url/edit-localized-message {
 	  {locale {[ad_conn locale]} }
 	  package_key message_key 
@@ -734,7 +734,7 @@ namespace eval ::xo::Table {
       set actual_query ""
     }
     foreach pair [split $actual_query &] {
-      foreach {key value} [split $pair =] break
+      lassign [split $pair =] key value
       if {$key eq "orderby"} continue
       lappend query [list [ns_urldecode $key] [ns_urldecode $value]]
     }

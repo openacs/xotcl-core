@@ -80,7 +80,7 @@ namespace eval ::xo {
       set condition [lindex $p 0]
       if {[llength $condition]>1} {
         # we have a condition
-	foreach {cond value} $condition break
+	lassign $condition cond value
         if {[$object condition=$cond $query_context $value]} {
           return [my get_privilege [list [lrange $p 1 end]] $object $method]
         }
@@ -143,14 +143,14 @@ namespace eval ::xo {
 
     #my log "--     user_id=$user_id uid=[::xo::cc user_id] untrusted=[::xo::cc set untrusted_user_id]"
     if {$permission ne ""} {
-      foreach {kind p} [my get_privilege -query_context $ctx $permission $object $method] break
+      lassign [my get_privilege -query_context $ctx $permission $object $method] kind p
       #my msg "--privilege = $p kind = $kind"
       switch -- $kind {
 	primitive {return [my check_privilege -login false \
 			       -package_id $package_id -user_id $user_id \
 			       $p $object $method]}
 	complex {
-	  foreach {attribute privilege} $p break
+	  lassign $p attribute privilege
 	  set id [$object set $attribute]
 	  #my msg "--p checking permission -object_id /$id/ -privilege $privilege -party_id $user_id\
 	  #	==> [::xo::cc permission -object_id $id -privilege $privilege -party_id $user_id]"
@@ -177,7 +177,7 @@ namespace eval ::xo {
     set allowed 0
     set permission [my get_permission $object $method]
     if {$permission ne ""} {
-      foreach {kind p} [my get_privilege $permission $object $method] break
+      lassign [my get_privilege $permission $object $method] kind p
       switch -- $kind {
 	primitive {
 	  set allowed [my check_privilege \
@@ -186,7 +186,7 @@ namespace eval ::xo {
 	  set privilege $p
 	}
 	complex {
-	  foreach {attribute privilege} $p break
+	  lassign $p attribute privilege
 	  set id [$object set $attribute]
 	  set allowed [::xo::cc permission -object_id $id \
 			   -privilege $privilege \
