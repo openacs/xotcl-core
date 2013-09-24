@@ -41,7 +41,7 @@ when components are reloaded.
 0.70: oo interface to acs-object, acs-object-types and cr-items/revisions based on XOTcl slots 
 </description>
         <license>BSD-Style</license>
-        <maturity>0</maturity>
+        <maturity>2</maturity>
 
         <provides url="xotcl-core" version="0.126"/>
 	<requires url="acs-kernel" version="5.8.1d1"/>
