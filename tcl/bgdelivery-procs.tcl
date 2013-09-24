@@ -670,13 +670,13 @@ bgdelivery ad_proc returnfile {
   if {$use_h264} {
     #my log "MP4 q=[::xo::cc actual_query], h=[ns_set array [ns_conn outputheaders]]"
     my do -async ::h264Spooler spool -delete $delete -channel $ch -filename $filename \
-        -context [list [::xo::cc requestor],[::xo::cc url] [ns_conn start]] \
+        -context [list [::xo::cc requestor],[::xo::cc url],$query [ns_conn start]] \
         -query $query \
         -client_data $client_data
   } else {
     #my log "FILE SPOOL $filename"
     my do -async ::fileSpooler spool -ranges $ranges -delete $delete -channel $ch -filename $filename \
-        -context [list [::xo::cc requestor],[::xo::cc url] [ns_conn start]] \
+        -context [list [::xo::cc requestor],[::xo::cc url],$query [ns_conn start]] \
         -client_data $client_data
   }
   #
