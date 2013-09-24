@@ -822,15 +822,19 @@ proc ::xo::getObjectProperty {o what args} {
 	    return [$o info object methods -type forwarder]
 	}
 	"class" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info class]}
+	    #if {"::xotcl::Object" in [$o info precedence]} {return [$o info class]}
 	    return [$o info class]
 	}
 	"superclass" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info superclass]}
+	    #if {"::xotcl::Object" in [$o info precedence]} {return [$o info superclass]}
 	    return [$o info superclass]
 	}
+	"heritage" {
+	    #if {"::xotcl::Object" in [$o info precedence]} {return [$o info heritage]}
+	    return [$o info heritage]
+	}
 	"subclass" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info subclass]}
+	    #if {"::xotcl::Object" in [$o info precedence]} {return [$o info subclass]}
 	    return [$o info subclass]
 	}
 	"parameter" {

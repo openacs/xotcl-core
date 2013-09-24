@@ -18,10 +18,17 @@ set context [list "XOTcl"]
 set output ""
 
 ::xotcl::api scope_from_object_reference scope object
+#
+# scope must be an object, otherwise something is wrong.
+#
 if {$scope ne "" && ![xo::getObjectProperty $scope isobject]} {
     set isobject 0
 } else {
     set isobject [::xotcl::api isobject $scope $object]
+}
+
+if {$scope ne ""} {
+    auth::require_login
 }
 
 if {!$isobject} {
@@ -85,8 +92,7 @@ proc api_documentation {scope object kind method} {
 proc info_option {scope object kind {dosort 0}} {
   upvar class_references class_references
 
-  set isnx [xo::getObjectProperty $object isnxobject]
-  set list [DO xo::getObjectProperty $object $kind]
+  set isnx [DO xo::getObjectProperty $object isnxobject]
   set list [DO xo::getObjectProperty $object $kind]
 
   if {$dosort} {set list [lsort $list]}
@@ -117,8 +123,8 @@ proc draw_as_tree {nodes} {
 
 proc class_summary {c scope} {
   set result ""
-  set parameters [lsort [xo::getObjectProperty $c parameter]]
-  append result "<dt><em>Meta-class:</em></dt> <dd>[::xotcl::api object_link $scope [xo::getObjectProperty $c class]]</dd>\n"
+  set parameters [lsort [DO xo::getObjectProperty $c parameter]]
+  append result "<dt><em>Meta-class:</em></dt> <dd>[::xotcl::api object_link $scope [DO xo::getObjectProperty $c class]]</dd>\n"
   if {$parameters ne ""} { 
     set pretty [list]
     foreach p $parameters {
@@ -132,7 +138,7 @@ proc class_summary {c scope} {
     }
     append result "<dt><em>Parameter for instances:</em></dt> <dd>[join $pretty {, }]</dd>\n" 
   }
-  set methods [lsort [xo::getObjectProperty $c instcommand]]
+  set methods [lsort [DO xo::getObjectProperty $c instcommand]]
   set pretty [list]
   foreach m $methods {
     if {[info exists param($m)]} continue
@@ -142,10 +148,10 @@ proc class_summary {c scope} {
   if {[llength $pretty]>0} {
     append result "<dt><em>Methods for instances:</em></dt> <dd>[join $pretty {, }]</dd>"
   }
-  set methods [lsort [xo::getObjectProperty $c command]]
+  set methods [lsort [DO xo::getObjectProperty $c command]]
   set pretty [list]
   foreach m $methods {
-    if {![::xotcl::Object isobject ${c}::$m]} {
+    if {![DO ::xotcl::Object isobject ${c}::$m]} {
       lappend pretty [::xotcl::api method_link $c proc $m]
     }
   }
@@ -170,7 +176,7 @@ proc reverse list {
 }
 proc superclass_hierarchy {cl scope} {
   set l [list]
-  foreach c [reverse [concat $cl [$cl info heritage]]] {
+  foreach c [reverse [concat $cl [DO $cl info heritage]]] {
     lappend s [class_summary $c $scope]
   }
   return $s
@@ -190,12 +196,12 @@ if {$isclass} {
   #
   # compute list of classes with siblings
   set class_hierarchy [list]
-  foreach c [$object info superclass] {
+  foreach c [DO $object info superclass] {
     if {$c eq "::xotcl::Object"} {continue}
-    lappend class_hierarchy {*}[$c info subclass]
+    lappend class_hierarchy {*}[DO $c info subclass]
   }
   if {[llength $class_hierarchy]>5} {set class_hierarchy {}}
-  eval lappend class_hierarchy [$object info heritage]
+  lappend class_hierarchy {*}[DO $object info heritage]
   if {$object ni $class_hierarchy} {lappend class_hierarchy $object}
   #::xotcl::Object msg class_hierarchy=$class_hierarchy
   set class_hierarchy [ns_urlencode $class_hierarchy]
