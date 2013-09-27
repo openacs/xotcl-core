@@ -156,7 +156,7 @@ set dot ""
 catch {set dot [::util::which dot]}
 # final ressort for cases, where ::util::which is not available
 if {$dot eq "" && [file executable /usr/bin/dot]} {set dot /usr/bin/dot}
-if {$dot eq ""} {ns_return 404 plain/text "dot dot found"; ad_script_abort}
+if {$dot eq ""} {ns_return 404 plain/text "dot not found"; ad_script_abort}
  
 set tmpnam [ns_tmpnam]
 set tmpfile $tmpnam.png
