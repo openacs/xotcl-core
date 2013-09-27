@@ -845,12 +845,14 @@ proc ::xo::getObjectProperty {o what args} {
 	}
 	"isclass" {
 	    if {[info command $o] eq ""} {return 0}
-	    if {"::xotcl::Object" in [$o info precedence]} {return [expr {"::xotcl::Class" in [$o info precedence]}]}
+	    if {[catch {set p [$o info precedence]}]} {return 0}
+	    if {"::xotcl::Object" in $p} {return [expr {"::xotcl::Class" in $p}]}
 	    return [nsf::is class $o]
 	}
 	"isobject" {
 	    if {[info command $o] eq ""} {return 0}
-	    if {"::xotcl::Object" in [$o info precedence]} {return 1}
+	    if {[catch {set p [$o info precedence]}]} {return 0}
+	    if {"::xotcl::Object" in $p} {return 1}
 	    return [nsf::is object $o]
 	}
 	"instargs" {
