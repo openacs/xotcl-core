@@ -1182,7 +1182,7 @@ namespace eval ::xo::db {
     set lines [t1 children]
     for {set i 0} {$i < [llength $lines]-1} {incr i} {
       set e [lindex $lines $i]
-      set n [lindex $lines [expr {$i+1}]]
+      set n [lindex $lines $i+1]
       set revision_id [$e set payload(revision_id)]
       set compare_revision_id [$n set payload(revision_id)]
       $e set diff.href [export_vars -base $base {{m diff} compare_revision_id revision_id}]
