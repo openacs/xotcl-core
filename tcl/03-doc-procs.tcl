@@ -110,19 +110,19 @@ ad_library {
 	while {[string length $l] > $width} {
 	  set pos [string last " \{" $l $width]
 	  if {$pos>10} {
-	    lappend lines "[string range $l 0 [expr {$pos-1}]] \\" 
+	    lappend lines "[string range $l 0 $pos-1] \\" 
 	    set l "      [string range $l $pos end]"
 	  } else {
 	    # search for a match right of the target
 	    set pos [string first " \{" $l $width]
 	    if {$pos>10} {
-	      lappend lines "[string range $l 0 [expr {$pos-1}]] \\" 
+	      lappend lines "[string range $l 0 $pos-1] \\" 
 	      set l "      [string range $l $pos end]"
 	    } else {
 	      # last resort try to split around spaces 
 	      set pos [string last " " $l $width]
 	      if {$pos>10} {
-		lappend lines "[string range $l 0 [expr {$pos-1}]] \\" 
+		lappend lines "[string range $l 0 $pos-1] \\" 
 		set l "      [string range $l $pos end]"
 	      } else {
 		break

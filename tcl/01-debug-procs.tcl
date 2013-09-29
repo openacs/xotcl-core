@@ -638,7 +638,7 @@ namespace eval ::xo {
       ns_eval [list ::xo::ns_log_redirector_manager set_level $value]
       #set blueprint [ns_ictl get]
       #set last [string last "\n::xo::ns_log_redirector_manager" $blueprint]
-      #if {$last > -1} { set blueprint [string range $blueprint 0 [expr {$last-1}]]}
+      #if {$last > -1} { set blueprint [string range $blueprint 0 $last-1]}
       #ns_ictl save "$blueprint\n::xo::ns_log_redirector_manager set_level $value"
     }
   }

@@ -580,7 +580,7 @@ namespace eval ::xo {
       set to_send [expr {$total_bytes - $bytes_sent}]
       set block_size [expr {$to_send < 4096 ? $to_send : 4096}]
       set next_block_size [expr {$bytes_sent + $block_size}]
-      set block [string range $post_data $bytes_sent [expr {$next_block_size-1}]]
+      set block [string range $post_data $bytes_sent $next_block_size-1]
       my notify request_data $block
       puts -nonewline $S $block
       set bytes_sent $next_block_size

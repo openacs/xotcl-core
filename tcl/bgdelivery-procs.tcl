@@ -259,7 +259,7 @@ if {![string match *contentsentlength* $msg]} {
 	my close -sync true
       }
     } else {
-      set chunk [string range $content 0 [expr {$blocksize-1}]]
+      set chunk [string range $content 0 $blocksize-1]
       set content [string range $content $blocksize end]
       puts -nonewline $channel $chunk
       my log "write [string length $chunk] bytes ([string length $content] buffered)"

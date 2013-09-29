@@ -143,10 +143,10 @@ namespace eval ::xo {
 	return $def
       }
     } elseif {$xp == -1} {
-      set yh [string range $y 0 [expr {$yp-1}]]
+      set yh [string range $y 0 $yp-1]
       return [my __value_compare $x $yh -1]
     } elseif {$yp == -1} {
-      set xh [string range $x 0 [expr {$xp-1}]]
+      set xh [string range $x 0 $xp-1]
       return [my __value_compare $xh $y 1]
     } else {
       set xh [string range $x 0 $xp]
