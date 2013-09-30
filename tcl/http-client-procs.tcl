@@ -293,7 +293,7 @@ namespace eval ::xo {
     }
     if {$protocol eq "https"} {
       package require tls
-      if {[info command ::tls::import] eq ""} {
+      if {[info commands ::tls::import] eq ""} {
         error "https request require the Tcl module TLS to be installed\n\
              See e.g. http://tls.sourceforge.net/"
       }

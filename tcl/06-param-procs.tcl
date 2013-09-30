@@ -288,7 +288,7 @@ namespace eval ::xo {
     if {![info exists package_id]} {
       # try to get the package id; 
       # if everything fails, use kernel_id (to be compatible with trad. parameter::get)
-      set package_id [expr {[info command ::xo::cc] ne "" ? 
+      set package_id [expr {[info commands ::xo::cc] ne "" ? 
 		    [::xo::cc package_id] : 
 		    [ns_conn isconnected] ? [ad_conn package_id] : [ad_acs_kernel_id]}]
     }

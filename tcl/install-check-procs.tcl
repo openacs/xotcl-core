@@ -7,7 +7,7 @@ namespace eval ::xotcl-core {
     @author Gustaf Neumann (neumann@wu-wien.ac.at)
   } {
     ns_log notice "-- before-install callback"
-    if {[info command ::xotcl::Class] eq ""} {
+    if {[info commands ::xotcl::Class] eq ""} {
       error " XOTcl does not appear to be installed on your system!\n\
      Please follow the install instructions on http://www.openacs.org/xowiki/xotcl-core"
     } elseif {$::xotcl::version < 1.5} {

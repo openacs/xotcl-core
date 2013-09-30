@@ -1364,7 +1364,7 @@ namespace eval ::xo::db {
 	$ip_var ip
 
     if {![info exists package_id]} {
-      if {[info command ::xo::cc] ne ""} {
+      if {[info commands ::xo::cc] ne ""} {
 	set package_id    [::xo::cc package_id]
       } elseif {[ns_conn isconnected]} {
         set package_id    [ad_conn package_id]
@@ -1373,7 +1373,7 @@ namespace eval ::xo::db {
       }
     }
     if {![info exists user_id]} {
-      if {[info command ::xo::cc] ne ""} {
+      if {[info commands ::xo::cc] ne ""} {
 	set user_id    [::xo::cc user_id]
       } elseif {[ns_conn isconnected]} {
         set user_id    [ad_conn user_id]

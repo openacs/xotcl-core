@@ -338,7 +338,7 @@ namespace eval ::xo {
       # for requests bypassing the ordinary connection setup (resources in oacs 5.2+)
       # we have to get the user_id by ourselves
       if { [catch {
-        if {[info command ad_cookie] ne ""} {
+        if {[info commands ad_cookie] ne ""} {
           # we have the xotcl-based cookie code
           set cookie_list [ad_cookie get_signed_with_expr "ad_session_id"]
         } else {
@@ -407,7 +407,7 @@ namespace eval ::xo {
                           -package_id $package_id]]
   }
   ConnectionContext instproc role=community_member {-user_id:required -package_id} {
-    if {[info command ::dotlrn_community::get_community_id] ne ""} {
+    if {[info commands ::dotlrn_community::get_community_id] ne ""} {
       set community_id [my cache [list [dotlrn_community::get_community_id -package_id $package_id]]]
       if {$community_id ne ""} {
         return [my cache [list dotlrn::user_is_community_member_p \

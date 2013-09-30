@@ -1,7 +1,7 @@
 package require tdom
 
 proc require_html_procs {} {
-  if {[info command ::html::a] eq ""} { 
+  if {[info commands ::html::a] eq ""} { 
     namespace eval ::html {
 
       # Declare Tcl commands for building HTML elements. This is an complete 

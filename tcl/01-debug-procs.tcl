@@ -78,7 +78,7 @@ if {$::xotcl::version < 1.5} {
 
 set ::xo::naviserver [expr {[ns_info name] eq "NaviServer"}]
 
-if {[info command ::nx::Object] ne ""} {
+if {[info commands ::nx::Object] ne ""} {
   ns_log notice "Defining minimal XOTcl 1 compatibility"
   ::nsf::method::alias ::xo::Attribute instvar ::nsf::methods::object::instvar
 
@@ -198,7 +198,7 @@ namespace eval ::xo {
   #::xotcl::Object instmixin add ::xo::InstanceManager
 }
 
-if {[info command ::xotcl::nonposArgs] ne ""} {
+if {[info commands ::xotcl::nonposArgs] ne ""} {
   ::xotcl::nonposArgs proc integer args {
     if {[llength $args] < 2} return
     lassign $args name value
@@ -341,9 +341,9 @@ namespace eval ::xo {
   }
 }
 
-#ns_log notice "--T [info command ::ttrace::isenabled]"
+#ns_log notice "--T [info commands ::ttrace::isenabled]"
 # tell ttrace to put these to the blueprint
-#if {[info command ::ttrace::isenabled] ne "" && [::ttrace::isenabled]} {
+#if {[info commands ::ttrace::isenabled] ne "" && [::ttrace::isenabled]} {
 #  ns_log notice "--T :ttrace::isenabled"
 #  set blueprint [ns_ictl get]
 #  ns_ictl save [append blueprint [::Serializer serializeExportedMethods \
@@ -496,7 +496,7 @@ namespace eval ::xo {
     #
     # Check, if we have a new XOTcl implementation with ::xotcl::finalize
     # 
-    if {[info command ::xotcl::finalize] ne ""} {
+    if {[info commands ::xotcl::finalize] ne ""} {
       ::xotcl::finalize
     } else {
       # Delete the objects and classes manually
@@ -546,7 +546,7 @@ namespace eval ::xo {
     #
     # check if nothing to do
     #
-    if {[info command ::xo::ns_log] eq ""} return
+    if {[info commands ::xo::ns_log] eq ""} return
     if {![my isobject ::ns_log]} return
     #
     # remove the stub
@@ -559,7 +559,7 @@ namespace eval ::xo {
     #
     # check if nothing to do
     #
-    if {[info command ::xo::ns_log] ne ""} return
+    if {[info commands ::xo::ns_log] ne ""} return
     if {[my isobject ::ns_log]} return
     #
     # provide an XOTcl stub for ns_log
@@ -844,13 +844,13 @@ proc ::xo::getObjectProperty {o what args} {
 	    return $result
 	}
 	"isclass" {
-	    if {[info command $o] eq ""} {return 0}
+	    if {[info commands $o] eq ""} {return 0}
 	    if {[catch {set p [$o info precedence]}]} {return 0}
 	    if {"::xotcl::Object" in $p} {return [expr {"::xotcl::Class" in $p}]}
 	    return [nsf::is class $o]
 	}
 	"isobject" {
-	    if {[info command $o] eq ""} {return 0}
+	    if {[info commands $o] eq ""} {return 0}
 	    if {[catch {set p [$o info precedence]}]} {return 0}
 	    if {"::xotcl::Object" in $p} {return 1}
 	    return [nsf::is object $o]
@@ -909,7 +909,7 @@ proc ::xo::getObjectProperty {o what args} {
 	    return [$o eval [list set :[lindex $args 0]]]
 	}
 	"isnxobject" {
-	    if {[info command ::nsf::dispatch] ne "" && [info command $o] ne ""} {
+	    if {[info commands ::nsf::dispatch] ne "" && [info commands $o] ne ""} {
 		return [::nsf::dispatch $o ::nsf::methods::object::info::hastype ::nx::Object]
 	    } {
 		return 0

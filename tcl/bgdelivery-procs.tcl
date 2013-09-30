@@ -7,7 +7,7 @@ ad_library {
     @cvs-id $Id$
 }
 
-if {[info command ::thread::mutex] eq ""} {
+if {[info commands ::thread::mutex] eq ""} {
   ns_log notice "libthread does not appear to be available, NOT loading bgdelivery"
   return
 }
@@ -526,7 +526,7 @@ bgdelivery ad_proc returnfile {
                       && ([string match {*start=[1-9]*} $query] || [string match {*end=[1-9]*} $query])
                       && [info command h264open] ne ""}]
 
-  if {[info command ns_driversection] ne ""} {
+  if {[info commands ns_driversection] ne ""} {
       set use_writerThread [ns_config [ns_driversection] writerthreads 0]
   } else {
       set use_writerThread 0
