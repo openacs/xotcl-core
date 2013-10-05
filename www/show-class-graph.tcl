@@ -102,7 +102,7 @@ ad_page_contract {
     if {$omit_base_classes && $e eq "::xotcl::Object" || $e eq "::xotcl::Class"} continue
     if {$with_children} {
       foreach c [$e info children] {
-        if {[lsearch $things $c] == -1} continue
+        if {$c ni $things} continue
         append children "[my dotquote $c]->[my dotquote $e];\n"
       }
     }
