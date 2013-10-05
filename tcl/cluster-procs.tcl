@@ -12,7 +12,7 @@ namespace eval ::xo {
     # first, excute the command on the local server
     eval $args
     # then, distribute the command in the cluster
-    eval ::xo::Cluster broadcast $args
+    ::xo::Cluster broadcast {*}$args
   }
 
   proc cache_flush_all {cache pattern} {
@@ -113,7 +113,7 @@ namespace eval ::xo {
   #
   Cluster proc broadcast args {
     foreach server [my info instances] {
-      eval $server message $args
+       $server message {*}$args
     }
   }
   Cluster instproc message args {

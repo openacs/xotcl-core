@@ -1440,7 +1440,7 @@ namespace eval ::xo::db {
 		  -creation_ip $creation_ip \
 		  ""]
       #[self class] set during_fetch 1
-      if {[catch {eval my create ::$id $args} errorMsg]} {
+      if {[catch {my create ::$id {*}$args} errorMsg]} {
 	my log "Error: $errorMsg, $::errorInfo"
       }
       #[self class] unset during_fetch

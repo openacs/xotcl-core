@@ -72,7 +72,7 @@ namespace eval ::xo::tdom {
     # Create a new instance of the current class and configure it.
     #
     #my log "tdom START $level [self], cmd='$configurecmds'"
-    set me [eval my new -destroy_on_cleanup $configurecmds]
+    set me [my new -destroy_on_cleanup {*}$configurecmds]
     #my log "tdom CREATED $level $me ([$me info class])"
 
     #
