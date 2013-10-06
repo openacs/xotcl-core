@@ -1042,8 +1042,8 @@ namespace eval ::xo::db {
                          "[my set __title_prefix] ($name)" : $name}]
       }
       #my msg --[subst [[self class] set content_item__new_args]]
-      set item_id [::xo::db::sql::content_item new \
-		       {*}[[self class] set content_item__new_args]]
+      set item_id [eval ::xo::db::sql::content_item new \
+		       [[self class] set content_item__new_args]]
       if {$storage_type eq "file"} {
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }
