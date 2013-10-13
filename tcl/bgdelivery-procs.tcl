@@ -16,7 +16,7 @@ if {[info commands ::thread::mutex] eq ""} {
 # catch {ns_conn contentsentlength} alone does not work, since we do not have
 # a connection yet, and the bgdelivery won't be activated
 catch {ns_conn xxxxx} msg
-if {![string match *contentsentlength* $msg]} {
+if {![string match "*contentsentlength*" $msg]} {
   ns_log notice "AOLserver is not patched for bgdelivery, NOT loading bgdelivery"
 
   ad_proc -public ad_returnfile_background {-client_data status_code mime_type filename} {
@@ -230,7 +230,7 @@ if {![string match *contentsentlength* $msg]} {
 
   ::AsyncDiskWriter instproc close {{-sync false}} {
     my instvar content channel
-    if {$sync || [string length $content] == 0} {
+    if {$sync || $content eq ""} {
       my log "close sync"
       if {$content ne ""} {
 	fconfigure $channel -translation binary -blocking true
@@ -522,7 +522,7 @@ bgdelivery ad_proc returnfile {
     ::xo::ConnectionContext require
   }
   set query [::xo::cc actual_query]
-  set use_h264 [expr {[string match video/mp4* $mime_type] && $query ne "" 
+  set use_h264 [expr {[string match "video/mp4*" $mime_type] && $query ne "" 
                       && ([string match {*start=[1-9]*} $query] || [string match {*end=[1-9]*} $query])
                       && [info command h264open] ne ""}]
 

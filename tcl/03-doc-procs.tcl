@@ -293,7 +293,7 @@ ad_library {
 			[lindex $elements(main) 0] : ""}]
   set prefix "This file defines the following Objects and Classes"
   set entry [::xotcl::api object_link $scope [self]]
-  if {![string match *$prefix* $oldDoc]} {
+  if {![string match "*$prefix*" $oldDoc]} {
     append oldDoc "<p>$prefix: $entry"
   } else {
     append oldDoc ", $entry"

@@ -262,7 +262,7 @@ Class create ::xotcl::THREAD \
 # ::xotcl::THREAD::Proxy configure \
 #     -instproc forward args {
 #       set cp [self calledproc]
-#       if { [string equal $cp "attach"] 
+#       if { $cp eq "attach"
 # 	   || $cp eq "filter" 
 # 	   || $cp eq "detachAll"} {
 # 	next

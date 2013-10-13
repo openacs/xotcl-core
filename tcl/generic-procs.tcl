@@ -163,7 +163,7 @@ namespace eval ::Generic {
     if {$link eq "view"} {
       set link [export_vars -base $link {item_id}]
     }
-    #ns_log notice "-- redirect to $link // [string match *\?* $link]"
+    #ns_log notice "-- redirect to $link // [string match "*\?*" $link]"
     ad_returnredirect $link
     ad_script_abort
   }
