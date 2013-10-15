@@ -453,9 +453,7 @@ if {![string match "*contentsentlength*" $msg]} {
     my set spooling 0
     if {[llength $queue]>0} {
       my log "--dequeue"
-      set data [lindex $queue 0]
-      set req  [lindex $queue 1]
-      set enc  [lindex $queue 2]
+      lassign $queue data req enc
       set queue [lreplace $queue 0 2]
       my deliver $data $req $enc
     }
@@ -604,7 +602,7 @@ bgdelivery ad_proc returnfile {
     if {[llength $ranges] == 1 && $status_code == 200} {
       lassign [lindex $ranges 0] from to
       ns_set put [ns_conn outputheaders] Content-Range "bytes $from-$to/$size"
-      ns_log notice "added header-field Content-Range: bytes $from-$to/$size // $ranges"
+      ns_log notice "given range <$range>, added header-field Content-Range: bytes $from-$to/$size // $ranges"
       set status_code 206
     } elseif {[llength $ranges]>1} {
       ns_log warning "Multiple ranges are currently not supported, ignoring range request"
