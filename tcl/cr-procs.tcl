@@ -516,11 +516,11 @@ namespace eval ::xo::db {
     @return fully qualified object
   } {
     my get_context package_id creation_user creation_ip
-    my log "ID [self] create $args"
-    if {[catch {set p [eval my create ::0 $args]} errorMsg]} {
+    #my log "ID [self] create $args"
+    if {[catch {set p [my create ::0 {*}$args]} errorMsg]} {
 	my log "Error: $errorMsg, $::errorInfo"
     }
-    my log "ID [::0 serialize]"
+    #my log "ID [::0 serialize]"
     set item_id [::0 save_new \
 		     -package_id $package_id \
 		     -creation_user $creation_user \
