@@ -794,28 +794,28 @@ proc ::xo::getObjectProperty {o what args} {
 	    return [$o info mixin classes]
 	}
 	"instproc" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instprocs {*}args]}
-	    return [$o info methods -type scripted {*}args]
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instprocs {*}$args]}
+	    return [$o info methods -type scripted {*}$args]
 	}
 	"instcommand" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instcommands {*}args]}
-	    return [$o info methods {*}args]
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instcommands {*}$args]}
+	    return [$o info methods {*}$args]
 	}
 	"instforward" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instforward {*}args]}
-	    return [$o info methods -type forwarder {*}args]
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instforward {*}$args]}
+	    return [$o info methods -type forwarder {*}$args]
 	}
 	"proc" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}args]}
-	    return [$o info object methods -type scripted {*}args]
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}$args]}
+	    return [$o info object methods -type scripted {*}$args]
 	}
 	"command" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}args]}
-	    return [$o info object methods {*}args]
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}$args]}
+	    return [$o info object methods {*}$args]
 	}
 	"forward" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info forward {*}args]}
-	    return [$o info object methods -type forwarder {*}args]
+	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info forward {*}$args]}
+	    return [$o info object methods -type forwarder {*}$args]
 	}
 	"slots" {
 	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info slots]}
