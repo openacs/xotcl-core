@@ -398,10 +398,14 @@ namespace eval ::xo {
 
     # register only once
     if {"::xo::freeconn" ni $registered} {
-      ns_ictl trace freeconn ::xo::freeconn
+      if {[catch {ns_ictl trace freeconn ::xo::freeconn} errorMsg]} {
+	ns_log Warning "ns_ictl trace returned: $errorMsg"
+      }
     }
     if {"::xo::at_delete" ni [ns_ictl gettraces delete]} {
-      ns_ictl ondelete ::xo::at_delete
+      if {[catch {ns_ictl ondelete ::xo::at_delete} errorMsg]} {
+	ns_log Warning "ns_ictl ondelete returned: $errorMsg"
+      }
     }    
 
     proc ::xo::freeconn {} {
