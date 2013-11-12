@@ -868,34 +868,34 @@ proc ::xo::getObjectProperty {o what args} {
 	    return [$o info object method args {*}$args]
 	}
 	"instargdefault" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instdefault {*}$args]}
-	    set parameter [$o info method parameter [lindex $args 0]]
-	    foreach p $parameter {
-	      if {[llength $p]>1} {
+	    if {"::xotcl::Object" in [$o info precedence]} {
+		return [uplevel [list $o info instdefault {*}$args]]
+	    }
+	    lassign $args method arg varName
+	    foreach p [$o info method parameters $method] {
 		lassign $p name default
-	      } else {
-		lassign [list $p ""] name default
-	      }
-	      if {$name eq [lindex $args 1]} {
-		return $default
-	      }
-	   }
+		if {$name eq $arg} {
+		    uplevel [list set $varName $default]
+		    return [expr {[llength $p] == 2}]
+		}
+	    }
+	    return 0
 	}
 	"argdefault" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info default {*}$args]}
-	    set parameter [$o info object method parameter [lindex $args 0]]
-	    foreach p $parameter {
-	      if {[llength $p]>1} {
+	    if {"::xotcl::Object" in [$o info precedence]} {
+		return [uplevel [list $o info default {*}$args]]
+	    }
+	    lassign $args method arg varName
+	    foreach p [$o info object method parameter $method] {
 		lassign $p name default
-	      } else {
-		lassign [list $p ""] name default
-	      }
-	      if {$name eq [lindex $args 1]} {
-		return $default
-	      }
-	   }
+		if {$name eq $arg} {
+		    uplevel [list set $varName $default]
+		    return [expr {[llength $p] == 2}]
+		}
+	    }
+	    return 0
 	}
-
+	
 	"array-exists" {
 	    if {"::xotcl::Object" in [$o info precedence]} {return [$o array exists {*}$args]}
 	    return [$o eval [list array exists :{*}$args]]
