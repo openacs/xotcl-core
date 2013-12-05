@@ -83,7 +83,9 @@ if { $cache == 0 } {
     incr count
     set n ""
     regexp -- {-set name ([^\\]+)\\} $entry _ n
-    append entries "<li><a href='?cache=$cache&item=$name'>$name</a> $n ([string length $entry] bytes, <a href='?cache=$cache&flush=$name'>flush</a>)</li>"
+    set show_url  [export_vars -base [ns_conn url] [list cache [list item $name]]]
+    set flush_url [export_vars -base [ns_conn url] [list cache [list flush $name]]]
+    append entries "<li><a href=\"$show_url\">$name</a> $n ([string length $entry] bytes, <a href=\"$flush_url\">flush</a>)</li>"
   }
   append entries "</ul>"
   if {$filter ne ""} {
