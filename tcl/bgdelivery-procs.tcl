@@ -601,9 +601,22 @@ bgdelivery ad_proc returnfile {
     #
     if {[llength $ranges] == 1 && $status_code == 200} {
       lassign [lindex $ranges 0] from to
-      ns_set put [ns_conn outputheaders] Content-Range "bytes $from-$to/$size"
-      ns_log notice "given range <$range>, added header-field Content-Range: bytes $from-$to/$size // $ranges"
-      set status_code 206
+      if {$from <= $to && $size > $to} {
+	ns_set put [ns_conn outputheaders] Content-Range "bytes $from-$to/$size"
+	ns_log notice "given range <$range>, added header-field Content-Range: bytes $from-$to/$size // $ranges"
+	set status_code 206
+      } else {
+	# A byte-content-range-spec with a byte-range-resp-spec whose
+	# last-byte-pos value is less than its first-byte-pos value,
+	# or whose instance-length value is less than or equal to its
+	# last-byte-pos value, is invalid. The recipient of an invalid
+	# byte-content-range-spec MUST ignore it and any content
+	# transferred along with it.
+	#
+	# See http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html (14.16)
+	#
+	ns_log notice "### ignore invalid <$range>, pos > size-1, Content-Range: bytes $from-$to/$size // $ranges"
+      }
     } elseif {[llength $ranges]>1} {
       ns_log warning "Multiple ranges are currently not supported, ignoring range request"
     }
