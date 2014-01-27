@@ -81,6 +81,9 @@ set ::xo::naviserver [expr {[ns_info name] eq "NaviServer"}]
 if {[info commands ::nx::Object] ne ""} {
   ns_log notice "Defining minimal XOTcl 1 compatibility"
   ::nsf::method::alias ::xo::Attribute instvar ::nsf::methods::object::instvar
+  # provide compatibility with nsf 2.0b6, which has "-noinit" removed
+  ::nx::ObjectParameterSlot create ::xo::Attribute::slot::noinit \
+      -methodname ::nsf::methods::object::noinit -noarg true
 
   # The following line would cause a dependency of an nx object to
   # xotcl (serializer); since XOTcl depends on NX, this would be a
