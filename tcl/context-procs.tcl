@@ -226,6 +226,10 @@ namespace eval ::xo {
       return
     }
 
+    if {[info exists ::ds_show_p] && [ds_database_enabled_p]} {
+      ::xo::dc profile on
+    }
+
     if {![info exists url]} {
       #my log "--CONN ns_conn url"
       set url [ns_conn url]
@@ -562,3 +566,10 @@ namespace eval ::xo {
   }
 
 }
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

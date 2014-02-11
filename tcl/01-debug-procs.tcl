@@ -19,8 +19,6 @@ package require xotcl::serializer
   ::xotcl::Object instproc qn
   ::xotcl::Object instproc serialize
   ::xotcl::Object instproc show-object
-  ::xotcl::Object instforward db_1row
-  ::xotcl::Object instforward db_0or1row
   ::xotcl::Object instproc destroy_on_cleanup
   ::xotcl::Object instproc set_instance_vars_defaults
   ::xotcl::nonposArgs proc integer
@@ -144,8 +142,26 @@ namespace eval ::xo {
   }
 }
 
-::xotcl::Object instforward db_1row -objscope
-::xotcl::Object instforward db_0or1row -objscope
+
+if {[info exists ::acs::preferdbi]} {
+  ::xotcl::Object instforward dbi_1row    -objscope ::dbi_1row
+  ::xotcl::Object instforward dbi_0or1row -objscope ::dbi_0or1row
+  ::xotcl::Object instproc    db_1row    {. sql} {my dbi_1row $sql}
+  ::xotcl::Object instproc    db_0or1row {. sql} {my dbi_0or1row $sql}
+  ::Serializer exportMethods {
+    ::xotcl::Object instforward dbi_1row
+    ::xotcl::Object instforward dbi_0or1row
+    ::xotcl::Object instproc db_1row
+    ::xotcl::Object instproc db_0or1row
+  }
+} else {
+  ::xotcl::Object instforward db_1row -objscope
+  ::xotcl::Object instforward db_0or1row -objscope
+  ::Serializer exportMethods {
+    ::xotcl::Object instforward db_1row
+    ::xotcl::Object instforward db_0or1row
+  }
+}
 
 ::xotcl::Object instproc serialize {} {
   ::Serializer deepSerialize [self]
@@ -263,7 +279,8 @@ proc ::! args {
 }
 
 ::xotcl::Object instproc qn query_name {
-  set qn "dbqd.[my uplevel [list self class]]-[my uplevel [list self proc]].$query_name"
+  #set qn "dbqd.[my uplevel [list self class]]-[my uplevel [list self proc]].$query_name"
+  set qn "dbqd.[my uplevel {info level 0}].$query_name"
   return $qn
 }
 namespace eval ::xo {
@@ -436,6 +453,7 @@ namespace eval ::xo {
   }
 
   proc at_cleanup {args} {
+    ::xo::dc profile off
     ::xo::broadcast receive
     #ns_log notice "*** start of cleanup <$args> ([array get ::xo::cleanup])"
     set at_end ""
@@ -932,3 +950,10 @@ proc ::xo::getObjectProperty {o what args} {
 #ns_log notice "*** FREECONN? [ns_ictl gettraces freeconn]"
 #ns_ictl trace freeconn {ns_log notice "*** FREECONN  isconnected=[ns_conn isconnected]"}
 #ns_ictl oncleanup {ns_log notice "*** ONCLEANUP isconnected=[ns_conn isconnected]"}
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

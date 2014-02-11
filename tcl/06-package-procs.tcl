@@ -22,7 +22,7 @@ namespace eval ::xo {
   } {
     my instvar package_key
     if {[info exists privilege]} {
-      set sql [::xo::db::sql select -vars package_id \
+      set sql [::xo::dc select -vars package_id \
                    -from "apm_packages, acs_object_party_privilege_map ppm, site_nodes s" \
                    -where {
                      package_key = :package_key 
@@ -31,7 +31,7 @@ namespace eval ::xo {
                      and ppm.party_id = :party_id
                      and ppm.privilege = :privilege
                    } -limit 1]
-      db_string [my qn get_package_id] $sql
+	::xo::dc get_value get_package_id $sql
     } else {
       ::xo::parameter get_package_id_from_package_key -package_key $package_key
     }
@@ -44,10 +44,10 @@ namespace eval ::xo {
   } {
     my instvar package_key
     if {$include_unmounted} {
-      set result [db_list [my qn get_xowiki_packages] {select package_id \
+      set result [::xo::dc list get_xowiki_packages {select package_id \
         from apm_packages where package_key = :package_key}]
     } else {
-      set result [db_list [my qn get_mounted_packages] {select package_id \
+      set result [::xo::dc list get_mounted_packages {select package_id \
         from apm_packages p, site_nodes s  \
         where package_key = :package_key and s.object_id = p.package_id}]
     }
@@ -248,7 +248,7 @@ namespace eval ::xo {
       my package_key $info(package_key)
       my instance_name $info(instance_name)
     } else {
-      db_1row [my qn package_info] {
+      ::xo::dc 1row package_info {
         select package_key, instance_name from apm_packages where package_id = :id
       }
       my package_key $package_key
@@ -378,3 +378,10 @@ namespace eval ::xo {
   #ns_log notice [::xo::Package serialize]
 
 }
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

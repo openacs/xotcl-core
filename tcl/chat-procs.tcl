@@ -80,7 +80,7 @@ namespace eval ::xo {
   }
   
   Chat instproc nr_active_users {} {
-      expr { [llength [nsv_array get [my set array]-login]] / 2 }
+    expr { [llength [nsv_array get [my set array]-login]] / 2 }
   }
   
   Chat instproc last_activity {} {
@@ -118,7 +118,7 @@ namespace eval ::xo {
     }
     my render
   }
-
+  
   Chat instproc get_all {} {
     my instvar array now session_id
     foreach {key value} [nsv_array get $array] {
@@ -185,7 +185,7 @@ namespace eval ::xo {
 	set userlink  [my user_link -user_id $user_id]
 	append output "<TR><TD class='user'>$userlink</TD><TD class='timestamp'>$diff</TD></TR>\n"
       }
-    }     
+    }  
     return $output
   }
   
@@ -303,8 +303,6 @@ namespace eval ::xo {
     return $result
   }
 
-
-  
   ############################################################################
   # Chat meta class, since we need to define general class-specific methods
   ############################################################################
@@ -322,11 +320,12 @@ namespace eval ::xo {
     
   ChatClass method initialize_nsvs {} {
     # read the last_activity information at server start into a nsv array
-    db_foreach [my qn get_rooms] {
+    ::xo::dc foreach get_rooms {
       select room_id, to_char(max(creation_date),'HH24:MI:SS YYYY-MM-DD') as last_activity 
-      from chat_msgs group by room_id} {
-	::xo::clusterwide nsv_set [self]-$room_id-seen last [clock scan $last_activity]
-      }
+      from chat_msgs group by room_id
+    } {
+      ::xo::clusterwide nsv_set [self]-$room_id-seen last [clock scan $last_activity]
+    }
   }
 
   ChatClass method flush_messages {-chat_id:required} {
@@ -343,3 +342,9 @@ namespace eval ::xo {
   }
 }
 
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

@@ -95,7 +95,7 @@ namespace eval ::Generic {
       $data set $__var [my var $__var]
     }
     $data initialize_loaded_object
-    db_transaction {
+    xo::dc transaction {
       $data save
       set old_name [::xo::cc form_parameter __object_name ""]
       set new_name [$data set name]
@@ -211,16 +211,8 @@ namespace eval ::Generic {
 
       append new_data {
         category::map_object -remove_old -object_id $item_id $category_ids
-        #ns_log notice "-- new data category::map_object -remove_old -object_id $item_id $category_ids"
-        #db_dml [my qn insert_asc_named_object] \
-        #    "insert into acs_named_objects (object_id,object_name,package_id) \
-        #     values (:item_id, :name, :package_id)"
       }
       append edit_data {
-        #db_dml [my qn update_asc_named_object] \
-        #    "update acs_named_objects set object_name = :name, \
-        #        package_id = :package_id where object_id = :item_id"
-        #ns_log notice "-- edit data category::map_object -remove_old -object_id $item_id $category_ids"
         category::map_object -remove_old -object_id $item_id $category_ids
       }
       append on_submit {
@@ -239,6 +231,12 @@ namespace eval ::Generic {
   }
 }
 namespace import -force ::Generic::*
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:
 
 
 
