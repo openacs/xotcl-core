@@ -50,8 +50,8 @@ ad_library {
             [$scope do xo::getObjectProperty $obj isobject]}
     } -proc scope {} {
       if {[info exists ::xotcl::currentThread]} {
-	# we are in an xotcl thread; the body won't be accessible directly
-	return $::xotcl::currentThread
+        # we are in an xotcl thread; the body won't be accessible directly
+        return $::xotcl::currentThread
       }
       return ""
 
@@ -73,7 +73,7 @@ ad_library {
       #return "$scope$kind [self]"
       set script [info script]
       if {$script eq "" && [info exists ::xotcl::currentScript]} {
-	set script $::xotcl::currentScript
+        set script $::xotcl::currentScript
       }
       set root_dir [acs_root_dir]
       set root_length [string length $root_dir]
@@ -85,9 +85,9 @@ ad_library {
     } -proc object_link {{-noimg:boolean off} scope obj} {
       set link "<a href='[my object_url $scope $obj]'>"
       if {$noimg} {
-	return "$link$obj</a>"
+        return "$link$obj</a>"
       } else {
-	return "$obj$link<img src='/resources/acs-subsite/ZoomIn16.gif' alt='\[i\]' border='0'></a>"
+        return "$obj$link<img src='/resources/acs-subsite/ZoomIn16.gif' alt='\[i\]' border='0'></a>"
       }
 
     } -proc object_url {{-show_source 0} {-show_methods 1} scope obj} {
@@ -99,38 +99,38 @@ ad_library {
 
     } -proc proc_index {scope obj instproc proc_name} {
       if {$scope eq ""} {
-	return "$obj $instproc $proc_name"
+        return "$obj $instproc $proc_name"
       } else {
-	return "$scope $obj $instproc $proc_name"
+        return "$scope $obj $instproc $proc_name"
       }
 
     } -proc source_to_html {{-width 100} string} {
       set lines [list]
       foreach l [split $string \n] {
-	while {[string length $l] > $width} {
-	  set pos [string last " \{" $l $width]
-	  if {$pos>10} {
-	    lappend lines "[string range $l 0 $pos-1] \\" 
-	    set l "      [string range $l $pos end]"
-	  } else {
-	    # search for a match right of the target
-	    set pos [string first " \{" $l $width]
-	    if {$pos>10} {
-	      lappend lines "[string range $l 0 $pos-1] \\" 
-	      set l "      [string range $l $pos end]"
-	    } else {
-	      # last resort try to split around spaces 
-	      set pos [string last " " $l $width]
-	      if {$pos>10} {
-		lappend lines "[string range $l 0 $pos-1] \\" 
-		set l "      [string range $l $pos end]"
-	      } else {
-		break
-	      }
-	    }
-	  }
-	}
-	lappend lines $l
+        while {[string length $l] > $width} {
+          set pos [string last " \{" $l $width]
+          if {$pos>10} {
+            lappend lines "[string range $l 0 $pos-1] \\" 
+            set l "      [string range $l $pos end]"
+          } else {
+            # search for a match right of the target
+            set pos [string first " \{" $l $width]
+            if {$pos>10} {
+              lappend lines "[string range $l 0 $pos-1] \\" 
+              set l "      [string range $l $pos end]"
+            } else {
+              # last resort try to split around spaces 
+              set pos [string last " " $l $width]
+              if {$pos>10} {
+                lappend lines "[string range $l 0 $pos-1] \\" 
+                set l "      [string range $l $pos end]"
+              } else {
+                break
+              }
+            }
+          }
+        }
+        lappend lines $l
       }
       set string [join $lines \n]
       set html [ad_quotehtml $string]
@@ -240,10 +240,10 @@ ad_library {
   }
 
 ::xotcl::Class instproc ad_instproc {
-   {-private:switch false}
-   {-deprecated:switch false}
-   {-warn:switch false}
-   {-debug:switch false} 
+  {-private:switch false}
+  {-deprecated:switch false}
+  {-warn:switch false}
+  {-debug:switch false} 
   proc_name arguments doc body} {
     uplevel [list [self] instproc $proc_name $arguments $body]
     my __api_make_doc inst $proc_name
@@ -290,7 +290,7 @@ ad_library {
     array set elements [nsv_get api_library_doc $file_index]
   }
   set oldDoc [expr {[info exists elements(main)] ? \
-			[lindex $elements(main) 0] : ""}]
+                        [lindex $elements(main) 0] : ""}]
   set prefix "This file defines the following Objects and Classes"
   set entry [::xotcl::api object_link $scope [self]]
   if {![string match "*$prefix*" $oldDoc]} {
@@ -349,3 +349,10 @@ Class ::SpecializedTest -superclass ::Test -ad_doc {
   A Class defined as a subclass of ::Test for testing the
   documentation stuff...
 }
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

@@ -112,9 +112,9 @@ namespace eval ::xo {
     }
     if {![info exists value]} {
       if {[my exists $slot]} {
-	set value [my $slot]
+    set value [my $slot]
       } else {
-	return ""
+    return ""
       }
     }
     if {[info exists conv]} {
@@ -128,20 +128,20 @@ namespace eval ::xo {
   ::xo::ical::VCALITEM instproc start_end {} {
     if {[my is_day_item]} {
       append result \
-	  [my tag -conv tcl_time_to_local_day dtstart] \
-	  [my tag -conv tcl_time_to_local_day dtend]
+      [my tag -conv tcl_time_to_local_day dtstart] \
+      [my tag -conv tcl_time_to_local_day dtend]
     } else {
       append result \
-	  [my tag -conv tcl_time_to_utc dtstart] \
-	  [my tag -conv tcl_time_to_utc dtend]
+      [my tag -conv tcl_time_to_utc dtstart] \
+      [my tag -conv tcl_time_to_utc dtend]
     }
   }
 
   ::xo::ical::VCALITEM instproc as_ical {} {
     set item_type [namespace tail [my info class]]
     append t "BEGIN:$item_type\r\n" \
-	[my ical_body] \
-	"END:$item_type\r\n"
+    [my ical_body] \
+    "END:$item_type\r\n"
     return $t
   }
 
@@ -174,31 +174,32 @@ namespace eval ::xo {
     #    VJOURNAL: DRAFT, FINAL, CANCELLED
 
     append t  \
-	[my tag -conv tcl_time_to_utc -value $tcl_creation_date created] \
-	[my tag -conv tcl_time_to_utc -value $tcl_last_modified last-modified] \
-	[my tag -conv tcl_time_to_utc -value $tcl_stamp dtstamp] \
-	[my tag -conv tcl_time_to_utc dtstart] \
-	[my tag -conv tcl_time_to_utc dtend] \
-	[my tag -conv tcl_time_to_utc completed] \
-	[my tag -conv tcl_time_to_utc percent-complete] \
-	[my tag transp] \
-	[my tag uid] \
-	[my tag url] \
-	[my tag geo] \
-	[my tag priority] \
-	[my tag sequence] \
-	[my tag CLASS] \
-	[my tag location] \
-	[my tag status] \
-	[my tag -conv text_to_ical description] \
-	[my tag -conv text_to_ical summary] \
-	[my tag -conv tcl_time_to_utc due]
+    [my tag -conv tcl_time_to_utc -value $tcl_creation_date created] \
+    [my tag -conv tcl_time_to_utc -value $tcl_last_modified last-modified] \
+    [my tag -conv tcl_time_to_utc -value $tcl_stamp dtstamp] \
+    [my tag -conv tcl_time_to_utc dtstart] \
+    [my tag -conv tcl_time_to_utc dtend] \
+    [my tag -conv tcl_time_to_utc completed] \
+    [my tag -conv tcl_time_to_utc percent-complete] \
+    [my tag transp] \
+    [my tag uid] \
+    [my tag url] \
+    [my tag geo] \
+    [my tag priority] \
+    [my tag sequence] \
+    [my tag CLASS] \
+    [my tag location] \
+    [my tag status] \
+    [my tag -conv text_to_ical description] \
+    [my tag -conv text_to_ical summary] \
+    [my tag -conv tcl_time_to_utc due]
     
     if {[my exists formatted_recurrences]} {
       append t [my set formatted_recurrences]
     }
     return $t
   }
+
   #
   # VTODO
   #
@@ -275,3 +276,10 @@ namespace eval ::xo {
   }
 
 }
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

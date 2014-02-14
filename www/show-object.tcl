@@ -22,18 +22,18 @@ set output ""
 # scope must be an object, otherwise something is wrong.
 #
 if {$scope ne "" && ![xo::getObjectProperty $scope isobject]} {
-    set isobject 0
+  set isobject 0
 } else {
-    set isobject [::xotcl::api isobject $scope $object]
+  set isobject [::xotcl::api isobject $scope $object]
 }
 
 if {$scope ne ""} {
-    auth::require_login
+  auth::require_login
 }
 
 if {!$isobject} {
   ad_return_complaint 1 "Unable to access object $object. 
-	Might this be a temporary object?"
+    Might this be a temporary object?"
   ad_script_abort
 }
 
@@ -67,7 +67,7 @@ set dimensional_slider [ad_dimensional {
       { 0 "Hide Variables" }
     }
   }
-  }]
+}]
 
 
 proc api_documentation {scope object kind method} {
@@ -75,9 +75,9 @@ proc api_documentation {scope object kind method} {
   set proc_index [::xotcl::api proc_index $scope $object $kind $method]
   if {[nsv_exists api_proc_doc $proc_index]} {
     set documentation [api_proc_documentation \
-			   -first_line_tag "<h4>" \
-			   -label "$kind <em>$method</em>" \
-			   $proc_index]
+                           -first_line_tag "<h4>" \
+                           -label "$kind <em>$method</em>" \
+                           $proc_index]
     set result $documentation
   } else {
     if {$show_methods == 2} {
@@ -224,7 +224,7 @@ if {[nsv_exists api_library_doc $index]} {
   }
   if { [info exists doc_elements(cvs-id)] } {
     append output "<dt><b>CVS Identification:</b>\n<dd>\
-	<code>[ns_quotehtml [lindex $doc_elements(cvs-id) 0]]</code>\n"
+    <code>[ns_quotehtml [lindex $doc_elements(cvs-id) 0]]</code>\n"
   }
   append output "</dl>\n"
 
@@ -261,9 +261,9 @@ proc api_src_doc {out show_source scope object proc m} {
   set output "<a name='$proc-$m'></a><li>$out"
   if { $show_source } { 
     append output \
-	"<pre class='code'>" \
-	[api_tcl_to_html [::xotcl::api proc_index $scope $object $proc $m]] \
-	</pre>
+        "<pre class='code'>" \
+        [api_tcl_to_html [::xotcl::api proc_index $scope $object $proc $m]] \
+        </pre>
   }
   return $output
 }
@@ -289,12 +289,12 @@ if {$show_methods} {
       set out [api_documentation $scope $object instproc $m]
       if {$out ne ""} {
         append output "<a name='instproc-$m'></a><li>$out"
-	if { $show_source } { 
-	  append output \
-	      "<pre class='code'>" \
-	      [api_tcl_to_html [::xotcl::api proc_index $scope $object instproc $m]] \
-	      </pre>
-	}
+        if { $show_source } { 
+          append output \
+              "<pre class='code'>" \
+              [api_tcl_to_html [::xotcl::api proc_index $scope $object instproc $m]] \
+              </pre>
+        }
       }
     }
   }
@@ -312,7 +312,7 @@ if {$show_variables && !$isnx} {
   }
   if {$vars ne ""} {
     append output "<h3>Variables</h3>\n" \
-	[::xotcl::api source_to_html $vars] \n
+        [::xotcl::api source_to_html $vars] \n
   }
 }
 
@@ -324,11 +324,18 @@ if {$isclass} {
   set instances [string trimright $instances ", "]
   if {$instances ne ""} {
     append output "<h3>Instances</h3>\n" \
-	<blockquote>\n \
-	$instances \
-	</blockquote>\n
+        <blockquote>\n \
+        $instances \
+        </blockquote>\n
   }
 }
 
 
 DO $s destroy
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

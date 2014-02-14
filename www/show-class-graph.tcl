@@ -87,7 +87,7 @@ ad_page_contract {
     set reduced_sc [list]
     foreach sc [$e info superclass] {
       if {$omit_base_classes && $sc eq "::xotcl::Object"
-	  || $sc eq "::xotcl::Class"} continue
+          || $sc eq "::xotcl::Class"} continue
       lappend reduced_sc $sc
     }
     if {$reduced_sc eq {}} continue
@@ -169,3 +169,11 @@ file delete $tmpfile
 
 #set f [open $tmpnam.dot w]; puts $f $dot_code; close $f
 #file delete $tmpnam.dot
+
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

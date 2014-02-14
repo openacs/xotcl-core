@@ -1,10 +1,10 @@
 ad_library {
 
-    Routines for background delivery of files
+  Routines for background delivery of files
 
-    @author Gustaf Neumann (neumann@wu-wien.ac.at)
-    @creation-date 19 Nov 2005
-    @cvs-id $Id$
+  @author Gustaf Neumann (neumann@wu-wien.ac.at)
+  @creation-date 19 Nov 2005
+  @cvs-id $Id$
 }
 
 if {[info commands ::thread::mutex] eq ""} {
@@ -76,10 +76,10 @@ if {![string match "*contentsentlength*" $msg]} {
 
     set k ::runningBgJob([lindex $context 0])
     if {[info exists $k]} {
-	set value [set $k]
-	ns_log notice "resubmit: canceling currently running request $context  // closing $value"
-        lassign $value fd0 channel0 client_data0 filename0
-	my end-delivery -client_data $client_data0 $filename0 $fd0 $channel0 -1 
+      set value [set $k]
+      ns_log notice "resubmit: canceling currently running request $context  // closing $value"
+      lassign $value fd0 channel0 client_data0 filename0
+      my end-delivery -client_data $client_data0 $filename0 $fd0 $channel0 -1 
     }
     set $k [list $fd $channel $client_data $filename]
 
@@ -233,8 +233,8 @@ if {![string match "*contentsentlength*" $msg]} {
     if {$sync || $content eq ""} {
       my log "close sync"
       if {$content ne ""} {
-	fconfigure $channel -translation binary -blocking true
-	puts -nonewline $channel $content
+        fconfigure $channel -translation binary -blocking true
+        puts -nonewline $channel $content
       }
       close $channel
       my destroy
@@ -256,7 +256,7 @@ if {![string match "*contentsentlength*" $msg]} {
       set content ""
       if {[my autoflush]} {flush $channel}
       if {[my exists finishWhenDone]} {
-	my close -sync true
+        my close -sync true
       }
     } else {
       set chunk [string range $content 0 $blocksize-1]
@@ -279,11 +279,11 @@ if {![string match "*contentsentlength*" $msg]} {
     set result [list]
     if {[info exists key]} {
       if {[info exists subscriptions($key)]} {
-	return [list $key $subscriptions($key)]
+        return [list $key $subscriptions($key)]
       }
     } elseif {[info exists subscriptions]} {
       foreach key [array names subscriptions] {
-	lappend result $key $subscriptions($key)
+        lappend result $key $subscriptions($key)
       }
     }
   }
@@ -332,7 +332,7 @@ if {![string match "*contentsentlength*" $msg]} {
       set smsg $msg
     }
     #my log "-- sending to subscriber for [my key] $smsg ch=[my channel] \
-    #		mode=[my mode], user_id [my user_id]"
+        #        mode=[my mode], user_id [my user_id]"
     puts -nonewline [my channel] $smsg
     flush [my channel]
   }
@@ -343,12 +343,12 @@ if {![string match "*contentsentlength*" $msg]} {
     if {[info exists subscriptions($key)]} {
       set subs1 [list]
       foreach s $subscriptions($key) {
-	if {[catch {$s $method $argument} errMsg]} {
-	  ns_log notice "error in $method to subscriber $s (key=$key): $errMsg"
-	  $s destroy
-	} else {
-	  lappend subs1 $s
-	}
+        if {[catch {$s $method $argument} errMsg]} {
+          ns_log notice "error in $method to subscriber $s (key=$key): $errMsg"
+          $s destroy
+        } else {
+          lappend subs1 $s
+        }
       }
       set subscriptions($key) $subs1
     }
@@ -443,7 +443,7 @@ if {![string match "*contentsentlength*" $msg]} {
       fconfigure $fd -translation binary -encoding $encoding
       fconfigure [my channel] -translation binary  -encoding $encoding
       fcopy $fd [my channel] -command \
-	  [list [self] end-delivery $filename $fd [my channel] $request]
+          [list [self] end-delivery $filename $fd [my channel] $request]
     }
   }
   ::HttpSpooler instproc end-delivery {filename fd ch request bytes args} {
@@ -465,8 +465,8 @@ if {![string match "*contentsentlength*" $msg]} {
       regexp {^([^:]+):(.*)$} $host _ host port
       my incr running
       xo::AsyncHttpRequest [self]::[my incr counter] \
-	  -host $host -port $port -path $path \
-	  -timeout [my timeout] -post_data $post_data -request_manager [self]
+          -host $host -port $port -path $path \
+          -timeout [my timeout] -post_data $post_data -request_manager [self]
     }
   }
 
@@ -506,195 +506,195 @@ bgdelivery ad_proc returnfile {
   {-delete false} 
   {-content_disposition} 
   status_code mime_type filename} {
-  Deliver the given file to the requestor in the background. This proc uses the
-  background delivery thread to send the file in an event-driven manner without
-  blocking a request thread. This is especially important when large files are 
-  requested over slow (e.g. dial-ip) connections.
-} {
+    Deliver the given file to the requestor in the background. This proc uses the
+    background delivery thread to send the file in an event-driven manner without
+    blocking a request thread. This is especially important when large files are 
+    requested over slow (e.g. dial-ip) connections.
+  } {
 
-  #ns_setexpires 1000000
-  #ns_log notice "expires-set $filename"
-  #ns_log notice "status_code = $status_code, filename=$filename"
+    #ns_setexpires 1000000
+    #ns_log notice "expires-set $filename"
+    #ns_log notice "status_code = $status_code, filename=$filename"
 
-  if {![my isobject ::xo::cc]} {
-    ::xo::ConnectionContext require
-  }
-  set query [::xo::cc actual_query]
-  set use_h264 [expr {[string match "video/mp4*" $mime_type] && $query ne "" 
-                      && ([string match {*start=[1-9]*} $query] || [string match {*end=[1-9]*} $query])
-                      && [info command h264open] ne ""}]
+    if {![my isobject ::xo::cc]} {
+      ::xo::ConnectionContext require
+    }
+    set query [::xo::cc actual_query]
+    set use_h264 [expr {[string match "video/mp4*" $mime_type] && $query ne "" 
+                        && ([string match {*start=[1-9]*} $query] || [string match {*end=[1-9]*} $query])
+                        && [info command h264open] ne ""}]
 
-  if {[info commands ns_driversection] ne ""} {
+    if {[info commands ns_driversection] ne ""} {
       set use_writerThread [ns_config [ns_driversection] writerthreads 0]
-  } else {
+    } else {
       set use_writerThread 0
-  }
+    }
 
-  if {[info exists content_disposition]} {
-    set fn [xo::backslash_escape \" $content_disposition]
-    ns_set put [ns_conn outputheaders] Content-Disposition "attachment;filename=\"$fn\""
-  }
+    if {[info exists content_disposition]} {
+      set fn [xo::backslash_escape \" $content_disposition]
+      ns_set put [ns_conn outputheaders] Content-Disposition "attachment;filename=\"$fn\""
+    }
 
-  if {$use_h264} {
-    if {0} {
-      # we have to obtain the size from the file; unfortunately, this
-      # requires a duplicate open+close of the h264 stream. If the
-      # application is performance sensitive, one might consider to use
-      # the possibly incorrect size form the file system instead (works
-      # perfectly for e.g. flowplayer)
-      if {[catch {set handle [h264open $filename $query]} errorMsg]} {
-        ns_log error "h264: error opening h264 channel for $filename $query: $errorMsg"
-        return
+    if {$use_h264} {
+      if {0} {
+        # we have to obtain the size from the file; unfortunately, this
+        # requires a duplicate open+close of the h264 stream. If the
+        # application is performance sensitive, one might consider to use
+        # the possibly incorrect size form the file system instead (works
+        # perfectly for e.g. flowplayer)
+        if {[catch {set handle [h264open $filename $query]} errorMsg]} {
+          ns_log error "h264: error opening h264 channel for $filename $query: $errorMsg"
+          return
+        }
+        set size [h264length $handle]
+        h264close $handle
+      } else {
+        set size [file size $filename]
       }
-      set size [h264length $handle]
-      h264close $handle
     } else {
       set size [file size $filename]
     }
-  } else {
-    set size [file size $filename]
-  }
 
-  # Make sure to set "connection close" for the reqests (in other
-  # words, don't allow keep-alive, which is does not make sense, when
-  # we close the connections manually in the bgdelivery thread).
-  #
-  if {$::xo::naviserver && !$use_writerThread} {
-    ns_conn keepalive 0
-  }
-
-  set range [ns_set iget [ns_conn headers] range]
-  if {[regexp {bytes=(.*)$} $range _ range]} {
-    set ranges [list]
-    set bytes 0
-    set pos 0
-    foreach r [split $range ,] {
-      regexp {^(\d*)-(\d*)$} $r _ from to
-      if {$from eq ""} {
-	# The last $to bytes, $to must be specified; 'to' is
-	# differently interpreted as in the case, where from is
-	# non-empty
-	set from [expr {$size - $to}]
-      } else {
-	if {$to eq ""} {set to [expr {$size-1}]}
-      }
-      set rangeSize [expr {1 + $to - $from}]
-      lappend ranges [list $from $to $rangeSize]
-      set pos [expr {$to + 1}]
-      incr bytes $rangeSize
-    }
-  } else {
-    set ranges ""
-    set bytes $size
-  }
-
-  #ns_log notice "Range=$range bytes=$bytes // $ranges"
-
-  #
-  # For the time being, we write the headers in a simplified version
-  # directly in the spooling thread to avoid the overhead of double
-  # h264opens.
-  #
-  if {!$use_h264} {
+    # Make sure to set "connection close" for the reqests (in other
+    # words, don't allow keep-alive, which is does not make sense, when
+    # we close the connections manually in the bgdelivery thread).
     #
-    # Add content-range header for range requests.
-    #
-    if {[llength $ranges] == 1 && $status_code == 200} {
-      lassign [lindex $ranges 0] from to
-      if {$from <= $to && $size > $to} {
-	ns_set put [ns_conn outputheaders] Content-Range "bytes $from-$to/$size"
-	ns_log notice "given range <$range>, added header-field Content-Range: bytes $from-$to/$size // $ranges"
-	set status_code 206
-      } else {
-	# A byte-content-range-spec with a byte-range-resp-spec whose
-	# last-byte-pos value is less than its first-byte-pos value,
-	# or whose instance-length value is less than or equal to its
-	# last-byte-pos value, is invalid. The recipient of an invalid
-	# byte-content-range-spec MUST ignore it and any content
-	# transferred along with it.
-	#
-	# See http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html (14.16)
-	#
-	ns_log notice "### ignore invalid <$range>, pos > size-1, Content-Range: bytes $from-$to/$size // $ranges"
-      }
-    } elseif {[llength $ranges]>1} {
-      ns_log warning "Multiple ranges are currently not supported, ignoring range request"
+    if {$::xo::naviserver && !$use_writerThread} {
+      ns_conn keepalive 0
     }
-    my write_headers $status_code $mime_type $bytes
-  }
 
-  if {$bytes == 0} {
-    # Tcl behaves different, when one tries to send 0 bytes via
-    # file_copy. So, we handle this special case here...
-    # There is actualy nothing to deliver....
-    ns_set put [ns_conn outputheaders] "Content-Length" 0
-    ns_return 200 $mime_type {}
-    return
-  }
+    set range [ns_set iget [ns_conn headers] range]
+    if {[regexp {bytes=(.*)$} $range _ range]} {
+      set ranges [list]
+      set bytes 0
+      set pos 0
+      foreach r [split $range ,] {
+        regexp {^(\d*)-(\d*)$} $r _ from to
+        if {$from eq ""} {
+          # The last $to bytes, $to must be specified; 'to' is
+          # differently interpreted as in the case, where from is
+          # non-empty
+          set from [expr {$size - $to}]
+        } else {
+          if {$to eq ""} {set to [expr {$size-1}]}
+        }
+        set rangeSize [expr {1 + $to - $from}]
+        lappend ranges [list $from $to $rangeSize]
+        set pos [expr {$to + 1}]
+        incr bytes $rangeSize
+      }
+    } else {
+      set ranges ""
+      set bytes $size
+    }
 
-  if {$use_writerThread && !$use_h264} {
+    #ns_log notice "Range=$range bytes=$bytes // $ranges"
+
+    #
+    # For the time being, we write the headers in a simplified version
+    # directly in the spooling thread to avoid the overhead of double
+    # h264opens.
+    #
+    if {!$use_h264} {
+      #
+      # Add content-range header for range requests.
+      #
+      if {[llength $ranges] == 1 && $status_code == 200} {
+        lassign [lindex $ranges 0] from to
+        if {$from <= $to && $size > $to} {
+          ns_set put [ns_conn outputheaders] Content-Range "bytes $from-$to/$size"
+          ns_log notice "given range <$range>, added header-field Content-Range: bytes $from-$to/$size // $ranges"
+          set status_code 206
+        } else {
+          # A byte-content-range-spec with a byte-range-resp-spec whose
+          # last-byte-pos value is less than its first-byte-pos value,
+          # or whose instance-length value is less than or equal to its
+          # last-byte-pos value, is invalid. The recipient of an invalid
+          # byte-content-range-spec MUST ignore it and any content
+          # transferred along with it.
+          #
+          # See http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html (14.16)
+          #
+          ns_log notice "### ignore invalid <$range>, pos > size-1, Content-Range: bytes $from-$to/$size // $ranges"
+        }
+      } elseif {[llength $ranges]>1} {
+        ns_log warning "Multiple ranges are currently not supported, ignoring range request"
+      }
+      my write_headers $status_code $mime_type $bytes
+    }
+
+    if {$bytes == 0} {
+      # Tcl behaves different, when one tries to send 0 bytes via
+      # file_copy. So, we handle this special case here...
+      # There is actualy nothing to deliver....
+      ns_set put [ns_conn outputheaders] "Content-Length" 0
+      ns_return 200 $mime_type {}
+      return
+    }
+
+    if {$use_writerThread && !$use_h264} {
       if {$status_code == 206} {
-	  ns_log notice "ns_writer submitfile -offset $from -size $bytes $filename"
-	  ns_writer submitfile -offset $from -size $bytes $filename
+        ns_log notice "ns_writer submitfile -offset $from -size $bytes $filename"
+        ns_writer submitfile -offset $from -size $bytes $filename
       } else {
-	  ns_log notice "ns_writer submitfile $filename"
-	  ns_writer submitfile $filename
+        ns_log notice "ns_writer submitfile $filename"
+        ns_writer submitfile $filename
       }
       return
-  }
-
-  set errorMsg ""
-  # Get the thread id and make sure the bgdelivery thread is already
-  # running.
-  set tid [my get_tid]
-  
-  # my log "+++ lock [my set bgmutex]"
-  ::thread::mutex lock [my set mutex]
-
-  #
-  # Transfer the channel to the bgdelivery thread and report errors
-  # in detail. 
-  #
-  # Notice, that Tcl versions up to 8.5.4 have a bug in this area.
-  # If one uses an earlier version of Tcl, please apply:
-  # http://tcl.cvs.sourceforge.net/viewvc/tcl/tcl/generic/tclIO.c?r1=1.61.2.29&r2=1.61.2.30&pathrev=core-8-4-branch
-  #
-
-  catch {
-    set ch [ns_conn channel]
-    if {[catch {thread::transfer $tid $ch} innerError]} {
-      set channels_in_use "??"
-      catch {set channels_in_use [bgdelivery do file channels]}
-      ns_log error "thread transfer failed, channel=$ch, channels_in_use=$channels_in_use"
-      error $innerError
     }
-  } errorMsg
-  
-  ::thread::mutex unlock [my set mutex]
-  #ns_mutex unlock [my set bgmutex]
-  # my log "+++ unlock [my set bgmutex]"
-  
-  if {$errorMsg ne ""} {
-    error ERROR=$errorMsg
+
+    set errorMsg ""
+    # Get the thread id and make sure the bgdelivery thread is already
+    # running.
+    set tid [my get_tid]
+    
+    # my log "+++ lock [my set bgmutex]"
+    ::thread::mutex lock [my set mutex]
+
+    #
+    # Transfer the channel to the bgdelivery thread and report errors
+    # in detail. 
+    #
+    # Notice, that Tcl versions up to 8.5.4 have a bug in this area.
+    # If one uses an earlier version of Tcl, please apply:
+    # http://tcl.cvs.sourceforge.net/viewvc/tcl/tcl/generic/tclIO.c?r1=1.61.2.29&r2=1.61.2.30&pathrev=core-8-4-branch
+    #
+
+    catch {
+      set ch [ns_conn channel]
+      if {[catch {thread::transfer $tid $ch} innerError]} {
+        set channels_in_use "??"
+        catch {set channels_in_use [bgdelivery do file channels]}
+        ns_log error "thread transfer failed, channel=$ch, channels_in_use=$channels_in_use"
+        error $innerError
+      }
+    } errorMsg
+    
+    ::thread::mutex unlock [my set mutex]
+    #ns_mutex unlock [my set bgmutex]
+    # my log "+++ unlock [my set bgmutex]"
+    
+    if {$errorMsg ne ""} {
+      error ERROR=$errorMsg
+    }
+    
+    if {$use_h264} {
+      #my log "MP4 q=[::xo::cc actual_query], h=[ns_set array [ns_conn outputheaders]]"
+      my do -async ::h264Spooler spool -delete $delete -channel $ch -filename $filename \
+          -context [list [::xo::cc requestor],[::xo::cc url],$query [ns_conn start]] \
+          -query $query \
+          -client_data $client_data
+    } else {
+      #my log "FILE SPOOL $filename"
+      my do -async ::fileSpooler spool -ranges $ranges -delete $delete -channel $ch -filename $filename \
+          -context [list [::xo::cc requestor],[::xo::cc url],$query [ns_conn start]] \
+          -client_data $client_data
+    }
+    #
+    # set the length for the access log (which is written when the
+    # connection thread is done)
+    ns_conn contentsentlength $size       ;# maybe overly optimistic
   }
-  
-  if {$use_h264} {
-    #my log "MP4 q=[::xo::cc actual_query], h=[ns_set array [ns_conn outputheaders]]"
-    my do -async ::h264Spooler spool -delete $delete -channel $ch -filename $filename \
-        -context [list [::xo::cc requestor],[::xo::cc url],$query [ns_conn start]] \
-        -query $query \
-        -client_data $client_data
-  } else {
-    #my log "FILE SPOOL $filename"
-    my do -async ::fileSpooler spool -ranges $ranges -delete $delete -channel $ch -filename $filename \
-        -context [list [::xo::cc requestor],[::xo::cc url],$query [ns_conn start]] \
-        -client_data $client_data
-  }
-  #
-  # set the length for the access log (which is written when the
-  # connection thread is done)
-  ns_conn contentsentlength $size       ;# maybe overly optimistic
-}
 
 ad_proc -public ad_returnfile_background {{-client_data ""} status_code mime_type filename} {
   Deliver the given file to the requestor in the background. This proc uses the
@@ -736,3 +736,10 @@ bgdelivery proc spooler_add_request {spooler request {post_data ""}} {
 bgdelivery proc spooler_release {spooler} {
   my do -async $spooler release
 }
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

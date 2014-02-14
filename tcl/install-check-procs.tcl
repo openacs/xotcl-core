@@ -12,7 +12,7 @@ namespace eval ::xotcl-core {
      Please follow the install instructions on http://www.openacs.org/xowiki/xotcl-core"
     } elseif {$::xotcl::version < 1.5} {
       error " XOTcl 1.5 or newer required. You are using $::xotcl::version$::xotcl::patchlevel.\n\
-	Please install a new version of XOTcl (see http://www.openacs.org/xowiki/xotcl-core)"
+      Please install a new version of XOTcl (see http://www.openacs.org/xowiki/xotcl-core)"
     } else {
       ns_log notice "XOTcl $::xotcl::version$::xotcl::patchlevel is installed on your system."
     }
@@ -47,3 +47,11 @@ namespace eval ::xotcl-core {
   }
 
 }
+
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

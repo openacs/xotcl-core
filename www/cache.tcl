@@ -43,7 +43,7 @@ if { $cache == 0 } {
 
   TableWidget t1 \
       -actions [subst {
-	Action new -label Refresh -url [ad_conn url] -tooltip "Reload this page"
+        Action new -label Refresh -url [ad_conn url] -tooltip "Reload this page"
       }] \
       -columns {
         AnchorField name    -label "Name"
@@ -96,3 +96,9 @@ if { $cache == 0 } {
 }
 
 
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

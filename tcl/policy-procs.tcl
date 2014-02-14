@@ -80,7 +80,7 @@ namespace eval ::xo {
       set condition [lindex $p 0]
       if {[llength $condition]>1} {
         # we have a condition
-	lassign $condition cond value
+        lassign $condition cond value
         if {[$object condition=$cond $query_context $value]} {
           return [my get_privilege [list [lrange $p 1 end]] $object $method]
         }
@@ -109,10 +109,10 @@ namespace eval ::xo {
       #ns_log notice "---check [list $object info class]"
       set c [$object info class]
       foreach class [concat $c [$c info heritage]] {
-	set c [self]::[namespace tail $class]
-	if {![my isclass $c]} continue
-	set permission [my get_permission -check_classes false $class $method]
-	if {$permission ne ""} break
+        set c [self]::[namespace tail $class]
+        if {![my isclass $c]} continue
+        set permission [my get_permission -check_classes false $class $method]
+        if {$permission ne ""} break
       }
     }
     return $permission
@@ -148,16 +148,16 @@ namespace eval ::xo {
       lassign [my get_privilege -query_context $ctx $permission $object $method] kind p
       #my msg "--privilege = $p kind = $kind"
       switch -- $kind {
-	primitive {return [my check_privilege -login false \
-			       -package_id $package_id -user_id $user_id \
-			       $p $object $method]}
-	complex {
-	  lassign $p attribute privilege
-	  set id [$object set $attribute]
-	  #my msg "--p checking permission -object_id /$id/ -privilege $privilege -party_id $user_id\
-	  #	==> [::xo::cc permission -object_id $id -privilege $privilege -party_id $user_id]"
-	  return [::xo::cc permission -object_id $id -privilege $privilege -party_id $user_id]
-	}
+        primitive {return [my check_privilege -login false \
+                               -package_id $package_id -user_id $user_id \
+                               $p $object $method]}
+        complex {
+          lassign $p attribute privilege
+          set id [$object set $attribute]
+          #my msg "--p checking permission -object_id /$id/ -privilege $privilege -party_id $user_id\
+              #    ==> [::xo::cc permission -object_id $id -privilege $privilege -party_id $user_id]"
+          return [::xo::cc permission -object_id $id -privilege $privilege -party_id $user_id]
+        }
       }
     }
     return 0
@@ -181,18 +181,18 @@ namespace eval ::xo {
     if {$permission ne ""} {
       lassign [my get_privilege $permission $object $method] kind p
       switch -- $kind {
-	primitive {
-	  set allowed [my check_privilege \
-			   -user_id $user_id -package_id $package_id \
-			   $p $object $method]
-	  set privilege $p
-	}
-	complex {
-	  lassign $p attribute privilege
-	  set id [$object set $attribute]
-	  set allowed [::xo::cc permission -object_id $id \
-			   -privilege $privilege \
-			   -party_id $user_id]
+        primitive {
+          set allowed [my check_privilege \
+                           -user_id $user_id -package_id $package_id \
+                           $p $object $method]
+          set privilege $p
+        }
+        complex {
+          lassign $p attribute privilege
+          set id [$object set $attribute]
+          set allowed [::xo::cc permission -object_id $id \
+                           -privilege $privilege \
+                           -party_id $user_id]
         }
       }
     }
@@ -202,18 +202,25 @@ namespace eval ::xo {
     if {!$allowed} {
       set untrusted_user_id [::xo::cc set untrusted_user_id]
       if {$permission eq ""} {
-	ns_log notice "enforce_permissions: no permission for $object->$method defined"
+        ns_log notice "enforce_permissions: no permission for $object->$method defined"
       } elseif {$user_id == 0 && $untrusted_user_id} {
         ns_log notice "enforce_permissions: force login, user_id=0 and untrusted_id=$untrusted_user_id"
         auth::require_login
       } else {
-	ns_log notice "enforce_permissions: $user_id doesn't have $privilege on $object"
+        ns_log notice "enforce_permissions: $user_id doesn't have $privilege on $object"
       }
-	ad_return_forbidden  "[_ xotcl-core.permission_denied]" [_ xotcl-core.policy-error-insufficient_permissions]
+      ad_return_forbidden  "[_ xotcl-core.permission_denied]" [_ xotcl-core.policy-error-insufficient_permissions]
       ad_script_abort
     }
-  
+    
     return $allowed
   }
 
 }
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

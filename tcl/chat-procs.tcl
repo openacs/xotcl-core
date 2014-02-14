@@ -10,11 +10,13 @@ namespace eval ::xo {
   Class Message -parameter {time user_id msg color}
   Class Chat -superclass ::xo::OrderedComposite \
       -parameter {
-	chat_id 
-	user_id 
-	session_id 
-	{mode default}
-	{encoder urlencode} {timewindow 600} {sweepinterval 600}
+        chat_id 
+        user_id 
+        session_id 
+        {mode default}
+        {encoder urlencode} 
+        {timewindow 600} 
+        {sweepinterval 600}
       }
 
   Chat instproc init {} {
@@ -29,7 +31,7 @@ namespace eval ::xo {
       my log "-- initialize $cls"
       $cls initialize_nsvs
       ::xo::clusterwide nsv_set $cls initialized \
-	  [ad_schedule_proc -thread "t" [my sweepinterval] $cls sweep_all_chats]
+          [ad_schedule_proc -thread "t" [my sweepinterval] $cls sweep_all_chats]
     }
     if {![nsv_exists $array-seen newest]} {::xo::clusterwide nsv_set $array-seen newest 0}
     if {![nsv_exists $array-color idx]}   {::xo::clusterwide nsv_set $array-color idx 0}
@@ -60,11 +62,11 @@ namespace eval ::xo {
     my log "-- msg=$msg"
     
     if {$get_new 
-	&& [info commands ::thread::mutex] ne "" 
-	&& [info commands ::bgdelivery] ne ""} { 
+        && [info commands ::thread::mutex] ne "" 
+        && [info commands ::bgdelivery] ne ""} { 
       # we could use the streaming interface
       my broadcast_msg [Message new -volatile -time [clock seconds] \
-			    -user_id $user_id -msg $msg -color $color]
+                            -user_id $user_id -msg $msg -color $color]
     }
     my register_nsvs $now.$user_id $user_id $msg $color [clock seconds]
     # this in any case a valid result, but only needed for the polling interface
@@ -104,12 +106,12 @@ namespace eval ::xo {
     if {[nsv_get $array-seen newest]>$last} {
       #my log "--c must check $session_id: [nsv_get $array-seen newest] > $last"
       foreach {key value} [nsv_array get $array] {
-	lassign $value timestamp secs user msg color
-	if {$timestamp > $last} {
-	  my add [Message new -time $secs -user_id $user -msg $msg -color $color]
-	} else {
-	  my check_age $key [expr {($now - $timestamp) / 1000}]
-	}
+        lassign $value timestamp secs user msg color
+        if {$timestamp > $last} {
+          my add [Message new -time $secs -user_id $user -msg $msg -color $color]
+        } else {
+          my check_age $key [expr {($now - $timestamp) / 1000}]
+        }
       }
       ::xo::clusterwide nsv_set $array-seen $session_id $now
       #my log "--c setting session_id $session_id: $now"
@@ -124,7 +126,7 @@ namespace eval ::xo {
     foreach {key value} [nsv_array get $array] {
       lassign $value timestamp secs user msg color
       if {[my check_age $key [expr {($now - $timestamp) / 1000}]]} {
-	my add [Message new -time $secs -user_id $user -msg $msg -color $color]
+        my add [Message new -time $secs -user_id $user -msg $msg -color $color]
       }
     }
     #my log "--c setting session_id $session_id: $now"
@@ -141,11 +143,11 @@ namespace eval ::xo {
       ns_log Notice "--core-chat Checking: now=$now, timestamp=$timestamp, ago=$ago"
       # was 1200
       if {$ago > 300} { 
-	my add_msg -get_new false -uid $user "auto logout" 
-	nsv_unset $array-last-activity $user 
-	nsv_unset $array-login $user
-	nsv_unset $array-color $user
-	catch {::bgdelivery do ::Subscriber sweep chat-[my chat_id]}
+        my add_msg -get_new false -uid $user "auto logout" 
+        nsv_unset $array-last-activity $user 
+        nsv_unset $array-login $user
+        nsv_unset $array-color $user
+        catch {::bgdelivery do ::Subscriber sweep chat-[my chat_id]}
       }
     }
     my log "-- ending"
@@ -181,9 +183,9 @@ namespace eval ::xo {
     set output ""
     foreach {user_id timestamp} [my active_user_list] {
       if {$user_id > 0} {
-	set diff [clock format [expr {[clock seconds] - $timestamp}] -format "%H:%M:%S" -gmt 1]
-	set userlink  [my user_link -user_id $user_id]
-	append output "<TR><TD class='user'>$userlink</TD><TD class='timestamp'>$diff</TD></TR>\n"
+        set diff [clock format [expr {[clock seconds] - $timestamp}] -format "%H:%M:%S" -gmt 1]
+        set userlink  [my user_link -user_id $user_id]
+        append output "<TR><TD class='user'>$userlink</TD><TD class='timestamp'>$diff</TD></TR>\n"
       }
     }  
     return $output
@@ -217,8 +219,8 @@ namespace eval ::xo {
   }
 
   Chat instproc user_name { user_id } {
-      acs_user::get -user_id $user_id -array user
-      return [expr {$user(screen_name) ne "" ? $user(screen_name) : $user(name)}]
+    acs_user::get -user_id $user_id -array user
+    return [expr {$user(screen_name) ne "" ? $user(screen_name) : $user(name)}]
   }
   
   Chat instproc user_link { -user_id -color } {
@@ -226,7 +228,7 @@ namespace eval ::xo {
       set name [my user_name $user_id]
       set url "/shared/community-member?user%5fid=$user_id"
       if {![info exists color]} {
-	set color [my user_color $user_id]
+        set color [my user_color $user_id]
       }
       set creator "<a style='color:$color;' target='_blank' href='$url'>$name</a>"
     } elseif { $user_id == 0 } {
@@ -241,9 +243,10 @@ namespace eval ::xo {
   Chat instproc noencode    {string} {set string}
   Chat instproc encode      {string} {my [my encoder] $string}
   Chat instproc json_encode {string} {
-    string map [list \n \\n {"} {\"} ' {\'}] $string ;#"
+    string map [list \n \\n {"} {\"} ' {\'}] $string ;\#"
+    #
   }
-    
+                
   Chat instproc json_encode_msg {msg} {
     set old [my encoder]
     my encoder noencode ;# just for user_link
@@ -253,93 +256,93 @@ namespace eval ::xo {
     set text [my json_encode [$msg msg]]
     foreach var {userlink timeshort} {set $var [my json_encode [set $var]]}
     return [subst -nocommands {{'messages': [
-      {'user':'$userlink', 'time': '$timeshort', 'msg':'$text'}
-    ]\n}
-    }]
-  }
+            {'user':'$userlink', 'time': '$timeshort', 'msg':'$text'}
+           ]\n}
+         }]
+   }
 
-  Chat instproc js_encode_msg {msg} {
-    set json [my json_encode_msg $msg]
-    return "<script type='text/javascript' language='javascript'>
+   Chat instproc js_encode_msg {msg} {
+     set json [my json_encode_msg $msg]
+     return "<script type='text/javascript' language='javascript'>
     var data = $json;
     parent.getData(data);
     </script>\n"
-  }
+   }
 
-  Chat instproc broadcast_msg {msg} {
-    my log "--chat broadcast_msg $msg"
-    ::xo::clusterwide \
-        bgdelivery send_to_subscriber chat-[my chat_id] [my json_encode_msg $msg]
-  }
+   Chat instproc broadcast_msg {msg} {
+     my log "--chat broadcast_msg $msg"
+     ::xo::clusterwide \
+         bgdelivery send_to_subscriber chat-[my chat_id] [my json_encode_msg $msg]
+   }
 
-  Chat instproc subscribe {-uid} {
-    set user_id [expr {[info exists uid] ? $uid : [my set user_id]}]
-    set color [my user_color $user_id]
-    bgdelivery subscribe chat-[my chat_id] "" [my mode] 
-    if {![my user_active $user_id]} {
-      my broadcast_msg [Message new -volatile -time [clock seconds] \
-			    -user_id $user_id -color $color \
-			    -msg [_ xotcl-core.has_entered_the_room] ]
-    }
-    #my get_all
-  }
+   Chat instproc subscribe {-uid} {
+     set user_id [expr {[info exists uid] ? $uid : [my set user_id]}]
+     set color [my user_color $user_id]
+     bgdelivery subscribe chat-[my chat_id] "" [my mode] 
+     if {![my user_active $user_id]} {
+       my broadcast_msg [Message new -volatile -time [clock seconds] \
+                             -user_id $user_id -color $color \
+                             -msg [_ xotcl-core.has_entered_the_room] ]
+     }
+     #my get_all
+   }
+                
+   Chat instproc render {} {
+     my orderby time
+     set result "<div class='messages'>\n"
+     foreach child [my children] {
+       set msg       [$child msg]
+       set user_id   [$child user_id]
+       set color     [$child color]
+       set timelong  [clock format [$child time]]
+       set timeshort [clock format [$child time] -format {[%H:%M:%S]}]
+       set userlink  [my user_link -user_id $user_id -color $color]
+       
+       append result "<p class='line'><span class='timestamp'>$timeshort</span> " \
+                        "<span class='user'>$userlink</span> " \
+                        "<span class='message'>[my encode $msg]</span></p>\n"
+     }
+     append result "</div>"
+     return $result
+   }
 
-  Chat instproc render {} {
-    my orderby time
-    set result "<div class='messages'>\n"
-    foreach child [my children] {
-      set msg       [$child msg]
-      set user_id   [$child user_id]
-      set color     [$child color]
-      set timelong  [clock format [$child time]]
-      set timeshort [clock format [$child time] -format {[%H:%M:%S]}]
-      set userlink  [my user_link -user_id $user_id -color $color]
+   ############################################################################
+   # Chat meta class, since we need to define general class-specific methods
+   ############################################################################
+   Class create ChatClass -superclass ::xotcl::Class
+   ChatClass method sweep_all_chats {} {
+     my log "-- starting"
+     foreach nsv [nsv_names "[self]-*-seen"] {
+       if { [regexp "[self]-(\[0-9\]+)-seen" $nsv _ chat_id] } {
+         my log "--Chat_id $chat_id"
+         my new -volatile -chat_id $chat_id -user_id 0 -session_id 0 -init -sweeper
+       }
+     }
+     my log "-- ending"
+   }
+                
+   ChatClass method initialize_nsvs {} {
+     # read the last_activity information at server start into a nsv array
+     ::xo::dc foreach get_rooms {
+       select room_id, to_char(max(creation_date),'HH24:MI:SS YYYY-MM-DD') as last_activity 
+       from chat_msgs group by room_id
+     } {
+       ::xo::clusterwide nsv_set [self]-$room_id-seen last [clock scan $last_activity]
+     }
+   }
+                
+   ChatClass method flush_messages {-chat_id:required} {
+     set array "[self]-$chat_id"
+     ::xo::clusterwide nsv_unset $array
+     ::xo::clusterwide nsv_unset $array-seen
+     ::xo::clusterwide nsv_unset $array-last-activity
+   }
 
-      append result "<p class='line'><span class='timestamp'>$timeshort</span> " \
-	  "<span class='user'>$userlink</span> " \
-	  "<span class='message'>[my encode $msg]</span></p>\n"
-    }
-    append result "</div>"
-    return $result
-  }
-
-  ############################################################################
-  # Chat meta class, since we need to define general class-specific methods
-  ############################################################################
-  Class create ChatClass -superclass ::xotcl::Class
-  ChatClass method sweep_all_chats {} {
-    my log "-- starting"
-    foreach nsv [nsv_names "[self]-*-seen"] {
-      if { [regexp "[self]-(\[0-9\]+)-seen" $nsv _ chat_id] } {
-	my log "--Chat_id $chat_id"
-	my new -volatile -chat_id $chat_id -user_id 0 -session_id 0 -init -sweeper
-      }
-    }
-    my log "-- ending"
-  }
-    
-  ChatClass method initialize_nsvs {} {
-    # read the last_activity information at server start into a nsv array
-    ::xo::dc foreach get_rooms {
-      select room_id, to_char(max(creation_date),'HH24:MI:SS YYYY-MM-DD') as last_activity 
-      from chat_msgs group by room_id
-    } {
-      ::xo::clusterwide nsv_set [self]-$room_id-seen last [clock scan $last_activity]
-    }
-  }
-
-  ChatClass method flush_messages {-chat_id:required} {
-    set array "[self]-$chat_id"
-    ::xo::clusterwide nsv_unset $array
-    ::xo::clusterwide nsv_unset $array-seen
-    ::xo::clusterwide nsv_unset $array-last-activity
-  }
-
-  ChatClass method init {} {
-    # default setting is set19 from http://www.graphviz.org/doc/info/colors.html
-    # per parameter settings in the chat package are available (param UserColors)
-    my set colors [list #1b9e77 #d95f02 #7570b3 #e7298a #66a61e #e6ab02 #a6761d #666666]
-  }
+   ChatClass method init {} {
+     # default setting is set19 from http://www.graphviz.org/doc/info/colors.html
+     # per parameter settings in the chat package are available (param UserColors)
+     my set colors [list #1b9e77 #d95f02 #7570b3 #e7298a #66a61e #e6ab02 #a6761d #666666]
+   }
 }
 
 #

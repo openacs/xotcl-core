@@ -30,11 +30,11 @@ namespace eval ::Generic {
 
     <ul>
     <li><b>fields:</b> form elements as described in 
-       <a href='/api-doc/proc-view?proc=ad_form'>ad_form</a>.
+    <a href='/api-doc/proc-view?proc=ad_form'>ad_form</a>.
     <li><b>data:</b> data object (e.g. instance if CrItem) 
     <li><b>folder_id:</b> associated folder id
     <li><b>name:</b> of this form, used for naming the template, 
-       defaults to the object name
+    defaults to the object name
     <li><b>add_page_title:</b> page title when adding content items
     <li><b>edit_page_title:</b> page title when editing content items
     <li><b>with_categories:</b> display form with categories (default false)
@@ -119,7 +119,7 @@ namespace eval ::Generic {
           -privilege $privilege
     }
     set edit_form_page_title [if {$privilege eq "create"} \
-		 {my add_page_title} {my edit_page_title}]
+                                  {my add_page_title} {my edit_page_title}]
 
     set context [list $edit_form_page_title]
   }
@@ -167,7 +167,7 @@ namespace eval ::Generic {
     ad_returnredirect $link
     ad_script_abort
   }
- 
+  
   Form ad_instproc generate {
     {-template "formTemplate"}
     {-export}

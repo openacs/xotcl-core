@@ -3,9 +3,9 @@
 
 if {$::tcl_version < 8.5
     || ([regexp {8[.]5[.]([0-9]+)$} $::tcl_patchLevel _ minor] && $minor < 4)
-} {
-    ns_log error "We require for this version of xotcl-core at least Tcl 8.5.4 (avail: Tcl $::tcl_patchLevel)"
-    return
+  } {
+  ns_log error "We require for this version of xotcl-core at least Tcl 8.5.4 (avail: Tcl $::tcl_patchLevel)"
+  return
 }
 
 package require xotcl::serializer
@@ -40,21 +40,21 @@ if {$::xotcl::version < 1.5} {
   # emulate slots up to a certain point
   namespace eval ::xo {
     ::xotcl::MetaSlot create ::xo::Attribute \
-      -parameter {
-        {name "[namespace tail [::xotcl::self]]"}
-        {domain "[lindex [regexp -inline {^(.*)::slot::[^:]+$} [::xotcl::self]] 1]"}
-        {multivalued false}
-        {required false}
-        default
-        type
-        spec
-        pretty_name 
-        {pretty_plural ""}
-        {datatype "text"} 
-        constraint_values
-        help_text 
-        validator
-      }
+        -parameter {
+          {name "[namespace tail [::xotcl::self]]"}
+          {domain "[lindex [regexp -inline {^(.*)::slot::[^:]+$} [::xotcl::self]] 1]"}
+          {multivalued false}
+          {required false}
+          default
+          type
+          spec
+          pretty_name 
+          {pretty_plural ""}
+          {datatype "text"} 
+          constraint_values
+          help_text 
+          validator
+        }
   }
 } else {
   namespace eval ::xo {
@@ -127,11 +127,11 @@ namespace eval ::xo {
       set object_type [my domain] 
       if {[regexp {^::([^:]+)::} $object_type _ head]} {
         set tail [namespace tail $object_type]
-	set pretty_name "#$head.$tail-$name#"
-	#my log "--created pretty_name = $pretty_name"
+        set pretty_name "#$head.$tail-$name#"
+        #my log "--created pretty_name = $pretty_name"
       } else {
         error "Cannot determine automatically message key for pretty name. \
-		Use namespaces for classes"
+        Use namespaces for classes"
       }
     }
   }
@@ -186,11 +186,11 @@ namespace eval ::xo {
     array set names ""
     foreach c [concat $cl [$cl info heritage]] {
       foreach s [$c info slots] {
-	set n [namespace tail $s]
-	if {![info exists names($n)]} {
-	  lappend so $s
-	  set names($n) $s
-	}
+        set n [namespace tail $s]
+        if {![info exists names($n)]} {
+          lappend so $s
+          set names($n) $s
+        }
       }
     }
     return $so
@@ -262,7 +262,7 @@ if {[info commands ::xotcl::nonposArgs] ne ""} {
   if {[ns_conn isconnected]} {
     set msg "[self]: $msg  ([self callingclass]->[self callingproc])"
     if {$html} {
-        util_user_message -html -message $msg
+      util_user_message -html -message $msg
     } else {
       util_user_message -message $msg
     }
@@ -317,7 +317,7 @@ namespace eval ::xo {
     ::xotcl::Object  log "### Call Stack (level: command)"
     for {set i 0} {$i < $max} {incr i} {
       if {[catch {set s [uplevel $i self]} msg]} {
-	set s ""
+        set s ""
       }
       ::xotcl::Object  log "### [format %5d -$i]:\t$s [info level [expr {-$i}]]"
     }
@@ -367,7 +367,7 @@ namespace eval ::xo {
 #  ns_log notice "--T :ttrace::isenabled"
 #  set blueprint [ns_ictl get]
 #  ns_ictl save [append blueprint [::Serializer serializeExportedMethods \
-#				      [::Serializer new -volatile]]]
+    #                      [::Serializer new -volatile]]]
 #  unset blueprint
 #  ns_log notice "--T [ns_ictl get]"
 #}
@@ -406,25 +406,25 @@ namespace eval ::xo {
       ns_ictl ondelete ::xo::at_delete
     }
     
-#     proc trace_cleanup {args} {
-#       set name [lindex $args 1]
-#       #ns_log notice "*** cleanup <$args> '$name'"
-#       if {[::xotcl::Object isobject $name]} {
-# 	ns_log notice "*** cleanup $name destroy"
-# 	$name destroy
-#       }
-#     }
+    #     proc trace_cleanup {args} {
+    #       set name [lindex $args 1]
+    #       #ns_log notice "*** cleanup <$args> '$name'"
+    #       if {[::xotcl::Object isobject $name]} {
+    #     ns_log notice "*** cleanup $name destroy"
+    #     $name destroy
+    #       }
+    #     }
   } else {
 
     # register only once
     if {"::xo::freeconn" ni $registered} {
       if {[catch {ns_ictl trace freeconn ::xo::freeconn} errorMsg]} {
-	ns_log Warning "ns_ictl trace returned: $errorMsg"
+        ns_log Warning "ns_ictl trace returned: $errorMsg"
       }
     }
     if {"::xo::at_delete" ni [ns_ictl gettraces delete]} {
       if {[catch {ns_ictl ondelete ::xo::at_delete} errorMsg]} {
-	ns_log Warning "ns_ictl ondelete returned: $errorMsg"
+        ns_log Warning "ns_ictl ondelete returned: $errorMsg"
       }
     }    
 
@@ -541,7 +541,7 @@ namespace eval ::xo {
     set t1 [clock clicks -milliseconds]
     ns_log notice "ON DELETE done ([expr {$t1-$t0}]ms)"
   }
- 
+  
   #
   # ::xo::Module is very similar to a plain tcl namespace: When it is
   # created/recreated, it does not perform a cleanup of its
@@ -677,24 +677,24 @@ namespace eval ::xo {
     ::xo::system_stats proc thread_info {pid tid} {
       set fn /proc/$pid/task/$tid/stat
       if {[file readable $fn]} {
-	set f [open $fn]; set s [read $f]; close $f
+        set f [open $fn]; set s [read $f]; close $f
       } elseif {[file readable /proc/$pid/task/$pid/stat]} {
-	set f [open /proc/$pid/task/$pid/stat]; set s [read $f]; close $f
+        set f [open /proc/$pid/task/$pid/stat]; set s [read $f]; close $f
       } else {
-	return ""
+        return ""
       }
       lassign $s tid comm state ppid pgrp session tty_nr tpgid flags minflt \
-	  cminflt majflt cmajflt utime stime cutime cstime priority nice \
-	  numthreads itrealval starttime vsize rss rsslim startcode endcode \
-	  startstack kstkesp kstkeip signal blocked sigignore sigcatch wchan \
-	  nswap cnswap ext_signal processor ...
+          cminflt majflt cmajflt utime stime cutime cstime priority nice \
+          numthreads itrealval starttime vsize rss rsslim startcode endcode \
+          startstack kstkesp kstkeip signal blocked sigignore sigcatch wchan \
+          nswap cnswap ext_signal processor ...
       # utime and stimes are jiffies. Since Linux has HZ 100, we can
       # multiply the jiffies by 10 to obtain ms
       return [list utime [expr {$utime*10}] stime [expr {$stime*10}]]
     }
   } else {
     ::xo::system_stats proc thread_info {pid tid} {
-	return ""
+      return ""
     }
   }
 
@@ -702,7 +702,7 @@ namespace eval ::xo {
     set hex [ns_thread getid]
     foreach t [ns_info threads] {
       if {[lindex $t 2] eq $hex} {
-	return [list name [lindex $t 0] tid [lindex $t 7]]
+        return [list name [lindex $t 0] tid [lindex $t 7]]
       }
     }
     return ""
@@ -749,13 +749,13 @@ namespace eval ::xo {
     set threadInfo [ns_info threads]
     if {[file readable /proc/$pid/statm] && [llength [lindex $threadInfo 0]] > 7} {
       foreach t $threadInfo {
-	array unset s
-	array set s [my thread_info $pid [lindex $t 7]]
-	if {[info exists s(stime)]} {
-	  set group [my thread_classify [lindex $t 0]]
-	  my aggregate $group $varnames(utime) $s(utime)
-	  my aggregate $group $varnames(stime) $s(stime)
-	}
+        array unset s
+        array set s [my thread_info $pid [lindex $t 7]]
+        if {[info exists s(stime)]} {
+          set group [my thread_classify [lindex $t 0]]
+          my aggregate $group $varnames(utime) $s(utime)
+          my aggregate $group $varnames(stime) $s(stime)
+        }
       }
     }
     foreach group [array names utimes] {
@@ -777,11 +777,11 @@ namespace eval ::xo {
   ::xo::broadcast proc send {cmd} {
     foreach thread_info [ns_info threads] {
       switch -glob -- [lindex $thread_info 0] {
-	-conn:* -
-	-sched:* {
-	  set tid [lindex $thread_info 2]
-	  nsv_lappend broadcast $tid $cmd
-	}
+        -conn:* -
+        -sched:* {
+          set tid [lindex $thread_info 2]
+          nsv_lappend broadcast $tid $cmd
+        }
       }
     }
   }
@@ -798,10 +798,10 @@ namespace eval ::xo {
     set tid [ns_thread id]
     if {[nsv_exists broadcast $tid]} {
       foreach cmd [nsv_get broadcast $tid] {
-	ns_log notice "broadcast received {$cmd}"
-	if {[catch $cmd errorMsg]} {
-	  ns_log notice "broadcast receive error: $errorMsg for cmd $cmd"
-	}
+        ns_log notice "broadcast received {$cmd}"
+        if {[catch $cmd errorMsg]} {
+          ns_log notice "broadcast receive error: $errorMsg for cmd $cmd"
+        }
       }
       my clear
     }
@@ -809,141 +809,141 @@ namespace eval ::xo {
 }
 
 proc ::xo::getObjectProperty {o what args} {
-    switch $what {
-	"mixin" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info mixin]}
-	    return [$o info object mixin classes]
-	}
-	"instmixin" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instmixin]}
-	    return [$o info mixin classes]
-	}
-	"instproc" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instprocs {*}$args]}
-	    return [$o info methods -type scripted {*}$args]
-	}
-	"instcommand" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instcommands {*}$args]}
-	    return [$o info methods {*}$args]
-	}
-	"instforward" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instforward {*}$args]}
-	    return [$o info methods -type forwarder {*}$args]
-	}
-	"proc" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}$args]}
-	    return [$o info object methods -type scripted {*}$args]
-	}
-	"command" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}$args]}
-	    return [$o info object methods {*}$args]
-	}
-	"forward" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info forward {*}$args]}
-	    return [$o info object methods -type forwarder {*}$args]
-	}
-	"slots" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info slots]}
-	    return [$o info object methods -type forwarder]
-	}
-	"class" {
-	    #if {"::xotcl::Object" in [$o info precedence]} {return [$o info class]}
-	    return [$o info class]
-	}
-	"superclass" {
-	    #if {"::xotcl::Object" in [$o info precedence]} {return [$o info superclass]}
-	    return [$o info superclass]
-	}
-	"heritage" {
-	    #if {"::xotcl::Object" in [$o info precedence]} {return [$o info heritage]}
-	    return [$o info heritage]
-	}
-	"subclass" {
-	    #if {"::xotcl::Object" in [$o info precedence]} {return [$o info subclass]}
-	    return [$o info subclass]
-	}
-	"parameter" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info parameter]}
-	    set result ""
-	    foreach p [$o info configure parameters] {lappend result [$o info parameter name $p]}
-	    return $result
-	}
-	"isclass" {
-	    if {[info commands $o] eq ""} {return 0}
-	    if {[catch {set p [$o info precedence]}]} {return 0}
-	    if {"::xotcl::Object" in $p} {return [expr {"::xotcl::Class" in $p}]}
-	    return [nsf::is class $o]
-	}
-	"isobject" {
-	    if {[info commands $o] eq ""} {return 0}
-	    if {[catch {set p [$o info precedence]}]} {return 0}
-	    if {"::xotcl::Object" in $p} {return 1}
-	    return [nsf::is object $o]
-	}
-	"instargs" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info instargs {*}$args]}
-	    return [$o info method args {*}$args]
-	}
-	"args" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o info args {*}$args]}
-	    return [$o info object method args {*}$args]
-	}
-	"instargdefault" {
-	    if {"::xotcl::Object" in [$o info precedence]} {
-		return [uplevel [list $o info instdefault {*}$args]]
-	    }
-	    lassign $args method arg varName
-	    foreach p [$o info method parameters $method] {
-		lassign $p name default
-		if {$name eq $arg} {
-		    uplevel [list set $varName $default]
-		    return [expr {[llength $p] == 2}]
-		}
-	    }
-	    return 0
-	}
-	"argdefault" {
-	    if {"::xotcl::Object" in [$o info precedence]} {
-		return [uplevel [list $o info default {*}$args]]
-	    }
-	    lassign $args method arg varName
-	    foreach p [$o info object method parameter $method] {
-		lassign $p name default
-		if {$name eq $arg} {
-		    uplevel [list set $varName $default]
-		    return [expr {[llength $p] == 2}]
-		}
-	    }
-	    return 0
-	}
-	
-	"array-exists" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o array exists {*}$args]}
-	    return [$o eval [list array exists :{*}$args]]
-	}
-	"array-get" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o array get {*}$args]}
-	    return [$o eval [list array get :{*}$args]]
-	}
-	"array-set" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o array set {*}$args]}
-	    return [$o eval [list array set :{*}$args]]
-	}
-	"set" {
-	    if {"::xotcl::Object" in [$o info precedence]} {return [$o set {*}$args]}
-	    return [$o eval [list set :[lindex $args 0]]]
-	}
-	"isnxobject" {
-	    if {[info commands ::nsf::dispatch] ne "" && [info commands $o] ne ""} {
-		return [::nsf::dispatch $o ::nsf::methods::object::info::hastype ::nx::Object]
-	    } {
-		return 0
-	    }
-	}
-	default {
-	    error "no idea how to return $what"
-	}
+  switch $what {
+    "mixin" {
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o info mixin]}
+      return [$o info object mixin classes]
     }
+    "instmixin" {
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o info instmixin]}
+      return [$o info mixin classes]
+    }
+    "instproc" {
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o info instprocs {*}$args]}
+      return [$o info methods -type scripted {*}$args]
+    }
+    "instcommand" {
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o info instcommands {*}$args]}
+      return [$o info methods {*}$args]
+    }
+    "instforward" {
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o info instforward {*}$args]}
+      return [$o info methods -type forwarder {*}$args]
+    }
+    "proc" {
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}$args]}
+      return [$o info object methods -type scripted {*}$args]
+    }
+    "command" {
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}$args]}
+      return [$o info object methods {*}$args]
+    }
+    "forward" {
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o info forward {*}$args]}
+      return [$o info object methods -type forwarder {*}$args]
+    }
+    "slots" {
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o info slots]}
+      return [$o info object methods -type forwarder]
+    }
+    "class" {
+      #if {"::xotcl::Object" in [$o info precedence]} {return [$o info class]}
+      return [$o info class]
+    }
+    "superclass" {
+      #if {"::xotcl::Object" in [$o info precedence]} {return [$o info superclass]}
+      return [$o info superclass]
+    }
+    "heritage" {
+      #if {"::xotcl::Object" in [$o info precedence]} {return [$o info heritage]}
+      return [$o info heritage]
+    }
+    "subclass" {
+      #if {"::xotcl::Object" in [$o info precedence]} {return [$o info subclass]}
+      return [$o info subclass]
+    }
+    "parameter" {
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o info parameter]}
+      set result ""
+      foreach p [$o info configure parameters] {lappend result [$o info parameter name $p]}
+      return $result
+    }
+    "isclass" {
+      if {[info commands $o] eq ""} {return 0}
+      if {[catch {set p [$o info precedence]}]} {return 0}
+      if {"::xotcl::Object" in $p} {return [expr {"::xotcl::Class" in $p}]}
+      return [nsf::is class $o]
+    }
+    "isobject" {
+      if {[info commands $o] eq ""} {return 0}
+      if {[catch {set p [$o info precedence]}]} {return 0}
+      if {"::xotcl::Object" in $p} {return 1}
+      return [nsf::is object $o]
+    }
+    "instargs" {
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o info instargs {*}$args]}
+      return [$o info method args {*}$args]
+    }
+    "args" {
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o info args {*}$args]}
+      return [$o info object method args {*}$args]
+    }
+    "instargdefault" {
+      if {"::xotcl::Object" in [$o info precedence]} {
+        return [uplevel [list $o info instdefault {*}$args]]
+      }
+      lassign $args method arg varName
+      foreach p [$o info method parameters $method] {
+        lassign $p name default
+        if {$name eq $arg} {
+          uplevel [list set $varName $default]
+          return [expr {[llength $p] == 2}]
+        }
+      }
+      return 0
+    }
+    "argdefault" {
+      if {"::xotcl::Object" in [$o info precedence]} {
+        return [uplevel [list $o info default {*}$args]]
+      }
+      lassign $args method arg varName
+      foreach p [$o info object method parameter $method] {
+        lassign $p name default
+        if {$name eq $arg} {
+          uplevel [list set $varName $default]
+          return [expr {[llength $p] == 2}]
+        }
+      }
+      return 0
+    }
+    
+    "array-exists" {
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o array exists {*}$args]}
+      return [$o eval [list array exists :{*}$args]]
+    }
+    "array-get" {
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o array get {*}$args]}
+      return [$o eval [list array get :{*}$args]]
+    }
+    "array-set" {
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o array set {*}$args]}
+      return [$o eval [list array set :{*}$args]]
+    }
+    "set" {
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o set {*}$args]}
+      return [$o eval [list set :[lindex $args 0]]]
+    }
+    "isnxobject" {
+      if {[info commands ::nsf::dispatch] ne "" && [info commands $o] ne ""} {
+        return [::nsf::dispatch $o ::nsf::methods::object::info::hastype ::nx::Object]
+      } {
+        return 0
+      }
+    }
+    default {
+      error "no idea how to return $what"
+    }
+  }
 }
 
 

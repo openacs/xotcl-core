@@ -202,19 +202,19 @@ Class create ::xotcl::THREAD \
       }
       nsv_set [self class] [self] $tid
       if {[my persistent]} {
-	my log "--created new persistent [self class] as $tid pid=[pid]"
+    my log "--created new persistent [self class] as $tid pid=[pid]"
       } else {
-	my log "--created new [self class] as $tid pid=[pid]"
+    my log "--created new [self class] as $tid pid=[pid]"
       }
       #my log "--THREAD DO send [self] epoch = [ns_ictl epoch]"
       if {[my lightweight]} {
       } elseif {![ns_ictl epoch]} {
-	#ns_log notice "--THREAD send [self] no epoch"
-	# We are during initialization. For some unknown reasons, XOTcl 
-	# is not available in newly created threads, so we have to care 
-	# for full initialization, including xotcl blueprint.
-	_ns_savenamespaces
-	set initcmd [ns_ictl get]
+    #ns_log notice "--THREAD send [self] no epoch"
+    # We are during initialization. For some unknown reasons, XOTcl 
+    # is not available in newly created threads, so we have to care 
+    # for full initialization, including xotcl blueprint.
+    _ns_savenamespaces
+    set initcmd [ns_ictl get]
       }
       append initcmd [my set initcmd]
       #ns_log notice "INIT $initcmd"
@@ -263,16 +263,16 @@ Class create ::xotcl::THREAD \
 #     -instproc forward args {
 #       set cp [self calledproc]
 #       if { $cp eq "attach"
-# 	   || $cp eq "filter" 
-# 	   || $cp eq "detachAll"} {
-# 	next
+#        || $cp eq "filter" 
+#        || $cp eq "detachAll"} {
+#     next
 #       } elseif {$cp eq "destroy"} {
-# 	eval [my attach] do [self] $cp $args
-# 	my log "destroy"
-# 	next
+#     eval [my attach] do [self] $cp $args
+#     my log "destroy"
+#     next
 #       } else {
-# 	my log "forwarding [my attach] do [self] $cp $args"
-# 	eval [my attach] do [self] $cp $args
+#     my log "forwarding [my attach] do [self] $cp $args"
+#     eval [my attach] do [self] $cp $args
 #       }
 #     } -instproc init args {
 #       my filter forward
@@ -290,3 +290,9 @@ Class create ::xotcl::THREAD::Client -parameter {server {serverobj [self]}}
   [my server] do [my serverobj] {*}$args
 }
 
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

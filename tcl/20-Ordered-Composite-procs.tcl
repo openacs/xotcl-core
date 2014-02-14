@@ -69,7 +69,7 @@ namespace eval ::xo {
     if {[my exists __children]} {
       #my log "--W destroying children [my set __children]"
       foreach c [my set __children] { 
-	if {[my isobject $c]} {$c destroy}
+        if {[my isobject $c]} {$c destroy}
       }
     }
     #show_stack;my log "--W children murdered, now next, chlds=[my info children]"
@@ -136,11 +136,11 @@ namespace eval ::xo {
     set yp [string first . $y]
     if {$xp == -1 && $yp == -1} {
       if {$x < $y} {
-	return -1
+        return -1
       } elseif {$x > $y} {
-	return 1
+        return 1
       } else {
-	return $def
+        return $def
       }
     } elseif {$xp == -1} {
       set yh [string range $y 0 $yp-1]
@@ -153,14 +153,14 @@ namespace eval ::xo {
       set yh [string range $y 0 $yp]
       #puts "xh=$xh yh=$yh"
       if {$xh < $yh} {
-	return -1
+        return -1
       } elseif {$xh > $yh} {
-	return 1
+        return 1
       } else {
-	incr xp 
-	incr yp
-	#puts "rest [string range $x $xp end] [string range $y $yp end]"
-	return [my __value_compare [string range $x $xp end] [string range $y $yp end] $def]
+        incr xp 
+        incr yp
+        #puts "rest [string range $x $xp end] [string range $y $yp end]"
+        return [my __value_compare [string range $x $xp end] [string range $y $yp end] $def]
       }
     }
   }
@@ -180,3 +180,9 @@ namespace eval ::xo {
   }
 }
 
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

@@ -133,10 +133,10 @@ namespace eval ::xo::db {
       set sequenceName $sequence
       set nextval [::xo::dc get_value nextval "select nextval(:sequenceName)"]
     } elseif { [::xo::dc db_0or1row nextval_sequence {
-                 select nextval(:sequence) as nextval
-                 where (select relkind 
-                        from pg_class 
-                        where relname = :sequence) = 'S'
+      select nextval(:sequence) as nextval
+      where (select relkind 
+             from pg_class 
+             where relname = :sequence) = 'S'
     }]} {
       #
       # We do not have an according sequence-table. Use the system catalog to check
@@ -712,7 +712,7 @@ namespace eval ::xo::db {
         set p [split $package_key_and_version_older_than]
         if {[llength $p] != 2} {
           error "package_key_and_version_older_than should be\
-		of the form 'package_key version'"
+        of the form 'package_key version'"
         }
         lassign $p package_key version
         set installed_version [apm_highest_version_name $package_key]
@@ -757,25 +757,25 @@ namespace eval ::xo::db {
   ::xotcl::Class create ::xo::db::Class \
       -superclass ::xotcl::Class \
       -parameter {
-	pretty_name
-	pretty_plural
-	{supertype acs_object}
-	table_name
-	id_column
-	{abstract_p f}
-	{name_method ""}
-	{object_type [self]}
-	{security_inherit_p t}
-	{auto_save false}
-	{with_table true}
-	{sql_package_name}
+        pretty_name
+        pretty_plural
+        {supertype acs_object}
+        table_name
+        id_column
+        {abstract_p f}
+        {name_method ""}
+        {object_type [self]}
+        {security_inherit_p t}
+        {auto_save false}
+        {with_table true}
+        {sql_package_name}
       } -ad_doc {
-	::xo::db::Class is a meta class for interfacing with acs_object_types.
-	acs_object_types are instances of this meta class. The meta class defines
-	the behavior common to all acs_object_types. The behavior common to
-	all acs_objects is defined by the class ::xo::db::Object.
-	
-	@see ::xo::db::Object
+        ::xo::db::Class is a meta class for interfacing with acs_object_types.
+        acs_object_types are instances of this meta class. The meta class defines
+        the behavior common to all acs_object_types. The behavior common to
+        all acs_objects is defined by the class ::xo::db::Object.
+        
+        @see ::xo::db::Object
       }
   
   #::xo::db::Class set __default_superclass ::xo::db::Object  ;# will be supported in XOTcl 1.6
@@ -876,16 +876,16 @@ namespace eval ::xo::db {
     set table_name [::xo::db::Class get_table_name -object_type $object_type]
     if {$table_name ne ""} {
       if {[catch {
-	::xo::dc dml delete_instances "delete from $table_name"
-	if {$drop_table} {
-	  ::xo::dc dml drop_table "drop table $table_name"
-	}
+        ::xo::dc dml delete_instances "delete from $table_name"
+        if {$drop_table} {
+          ::xo::dc dml drop_table "drop table $table_name"
+        }
       } errorMsg]} {
-	my log "error during drop_type"
+        my log "error during drop_type"
       }
     }
     ::xo::db::sql::acs_object_type drop_type \
-	-object_type $object_type -cascade_p $cascade_p
+        -object_type $object_type -cascade_p $cascade_p
     return ""
   }
 
@@ -928,7 +928,7 @@ namespace eval ::xo::db {
           -id_column $id_column \
           -table_name $table_name \
           -sql_package_name [namespace tail $classname] \
-	  -noinit
+          -noinit
     } else {
       #my log "--db we have a class $classname"
     }
@@ -941,22 +941,22 @@ namespace eval ::xo::db {
     set slots ""
     foreach att_info $attributes {
       lassign $att_info attribute_name pretty_name pretty_plural datatype \
-	  default_value min_n_values max_n_values
+          default_value min_n_values max_n_values
 
       # ignore some erroneous definitions in the acs meta model
       if {[my exists exclude_attribute($table_name,$attribute_name)]} continue
 
       set defined_att($attribute_name) 1
       set cmd [list ::xo::db::Attribute create $attribute_name \
-		   -pretty_name $pretty_name \
-		   -pretty_plural $pretty_plural \
-		   -datatype $datatype \
-		   -min_n_values $min_n_values \
-		   -max_n_values $max_n_values]
+                   -pretty_name $pretty_name \
+                   -pretty_plural $pretty_plural \
+                   -datatype $datatype \
+                   -min_n_values $min_n_values \
+                   -max_n_values $max_n_values]
       
       if {$default_value ne ""} {
-	# if the default_value is "", we assume, no default
-	lappend cmd -default $default_value
+        # if the default_value is "", we assume, no default
+        lappend cmd -default $default_value
       }
       append slots $cmd \n
     }
@@ -1056,7 +1056,7 @@ namespace eval ::xo::db {
           regexp {^[^a-zA-Z]+([a-zA-Z0-9_]+)\s} $line _ fq_name
           if {![info exists fq_name]} {
             ns_log notice "--***** Could not retrieve argument name for $proname\
-			argument $n from line '$line' in $prosrc'"
+            argument $n from line '$line' in $prosrc'"
             set fq_name arg$n
           }
           set name $fq_name
@@ -1380,12 +1380,12 @@ namespace eval ::xo::db {
     if {[my isclass $name]} {
       if {[$name exists object_type]} {
         # The specified class has an object_type defined; return it
-	return [$name object_type]
+        return [$name object_type]
       }
       if {![$name istype ::xo::db::Object]} {
         # The specified class is not subclass of ::xo::db::Object.
         # return acs_object in your desparation.
-	return acs_object
+        return acs_object
       }
     }
     # Standard mapping rules
@@ -1466,7 +1466,7 @@ namespace eval ::xo::db {
     @return list of object_types
   } {
     return [::xo::dc list get_object_types \
-		[my object_types_query -subtypes_first $subtypes_first]]
+                [my object_types_query -subtypes_first $subtypes_first]]
   }
 
   ::xo::db::Class ad_instproc create_object_type {} {
@@ -1523,14 +1523,14 @@ namespace eval ::xo::db {
     }
     if {[self] ne "::xo::db::Object"} {
       if {[my exists id_column] && ![info exists db_slot($id_column)]} {
-	# create automatically the slot for the id column
-	my slots [subst {
-	  ::xo::db::Attribute create $id_column \
-	      -pretty_name "ID" \
-	      -datatype integer \
+        # create automatically the slot for the id column
+        my slots [subst {
+          ::xo::db::Attribute create $id_column \
+              -pretty_name "ID" \
+              -datatype integer \
               -create_acs_attribute false
-	}]
-	set db_slot($id_column) [self]::slot::$id_column
+        }]
+        set db_slot($id_column) [self]::slot::$id_column
       }
     }
     #my log "--setting db_slot of [self] to [array names db_slot]"
@@ -1545,14 +1545,14 @@ namespace eval ::xo::db {
     foreach {slot_name slot} [my array get db_slot] {
       set column_name [$slot column_name]
       set column_specs($column_name) \
-	  [$slot column_spec -id_column [expr {$column_name eq $id_column}]]
+          [$slot column_spec -id_column [expr {$column_name eq $id_column}]]
     }
 
     if {[array size column_specs]>0} {
       if {$table_name eq ""} {error "no table_name specified"}
       if {$id_column eq ""}  {error "no id_column specified"}
       if {![info exists column_specs($id_column)]} {
-	error "no ::xo::db::Attribute slot for id_column '$id_column' specified"
+        error "no ::xo::db::Attribute slot for id_column '$id_column' specified"
       }
       set table_specs [list]
       foreach {att spec} [array get column_specs] {lappend table_specs "    $att $spec"}
@@ -1570,18 +1570,18 @@ namespace eval ::xo::db {
     foreach {slot_name slot} [my array get db_slot] {
       $slot instvar name column_name
       if {$column_name ne [my id_column]} {
-	lappend updates "$column_name = :$name"
-	lappend vars $name
+        lappend updates "$column_name = :$name"
+        lappend vars $name
       }
     }
     if {[llength $updates] == 0} return
     my instproc save {} [subst {
       ::xo::dc transaction {
-	next
-	my instvar object_id $vars
-	::xo::dc dml update_[my table_name] {update [my table_name]
-	  set [join $updates ,] where [my id_column] = :object_id
-	}
+        next
+        my instvar object_id $vars
+        ::xo::dc dml update_[my table_name] {update [my table_name]
+          set [join $updates ,] where [my id_column] = :object_id
+        }
       }
     }]
   }
@@ -1596,14 +1596,14 @@ namespace eval ::xo::db {
       my log "ID insert in $__table_name, id = $__id = [my set $__id]"
       next
       foreach {__slot_name __slot} [[self class] array get db_slot] {
-	my instvar $__slot_name
-	if {[info exists $__slot_name]} { 
-	  lappend __vars $__slot_name
-	  lappend __atts [$__slot column_name]
-	}
+        my instvar $__slot_name
+        if {[info exists $__slot_name]} { 
+          lappend __vars $__slot_name
+          lappend __atts [$__slot column_name]
+        }
       }
       ::xo::dc dml insert_$__table_name "insert into $__table_name
-	    ([join $__atts ,]) values (:[join $__vars ,:])"
+        ([join $__atts ,]) values (:[join $__vars ,:])"
     }
   }
   
@@ -1622,7 +1622,7 @@ namespace eval ::xo::db {
     }
     if {[string length $sql_package_name] > 30} {
       error "SQL package_name '$sql_package_name' can be maximal 30 characters long!\
-		Please specify a shorter sql_package_name in the class definition."
+        Please specify a shorter sql_package_name in the class definition."
     }
     if {$sql_package_name eq ""} {
       error "Cannot determine SQL package_name. Please specify it explicitely!"
@@ -1644,12 +1644,12 @@ namespace eval ::xo::db {
 
     if {![regexp {^[[:alpha:]_][[:alnum:]_]*$} [my table_name]]} {
       error "Table name '[my table_name]' is unsafe in SQL: \
-	Please specify a different table_name$table_name_error_tail." 
+    Please specify a different table_name$table_name_error_tail." 
     }
 
     if {[string length [my table_name]] > 30} {
       error "SQL table_name '[my table_name]' can be maximal 30 characters long!\
-		Please specify a shorter table_name in the class definition."
+        Please specify a shorter table_name in the class definition."
     }
 
     if {![regexp {^[[:alpha:]_][[:alnum:]_]*$} [my id_column]]} {
@@ -1676,7 +1676,7 @@ namespace eval ::xo::db {
     if {[my with_table]} {
       set table_definition [my table_definition]
       if {$table_definition ne ""} {
-	::xo::db::require table [my table_name] $table_definition
+        ::xo::db::require table [my table_name] $table_definition
       }
       
       my mk_save_method
@@ -1687,13 +1687,13 @@ namespace eval ::xo::db {
 
   ::xo::db::Class instproc get_context {package_id_var user_id_var ip_var} {
     my upvar \
-	$package_id_var package_id \
-	$user_id_var user_id \
-	$ip_var ip
+        $package_id_var package_id \
+        $user_id_var user_id \
+        $ip_var ip
 
     if {![info exists package_id]} {
       if {[info commands ::xo::cc] ne ""} {
-	set package_id    [::xo::cc package_id]
+        set package_id    [::xo::cc package_id]
       } elseif {[ns_conn isconnected]} {
         set package_id    [ad_conn package_id]
       } else {
@@ -1702,7 +1702,7 @@ namespace eval ::xo::db {
     }
     if {![info exists user_id]} {
       if {[info commands ::xo::cc] ne ""} {
-	set user_id    [::xo::cc user_id]
+        set user_id    [::xo::cc user_id]
       } elseif {[ns_conn isconnected]} {
         set user_id    [ad_conn user_id]
       } else {
@@ -1711,9 +1711,9 @@ namespace eval ::xo::db {
     }
     if {![info exists ip]} {
       if {[ns_conn isconnected]} {
-	set ip [ns_conn peeraddr]
+        set ip [ns_conn peeraddr]
       } else {
-	set ip [ns_info address]
+        set ip [ns_info address]
       }
     }
   }
@@ -1727,7 +1727,7 @@ namespace eval ::xo::db {
     my get_context package_id creation_user creation_ip
 
     set id [::xo::db::sql::acs_object new \
-		-object_type [::xo::db::Class class_to_object_type [self]] \
+                -object_type [::xo::db::Class class_to_object_type [self]] \
                 -title $object_title \
                 -package_id $package_id \
                 -creation_user $creation_user \
@@ -1763,13 +1763,13 @@ namespace eval ::xo::db {
     my get_context package_id creation_user creation_ip
     ::xo::dc transaction {
       set id [my new_acs_object \
-		  -package_id $package_id \
-		  -creation_user $creation_user \
-		  -creation_ip $creation_ip \
-		  ""]
+                  -package_id $package_id \
+                  -creation_user $creation_user \
+                  -creation_ip $creation_ip \
+                  ""]
       #[self class] set during_fetch 1
       if {[catch {my create ::$id {*}$args} errorMsg]} {
-	my log "Error: $errorMsg, $::errorInfo"
+        my log "Error: $errorMsg, $::errorInfo"
       }
       #[self class] unset during_fetch
       my initialize_acs_object ::$id $id
@@ -1815,8 +1815,8 @@ namespace eval ::xo::db {
     method to avoid object name clashes.
 
     @destroy_on_cleanup If this flag is true, the objects (and ordered
-                     composite) will be automatically destroyed on cleaup (typically
-                     after the request was processed).
+                                                           composite) will be automatically destroyed on cleaup (typically
+                                                                                                                 after the request was processed).
 
     @initialize can be used to avoid full initialization, when
     a large series of of objects is loaded. Per default, these objects
@@ -1841,37 +1841,37 @@ namespace eval ::xo::db {
     set sets [uplevel [list ::xo::dc sets -dbn $dbn [self proc] $sql]]
     foreach selection $sets {
       if {$named_objects} {
-	set object_name ::[ns_set get $selection $object_named_after]
-	set o [$object_class create $object_name]
+        set object_name ::[ns_set get $selection $object_named_after]
+        set o [$object_class create $object_name]
       } else {
-	set o [$object_class new]
+        set o [$object_class new]
       }
       if {$as_ordered_composite} {
-	$__result add $o
+        $__result add $o
       } else {
-	if {$destroy_on_cleanup} {
-	  $o destroy_on_cleanup
-	}
-	lappend __result $o
+        if {$destroy_on_cleanup} {
+          $o destroy_on_cleanup
+        }
+        lappend __result $o
       }
       foreach {att val} [ns_set array $selection] {$o set $att $val}
       if {[$o exists object_type]} {
-	# set the object type if it looks like managed from XOTcl
-	if {[string match "::*" [set ot [$o set object_type]] ]} {
-	  $o class $ot
-	}
+        # set the object type if it looks like managed from XOTcl
+        if {[string match "::*" [set ot [$o set object_type]] ]} {
+          $o class $ot
+        }
       }
       if {$initialize && [$o istype ::xo::db::Object]} {
-	if {![$o exists package_id]} {
-	  if {[$o exists object_package_id]} {
-	    $o set package_id [$o set object_package_id]
-	  } else {
-	    ns_log warning "[namespace tail [$o info class]] $o has no package_id and no object_package_id"
-	  }
-	}
-	if {[catch {$o initialize_loaded_object} errorMsg]} {
-	  ns_log error "$o initialize_loaded_object => [$o info vars] -> $errorMsg"
-	}
+        if {![$o exists package_id]} {
+          if {[$o exists object_package_id]} {
+            $o set package_id [$o set object_package_id]
+          } else {
+            ns_log warning "[namespace tail [$o info class]] $o has no package_id and no object_package_id"
+          }
+        }
+        if {[catch {$o initialize_loaded_object} errorMsg]} {
+          ns_log error "$o initialize_loaded_object => [$o info vars] -> $errorMsg"
+        }
       }
       #my log "--DB more = $continue [$o serialize]" 
     }
@@ -1890,15 +1890,15 @@ namespace eval ::xo::db {
       set tn [$cl table_name]
       if {$tn  ne ""} {
         lappend tables $tn
-	#my log "--db_slots of $cl = [$cl array get db_slot]"
-	foreach {slot_name slot} [$cl array get db_slot] {
+        #my log "--db_slots of $cl = [$cl array get db_slot]"
+        foreach {slot_name slot} [$cl array get db_slot] {
           # avoid duplicate output names
           set name [$slot name]
           if {![info exists names($name)]} {
             lappend attributes [$slot attribute_reference $tn]
           }
           set names($name) 1
-	}
+        }
         if {$cl ne [self]} {
           lappend join_expressions "$tn.[$cl id_column] = [my table_name].$id_column"
         }
@@ -1943,16 +1943,16 @@ namespace eval ::xo::db {
 
       if {$tn  ne ""} {
         lappend tables $tn
-	if {$all_attributes} {
-	  foreach {slot_name slot} [$cl array get db_slot] {
+        if {$all_attributes} {
+          foreach {slot_name slot} [$cl array get db_slot] {
             # avoid duplicate output names
             set name [$slot name]
             if {![info exists names($name)]} {
               lappend select_attributes [$slot attribute_reference $tn]
             }
             set names($name) 1
-	  }
-	}
+          }
+        }
         if {$cl ne [self]} {
           lappend join_expressions "$tn.[$cl id_column] = [my table_name].$id_column"
         }
@@ -1968,11 +1968,11 @@ namespace eval ::xo::db {
     }
 
     set sql [::xo::dc select \
-		 -vars   [join $select_attributes ,] \
-		 -from  "[join $tables ,] $from_clause" \
-		 -where  [string trim "[join $join_expressions { and }] $where_clause"] \
-		 -orderby $orderby \
-		 -limit $limit -offset $offset]
+                 -vars   [join $select_attributes ,] \
+                 -from  "[join $tables ,] $from_clause" \
+                 -where  [string trim "[join $join_expressions { and }] $where_clause"] \
+                 -orderby $orderby \
+                 -limit $limit -offset $offset]
     return $sql
   }
 
@@ -2047,10 +2047,10 @@ namespace eval ::xo::db {
     [my info class] get_context package_id creation_user creation_ip
     ::xo::dc transaction {
       set id [[my info class] new_acs_object \
-		  -package_id $package_id \
-		  -creation_user $creation_user \
-		  -creation_ip $creation_ip \
-		  ""]
+                  -package_id $package_id \
+                  -creation_user $creation_user \
+                  -creation_ip $creation_ip \
+                  ""]
       [my info class] initialize_acs_object [self] $id
       my insert
     }
@@ -2075,7 +2075,7 @@ namespace eval ::xo::db {
         {references ""}
         {min_n_values 1} 
         {max_n_values 1}
-	{create_acs_attribute true}
+        {create_acs_attribute true}
       }
 
   ::xo::db::Attribute instproc create_attribute {} {
@@ -2087,7 +2087,7 @@ namespace eval ::xo::db {
       attribute_name = :column_name and object_type = :object_type} 1]} {
 
       if {![::xo::db::Class object_type_exists_in_db -object_type $object_type]} {
-	$domain create_object_type
+        $domain create_object_type
       }
 
       ::xo::db::sql::acs_attribute create_attribute \
@@ -2124,7 +2124,7 @@ namespace eval ::xo::db {
       set sc [[my domain] info superclass]
       if {![$sc istype ::xo::db::Class]} {set sc ::xo::db::Object}
       append column_spec " REFERENCES [$sc table_name]([$sc id_column])\
-		ON DELETE CASCADE"
+        ON DELETE CASCADE"
     }
     #
     # Constraints
