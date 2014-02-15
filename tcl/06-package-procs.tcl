@@ -1,4 +1,4 @@
-xad_library {
+ad_library {
   Definition of a package manager for creating XOTcl package objects
   
   @author Gustaf Neumann (neumann@wu-wien.ac.at)
