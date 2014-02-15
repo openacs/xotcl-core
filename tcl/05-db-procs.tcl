@@ -274,6 +274,14 @@ namespace eval ::xo::db {
   ::xotcl::Class create ::xo::db::DBI            -superclass ::xo::db::Driver
   ::xotcl::Class create ::xo::db::DBI-postgresql -superclass {::xo::db::DBI ::xo::db::postgresql}
 
+  ::xo::db::Driver instproc get_sql {{-dbn ""} qn} {
+    set full_statement_name [db_qd_get_fullname $qn 2]
+    set full_query [db_qd_fetch $full_statement_name $dbn]
+    set sql [db_fullquery_get_querytext $full_query]
+    my uplevel [list subst $sql]
+  }
+
+
   ##########################################################################
   #
   # DBI support
@@ -296,7 +304,6 @@ namespace eval ::xo::db {
   #
   ::xo::db::DBI instproc foreach {{-dbn ""} qn sql body} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    #my uplevel [list dbi_foreach $sql $body]
     set avlists [my uplevel [list dbi_rows -result avlists -- $sql]]
     foreach avlist $avlists {
       foreach {a v} $avlist {my uplevel [list set $a $v]}
@@ -306,10 +313,10 @@ namespace eval ::xo::db {
   #
   # foreach based on "dbi_eval"
   #
-  ::xo::db::DBI instproc foreach {{-dbn ""} qn sql body} {
-    if {$sql eq ""} {set sql [my get_sql $qn]}
-    my uplevel [list dbi_foreach $sql $body]
-  }
+  #::xo::db::DBI instproc foreach {{-dbn ""} qn sql body} {
+  #  if {$sql eq ""} {set sql [my get_sql $qn]}
+  #  my uplevel [list dbi_foreach $sql $body]
+  #}
 
   ::xo::db::DBI instproc 0or1row {{-dbn ""} qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
@@ -346,12 +353,6 @@ namespace eval ::xo::db {
       return $result
     }
     return $default
-  }
-
-  ::xo::db::DBI instproc get_sql {{-dbn ""} qn} {
-    set full_statement_name [db_qd_get_fullname $qn 2]
-    set full_query [db_qd_fetch $full_statement_name $dbn]
-    return [db_fullquery_get_querytext $full_query]
   }
 
   #
@@ -421,7 +422,7 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::DB instproc sets {{-dbn ""} qn sql} {
-    set qn [uplevel [list [self] qn $qn]]
+    if {$sql eq ""} {set sql [my get_sql $qn]}
     db_with_handle -dbn $dbn db {
       set result [list]
       set answers [uplevel [list ns_pg_bind select $db $sql]]
