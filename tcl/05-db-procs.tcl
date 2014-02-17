@@ -278,7 +278,7 @@ namespace eval ::xo::db {
     set full_statement_name [db_qd_get_fullname $qn 2]
     set full_query [db_qd_fetch $full_statement_name $dbn]
     set sql [db_fullquery_get_querytext $full_query]
-    my uplevel [list subst $sql]
+    my uplevel 2 [list subst $sql]
   }
 
 
