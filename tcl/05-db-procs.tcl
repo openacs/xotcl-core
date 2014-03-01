@@ -1151,7 +1151,7 @@ namespace eval ::xo::db {
       }
       set sql "$sql"
       db_with_handle -dbn \$dbn db {
-        #ns_log notice "--sql=$sql"
+        #ns_log notice "--sql=\$sql"
         return \[ $sql_cmd \]
       }
     }]
