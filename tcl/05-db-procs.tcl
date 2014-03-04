@@ -421,6 +421,10 @@ namespace eval ::xo::db {
     # built-in
   }
 
+  ::xo::db::DB instproc transaction {{-dbn ""} script} {
+    return [my uplevel [list ::db_transaction -dbn $dbn $script]]
+  }
+
   ::xo::db::DB instproc sets {{-dbn ""} qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
     db_with_handle -dbn $dbn db {
