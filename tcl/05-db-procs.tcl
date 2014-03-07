@@ -96,7 +96,8 @@ namespace eval ::xo::db {
     return "date_trunc('$field',$date)"
   }
   ::xo::db::postgresql instproc date_trunc_expression {field date date_string} {
-    return "date_trunc('$field',$date) = '$date_string'"
+    if {![string match :* $date_string]} {set date_string "'$date_string'"}
+    return "date_trunc('$field',$date) = $date_string"
   }
 
   ::xo::db::postgresql instproc has_ltree {} {
@@ -225,7 +226,8 @@ namespace eval ::xo::db {
     return "to_char(trunc($date,'$field'), 'YYYY-MM-DD HH24:MI:SS')"
   }
   ::xo::db::oracle instproc date_trunc_expression {field date date_string} {
-    return "trunc($date,'$field') = trunc(to_date('$date_string','YYYY-MM-DD'),'$field')"
+    if {![string match :* $date_string]} {set date_string "'$date_string'"}
+    return "trunc($date,'$field') = trunc(to_date($date_string,'YYYY-MM-DD'),'$field')"
   }
   ::xo::db::oracle instproc mk_sql_constraint_name {table att suffix} {
     #
@@ -627,14 +629,14 @@ namespace eval ::xo::db {
   #
   ::xotcl::Object create require
 
-  #require set postgresql_table_exists {select 1 from pg_tables    where tablename  = '$name'}
-  require set postgresql_table_exists {select 1 from pg_class     where relname    = '$name' and\
+  #require set postgresql_table_exists {select 1 from pg_tables    where tablename  = :name}
+  require set postgresql_table_exists {select 1 from pg_class     where relname    = :name and\
                                            pg_table_is_visible(oid)}
-  require set postgresql_view_exists  {select 1 from pg_views     where viewname   = '$name'}
-  require set postgresql_index_exists {select 1 from pg_indexes   where indexname  = '$name'}
-  require set oracle_table_exists     {select 1 from user_tables  where table_name = '$name'}
-  require set oracle_view_exists      {select 1 from user_views   where view_name  = '$name'}
-  require set oracle_index_exists     {select 1 from user_indexes where index_name = '$name'}
+  require set postgresql_view_exists  {select 1 from pg_views     where viewname   = :name}
+  require set postgresql_index_exists {select 1 from pg_indexes   where indexname  = :name}
+  require set oracle_table_exists     {select 1 from user_tables  where table_name = :name}
+  require set oracle_view_exists      {select 1 from user_views   where view_name  = :name}
+  require set oracle_index_exists     {select 1 from user_indexes where index_name = :name}
 
   require proc exists_table {name} {
     if {[db_driverkey ""] eq "oracle"} {
