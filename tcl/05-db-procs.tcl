@@ -566,13 +566,22 @@ namespace eval ::xo::db {
   #
   ##########################################################################
 
-  if {[info exists ::acs::preferdbi]} {
-    ::xo::db::DBI-postgresql create ::xo::dc 
-  } elseif {[db_driverkey ""] eq "postgresql"} {
-    ::xo::db::DB-postgresql create ::xo::dc
-  } else {
-    ::xo::db::DB-oracle create ::xo::dc
+  ad_proc ::xo::db::select_driver {{driver ""}} {
+    Select the driver based on the specified argument (either DB or
+    DBI) or based on the defaults for the configuration.  This 
+    function can be used to switch the driver as well dynamically.
+  } {
+    set sqlDialect [db_driverkey ""]
+    if {$driver eq ""} {
+      set driver DB
+      if {[info exists ::acs::preferdbi]} {
+        set driver DBI
+      }
+    }
+    ::xo::db::$driver-$sqlDialect create ::xo::dc
   }
+
+  ::xo::db::select_driver
 
 
 
