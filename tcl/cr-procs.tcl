@@ -853,8 +853,7 @@ namespace eval ::xo::db {
     # an revision.
     #
     if {$quoted} {set val $value} {set val :value}
-    ::xo::dc dml update_content "update cr_revisions \
-                set $attribute = :val \
+    ::xo::dc dml update_content "update cr_revisions set $attribute = $val \
         where revision_id = :revision_id"
   }
   
