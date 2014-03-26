@@ -21,6 +21,7 @@ package require xotcl::serializer
   ::xotcl::Object instproc show-object
   ::xotcl::Object instproc destroy_on_cleanup
   ::xotcl::Object instproc set_instance_vars_defaults
+  ::xotcl::Class instproc extend_slot 
   ::xotcl::nonposArgs proc integer
   ::xotcl::nonposArgs proc optional
 }
@@ -944,6 +945,35 @@ proc ::xo::getObjectProperty {o what args} {
       error "no idea how to return $what"
     }
   }
+}
+
+#
+# Helper method to copy a slot and configure it
+#
+::xotcl::Class instproc extend_slot {arg} {
+
+  # The argument list is e.g. "foo -name x -title y" 
+  #
+  # It is placed into one arguemnt to avoid interference with the "-"
+  # argument parsing since it will always start with a non-dashed
+  # value.
+  #
+  set name [lindex $arg 0]
+  set config [lrange $arg 1 end]
+  
+  # search for slot
+  foreach c [my info heritage] {
+    if {[info command ${c}::slot::$name] ne ""} {
+      set slot ${c}::slot::$name
+      break
+    }
+  }
+  if {![info exists slot]} {error "can't find slot $name"}
+  
+  # copy slot and configure it
+  set newSlot [self]::slot::$name
+  $slot copy $newSlot
+  $newSlot configure {*}$config
 }
 
 
