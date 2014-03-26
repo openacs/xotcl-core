@@ -681,9 +681,10 @@ namespace eval ::xo::db {
             -sqltype varchar(1000) \
             -pretty_name "Title" -pretty_plural "Titles"
         ::xo::db::CrAttribute create description \
-            -sqltype varchar(1000) \
+            -sqltype text \
             -pretty_name "Description" -pretty_plural "Descriptions"
-        ::xo::db::CrAttribute create publish_date -datatype date
+        ::xo::db::CrAttribute create publish_date \
+            -datatype date
         ::xo::db::CrAttribute create mime_type \
             -sqltype varchar(200) \
             -pretty_name "Mime Type" -pretty_plural "Mime Types" \
@@ -694,10 +695,11 @@ namespace eval ::xo::db {
             -default en_US
         # lob, content, content_length
         #
-        # missing: attributes from cr_items
+        # "magic attribute "text"
         ::xo::db::CrAttribute create text \
             -pretty_name "Text" \
             -create_acs_attribute false
+        # missing: attribute from cr_items
         ::xo::db::CrAttribute create name \
             -pretty_name "Name" \
             -create_acs_attribute false
@@ -753,8 +755,7 @@ namespace eval ::xo::db {
       if {$storage_type eq "file"} {
         my log "--update_content not implemented for type file"
       } else {
-        ::xo::dc dml update_content "update cr_revisions \
-                set content = :content \
+        ::xo::dc dml update_content "update cr_revisions set content = :content \
         where revision_id = :revision_id"
       }
     }
