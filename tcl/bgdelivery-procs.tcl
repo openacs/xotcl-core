@@ -434,7 +434,7 @@ if {![string match "*contentsentlength*" $msg]} {
       set spooling 1
       # puts -nonewline [my channel] $data
       # my done
-      set filename [ns_tmpnam]
+      set filename [ad_tmpnam]
       set fd [open $filename w]
       fconfigure $fd -translation binary -encoding $encoding
       puts -nonewline $fd $data

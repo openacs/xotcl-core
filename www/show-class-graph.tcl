@@ -158,7 +158,7 @@ catch {set dot [::util::which dot]}
 if {$dot eq "" && [file executable /usr/bin/dot]} {set dot /usr/bin/dot}
 if {$dot eq ""} {ns_return 404 plain/text "dot not found"; ad_script_abort}
  
-set tmpnam [ns_tmpnam]
+set tmpnam [ad_tmpnam]
 set tmpfile $tmpnam.png
 set f [open $tmpnam.dot w]; puts $f $dot_code; close $f
 
