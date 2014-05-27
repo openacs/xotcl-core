@@ -670,17 +670,30 @@ namespace eval ::xo::db {
     }
   }
 
-  require proc index {-table -col {-using ""} {-unique false}} {
-    set colpart $col
-    regsub -all ", *" $colpart _ colpart
+  require proc index {-table -col -expression -expression_name {-using ""} {-unique false}} {
+
+    if {![info exists col] && ![info exists expression]} {error "Neither col nor expression were provided"}
+    if { [info exists col] &&  [info exists expression]} {error "Please provide either col or expression"}
+
+    if {[info exists col]} {
+      set colExpSQL $col
+      regsub -all ", *" $col _ colExpName
+    } else {
+      set colExpSQL ($expression)
+      if {[info exists expression_name]} {
+        set colExpName $expression_name
+      } else {
+        regsub -all {[^[:alnum:]]} $expression "" colExpName
+      }
+    }
     set suffix [expr {$unique ? "un_idx" : "idx"}]
     set uniquepart [expr {$unique ? "UNIQUE" : ""}]
-    set name [::xo::dc mk_sql_constraint_name $table $colpart $suffix]
+    set name [::xo::dc mk_sql_constraint_name $table $colExpName $suffix]
     if {![::xo::dc 0or1row "" [subst [my set [db_driverkey ""]_index_exists]]]} {
       if {[db_driverkey ""] eq "oracle"} {set using ""}
       set using [expr {$using ne "" ? "using $using" : ""}]
       ::xo::dc dml create-index-$name \
-          "create $uniquepart index $name ON $table $using ($col)"
+          "create $uniquepart index $name ON $table $using ($colExpSQL)"
     }
   }
 
