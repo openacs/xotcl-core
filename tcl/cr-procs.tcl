@@ -1312,7 +1312,7 @@ namespace eval ::xo::db {
     set cond [list]
     if {$type_selection_clause ne ""} {lappend cond $type_selection_clause}
     if {$where_clause ne ""}          {lappend cond $where_clause}
-    if {[info exists publish_status]} {lappend cond "ci.publish_status eq '$publish_status'"}
+    if {[info exists publish_status]} {lappend cond "ci.publish_status = '$publish_status'"}
     if {$base_table eq "cr_folders"} {
       lappend cond "acs_objects.object_id = cf.folder_id and ci.item_id = cf.folder_id"
       set acs_objects_table "acs_objects, cr_items ci, "
