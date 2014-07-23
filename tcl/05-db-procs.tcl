@@ -1821,6 +1821,7 @@ namespace eval ::xo::db {
     {-named_objects:boolean false}
     {-object_named_after ""}
     {-destroy_on_cleanup:boolean true}
+    {-ignore_missing_package_ids:boolean false}
     {-initialize true}
   } {
 
@@ -1839,13 +1840,11 @@ namespace eval ::xo::db {
     are created.
 
     @named_objects If this flag is true, the value of the id_column is used
-    for the name of the created objects (object will be named
-                                         e.g. ::13738). Otherwise, objects are created with the XOTcl "new"
-    method to avoid object name clashes.
+    for the name of the created objects (object will be named e.g. ::13738). 
+    Otherwise, objects are created with the XOTcl "new" method to avoid object name clashes.
 
-    @destroy_on_cleanup If this flag is true, the objects (and ordered
-                                                           composite) will be automatically destroyed on cleaup (typically
-                                                                                                                 after the request was processed).
+    @destroy_on_cleanup If this flag is true, the objects (and ordered composite) 
+      will be automatically destroyed on cleaup (typically                                                                                      after the request was processed).
 
     @initialize can be used to avoid full initialization, when
     a large series of of objects is loaded. Per default, these objects
@@ -1894,7 +1893,7 @@ namespace eval ::xo::db {
         if {![$o exists package_id]} {
           if {[$o exists object_package_id]} {
             $o set package_id [$o set object_package_id]
-          } else {
+          } elseif {!$ignore_missing_package_ids} {
             ns_log warning "[namespace tail [$o info class]] $o has no package_id and no object_package_id"
           }
         }

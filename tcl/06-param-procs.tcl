@@ -241,6 +241,7 @@ namespace eval ::xo {
                              and package_key = :package_key
                            }] \
                  -object_class ::xo::db::apm_parameter \
+                 -ignore_missing_package_ids true \
                  -as_ordered_composite false -named_objects true -destroy_on_cleanup false]
       #
       # Check for "retry" to avoid potential recursive loops
@@ -356,6 +357,7 @@ namespace eval ::xo {
   ::xo::db::apm_parameter instantiate_objects \
       -sql [::xo::db::apm_parameter instance_select_query] \
       -object_class ::xo::db::apm_parameter \
+      -ignore_missing_package_ids true \
       -as_ordered_composite false -named_objects true -destroy_on_cleanup false
   #  ns_log notice "--p got [llength [::xo::db::apm_parameter info instances]] parameters"
   #foreach p [::xo::db::apm_parameter info instances] { ns_log notice [$p serialize] }
