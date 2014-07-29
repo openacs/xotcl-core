@@ -5,7 +5,7 @@ ad_page_contract {
   @creation-date Oct 23, 2005
   @cvs-id $Id$
 } {
-  page_id:integer,notnull
+  page_id:naturalnum,notnull
   {name ""}
 } -properties {
   name:onevalue
