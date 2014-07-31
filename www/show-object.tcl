@@ -213,6 +213,18 @@ if {[nsv_exists api_library_doc $index]} {
   array set doc_elements [nsv_get api_library_doc $index]
   append output [lindex $doc_elements(main) 0]
   append output "<dl>\n"
+  if { [info exists doc_elements(param)] } {
+    append output "<dt><b>Documented Parameters:</b>\n"
+    foreach par $doc_elements(param) {
+      append output "<dd><em>-[lindex $par 0]</em> [lrange $par 1 end]\n"
+    }
+  }
+  if { [info exists doc_elements(see)] } {
+    append output "<dt><b>See Also:</b>\n"
+    foreach seeref $doc_elements(see) {
+      append output "<dd>[api_format_see $seeref]\n"
+    }
+  }
   if { [info exists doc_elements(creation-date)] } {
     append output "<dt><b>Created:</b>\n<dd>[lindex $doc_elements(creation-date) 0]\n"
   }
