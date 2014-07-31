@@ -170,6 +170,7 @@ namespace eval ::Generic {
   
   Form ad_instproc generate {
     {-template "formTemplate"}
+    {-mode "edit"}
     {-export}
   } {
     the method generate is used to actually generate the form template
@@ -192,7 +193,7 @@ namespace eval ::Generic {
                      [list __object_name $object_name]] 
     if {[info exists export]} {foreach pair $export {lappend exports $pair}}
 
-    ad_form -name [my name] -form [my fields] \
+    ad_form -name [my name] -form [my fields] -mode $mode \
         -export $exports -action [my action] -html [my html]
 
     set new_data            "set item_id \[[self] new_data\]"
