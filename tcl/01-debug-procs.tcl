@@ -117,7 +117,33 @@ if {[info commands ::nx::Object] ne ""} {
     set pcl [[my info class] info parameterclass]
     $pcl searchDefaults [self]
   }
+
+  #
+  # The XOTcl1_ParameterHandler is for forward compatibility in XOTcl1
+  # to allow to load programs with xotcl2/nx value checkers in
+  # parameter declarations. The handler simply strips (ignores)
+  # xotcl2's parameter declarations.
+  #
+  namespace eval ::xo {}
+  ::xotcl::Class create ::xo::XOTcl1_ParameterHandler
+  ::xo::XOTcl1_ParameterHandler instproc __stripped_parameter {element} {
+    regexp {^([^:]+):} $element _ element
+    return $element
+  }
+  ::xo::XOTcl1_ParameterHandler instproc parameter {list} {
+    set result {}
+    foreach element $list {
+      if {$l == [llength $element]} {
+        lappend result [my __stripped_parameter $element]
+      } else {
+        lappend result [concat [my __stripped_parameter $element] [lrange $element 1 end]]
+      }
+    }
+    next $result
+  }
+  ::xotcl::Class instmixin ::xo::XOTcl1_ParameterHandler
 }
+
 
 namespace eval ::xo {
   ::xo::Attribute instproc init {} {
