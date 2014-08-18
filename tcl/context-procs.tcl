@@ -226,7 +226,7 @@ namespace eval ::xo {
       return
     }
 
-    if {[info command ::ds_show_p] ne "" && [ds_database_enabled_p]} {
+    if {[info exists ::ds_show_p] && [ds_database_enabled_p]} {
       ::xo::dc profile on
     }
 
