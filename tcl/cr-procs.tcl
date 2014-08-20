@@ -596,7 +596,7 @@ namespace eval ::xo::db {
     set cond [list]
     if {$type_selection_clause ne ""} {lappend cond $type_selection_clause}
     if {$where_clause ne ""}          {lappend cond $where_clause}
-    if {[info exists publish_status]} {lappend cond "ci.publish_status = :publish_status"}
+    if {[info exists publish_status]} {lappend cond "ci.publish_status = $publish_status"}
     if {$base_table eq "cr_revisions"} {
       lappend cond "acs_objects.object_id = bt.revision_id"
       set acs_objects_table "acs_objects, "
@@ -607,9 +607,9 @@ namespace eval ::xo::db {
     lappend cond "coalesce(ci.live_revision,ci.latest_revision) = bt.revision_id"
     if {$parent_id ne ""} {
       if {$with_children} {
-        lappend cond "ci.parent_id in (select :parent_id::integer from dual union select item_id from cr_items where parent_id = :parent_id)"
+        lappend cond "ci.parent_id in (select $parent_id from dual union select item_id from cr_items where parent_id = $parent_id)"
       } else {
-        lappend cond "ci.parent_id = :parent_id"
+        lappend cond "ci.parent_id = $parent_id"
       }
     }
 
