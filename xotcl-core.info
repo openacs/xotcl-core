@@ -14,7 +14,7 @@
         <owner url="mailto:neumann@wu-wien.ac.at">Gustaf Neumann</owner>
         <summary>XOTcl library functionality (e.g. thread handling, online documentation, Generic Form and List Classes)</summary>
         <release-date>2014-03-24</release-date>
-        <vendor url="http://wu.ac.at">WU VIenna</vendor>
+        <vendor url="http://wu.ac.at">WU Vienna</vendor>
         <description format="text/html">&lt;pre&gt;
 This component contains some core functionality for OpenACS
 applications using XOTcl. It includes
