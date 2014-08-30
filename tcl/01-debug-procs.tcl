@@ -626,7 +626,7 @@ namespace eval ::xo {
   }
 
   ns_log_redirector_manager proc set_level {new_logging_level} {
-    ::ns_log notice "SET LEVEL $new_logging_level"
+    ::ns_log notice "ns_log_redirector: set logging level $new_logging_level"
     #
     # We want ns_log error be reported as well via ds_comment;
     # severity new_logging_level defines the amount of logging
