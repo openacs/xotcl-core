@@ -219,15 +219,53 @@ ad_library {
   nsv_set api_proc_doc $proc_index [array get doc_elements]
 }
 
-::xotcl::Object instproc ad_proc {
-  {-private:switch false}
-  {-deprecated:switch false}
-  {-warn:switch false}
-  {-debug:switch false} 
-  proc_name arguments doc body} {
-    uplevel [list [self] proc $proc_name $arguments $body]
-    my __api_make_doc "" $proc_name
-  }
+if {[info commands ::nx::Object] ne ""} {
+  ::xotcl::Object instproc ad_proc {
+    {-private:switch false}
+    {-deprecated:switch false}
+    {-warn:switch false}
+    {-debug:switch false} 
+    proc_name 
+    arguments:parameter,0..*
+    doc 
+    body} {
+      uplevel [list [self] proc $proc_name $arguments $body]
+      my __api_make_doc "" $proc_name
+    }
+
+  ::xotcl::Class instproc ad_instproc {
+    {-private:switch false}
+    {-deprecated:switch false}
+    {-warn:switch false}
+    {-debug:switch false} 
+    proc_name 
+    arguments:parameter,0..*
+    doc 
+    body} {
+      uplevel [list [self] instproc $proc_name $arguments $body]
+      my __api_make_doc inst $proc_name
+    }
+}  else {
+  ::xotcl::Object instproc ad_proc {
+    {-private:switch false}
+    {-deprecated:switch false}
+    {-warn:switch false}
+    {-debug:switch false} 
+    proc_name arguments doc body} {
+      uplevel [list [self] proc $proc_name $arguments $body]
+      my __api_make_doc "" $proc_name
+    }
+
+  ::xotcl::Class instproc ad_instproc {
+    {-private:switch false}
+    {-deprecated:switch false}
+    {-warn:switch false}
+    {-debug:switch false} 
+    proc_name arguments doc body} {
+      uplevel [list [self] instproc $proc_name $arguments $body]
+      my __api_make_doc inst $proc_name
+    }
+}
 
 ::xotcl::Object instproc ad_forward {
   {-private:switch false}
@@ -237,16 +275,6 @@ ad_library {
   method_name doc args} {
     uplevel [self] forward $method_name $args
     my __api_make_forward_doc "" $method_name
-  }
-
-::xotcl::Class instproc ad_instproc {
-  {-private:switch false}
-  {-deprecated:switch false}
-  {-warn:switch false}
-  {-debug:switch false} 
-  proc_name arguments doc body} {
-    uplevel [list [self] instproc $proc_name $arguments $body]
-    my __api_make_doc inst $proc_name
   }
 
 ::xotcl::Object instproc ad_instforward {
