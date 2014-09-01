@@ -1616,7 +1616,9 @@ namespace eval ::xo::db {
     return $r
   }
   CrCache::Item instproc save_new args {
+    set npv [my remove_non_persistent_vars]
     set item_id [next]
+    my set_non_persistent_vars $npv
     # the following approach will now work nicely, we would have to rename the object
     # caching this does not seem important here, the next fetch will cache it anyhow
     #ns_cache set xotcl_object_cache $item_id [::Serializer deepSerialize [self]]
