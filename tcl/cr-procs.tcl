@@ -133,6 +133,7 @@ namespace eval ::xo::db {
   CrClass ad_proc lookup {
     -name:required
     {-parent_id -100}
+    {-content_type "::%"}
   } {
     Check, whether an content item with the given name exists.
     If the item exists, return its item_id, otherwise 0.
@@ -140,7 +141,9 @@ namespace eval ::xo::db {
     @return item_id
   } {
     return [::xo::dc get_value entry_exists_select {
-      select item_id from cr_items where name = :name and parent_id = :parent_id
+      select item_id from cr_items 
+      where name = :name and parent_id = :parent_id
+      and content_type like :content_type
     } 0]
   }
   
