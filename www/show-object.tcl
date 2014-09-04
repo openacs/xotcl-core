@@ -274,7 +274,7 @@ proc api_src_doc {out show_source scope object proc m} {
   if { $show_source } { 
     append output \
         "<pre class='code'>" \
-        [api_tcl_to_html [::xotcl::api proc_index $scope $object $proc $m]] \
+        [::apidoc::api_tcl_to_html [::xotcl::api proc_index $scope $object $proc $m]] \
         </pre>
   }
   return $output
@@ -304,7 +304,7 @@ if {$show_methods} {
         if { $show_source } { 
           append output \
               "<pre class='code'>" \
-              [api_tcl_to_html [::xotcl::api proc_index $scope $object instproc $m]] \
+              [::apidoc::api_tcl_to_html [::xotcl::api proc_index $scope $object instproc $m]] \
               </pre>
         }
       }
