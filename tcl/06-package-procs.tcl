@@ -159,7 +159,10 @@ namespace eval ::xo {
   PackageMgr ad_instproc require {{-url ""} package_id} {
     Create package object if needed.
   } {
-    if {$package_id eq ""} {error "package_id must not be empty"}
+    if {$package_id eq ""} {
+      #::xo::show_stack
+      error "package_id must not be empty"
+    }
 
     #my log "--R $package_id exists? [my isobject ::$package_id] url='$url'"
 
