@@ -220,6 +220,7 @@ ad_library {
 }
 
 if {[info commands ::nx::Object] ne ""} {
+
   ::xotcl::Object instproc ad_proc {
     {-private:switch false}
     {-deprecated:switch false}
@@ -228,10 +229,11 @@ if {[info commands ::nx::Object] ne ""} {
     proc_name 
     arguments:parameter,0..*
     doc 
-    body} {
-      uplevel [list [self] proc $proc_name $arguments $body]
-      my __api_make_doc "" $proc_name
-    }
+    body
+  } {
+    uplevel [list [self] proc $proc_name $arguments $body]
+    my __api_make_doc "" $proc_name
+  }
 
   ::xotcl::Class instproc ad_instproc {
     {-private:switch false}
@@ -241,10 +243,11 @@ if {[info commands ::nx::Object] ne ""} {
     proc_name 
     arguments:parameter,0..*
     doc 
-    body} {
-      uplevel [list [self] instproc $proc_name $arguments $body]
-      my __api_make_doc inst $proc_name
-    }
+    body
+  } {
+    uplevel [list [self] instproc $proc_name $arguments $body]
+    my __api_make_doc inst $proc_name
+  }
 }  else {
   ::xotcl::Object instproc ad_proc {
     {-private:switch false}
@@ -332,51 +335,51 @@ if {[info commands ::nx::Object] ne ""} {
 }
 
 
-Class ::Test -ad_doc {
-  Test Class for the documentation of 
-  <code>Classes</code>, 
-  <code>Objects</code>, 
-  <code>instprocs</code>, and
-  <code>procs</code>.
-  @author Gustaf Neumann
-  @cvs-id $Id$
-}
-::Test ad_proc my-class-specific-proc {x y} {
-  This is a proc of Class Test merely for testing purposes...
-  @param x First Operand
-  @param y Second Operand
-} {
-  ns_log notice "hello world $x $y"
-}
+# Class ::Test -ad_doc {
+#   Test Class for the documentation of 
+#   <code>Classes</code>, 
+#   <code>Objects</code>, 
+#   <code>instprocs</code>, and
+#   <code>procs</code>.
+#   @author Gustaf Neumann
+#   @cvs-id $Id$
+# }
+# ::Test ad_proc my-class-specific-proc {x y} {
+#   This is a proc of Class Test merely for testing purposes...
+#   @param x First Operand
+#   @param y Second Operand
+# } {
+#   ns_log notice "hello world $x $y"
+# }
 
-::Test ad_instproc my-method {-id:required} {
-  This is an instproc of Class Test merely for testing purposes...
-  @param id Some Id
-} {
-  ns_log notice "hello world $id"
-}
-::Test ad_instproc my-method2 {-id:required {-flag:boolean true}} {
-  This is an instproc of Class Test merely for testing purposes...
-  @param id Some Id
-  @param flag Some flag
-} {
-  ns_log notice "hello world $id"
-}
-::Test ad_instproc -private my-method3 {-id:required {-flag:boolean true} -switch:switch x {y 1}} {
-  This is an instproc of Class Test merely for testing purposes...
-  @param id Some Id
-  @param flag Some flag
-  @param switch Switch to turn on or off depending on default
-  @param x First Operand
-  @param y Second Operand
-} {
-  ns_log notice "hello world $id"
-}
+# ::Test ad_instproc my-method {-id:required} {
+#   This is an instproc of Class Test merely for testing purposes...
+#   @param id Some Id
+# } {
+#   ns_log notice "hello world $id"
+# }
+# ::Test ad_instproc my-method2 {-id:required {-flag:boolean true}} {
+#   This is an instproc of Class Test merely for testing purposes...
+#   @param id Some Id
+#   @param flag Some flag
+# } {
+#   ns_log notice "hello world $id"
+# }
+# ::Test ad_instproc -private my-method3 {-id:required {-flag:boolean true} -switch:switch x {y 1}} {
+#   This is an instproc of Class Test merely for testing purposes...
+#   @param id Some Id
+#   @param flag Some flag
+#   @param switch Switch to turn on or off depending on default
+#   @param x First Operand
+#   @param y Second Operand
+# } {
+#   ns_log notice "hello world $id"
+# }
 
-Class ::SpecializedTest -superclass ::Test -ad_doc {
-  A Class defined as a subclass of ::Test for testing the
-  documentation stuff...
-}
+# Class ::SpecializedTest -superclass ::Test -ad_doc {
+#   A Class defined as a subclass of ::Test for testing the
+#   documentation stuff...
+# }
 
 #
 # Local variables:
