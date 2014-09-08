@@ -1048,7 +1048,8 @@ namespace eval ::xo::db {
   ::xo::db::postgresql instproc get_function_args {package_name object_name} {
     set key [string toupper ${package_name}__${object_name}]
     #
-    # If we have function ares already loaded, there is nothing to do
+    # If we have function definitions already loaded, there is nothing
+    # to do.
     #
     if {[info exists ::xo::db::fnargs($key)]} {
       return $::xo::db::fnargs($key)
@@ -1839,14 +1840,14 @@ namespace eval ::xo::db {
     @param object_class specifies the XOTcl class, for which instances
     are created.
 
-    @named_objects If this flag is true, the value of the id_column is used
+    @param named_objects If this flag is true, the value of the id_column is used
     for the name of the created objects (object will be named e.g. ::13738). 
     Otherwise, objects are created with the XOTcl "new" method to avoid object name clashes.
 
-    @destroy_on_cleanup If this flag is true, the objects (and ordered composite) 
+    @param destroy_on_cleanup If this flag is true, the objects (and ordered composite) 
       will be automatically destroyed on cleaup (typically                                                                                      after the request was processed).
 
-    @initialize can be used to avoid full initialization, when
+    @param initialize can be used to avoid full initialization, when
     a large series of of objects is loaded. Per default, these objects
     are initialized via initialize_loaded_object, when the are 
     of type ::xo::db::Object
@@ -1946,7 +1947,7 @@ namespace eval ::xo::db {
   } {
     Returns the SQL-query to select ACS Objects of the object_type 
     of the class.
-    @select_attributes attributes for the SQL query to be retrieved.
+    @param select_attributes attributes for the SQL query to be retrieved.
     if no attributes are specified, all attributes are retrieved.
     @param orderby for ordering the solution set
     @param where_clause clause for restricting the answer set

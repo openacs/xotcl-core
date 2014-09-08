@@ -561,7 +561,7 @@ namespace eval ::xo::db {
     {-base_table "cr_revisions"}
   } {
     returns the SQL-query to select the CrItems of the specified object_type
-    @select_attributes attributes for the sql query to be retrieved, in addition
+    @param select_attributes attributes for the sql query to be retrieved, in addition
     to item_id, name, publish_status, object_type, and package_id 
     which are always returned
     @param orderby for ordering the solution set
@@ -1277,7 +1277,7 @@ namespace eval ::xo::db {
     {-base_table "cr_folders"}
   } {
     returns the SQL-query to select the CrItems of the specified object_type
-    @select_attributes attributes for the sql query to be retrieved, in addition
+    @param select_attributes attributes for the sql query to be retrieved, in addition
     to item_id, name, publish_status, object_type which are always returned
     @param orderby for ordering the solution set
     @param where_clause clause for restricting the answer set
