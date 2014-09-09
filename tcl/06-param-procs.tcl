@@ -37,7 +37,7 @@
 # - Consquences
 #   1) Since default values are copied into
 #      per-package-instance-values altering the default has no
-#      immediate effect.  It would be nice to alter in an openacs
+#      immediate effect.  It would be nice to alter in an OpenACS
 #      installation e.g. the default-values for all forums for a
 #      certain parameter, and that this value is used in cases, where
 #      the admin has not changed the package parameters

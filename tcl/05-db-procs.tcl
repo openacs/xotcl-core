@@ -1344,7 +1344,7 @@ namespace eval ::xo::db {
     # using a classic nonpositional argument style interface.
     #
     # The current implementation should work on postgres and oracle (not tested)
-    # but will not work, when a single openacs instance want to talk to 
+    # but will not work, when a single OpenACS instance want to talk to 
     # postgres and oracle simultaneously. Not sure, how important this is...
     #
     if {$object_name eq "set"} {
