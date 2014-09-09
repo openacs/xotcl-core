@@ -297,13 +297,13 @@ if {[info commands ::xotcl::nonposArgs] ne ""} {
 }
 
 # quick debugging tool
-proc ::! args {
-  ns_log notice "-- PROC [info level -1]"
-  ns_log notice "-- CALL $args"
-  set r [uplevel $args]
-  ns_log notice "-- EXIT $r"
-  return $r
-}
+# proc ::! args {
+#   ns_log notice "-- PROC [info level -1]"
+#   ns_log notice "-- CALL $args"
+#   set r [uplevel $args]
+#   ns_log notice "-- EXIT $r"
+#   return $r
+# }
 
 ::xotcl::Object instproc qn query_name {
   #set qn "dbqd.[my uplevel [list self class]]-[my uplevel [list self proc]].$query_name"
