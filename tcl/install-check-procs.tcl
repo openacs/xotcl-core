@@ -1,6 +1,6 @@
 namespace eval ::xotcl-core {
 
-  ad_proc ::xotcl-core::before_install_callback {} {
+  ad_proc -private ::xotcl-core::before-install {} {
   
     Callback for checking whether xotcl is installed for OpenACS
     
@@ -18,7 +18,7 @@ namespace eval ::xotcl-core {
     }
   }
   
-  ad_proc ::xotcl-core::after_upgrade_callback {
+  ad_proc -private ::xotcl-core::after-upgrade {
     {-from_version_name:required}
     {-to_version_name:required}
   } {
