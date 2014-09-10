@@ -506,6 +506,7 @@ namespace eval ::xo::db {
   # DB driver functions, optimized for PostgreSQL
   #
   ::xo::db::DB-postgresql instproc 0or1row {qn sql} {
+    if {$sql eq ""} {set sql [my get_sql $qn]}
     set answers [uplevel [list [self] exec_0or1row $sql]]
     if {$answers ne ""} {
       foreach {att val} [ns_set array $answers] { uplevel [list set $att $val] }
@@ -515,6 +516,7 @@ namespace eval ::xo::db {
     return 0
   }
   ::xo::db::DB-postgresql instproc 1row {qn sql} {
+    if {$sql eq ""} {set sql [my get_sql $qn]}
     set answers [uplevel [list [self] exec_0or1row $sql]]
     if {$answers ne ""} {
       foreach {att val} [ns_set array $answers] { uplevel [list set $att $val] }
@@ -524,6 +526,7 @@ namespace eval ::xo::db {
     error "query $sql did not return an answer"
   }
   ::xo::db::DB-postgresql instproc get_value {qn sql {default ""}} {
+    if {$sql eq ""} {set sql [my get_sql $qn]}
     set answers [uplevel [list [self] exec_0or1row $sql]]
     if {$answers ne ""} {
       set result [ns_set value $answers 0]
@@ -533,6 +536,7 @@ namespace eval ::xo::db {
     return $default
   }
   ::xo::db::DB-postgresql instproc list_of_lists {qn sql} {
+    if {$sql eq ""} {set sql [my get_sql $qn]}
     db_with_handle db {
       set result [list]
       set answers [uplevel [list ns_pg_bind select $db $sql]]
@@ -546,6 +550,7 @@ namespace eval ::xo::db {
     return $result
   }
   ::xo::db::DB-postgresql instproc list {qn sql} {
+    if {$sql eq ""} {set sql [my get_sql $qn]}
     db_with_handle db {
       set result [list]
       set answers [uplevel [list ns_pg_bind select $db $sql]]
