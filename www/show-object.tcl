@@ -222,7 +222,7 @@ if {[nsv_exists api_library_doc $index]} {
   if { [info exists doc_elements(see)] } {
     append output "<dt><b>See Also:</b>\n"
     foreach seeref $doc_elements(see) {
-      append output "<dd>[::apidoc::api_format_see $seeref]\n"
+      append output "<dd>[::apidoc::format_see $seeref]\n"
     }
   }
   if { [info exists doc_elements(creation-date)] } {
@@ -231,7 +231,7 @@ if {[nsv_exists api_library_doc $index]} {
   if { [info exists doc_elements(author)] } {
     append output "<dt><b>Author[ad_decode [llength $doc_elements(author)] 1 "" "s"]:</b>\n"
     foreach author $doc_elements(author) {
-      append output "<dd>[::apidoc::api_format_author $author]\n"
+      append output "<dd>[::apidoc::format_author $author]\n"
     }
   }
   if { [info exists doc_elements(cvs-id)] } {
@@ -274,7 +274,7 @@ proc api_src_doc {out show_source scope object proc m} {
   if { $show_source } { 
     append output \
         "<pre class='code'>" \
-        [::apidoc::api_tcl_to_html [::xotcl::api proc_index $scope $object $proc $m]] \
+        [::apidoc::tcl_to_html [::xotcl::api proc_index $scope $object $proc $m]] \
         </pre>
   }
   return $output
@@ -304,7 +304,7 @@ if {$show_methods} {
         if { $show_source } { 
           append output \
               "<pre class='code'>" \
-              [::apidoc::api_tcl_to_html [::xotcl::api proc_index $scope $object instproc $m]] \
+              [::apidoc::tcl_to_html [::xotcl::api proc_index $scope $object instproc $m]] \
               </pre>
         }
       }
