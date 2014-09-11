@@ -91,6 +91,12 @@ namespace eval ::xo {
   } {
     #my msg "--i [self args], URL=$url, init_url=$init_url"
 
+    if {[info exists ad_doc] && [api_page_documentation_mode_p]} {
+      ad_parse_documentation_string $ad_doc doc_elements
+      set doc_elements(query) $parameter
+      error [array get doc_elements] "ad_page_contract documentation"
+    }
+
     if {$url eq "" && $init_url} {
       set url [root_of_host [ad_host]][ns_conn url]
       #my log "--CONN ns_conn url -> $url"
