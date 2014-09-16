@@ -839,11 +839,11 @@ proc ::xo::getObjectProperty {o what args} {
   switch $what {
     "mixin" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info mixin]}
-      return [$o info object mixin classes]
+      return [$o info object mixins]
     }
     "instmixin" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instmixin]}
-      return [$o info mixin classes]
+      return [$o info mixins]
     }
     "instproc" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instprocs {*}$args]}
@@ -878,16 +878,16 @@ proc ::xo::getObjectProperty {o what args} {
       return [$o info class]
     }
     "superclass" {
-      #if {"::xotcl::Object" in [$o info precedence]} {return [$o info superclass]}
-      return [$o info superclass]
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o info superclass]}
+      return [$o info superclasses]
     }
     "heritage" {
       #if {"::xotcl::Object" in [$o info precedence]} {return [$o info heritage]}
       return [$o info heritage]
     }
     "subclass" {
-      #if {"::xotcl::Object" in [$o info precedence]} {return [$o info subclass]}
-      return [$o info subclass]
+      if {"::xotcl::Object" in [$o info precedence]} {return [$o info subclass]}
+      return [$o info subclasses]
     }
     "parameter" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info parameter]}

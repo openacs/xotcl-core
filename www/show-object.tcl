@@ -196,9 +196,9 @@ if {$isclass} {
   #
   # compute list of classes with siblings
   set class_hierarchy [list]
-  foreach c [DO $object info superclass] {
+  foreach c [DO xo::getObjectProperty $object superclass] {
     if {$c eq "::xotcl::Object"} {continue}
-    lappend class_hierarchy {*}[DO $c info subclass]
+    lappend class_hierarchy {*}[DO xo::getObjectProperty $c subclass]
   }
   if {[llength $class_hierarchy]>5} {set class_hierarchy {}}
   lappend class_hierarchy {*}[DO $object info heritage]
