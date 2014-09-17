@@ -903,7 +903,7 @@ proc ::xo::getObjectProperty {o what args} {
     }
     "subclass" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info subclass]}
-      return [$o info $::xo::mapMethodNames(subclasses)]]
+      return [$o info $::xo::mapMethodNames(subclasses)]
     }
     "parameter" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info parameter]}
