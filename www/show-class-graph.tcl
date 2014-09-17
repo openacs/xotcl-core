@@ -85,7 +85,7 @@ ad_page_contract {
     if {![my isobject $e]} continue
     if {$e eq "::xotcl::Object"} continue
     set reduced_sc [list]
-    foreach sc [$e info superclass] {
+    foreach sc [::xo::getObjectProperty $e superclass] {
       if {$omit_base_classes && $sc eq "::xotcl::Object"
           || $sc eq "::xotcl::Class"} continue
       lappend reduced_sc $sc

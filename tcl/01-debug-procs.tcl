@@ -112,6 +112,22 @@ if {[info commands ::nx::Object] ne ""} {
     ::nx::Slot method set
   }
 
+  if {[nx::Class  info methods -path "info superclasses"] eq ""} {
+    # map method names to improve robustness for earlier versions
+    # (should be transitional code).
+    array set ::xo::mapMethodNames {
+      superclasses superclass
+      subclasses subclass
+      mixins "mixin classes"
+    } 
+  } else {
+    array set ::xo::mapMethodNames {
+      superclasses superclasses
+      subclasses subclasses
+      mixins mixins
+    }
+  }
+
 } else {
   ::xotcl::Object instproc set_instance_vars_defaults {} {
     set pcl [[my info class] info parameterclass]
@@ -839,11 +855,11 @@ proc ::xo::getObjectProperty {o what args} {
   switch $what {
     "mixin" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info mixin]}
-      return [$o info object mixins]
+      return [$o info object {*}$::xo::mapMethodNames(mixins)]
     }
     "instmixin" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instmixin]}
-      return [$o info mixins]
+      return [$o info {*}$::xo::mapMethodNames(mixins)]
     }
     "instproc" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instprocs {*}$args]}
@@ -879,7 +895,7 @@ proc ::xo::getObjectProperty {o what args} {
     }
     "superclass" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info superclass]}
-      return [$o info superclasses]
+      return [$o info $::xo::mapMethodNames(superclasses)]
     }
     "heritage" {
       #if {"::xotcl::Object" in [$o info precedence]} {return [$o info heritage]}
@@ -887,7 +903,7 @@ proc ::xo::getObjectProperty {o what args} {
     }
     "subclass" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info subclass]}
-      return [$o info subclasses]
+      return [$o info $::xo::mapMethodNames(subclasses)]]
     }
     "parameter" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info parameter]}
