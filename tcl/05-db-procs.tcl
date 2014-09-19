@@ -643,14 +643,16 @@ namespace eval ::xo::db {
   #
   ::xotcl::Object create require
 
-  #require set postgresql_table_exists {select 1 from pg_tables    where tablename  = :name}
-  require set postgresql_table_exists {select 1 from pg_class     where relname    = :name and\
-                                           pg_table_is_visible(oid)}
-  require set postgresql_view_exists  {select 1 from pg_views     where viewname   = :name}
-  require set postgresql_index_exists {select 1 from pg_indexes   where indexname  = :name}
-  require set oracle_table_exists     {select 1 from user_tables  where table_name = :name}
-  require set oracle_view_exists      {select 1 from user_views   where view_name  = :name}
-  require set oracle_index_exists     {select 1 from user_indexes where index_name = :name}
+  require set postgresql_table_exists  {select 1 from pg_class where relname = :name and pg_table_is_visible(oid)}
+  require set postgresql_column_exists {select 1 from information_schema.columns
+    where table_name = :table_name and column_name = :column_name}
+  require set postgresql_view_exists   {select 1 from pg_views     where viewname   = :name}
+  require set postgresql_index_exists  {select 1 from pg_indexes   where indexname  = :name}
+
+  require set oracle_table_exists      {select 1 from user_tables  where table_name = :name}
+  require set oracle_column_exists     {select 1 from user_tab_columns where table_name = :table_name and column_name = :column_name}
+  require set oracle_view_exists       {select 1 from user_views   where view_name  = :name}
+  require set oracle_index_exists      {select 1 from user_indexes where index_name = :name}
 
   require proc exists_table {name} {
     if {[db_driverkey ""] eq "oracle"} {
@@ -661,10 +663,34 @@ namespace eval ::xo::db {
     ::xo::dc 0or1row "" [subst [my set [db_driverkey ""]_table_exists]]
   }
 
+  require proc exists_column {table_name column_name} {
+    if {[db_driverkey ""] eq "oracle"} {
+      set table_name  [string toupper $table_name]
+      set column_name [string toupper $column_name]
+    } else {
+      set table_name  [string tolower $table_name]
+      set column_name [string tolower $column_name]
+    }
+    ::xo::dc 0or1row "" [subst [my set [db_driverkey ""]_column_exists]]
+  }
+
   require proc table {name definition} {
     if {![my exists_table $name]} {
+      set lines {}
+      foreach col [dict keys $definition] {append lines "$col [dict get $definition $col]"}
+      set definiition [join $lines ",\n"]
       #my log "--table $name does not exist, creating with $definition"
       ::xo::dc dml create-table-$name "create table $name ($definition)"
+    } else {
+      # The table exists already. Check the colums, whether we have to
+      # add columns. We do not alter attribute types, and we do not
+      # delete columns.
+      foreach col [dict keys $definition] {
+        if {![my exists_column $name $col]} {
+          ::xo::dc dml alter-table-$name \
+              "alter table $name add column $col [dict get $definition $col]"
+        }
+      }
     }
   }
 
@@ -1590,8 +1616,8 @@ namespace eval ::xo::db {
         error "no ::xo::db::Attribute slot for id_column '$id_column' specified"
       }
       set table_specs [list]
-      foreach {att spec} [array get column_specs] {lappend table_specs "    $att $spec"}
-      set table_definition [join $table_specs ",\n"]
+      foreach {att spec} [array get column_specs] {lappend table_specs $att $spec}
+      set table_definition $table_specs
     } else {
       set table_definition ""
     }
