@@ -668,9 +668,9 @@ namespace eval ::xo::db {
   require proc table {name definition} {
     if {![my exists_table $name]} {
       set lines {}
-      foreach col [dict keys $definition] {append lines "$col [dict get $definition $col]"}
-      set definiition [join $lines ",\n"]
-      #my log "--table $name does not exist, creating with $definition"
+      foreach col [dict keys $definition] {lappend lines "$col [dict get $definition $col]"}
+      set definition [join $lines ",\n"]
+      my log "--table $name does not exist, creating with definition: $definition\n\nlines: $lines"
       ::xo::dc dml create-table-$name "create table $name ($definition)"
     } else {
       # The table exists already. Check the colums, whether we have to
