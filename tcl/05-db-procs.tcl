@@ -670,7 +670,7 @@ namespace eval ::xo::db {
       set lines {}
       foreach col [dict keys $definition] {lappend lines "$col [dict get $definition $col]"}
       set definition [join $lines ",\n"]
-      my log "--table $name does not exist, creating with definition: $definition\n\nlines: $lines"
+      # my log "--table $name does not exist, creating with definition: $definition"
       ::xo::dc dml create-table-$name "create table $name ($definition)"
     } else {
       # The table exists already. Check the colums, whether we have to
