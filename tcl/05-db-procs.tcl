@@ -643,26 +643,15 @@ namespace eval ::xo::db {
   #
   ::xotcl::Object create require
 
-  require set postgresql_table_exists  {select 1 from pg_class where relname = :name and pg_table_is_visible(oid)}
-  require set postgresql_column_exists {select 1 from information_schema.columns
-    where table_name = :table_name and column_name = :column_name}
-  require set postgresql_view_exists   {select 1 from pg_views     where viewname   = :name}
-  require set postgresql_index_exists  {select 1 from pg_indexes   where indexname  = :name}
-
-  require set oracle_table_exists      {select 1 from user_tables  where table_name = :name}
-  require set oracle_column_exists     {select 1 from user_tab_columns where table_name = :table_name and column_name = :column_name}
-  require set oracle_view_exists       {select 1 from user_views   where view_name  = :name}
-  require set oracle_index_exists      {select 1 from user_indexes where index_name = :name}
-
   require proc exists_table {name} {
     if {[db_driverkey ""] eq "oracle"} {
       set name [string toupper $name]
     } else {
       set name [string tolower $name]
     }
-    ::xo::dc 0or1row "" [subst [my set [db_driverkey ""]_table_exists]]
+    ::xo::db::sql::util table_exists -name $name
   }
-
+  
   require proc exists_column {table_name column_name} {
     if {[db_driverkey ""] eq "oracle"} {
       set table_name  [string toupper $table_name]
@@ -671,7 +660,9 @@ namespace eval ::xo::db {
       set table_name  [string tolower $table_name]
       set column_name [string tolower $column_name]
     }
-    ::xo::dc 0or1row "" [subst [my set [db_driverkey ""]_column_exists]]
+    ::xo::db::sql::util table_column_exists \
+	-t_name $table_name \
+	-c_name $column_name
   }
 
   require proc table {name definition} {
@@ -696,13 +687,12 @@ namespace eval ::xo::db {
 
   require proc view {name definition} {
     if {[db_driverkey ""] eq "oracle"} {set name [string toupper $name]}
-    if {![::xo::dc 0or1row "" [subst [my set [db_driverkey ""]_view_exists]]]} {
+    if {![::xo::db::sql::util view_exists -name $name]} {
       ::xo::dc dml create-view-$name "create view $name AS $definition"
     }
   }
 
   require proc index {-table -col -expression -expression_name {-using ""} {-unique false}} {
-
     if {![info exists col] && ![info exists expression]} {error "Neither col nor expression were provided"}
     if { [info exists col] &&  [info exists expression]} {error "Please provide either col or expression"}
 
@@ -720,7 +710,7 @@ namespace eval ::xo::db {
     set suffix [expr {$unique ? "un_idx" : "idx"}]
     set uniquepart [expr {$unique ? "UNIQUE" : ""}]
     set name [::xo::dc mk_sql_constraint_name $table $colExpName $suffix]
-    if {![::xo::dc 0or1row "" [subst [my set [db_driverkey ""]_index_exists]]]} {
+    if {![::xo::db::sql::util index_exists -name $name]} {
       if {[db_driverkey ""] eq "oracle"} {set using ""}
       set using [expr {$using ne "" ? "using $using" : ""}]
       ::xo::dc dml create-index-$name \
