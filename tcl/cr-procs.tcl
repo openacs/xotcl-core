@@ -701,10 +701,12 @@ namespace eval ::xo::db {
         # "magic attribute "text"
         ::xo::db::CrAttribute create text \
             -pretty_name "Text" \
+            -create_table_attribute false \
             -create_acs_attribute false
         # missing: attribute from cr_items
         ::xo::db::CrAttribute create name \
             -pretty_name "Name" \
+            -create_table_attribute false \
             -create_acs_attribute false
       } \
       -parameter {

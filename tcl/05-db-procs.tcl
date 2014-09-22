@@ -678,6 +678,7 @@ namespace eval ::xo::db {
       # delete columns.
       foreach col [dict keys $definition] {
         if {![my exists_column $name $col]} {
+          ns_log notice "xodb: adding column <alter table $name add column $col [dict get $definition $col]>"
           ::xo::dc dml alter-table-$name \
               "alter table $name add column $col [dict get $definition $col]"
         }
@@ -1594,6 +1595,7 @@ namespace eval ::xo::db {
     # iterate over the slots and collect the column_specs for table generation
     #
     foreach {slot_name slot} [my array get db_slot] {
+      if {![$slot create_table_attribute]} continue
       set column_name [$slot column_name]
       set column_specs($column_name) \
           [$slot column_spec -id_column [expr {$column_name eq $id_column}]]
@@ -2126,6 +2128,7 @@ namespace eval ::xo::db {
         {min_n_values 1} 
         {max_n_values 1}
         {create_acs_attribute true}
+        {create_table_attribute true}
       }
 
   ::xo::db::Attribute instproc create_attribute {} {
@@ -2200,7 +2203,7 @@ namespace eval ::xo::db {
 
   ##############
   ::xotcl::MetaSlot create ::xo::db::CrAttribute \
-      -superclass {::xo::db::Attribute} \
+      -superclass {::xo::db::Attribute}
 
   ::xo::db::CrAttribute instproc create_attribute {} {
     # do nothing, if create_acs_attribute is set to false
