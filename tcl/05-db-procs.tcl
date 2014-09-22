@@ -706,15 +706,6 @@ namespace eval ::xo::db {
   }
 
   require proc table {name definition} {
-    # Since rev. 1.97.2.18, definition must be in dict format.
-    # To comply with previous table definitions given as plain string,
-    # we check for definition being a one-element list, and if so
-    # we translate definition to dict format.
-    set dict_def {}; if {[llength $definition] == 1} {
-      foreach col [split $definition ,] {
-	lappend dict_def [lindex $col 0] [lrange $col 1 end]
-      }
-    } ; set definition $dict_def
     if {![my exists_table $name]} {
       set lines {}
       foreach col [dict keys $definition] {lappend lines "$col [dict get $definition $col]"}
