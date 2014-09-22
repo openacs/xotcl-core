@@ -644,7 +644,9 @@ namespace eval ::xo::db {
   
   # Installations with acs-kernel prior to 5.8.1a6 (or later, before running upgrade script) 
   # won't have these procs. We define them here if missing to avoid breaking running instances during transition.
-  if {![::xotcl::Class isobject "::xo::db::sql::util"]} {::xo::db::Class create "::xo::db::sql::util"}
+  if {![::xotcl::Class isobject "::xo::db::sql::util"]} {
+      ::xotcl::Class create ::xo::db::sql::util 
+  }
   if {[::xo::db::sql::util info commands table_exists] eq ""} {
     ::xo::db::sql::util ad_proc table_exists {-name:required} {Transitional method} {
       set query [expr {[db_driverkey ""] eq "oracle" ? 
@@ -672,8 +674,8 @@ namespace eval ::xo::db {
   if {[::xo::db::sql::util info commands table_column_exists] eq ""} {
     ::xo::db::sql::util ad_proc table_column_exists {-t_name:required -c_name:required} {Transitional method} {
       set query [expr {[db_driverkey ""] eq "oracle" ? 
-	{select 1 from user_tab_columns where table_name = :table_name and column_name = :column_name} : 
-	{select 1 from information_schema.columns where table_name = :table_name and column_name = :column_name}}]
+	{select 1 from user_tab_columns where table_name = :t_name and column_name = :c_name} : 
+	{select 1 from information_schema.columns where table_name = :t_name and column_name = :c_name}}]
       ::xo::dc 0or1row query $query
     }
   }
@@ -704,6 +706,15 @@ namespace eval ::xo::db {
   }
 
   require proc table {name definition} {
+    # Since rev. 1.97.2.18, definition must be in dict format.
+    # To comply with previous table definitions given as plain string,
+    # we check for definition being a one-element list, and if so
+    # we translate definition to dict format.
+    set dict_def {}; if {[llength $definition] == 1} {
+      foreach col [split $definition ,] {
+	lappend dict_def [lindex $col 0] [lrange $col 1 end]
+      }
+    } ; set definition $dict_def
     if {![my exists_table $name]} {
       set lines {}
       foreach col [dict keys $definition] {lappend lines "$col [dict get $definition $col]"}
