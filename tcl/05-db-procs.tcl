@@ -641,6 +641,44 @@ namespace eval ::xo::db {
   # The object require provides an interface to create certain
   # resources in case they are not created already.
   #
+  
+  # Installations with acs-kernel prior to 5.8.1a6 (or later, before running upgrade script) 
+  # won't have these procs. We define them here if missing to avoid breaking running instances during transition.
+  if {![::xotcl::Class isobject "::xo::db::sql::util"]} {::xo::db::Class create "::xo::db::sql::util"}
+  if {[::xo::db::sql::util info commands table_exists] eq ""} {
+    ::xo::db::sql::util ad_proc table_exists {-name:required} {Transitional method} {
+      set query [expr {[db_driverkey ""] eq "oracle" ? 
+	{select 1 from user_tables  where table_name = :name} : 
+	{select 1 from pg_class where relname = :name and pg_table_is_visible(oid)}}]
+      ::xo::dc 0or1row query $query
+    }
+  }
+  if {[::xo::db::sql::util info commands view_exists] eq ""} {
+    ::xo::db::sql::util ad_proc view_exists {-name:required} {Transitional method} {
+      set query [expr {[db_driverkey ""] eq "oracle" ? 
+	{select 1 from user_views   where view_name  = :name} : 
+	{select 1 from pg_views     where viewname   = :name}}]
+      ::xo::dc 0or1row query $query
+    }
+  }
+  if {[::xo::db::sql::util info commands index_exists] eq ""} {
+    ::xo::db::sql::util ad_proc index_exists {-name:required} {Transitional method} {
+      set query [expr {[db_driverkey ""] eq "oracle" ? 
+	{select 1 from user_indexes where index_name = :name} : 
+	{select 1 from pg_indexes   where indexname  = :name}}]
+      ::xo::dc 0or1row query $query
+    }
+  }
+  if {[::xo::db::sql::util info commands table_column_exists] eq ""} {
+    ::xo::db::sql::util ad_proc table_column_exists {-t_name:required -c_name:required} {Transitional method} {
+      set query [expr {[db_driverkey ""] eq "oracle" ? 
+	{select 1 from user_tab_columns where table_name = :table_name and column_name = :column_name} : 
+	{select 1 from information_schema.columns where table_name = :table_name and column_name = :column_name}}]
+      ::xo::dc 0or1row query $query
+    }
+  }
+  ###
+  
   ::xotcl::Object create require
 
   require proc exists_table {name} {
