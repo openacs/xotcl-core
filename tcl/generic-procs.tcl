@@ -1,5 +1,6 @@
 ad_library {
-  A simple OO interface for ad_form for content repository items.
+  A simple OO interface for ad_form for 
+  acs_objects and content repository items.
 
   @author Gustaf Neumann
   @creation-date 2005-08-13
@@ -10,10 +11,10 @@ namespace eval ::Generic {
   #
   # Form template class
   #
-  ### FIXME: form should get a package id as parameter
   Class Form -parameter {
     fields 
     data
+    {package_id ""}
     {folder_id -100}
     {name {[namespace tail [self]]}}
     add_page_title
@@ -24,21 +25,29 @@ namespace eval ::Generic {
     {submit_link "."}
     {action "[::xo::cc url]"}
   } -ad_doc {
-    Class for the simplified generation of forms. This class was designed 
+    <p>Class for the simplified generation of forms. This class was designed 
     together with the content repository class 
-    <a href='/xotcl/show-object?object=::xo::db::CrClass'>::xo::db::CrClass</a>.
-
+    <a href='/xotcl/show-object?object=::xo::db::CrClass'>::xo::db::CrClass</a>,
+    but it can be used also with different classes. The only requirement is the 
+    presence of an 'item_id' form field. 
+    </p>
+    <p>
+    For generic acs_objects, 'item_id' will correspond to 'object_id' column in 'acs_objects' 
+    table. For content repository items, 'item_id' will be the column by the same name in 
+    cr_revisions/cr_items.
+    <p/>
     <ul>
-    <li><b>fields:</b> form elements as described in 
-    <a href='/api-doc/proc-view?proc=ad_form'>ad_form</a>.
-    <li><b>data:</b> data object (e.g. instance if CrItem) 
-    <li><b>folder_id:</b> associated folder id
-    <li><b>name:</b> of this form, used for naming the template, 
-    defaults to the object name
-    <li><b>add_page_title:</b> page title when adding content items
-    <li><b>edit_page_title:</b> page title when editing content items
-    <li><b>with_categories:</b> display form with categories (default false)
-    <li><b>submit_link:</b> link for page after submit
+      <li><b>fields:</b> form elements as described in <a href='/api-doc/proc-view?proc=ad_form'>ad_form</a>.
+      <li><b>data:</b> data object (e.g. instance if CrItem) 
+      <li><b>package_id:</b> package_id of the object. Will default to data's 'package_id' variable
+      <li><b>folder_id:</b> associated folder id. Will default to data's 'parent_id' variable. 
+	If 'parent_id' is missing too, package's 'folder_id' will be used.
+      <li><b>name:</b> of this form, used for naming the template, 
+	defaults to the object name
+      <li><b>add_page_title:</b> page title when adding content items
+      <li><b>edit_page_title:</b> page title when editing content items
+      <li><b>with_categories:</b> display form with categories (default false)
+      <li><b>submit_link:</b> link for page after submit
     </ul>
   }
   
@@ -46,10 +55,14 @@ namespace eval ::Generic {
     set level [template::adp_level]
     my forward var uplevel #$level set 
 
-    my instvar data folder_id
-    set package_id [$data package_id]
-    set folder_id [expr {[$data exists parent_id] ? [$data parent_id] : [$package_id folder_id]}]
-    set class     [$data info class]
+    my instvar data package_id folder_id
+    if {$package_id eq ""} {set package_id [$data package_id]}
+    if {$folder_id < 0} {
+      set folder_id [expr {[$data exists parent_id] ? [$data parent_id] : [$package_id folder_id]}]
+    }
+    
+    set class [$data info class]
+    my set data_id [$class id_column]
 
     if {![my exists add_page_title]} {
       my set add_page_title [_ xotcl-core.create_new_type \
@@ -60,12 +73,13 @@ namespace eval ::Generic {
                                   [list type [$class pretty_name]]]
     }
 
-    # check, if the specified fields are available from the data source
-    # and ignore the unavailable entries
-    set checked_fields [list]
-    set available_atts [$class array names db_slot]
-    #my log "-- available atts <$available_atts>"
-    lappend available_atts [$class id_column] item_id
+# It's a local variable that nobody uses... commented in doubt
+#     # check, if the specified fields are available from the data source
+#     # and ignore the unavailable entries
+#     set checked_fields [list]
+#     set available_atts [$class array names db_slot]
+#     #my log "-- available atts <$available_atts>"
+#     lappend available_atts [$class id_column] item_id
 
     if {![my exists fields]} {my mkFields}
     #my log --fields=[my fields]
@@ -81,20 +95,14 @@ namespace eval ::Generic {
   Form instproc new_data {} {
     my instvar data
     #my log "--- new_data ---"
-    foreach __var [my form_vars] {
-      $data set $__var [my var $__var]
+    xo::dc transaction {
+      $data save_new
     }
-    $data initialize_loaded_object
-    $data save_new
     return [$data set item_id]
   }
   Form instproc edit_data {} {
     #my log "--- edit_data --- setting form vars=[my form_vars]"
     my instvar data
-    foreach __var [my form_vars] {
-      $data set $__var [my var $__var]
-    }
-    $data initialize_loaded_object
     xo::dc transaction {
       $data save
       set old_name [::xo::cc form_parameter __object_name ""]
@@ -108,8 +116,7 @@ namespace eval ::Generic {
   }
 
   Form instproc request {privilege} {
-    my instvar edit_form_page_title context data
-    set package_id [$data package_id]
+    my instvar edit_form_page_title context data package_id
 
     if {[my isobject ::$package_id] && ![::$package_id exists policy]} {
       # not needed, if governed by a policy
@@ -123,13 +130,15 @@ namespace eval ::Generic {
 
     set context [list $edit_form_page_title]
   }
-
+  
   Form instproc set_form_data {} {
-    my instvar data
-    foreach var [[$data info class] array names db_slot] {
-      if {[$data exists $var]} {
-        my var $var [list [$data set $var]]
-      }
+    my instvar data data_id
+    foreach var [$data info vars] {
+      my var $var [list [$data set $var]]
+    }
+    # Alias object_id to the id of our object
+    if {[$data exists $data_id]} {
+      $data set object_id [$data set $data_id]
     }
   }
 
@@ -145,10 +154,15 @@ namespace eval ::Generic {
   }
 
   Form instproc on_submit {item_id} {
-    # The content of this proc is strictly speaking not necessary.
-    # However, on redirects after a submit to the same page, it
-    # ensures the setting of edit_form_page_title and context
+    # On redirects after a submit to the same page, ensure 
+    # the setting of edit_form_page_title and context
     my request write
+    # Put form content into data object
+    my instvar data
+    foreach __var [my form_vars] {
+      $data set $__var [my var $__var]
+    }
+    $data initialize_loaded_object
   }
 
   Form instproc on_validation_error {} {
@@ -181,7 +195,7 @@ namespace eval ::Generic {
   } {
     # set form name for adp file
     my set $template [my name]
-    my instvar data folder_id
+    my instvar data package_id folder_id
 
     set object_type [[$data info class] object_type]
     if {[catch {set object_name [$data set name]}]} {set object_name ""}
@@ -207,7 +221,7 @@ namespace eval ::Generic {
     if {[my with_categories]} {
       set coid [expr {[$data exists item_id] ? [$data set item_id] : ""}]
       category::ad_form::add_widgets -form_name [my name] \
-          -container_object_id [$data package_id] \
+          -container_object_id $package_id \
           -categorized_object_id $coid
 
       append new_data {
