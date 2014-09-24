@@ -183,7 +183,6 @@ namespace eval ::xo {
        ns_register_proc $method $url  [self] handle_request
        ns_register_proc $method $root [self] handle_request
 
-       
        #my log "--ns_register_filter preauth $method $filter_url  [self]"
        #my log "--ns_register_proc $method $url [self] handle_request"
      }
@@ -210,7 +209,8 @@ namespace eval ::xo {
     
     #my log "--handle_request method=$method uri=$uri\
         #     userid=$user_id -ns_conn query '[ns_conn query]'"
-    if {[my exists package]} {
+    if {[my exists package] && $uri ne "/"} {
+      # We don't call package-initialze for $uri = "/"
       my set package_id [my get_package_id]
     }
     if {[my procsearch $method] ne ""} {
