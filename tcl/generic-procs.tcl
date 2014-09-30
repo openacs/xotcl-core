@@ -300,7 +300,10 @@ namespace eval ::Generic {
       <pre>
       # Must be an existing acs_object class on the system.
       set class "::dev::Location"
-
+      
+      # As we are talking about acs_objects, our 'delete'
+      # page could of course be the same for every object
+      # in the system.
       ::Generic::List create list1 \
 	  -class $class \
 	  -package_id $package_id \
@@ -578,7 +581,7 @@ namespace eval ::Generic {
       html_class
     } {
       set val [my set $prop]
-      set prop [string range $prop 4 end]
+      set prop [string range $prop 5 end]
       if {$val ne ""} {
 	lappend cmd -${prop} $val
       }
