@@ -521,7 +521,9 @@ namespace eval ::Generic {
 	set delete_url [export_vars -base $base_delete_url {item_id {return_url $this_url}}]
       }
       if {$row_code ne ""} {
-	{*}[subst $row_code]
+	# This will often be multiline, with comments etc...
+	# need to use the full eval command
+	eval $row_code
       }
       {*}[subst $multirow_append]
       # Need to clear the area...
