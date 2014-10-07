@@ -1641,7 +1641,7 @@ namespace eval ::xo::db {
           [$slot column_spec -id_column [expr {$column_name eq $id_column}]]
     }
 
-    if {[array size column_specs]>0} {
+    if {[array size column_specs] > 0} {
       if {$table_name eq ""} {error "no table_name specified"}
       if {$id_column eq ""}  {error "no id_column specified"}
       if {![info exists column_specs($id_column)]} {
@@ -1657,7 +1657,7 @@ namespace eval ::xo::db {
     return $table_definition
   }
 
-  ::xo::db::Class instproc mk_save_method {} {
+  ::xo::db::Class instproc mk_update_method {} {
     set updates [list]
     set vars [list]
     foreach {slot_name slot} [my array get db_slot] {
@@ -1668,7 +1668,7 @@ namespace eval ::xo::db {
       }
     }
     if {[llength $updates] == 0} return
-    my instproc save {} [subst {
+    my instproc update {} [subst {
       ::xo::dc transaction {
         next
         my instvar object_id $vars
@@ -1772,7 +1772,7 @@ namespace eval ::xo::db {
         ::xo::db::require table [my table_name] $table_definition
       }
       
-      my mk_save_method
+      my mk_update_method
       my mk_insert_method
     }
     next
@@ -2105,6 +2105,19 @@ namespace eval ::xo::db {
 
   ::xo::db::Object instproc insert {} {my log no-insert;}
 
+  ::xo::db::Object ad_instproc update {-package_id -modifying_user} {
+    Update the current object in the database
+  } {
+    my instvar object_id
+    if {![info exists package_id] && [my exists package_id]} {
+      set package_id [my package_id]
+    }
+    [my info class] get_context package_id modifying_user modifying_ip
+    ::xo::dc dml update_object {update acs_objects 
+      set modifying_user = :modifying_user, modifying_ip = :modifying_ip
+      where object_id = :object_id}
+  }
+
   ::xo::db::Object ad_instproc delete {} {
     Delete the object from the database and from memory
   } {
@@ -2115,14 +2128,10 @@ namespace eval ::xo::db {
   ::xo::db::Object ad_instproc save {-package_id -modifying_user} {
     Save the current object in the database
   } {
-    my instvar object_id
-    if {![info exists package_id] && [my exists package_id]} {
-      set package_id [my package_id]
-    }
-    [my info class] get_context package_id modifying_user modifying_ip
-    ::xo::dc dml update_object {update acs_objects 
-      set modifying_user = :modifying_user, modifying_ip = :modifying_ip
-      where object_id = :object_id}
+    set cmd [list my update]
+    if {[info exists package_id]} {lappend cmd -package_id $package_id}
+    if {[info exists modifying_user]} {lappend cmd -modifying_user $modifying_user}
+    {*}$cmd
   }
 
   ::xo::db::Object ad_instproc save_new {
