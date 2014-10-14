@@ -419,18 +419,18 @@ namespace eval ::Generic {
   
   List instproc elements {} {
     my instvar no_edit_p no_delete_p
+    set elements {}
     if {!$no_edit_p} {
       set type [my set pretty_name]
       set title [_ xotcl-core.edit_type]
-      set elements [list \
+      lappend elements \
 	edit [list \
 	    link_url_col edit_url \
 	    display_template [list <img src="/resources/acs-subsite/Edit16.gif" width="16" height="16" border="0">] \
 	    link_html [list title $title] \
-	    sub_class narrow]]
+	    sub_class narrow]
     }
-    set elements [concat \
-      $elements [my set elements]]
+    set elements [concat $elements [my set elements]]
     if {!$no_delete_p} {
       set title [_ xotcl-core.delete_item]
       set confirm "[_ acs-subsite.Delete]?"
@@ -445,13 +445,17 @@ namespace eval ::Generic {
   }
   
   List instproc page_query {} {
-    my instvar class id_column list_name 
-    return [$class instance_select_query \
-      -select_attributes [list $id_column] \
-      -where_clause \
-	"\[template::list::filter_where_clauses -name $list_name -and\]" \
-      -orderby \
-	"\[lrange \[template::list::orderby_clause -name $list_name -orderby\] 2 end\]"]
+    my instvar class id_column list_name orderby
+    if {$orderby ne ""} {
+      return [$class instance_select_query \
+	-select_attributes [list $id_column] \
+	-where_clause "\[template::list::filter_where_clauses -name $list_name -and\]" \
+	-orderby "\[lrange \[template::list::orderby_clause -name $list_name -orderby\] 2 end\]"]
+    } else {
+      return [$class instance_select_query \
+	-select_attributes [list $id_column] \
+	-where_clause "\[template::list::filter_where_clauses -name $list_name -and\]"]
+    }
   }
   
   List instproc filters {} {
