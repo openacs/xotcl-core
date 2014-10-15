@@ -224,14 +224,13 @@ namespace eval ::Generic {
           -container_object_id $package_id \
           -categorized_object_id $coid
           
-# This portion is disabled because relies on
-# a little change for the categories package
-# that hasn't been decided yet.
-#       append edit_request {
-# 	category::ad_form::fill_form_widgets \
-#           -container_object_id $package_id \
-#           -categorized_object_id $item_id
-#       }
+      # When editing, fill category form widgets 
+      # with current mappings for this object
+      append edit_request {
+	category::ad_form::fill_widgets \
+          -container_object_id $package_id \
+          -categorized_object_id $item_id
+      }
       append new_data {
         category::map_object -remove_old -object_id $item_id $category_ids
       }
