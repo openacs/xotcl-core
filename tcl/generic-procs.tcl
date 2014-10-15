@@ -95,27 +95,23 @@ namespace eval ::Generic {
   Form instproc new_data {} {
     my instvar data
     #my log "--- new_data ---"
-    xo::dc transaction {
-      $data save_new
-    }
-    return [$data set item_id]
+    $data save_new
+    return [$data set object_id]
   }
   Form instproc edit_data {} {
     #my log "--- edit_data --- setting form vars=[my form_vars]"
     my instvar data
-    xo::dc transaction {
-      $data save
-      # Renaming is meant for cr_items and such
-      if {[$data info commands rename] ne ""} {
-	set old_name [::xo::cc form_parameter __object_name ""]
-	set new_name [$data set name]
-	if {$old_name ne $new_name} {
-	  #my msg "rename from $old_name to $new_name"
-	  $data rename -old_name $old_name -new_name $new_name
-	}
+    $data save
+    # Renaming is meant for cr_items and such
+    if {[$data info commands rename] ne ""} {
+      set old_name [::xo::cc form_parameter __object_name ""]
+      set new_name [$data set name]
+      if {$old_name ne $new_name} {
+	#my msg "rename from $old_name to $new_name"
+	$data rename -old_name $old_name -new_name $new_name
       }
     }
-    return [$data set item_id]
+    return [$data set object_id]
   }
 
   Form instproc request {privilege} {
@@ -201,13 +197,14 @@ namespace eval ::Generic {
     my instvar data package_id folder_id
 
     set object_type [[$data info class] object_type]
-    if {[catch {set object_name [$data set name]}]} {set object_name ""}
+    set object_name [expr {[$data exists name] ? [$data set name] : ""}]
     #my log "-- $data, cl=[$data info class] [[$data info class] object_type]"
     
     #my log "--e [my name] final fields [my fields]"
-    set exports [list [list object_type $object_type] \
-                     [list folder_id $folder_id] \
-                     [list __object_name $object_name]] 
+    set exports [list \
+      [list object_type $object_type] \
+      [list folder_id $folder_id] \
+      [list __object_name $object_name]] 
     if {[info exists export]} {foreach pair $export {lappend exports $pair}}
 
     ad_form -name [my name] -form [my fields] -mode $mode \
@@ -226,7 +223,15 @@ namespace eval ::Generic {
       category::ad_form::add_widgets -form_name [my name] \
           -container_object_id $package_id \
           -categorized_object_id $coid
-
+          
+# This portion is disabled because relies on
+# a little change for the categories package
+# that hasn't been decided yet.
+#       append edit_request {
+# 	category::ad_form::fill_form_widgets \
+#           -container_object_id $package_id \
+#           -categorized_object_id $item_id
+#       }
       append new_data {
         category::map_object -remove_old -object_id $item_id $category_ids
       }
@@ -241,10 +246,12 @@ namespace eval ::Generic {
     #ns_log notice "-- ad_form new_data=<$new_data> edit_data=<$edit_data> edit_request=<$edit_request>"
 
     # action blocks must be added last
+    # -new_data and -edit_data are enclosed in a transaction only in the end,
+    # so eventual additional code from category management is executed safely
     ad_form -extend -name [my name] \
         -validate [my validate] \
-        -new_data $new_data -edit_data $edit_data -on_submit $on_submit \
-        -new_request $new_request -edit_request $edit_request \
+        -new_data "xo::dc transaction \{ $new_data \}" -edit_data "xo::dc transaction \{ $edit_data \}" \
+        -on_submit $on_submit -new_request $new_request -edit_request $edit_request \
         -on_validation_error $on_validation_error -after_submit $after_submit
   }
   
@@ -405,7 +412,7 @@ namespace eval ::Generic {
     my set list_name     $name
   }
   
-  List instproc actions {} {
+  List instproc get_actions {} {
     my instvar actions no_create_p create_url
     if {[string is false $no_create_p]} {
       set type [my set pretty_name]
@@ -417,7 +424,7 @@ namespace eval ::Generic {
     return $actions
   }
   
-  List instproc elements {} {
+  List instproc get_elements {} {
     my instvar no_edit_p no_delete_p
     set elements {}
     if {!$no_edit_p} {
@@ -458,7 +465,7 @@ namespace eval ::Generic {
     }
   }
   
-  List instproc filters {} {
+  List instproc get_filters {} {
     my instvar filters rows_per_page
     if {$rows_per_page ne "" && 
 	"rows_per_page" ni $filters} {
@@ -482,7 +489,7 @@ namespace eval ::Generic {
   List instproc extend_cols {} {
     set cols {}
     set specs {}
-    foreach {el spec} [my elements] {
+    foreach {el spec} [my get_elements] {
       lappend cols $el
       foreach {prop val} $spec {
 	if {$prop in 
@@ -542,9 +549,9 @@ namespace eval ::Generic {
 	-ulevel [expr {$ulevel+1}] \
 	-name $list_name \
 	-multirow $list_name \
-	-actions [my actions] \
-	-elements [my elements] \
-	-filters [my filters] \
+	-actions [my get_actions] \
+	-elements [my get_elements] \
+	-filters [my get_filters] \
 	-orderby [my set orderby]]
     if {$bulk_actions ne ""} {
       lappend cmd \
