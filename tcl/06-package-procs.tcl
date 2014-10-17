@@ -335,7 +335,27 @@ namespace eval ::xo {
     #my msg "--R object set to [my set object], url=$url, [my serialize]"
   }
 
+  ::xo::Package instproc handle_http_caching {} {
+    #
+    # Subpackages can overload this method for realizing 
+    #
+    # a) package specific caching policies
+    # b) page-type specific caching policies
+    # c) page specific caching policies
+    #
+    # Items (b) and (c) can e realized via the instance variable of
+    # the package object named "invoke_object", which is set for
+    # non-error cases in e.g. xowiki.
+    #
+    ns_set put [ns_conn outputheaders] "Cache-Control" \
+        "max-age=0, no-cache, no-store"
+    # 
+  }
+
   ::xo::Package instproc reply_to_user {text} {
+
+    my handle_http_caching
+
     #my log "REPLY [::xo::cc exists __continuation]"
     if {[::xo::cc exists __continuation]} {
       #my log "REPLY [::xo::cc set __continuation]"
