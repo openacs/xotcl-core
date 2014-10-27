@@ -23,7 +23,7 @@ ad_page_contract {
   set infokind $kind
   if {$kind eq "instproc"} {append infokind s}
   ::xotcl::api scope_from_object_reference scope e
-  foreach method [$e info $infokind] {
+  foreach method [xo::getObjectProperty $e $kind] {
     if {$documented_methods} {
       set proc_index [::xotcl::api proc_index $scope $e $kind $method]
       #my msg "check $method => [nsv_exists api_proc_doc $proc_index]"
@@ -39,7 +39,11 @@ ad_page_contract {
   set definition ""
   append definition "[my dotquote $e] \[label=\"\{$e|"
   foreach slot [$e info slots] {
-    append definition "[$slot name]\\l"
+    set name ""
+    catch {set name $slot name}
+    if {$name ne ""} {
+       append definition "[$slot name]\\l"
+    }
   }
   append definition "|"
   ::xotcl::api scope_from_object_reference scope e
@@ -81,9 +85,9 @@ ad_page_contract {
     if {![my isobject $e]} continue
     if {$e eq "::xotcl::Object"} continue
     set reduced_sc [list]
-    foreach sc [$e info superclass] {
+    foreach sc [::xo::getObjectProperty $e superclass] {
       if {$omit_base_classes && $sc eq "::xotcl::Object"
-	  || $sc eq "::xotcl::Class"} continue
+          || $sc eq "::xotcl::Class"} continue
       lappend reduced_sc $sc
     }
     if {$reduced_sc eq {}} continue
@@ -98,11 +102,11 @@ ad_page_contract {
     if {$omit_base_classes && $e eq "::xotcl::Object" || $e eq "::xotcl::Class"} continue
     if {$with_children} {
       foreach c [$e info children] {
-        if {[lsearch $things $c] == -1} continue
+        if {$c ni $things} continue
         append children "[my dotquote $c]->[my dotquote $e];\n"
       }
     }
-    set m [$e info mixin]
+    set m [xo::getObjectProperty $e mixin]
     #puts "-- $e mixin $m"
     if {$m eq ""} continue
     append mixins "[my dotquote $e]->[my dotquotel $m];\n"
@@ -110,7 +114,7 @@ ad_page_contract {
   set tclasses ""
   set instmixins ""
   foreach e $classes {
-    set m [$e info instmixin]
+    set m [xo::getObjectProperty $e instmixin]
     #puts "-- $e instmixin $m"
     if {$m eq ""} continue
     #foreach mixin $m {
@@ -152,13 +156,24 @@ set dot ""
 catch {set dot [::util::which dot]}
 # final ressort for cases, where ::util::which is not available
 if {$dot eq "" && [file executable /usr/bin/dot]} {set dot /usr/bin/dot}
-if {$dot eq ""} {ns_return 404 plain/text "do dot found"; ad_script_abort}
-
-set tmpnam [ns_tmpnam]
+if {$dot eq ""} {ns_return 404 plain/text "dot not found"; ad_script_abort}
+ 
+set tmpnam [ad_tmpnam]
 set tmpfile $tmpnam.png
+set f [open $tmpnam.dot w]; puts $f $dot_code; close $f
+
+#ns_log notice "png $tmpnam dot $tmpnam.dot"
 set f [open "|$dot  -Tpng -o $tmpfile" w]; puts $f $dot_code; close $f
 ns_returnfile 200 [ns_guesstype $tmpfile] $tmpfile
 file delete $tmpfile
 
 #set f [open $tmpnam.dot w]; puts $f $dot_code; close $f
 #file delete $tmpnam.dot
+
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

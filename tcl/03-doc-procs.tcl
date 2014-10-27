@@ -33,7 +33,7 @@ ad_library {
       if {[nsv_exists api_proc_doc $proc_index]} {
         return "<a href='/api-doc/proc-view?proc=[ns_urlencode $proc_index]'>$method</a>"
       } else {
-        if {[$obj info ${kind}s $method] eq ""} {
+        if {[::xo::getObjectProperty $obj ${kind} $method] eq ""} {
           return $method<SUP>C</SUP>
         } else {
           return $method
@@ -42,16 +42,16 @@ ad_library {
     } \
     -proc isclass {scope obj} {
       expr {$scope eq "" ? 
-            [::xotcl::Object isclass $obj] : 
-            [$scope do ::xotcl::Object isclass $obj]}
+            [xo::getObjectProperty $obj isclass] : 
+            [$scope do xo::getObjectProperty $obj isclass]}
     } -proc isobject {scope obj} {
       expr {$scope eq "" ? 
-            [::xotcl::Object isobject $obj] : 
-            [$scope do ::xotcl::Object isobject $obj]}
+            [xo::getObjectProperty $obj isobject] : 
+            [$scope do xo::getObjectProperty $obj isobject]}
     } -proc scope {} {
       if {[info exists ::xotcl::currentThread]} {
-	# we are in an xotcl thread; the body won't be accessible directly
-	return $::xotcl::currentThread
+        # we are in an xotcl thread; the body won't be accessible directly
+        return $::xotcl::currentThread
       }
       return ""
 
@@ -66,28 +66,28 @@ ad_library {
       return $scope
 
     } -proc inscope {scope args} {
-      expr {$scope eq "" ? [eval $args] : [eval $scope do $args]}
+      expr {$scope eq "" ? [eval $args] : [$scope do {*}$args]}
 
     } -proc script_name {scope} {
       #set kind [expr {[my istype ::xotcl::Class] ? "Class" : "Object"}]
       #return "$scope$kind [self]"
       set script [info script]
       if {$script eq "" && [info exists ::xotcl::currentScript]} {
-	set script $::xotcl::currentScript
+        set script $::xotcl::currentScript
       }
       set root_dir [acs_root_dir]
       set root_length [string length $root_dir]
-      if { $root_dir eq [string range $script 0 [expr {$root_length - 1}]]} {
-        set script [string range $script [expr {$root_length + 1}] end]
+      if { $root_dir eq [string range $script 0 $root_length-1]} {
+        set script [string range $script $root_length+1 end]
       }
       return $script
       
     } -proc object_link {{-noimg:boolean off} scope obj} {
       set link "<a href='[my object_url $scope $obj]'>"
       if {$noimg} {
-	return "$link$obj</a>"
+        return "$link$obj</a>"
       } else {
-	return "$obj$link<img src='/resources/acs-subsite/ZoomIn16.gif' alt='\[i\]' border='0'></a>"
+        return "$obj$link<img src='/resources/acs-subsite/ZoomIn16.gif' alt='\[i\]' border='0'></a>"
       }
 
     } -proc object_url {{-show_source 0} {-show_methods 1} scope obj} {
@@ -99,38 +99,38 @@ ad_library {
 
     } -proc proc_index {scope obj instproc proc_name} {
       if {$scope eq ""} {
-	return "$obj $instproc $proc_name"
+        return "$obj $instproc $proc_name"
       } else {
-	return "$scope $obj $instproc $proc_name"
+        return "$scope $obj $instproc $proc_name"
       }
 
     } -proc source_to_html {{-width 100} string} {
       set lines [list]
       foreach l [split $string \n] {
-	while {[string length $l] > $width} {
-	  set pos [string last " \{" $l $width]
-	  if {$pos>10} {
-	    lappend lines "[string range $l 0 [expr {$pos-1}]] \\" 
-	    set l "      [string range $l $pos end]"
-	  } else {
-	    # search for a match right of the target
-	    set pos [string first " \{" $l $width]
-	    if {$pos>10} {
-	      lappend lines "[string range $l 0 [expr {$pos-1}]] \\" 
-	      set l "      [string range $l $pos end]"
-	    } else {
-	      # last resort try to split around spaces 
-	      set pos [string last " " $l $width]
-	      if {$pos>10} {
-		lappend lines "[string range $l 0 [expr {$pos-1}]] \\" 
-		set l "      [string range $l $pos end]"
-	      } else {
-		break
-	      }
-	    }
-	  }
-	}
-	lappend lines $l
+        while {[string length $l] > $width} {
+          set pos [string last " \{" $l $width]
+          if {$pos>10} {
+            lappend lines "[string range $l 0 $pos-1] \\" 
+            set l "      [string range $l $pos end]"
+          } else {
+            # search for a match right of the target
+            set pos [string first " \{" $l $width]
+            if {$pos>10} {
+              lappend lines "[string range $l 0 $pos-1] \\" 
+              set l "      [string range $l $pos end]"
+            } else {
+              # last resort try to split around spaces 
+              set pos [string last " " $l $width]
+              if {$pos>10} {
+                lappend lines "[string range $l 0 $pos-1] \\" 
+                set l "      [string range $l $pos end]"
+              } else {
+                break
+              }
+            }
+          }
+        }
+        lappend lines $l
       }
       set string [join $lines \n]
       set html [ad_quotehtml $string]
@@ -149,15 +149,15 @@ ad_library {
     ad_parse_documentation_string $doc doc_elements
   }
   set defaults [list]
-  foreach a [my info ${inst}args $proc_name] {
-    if {[my info ${inst}default $proc_name $a d]} {lappend defaults $a $d}
+  foreach a [::xo::getObjectProperty [self] ${inst}args $proc_name] {
+    if {[::xo::getObjectProperty [self] ${inst}argdefault $proc_name $a d]} {lappend defaults $a $d}
   }
   set public [expr {$private ? false : true}]
   set doc_elements(public_p) $public
   set doc_elements(private_p) $private
   set doc_elements(deprecated_p) $deprecated
   set doc_elements(warn_p) $deprecated
-  set doc_elements(varargs_p) [expr {"args" in [my info ${inst}args $proc_name]}] 
+  set doc_elements(varargs_p) [expr {"args" in [::xo::getObjectProperty [self] ${inst}args $proc_name]}] 
   set doc_elements(flags) [list]
   set doc_elements(switches) [list]
   foreach f [my info ${inst}nonposargs $proc_name] {
@@ -175,7 +175,7 @@ ad_library {
     lappend defaults $sw $default
   }
   set doc_elements(default_values) $defaults
-  set doc_elements(positionals) [my info ${inst}args $proc_name] 
+  set doc_elements(positionals) [::xo::getObjectProperty [self] ${inst}args $proc_name] 
   # argument documentation finished
   set scope [::xotcl::api scope]
   set doc_elements(script) [::xotcl::api script_name $scope]
@@ -219,15 +219,56 @@ ad_library {
   nsv_set api_proc_doc $proc_index [array get doc_elements]
 }
 
-::xotcl::Object instproc ad_proc {
-  {-private:switch false}
-  {-deprecated:switch false}
-  {-warn:switch false}
-  {-debug:switch false} 
-  proc_name arguments doc body} {
+if {[info commands ::nx::Object] ne ""} {
+
+  ::xotcl::Object instproc ad_proc {
+    {-private:switch false}
+    {-deprecated:switch false}
+    {-warn:switch false}
+    {-debug:switch false} 
+    proc_name 
+    arguments:parameter,0..*
+    doc 
+    body
+  } {
     uplevel [list [self] proc $proc_name $arguments $body]
     my __api_make_doc "" $proc_name
   }
+
+  ::xotcl::Class instproc ad_instproc {
+    {-private:switch false}
+    {-deprecated:switch false}
+    {-warn:switch false}
+    {-debug:switch false} 
+    proc_name 
+    arguments:parameter,0..*
+    doc 
+    body
+  } {
+    uplevel [list [self] instproc $proc_name $arguments $body]
+    my __api_make_doc inst $proc_name
+  }
+}  else {
+  ::xotcl::Object instproc ad_proc {
+    {-private:switch false}
+    {-deprecated:switch false}
+    {-warn:switch false}
+    {-debug:switch false} 
+    proc_name arguments doc body} {
+      uplevel [list [self] proc $proc_name $arguments $body]
+      my __api_make_doc "" $proc_name
+    }
+
+  ::xotcl::Class instproc ad_instproc {
+    {-private:switch false}
+    {-deprecated:switch false}
+    {-warn:switch false}
+    {-debug:switch false} 
+    proc_name arguments doc body} {
+      uplevel [list [self] instproc $proc_name $arguments $body]
+      my __api_make_doc inst $proc_name
+    }
+}
 
 ::xotcl::Object instproc ad_forward {
   {-private:switch false}
@@ -237,16 +278,6 @@ ad_library {
   method_name doc args} {
     uplevel [self] forward $method_name $args
     my __api_make_forward_doc "" $method_name
-  }
-
-::xotcl::Class instproc ad_instproc {
-   {-private:switch false}
-   {-deprecated:switch false}
-   {-warn:switch false}
-   {-debug:switch false} 
-  proc_name arguments doc body} {
-    uplevel [list [self] instproc $proc_name $arguments $body]
-    my __api_make_doc inst $proc_name
   }
 
 ::xotcl::Object instproc ad_instforward {
@@ -290,10 +321,10 @@ ad_library {
     array set elements [nsv_get api_library_doc $file_index]
   }
   set oldDoc [expr {[info exists elements(main)] ? \
-			[lindex $elements(main) 0] : ""}]
+                        [lindex $elements(main) 0] : ""}]
   set prefix "This file defines the following Objects and Classes"
   set entry [::xotcl::api object_link $scope [self]]
-  if {![string match *$prefix* $oldDoc]} {
+  if {![string match "*$prefix*" $oldDoc]} {
     append oldDoc "<p>$prefix: $entry"
   } else {
     append oldDoc ", $entry"
@@ -304,48 +335,55 @@ ad_library {
 }
 
 
-Class ::Test -ad_doc {
-  Test Class for the documentation of 
-  <code>Classes</code>, 
-  <code>Objects</code>, 
-  <code>instprocs</code>, and
-  <code>procs</code>.
-  @author Gustaf Neumann
-  @cvs-id $Id$
-}
-::Test ad_proc my-class-specific-proc {x y} {
-  This is a proc of Class Test merely for testing purposes...
-  @param x First Operand
-  @param y Second Operand
-} {
-  ns_log notice "hello world $x $y"
-}
+# Class ::Test -ad_doc {
+#   Test Class for the documentation of 
+#   <code>Classes</code>, 
+#   <code>Objects</code>, 
+#   <code>instprocs</code>, and
+#   <code>procs</code>.
+#   @author Gustaf Neumann
+#   @cvs-id $Id$
+# }
+# ::Test ad_proc my-class-specific-proc {x y} {
+#   This is a proc of Class Test merely for testing purposes...
+#   @param x First Operand
+#   @param y Second Operand
+# } {
+#   ns_log notice "hello world $x $y"
+# }
 
-::Test ad_instproc my-method {-id:required} {
-  This is an instproc of Class Test merely for testing purposes...
-  @param id Some Id
-} {
-  ns_log notice "hello world $id"
-}
-::Test ad_instproc my-method2 {-id:required {-flag:boolean true}} {
-  This is an instproc of Class Test merely for testing purposes...
-  @param id Some Id
-  @param flag Some flag
-} {
-  ns_log notice "hello world $id"
-}
-::Test ad_instproc -private my-method3 {-id:required {-flag:boolean true} -switch:switch x {y 1}} {
-  This is an instproc of Class Test merely for testing purposes...
-  @param id Some Id
-  @param flag Some flag
-  @param switch Switch to turn on or off depending on default
-  @param x First Operand
-  @param y Second Operand
-} {
-  ns_log notice "hello world $id"
-}
+# ::Test ad_instproc my-method {-id:required} {
+#   This is an instproc of Class Test merely for testing purposes...
+#   @param id Some Id
+# } {
+#   ns_log notice "hello world $id"
+# }
+# ::Test ad_instproc my-method2 {-id:required {-flag:boolean true}} {
+#   This is an instproc of Class Test merely for testing purposes...
+#   @param id Some Id
+#   @param flag Some flag
+# } {
+#   ns_log notice "hello world $id"
+# }
+# ::Test ad_instproc -private my-method3 {-id:required {-flag:boolean true} -switch:switch x {y 1}} {
+#   This is an instproc of Class Test merely for testing purposes...
+#   @param id Some Id
+#   @param flag Some flag
+#   @param switch Switch to turn on or off depending on default
+#   @param x First Operand
+#   @param y Second Operand
+# } {
+#   ns_log notice "hello world $id"
+# }
 
-Class ::SpecializedTest -superclass ::Test -ad_doc {
-  A Class defined as a subclass of ::Test for testing the
-  documentation stuff...
-}
+# Class ::SpecializedTest -superclass ::Test -ad_doc {
+#   A Class defined as a subclass of ::Test for testing the
+#   documentation stuff...
+# }
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

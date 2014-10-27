@@ -39,17 +39,17 @@ namespace eval ::xo {
   # (providing post_data causes the POST request).
   #    
   #  set r [::xo::HttpRequest new \
-  #             -url http://yourhost.yourdomain/yourpath \
-  #             -post_data [export_vars {var1 var2}] \
-  #             -content_type "application/x-www-form-urlencoded; charset=UTF-8"]
+                         #             -url http://yourhost.yourdomain/yourpath \
+                         #             -post_data [export_vars {var1 var2}] \
+                         #             -content_type "application/x-www-form-urlencoded; charset=UTF-8"]
   #
   # More recently, we added timeout support for blocking http
   # requests. By passing a timeout parameter, you gain control
   # on the total roundtrip time (in milliseconds, ms):
   #
   #  set r [::xo::HttpRequest new \
-  #  		-url http://www.openacs.org/ \
-  #  		-timeout 1500]
+                         #          -url http://www.openacs.org/ \
+                         #          -timeout 1500]
   #
   # Please, make sure that you use a recent distribution of tclthread
   # ( > 2.6.5 ) to have the blocking-timeout feature working
@@ -60,7 +60,7 @@ namespace eval ::xo {
   # CVS snapshot, dating at least 2008-05-23. E.g.:
   # 
   # cvs -z3 -d:pserver:anonymous@tcl.cvs.sourceforge.net:/cvsroot/tcl co \
-  #		 -D 20080523 -d thread2.6.5~20080523 thread
+                         #         -D 20080523 -d thread2.6.5~20080523 thread
   #
   # Provided that the Tcl module tls (see e.g. http://tls.sourceforge.net/)
   # is available and can be loaded via "package require tls" into 
@@ -99,8 +99,8 @@ namespace eval ::xo {
   # bgdelivery thread.
   #
   #  ::bgdelivery do ::xo::AsyncHttpRequest new \
-  #     -url "https://oacs-dotlrn-conf2007.wu-wien.ac.at/conf2007/" \
-  #     -mixin ::xo::AsyncHttpRequest::SimpleListener
+                         #     -url "https://oacs-dotlrn-conf2007.wu-wien.ac.at/conf2007/" \
+                         #     -mixin ::xo::AsyncHttpRequest::SimpleListener
   #     -proc finalize {obj status value} { my destroy }
   #
   ######################
@@ -129,7 +129,7 @@ namespace eval ::xo {
         Attribute create method
         Attribute create post_data -default ""
         Attribute create content_type \
-	    -default "text/plain; charset=[ns_config ns/parameters OutputCharset iso-8859-1]"
+            -default "text/plain; charset=[ns_config ns/parameters OutputCharset iso-8859-1]"
         Attribute create request_header_fields -default {}
         Attribute create user_agent -default "xohttp/0.2"
       }
@@ -228,12 +228,12 @@ namespace eval ::xo {
     #
     # (B) If the "charset" is omitted, certain default values apply (!):
     #
-    #	(B.1) RFC 3023 text/* registrations default to us-ascii (!),
-    #	and not iso-8859-1 (overruling RFC 2616).
+    #    (B.1) RFC 3023 text/* registrations default to us-ascii (!),
+    #    and not iso-8859-1 (overruling RFC 2616).
     #
     #   (B.2) RFC 3023 application/* and non-text "+xml" registrations
-    #	are to be left untreated (in our context, no encoding
-    #	filtering is to be applied -> "binary")
+    #    are to be left untreated (in our context, no encoding
+    #    filtering is to be applied -> "binary")
     #
     #   (B.3) RFC 2616 text/* registration (if not covered by B.1)
     #   default to iso-8859-1
@@ -253,16 +253,16 @@ namespace eval ::xo {
     if {[regexp {^text/.*$|^.*/xml.*$|^.*\+xml.*$} $content_type]} {
       # Case (A): Check for an explicitly provided charset parameter
       if {[regexp {;\s*charset\s*=([^;]*)} $content_type _ charset]} {
-	set enc [ns_encodingforcharset [string trim $charset]]
+        set enc [ns_encodingforcharset [string trim $charset]]
       } 
       # Case (B.1)
       if {$enc eq "" && [regexp {^text/xml.*$|text/.*\+xml.*$} $content_type]} {
-	set enc [ns_encodingforcharset us-ascii]
+        set enc [ns_encodingforcharset us-ascii]
       } 
 
       # Case (B.3)
       if {$enc eq "" && [string match "text/*" $content_type]} {
-	set enc [ns_encodingforcharset iso-8859-1]
+        set enc [ns_encodingforcharset iso-8859-1]
       }   
     }
 
@@ -293,7 +293,7 @@ namespace eval ::xo {
     }
     if {$protocol eq "https"} {
       package require tls
-      if {[info command ::tls::import] eq ""} {
+      if {[info commands ::tls::import] eq ""} {
         error "https request require the Tcl module TLS to be installed\n\
              See e.g. http://tls.sourceforge.net/"
       }
@@ -314,8 +314,8 @@ namespace eval ::xo {
       puts $S "Host: $host"
       puts $S "User-Agent: [my user_agent]"
       foreach {tag value} [my request_header_fields] {
-	#regsub -all \[\n\r\] $value {} value
-	#set tag [string trim $tag]
+        #regsub -all \[\n\r\] $value {} value
+        #set tag [string trim $tag]
         puts $S "$tag: $value"
       }
       my $method
@@ -391,7 +391,7 @@ namespace eval ::xo {
       -1 {my finish; return}
     }
     if {[regexp {^HTTP/([0-9.]+) +([0-9]+) *} $response _ \
-	     responseHttpVersion status_code]} {
+             responseHttpVersion status_code]} {
       my reply_first_line_done
     } else {
       my cancel "unexpected-response '$response'"
@@ -404,20 +404,20 @@ namespace eval ::xo {
     while {1} {
       set n [my getLine response]
       switch -exact -- $n {
-	-2 {my cancel premature-eof; return}
-	-1 {continue}
-	0 {break}
-	default {
-	  #my debug "--header $response"
-	  if {[regexp -nocase {^content-length:(.+)$} $response _ length]} {
-	    my set content_length [string trim $length]
-	  } elseif {[regexp -nocase {^content-type:(.+)$} $response _ type]} {
-	    my set content_type [string trim $type]
-	  }
-	  if {[regexp -nocase {^([^:]+): *(.+)$} $response _ key value]} {
-	    my lappend meta [string tolower $key] $value
-	  }
-	}
+        -2 {my cancel premature-eof; return}
+        -1 {continue}
+        0 {break}
+        default {
+          #my debug "--header $response"
+          if {[regexp -nocase {^content-length:(.+)$} $response _ length]} {
+            my set content_length [string trim $length]
+          } elseif {[regexp -nocase {^content-type:(.+)$} $response _ type]} {
+            my set content_type [string trim $type]
+          }
+          if {[regexp -nocase {^([^:]+): *(.+)$} $response _ key value]} {
+            my lappend meta [string tolower $key] $value
+          }
+        }
       }
     }
     my reply_header_done
@@ -474,40 +474,40 @@ namespace eval ::xo {
       set mutex [thread::mutex create]
       
       thread::mutex lock $mutex
-     
+      
       # start the asynchronous request
       my debug "--a create new  ::xo::AsyncHttpRequest"
       set req [bgdelivery do -async ::xo::AsyncHttpRequest new \
-		   -mixin ::xo::AsyncHttpRequest::RequestManager \
-		   -url [my url] \
-		   -timeout [my timeout] \
-		   -post_data [my post_data] \
-		   -request_header_fields [my request_header_fields] \
-		   -content_type [my content_type] \
-		   -user_agent [my user_agent] \
-		   -condition $cond]
+                   -mixin ::xo::AsyncHttpRequest::RequestManager \
+                   -url [my url] \
+                   -timeout [my timeout] \
+                   -post_data [my post_data] \
+                   -request_header_fields [my request_header_fields] \
+                   -content_type [my content_type] \
+                   -user_agent [my user_agent] \
+                   -condition $cond]
 
       while {1} {
-	my set_status $cond COND_WAIT_TIMEOUT
-	thread::cond wait $cond $mutex [my timeout]
+        my set_status $cond COND_WAIT_TIMEOUT
+        thread::cond wait $cond $mutex [my timeout]
 
-	set status [my get_status $cond]
-	my debug "status after cond-wait $status"
+        set status [my get_status $cond]
+        my debug "status after cond-wait $status"
 
-	if {$status ne "COND_WAIT_REFRESH"} break
+        if {$status ne "COND_WAIT_REFRESH"} break
       }
       if {$status eq "COND_WAIT_TIMEOUT"} {
-	my set_status $cond "COND_WAIT_CANCELED"
+        my set_status $cond "COND_WAIT_CANCELED"
       }
       set status_value [my get_value_for_status $cond]
       if {$status eq "JOB_COMPLETED"} {
-	my set data $status_value
+        my set data $status_value
       } else {
-	set msg "Timeout-constraint, blocking HTTP request failed. Reason: '$status'" 
-	if {$status_value ne ""} {
-	  append msg " ($status_value)"
-	}
-	error $msg
+        set msg "Timeout-constraint, blocking HTTP request failed. Reason: '$status'" 
+        if {$status_value ne ""} {
+          append msg " ($status_value)"
+        }
+        error $msg
       }
       thread::cond destroy $cond
       thread::mutex unlock $mutex
@@ -521,11 +521,11 @@ namespace eval ::xo {
       #
       # my log "after core init, S?[my exists S]"
       if {[my exists S]} {
-	my send_request
+        my send_request
       }
     }
   }
-    
+  
   #
   # Asynchronous (non-blocking) requests
   #
@@ -580,7 +580,7 @@ namespace eval ::xo {
       set to_send [expr {$total_bytes - $bytes_sent}]
       set block_size [expr {$to_send < 4096 ? $to_send : 4096}]
       set next_block_size [expr {$bytes_sent + $block_size}]
-      set block [string range $post_data $bytes_sent [expr {$next_block_size-1}]]
+      set block [string range $post_data $bytes_sent $next_block_size-1]
       my notify request_data $block
       puts -nonewline $S $block
       set bytes_sent $next_block_size
@@ -646,45 +646,45 @@ namespace eval ::xo {
 
   Class create AsyncHttpRequest::SimpleListener \
       -instproc init {} {
-	my debug "INIT- NEXT=[self next]"
-	# register request object as its own request_manager
-	my request_manager [self]
-	next
+        my debug "INIT- NEXT=[self next]"
+        # register request object as its own request_manager
+        my request_manager [self]
+        next
 
       } -instproc start_request {payload obj} {
-	my debug "request $obj started"
+        my debug "request $obj started"
 
       } -instproc request_data {payload obj} {
-	my debug "partial or complete post"
+        my debug "partial or complete post"
 
       } -instproc start_reply {payload obj} {
-	my debug "reply $obj started"
+        my debug "reply $obj started"
 
       } -instproc reply_data {payload obj} {
-	my debug "partial or complete delivery"
+        my debug "partial or complete delivery"
 
       } -instproc finalize {obj status value} {
-	my debug "finalize $obj $status"
-	# this is called as a single method after success or failure
-	next
+        my debug "finalize $obj $status"
+        # this is called as a single method after success or failure
+        next
 
       } -instproc success {payload obj} {
-	my debug "[string length $payload] bytes payload"
-	#if {[string length $payload]<600} {my log payload=$payload}
-	# this is called as after a succesful request
-	my finalize $obj "JOB_COMPLETED" $payload
+        my debug "[string length $payload] bytes payload"
+        #if {[string length $payload]<600} {my log payload=$payload}
+        # this is called as after a succesful request
+        my finalize $obj "JOB_COMPLETED" $payload
 
       } -instproc failure {reason obj} {
-	my log "[self proc] [self args]"
-	my log "failed for '$reason'"
-	# this is called as after an unsuccesful request
-	my finalize $obj "JOB_FAILED" $reason
+        my log "[self proc] [self args]"
+        my log "failed for '$reason'"
+        # this is called as after an unsuccesful request
+        my finalize $obj "JOB_FAILED" $reason
 
       } -instproc unknown {method args} {
-	my log "[self proc] [self args]"
-	my log "UNKNOWN $method"
+        my log "[self proc] [self args]"
+        my log "UNKNOWN $method"
       }
- 
+  
   # Mixin class, used to turn instances of
   # AsyncHttpRequest into result callbacks
   # in the scope of bgdelivery, realising
@@ -694,51 +694,51 @@ namespace eval ::xo {
   Class create AsyncHttpRequest::RequestManager \
       -superclass AsyncHttpRequest::SimpleListener \
       -slots {
-	Attribute create condition
+        Attribute create condition
       } -instproc finalize {obj status value} {
-	# set the result and do the notify
-	my instvar condition
-	# If a job was canceled, the status variable might not exist
-	# anymore, the condition might be already gone as well.  In
-	# this case, we do not have to perform the cond-notify.
-	if {[my exists_status $condition] && 
-	    [my get_status $condition] eq "COND_WAIT_REFRESH"} {
-	}
-	if {[my exists_status $condition] &&
-	    (  [my get_status $condition] eq "COND_WAIT_REFRESH"
-	    || [my get_status $condition] eq "COND_WAIT_TIMEOUT")
-	  } {
+        # set the result and do the notify
+        my instvar condition
+        # If a job was canceled, the status variable might not exist
+        # anymore, the condition might be already gone as well.  In
+        # this case, we do not have to perform the cond-notify.
+        if {[my exists_status $condition] && 
+            [my get_status $condition] eq "COND_WAIT_REFRESH"} {
+        }
+        if {[my exists_status $condition] &&
+            (  [my get_status $condition] eq "COND_WAIT_REFRESH"
+               || [my get_status $condition] eq "COND_WAIT_TIMEOUT")
+          } {
           # Before, we had here one COND_WAIT_TIMEOUT, and once
           # COND_WAIT_REFRESH
-	  my set_status $condition $status $value
-	  catch {thread::cond notify $condition}
-	  $obj debug "--- destroying after finish"
-	  $obj destroy
-	}
+          my set_status $condition $status $value
+          catch {thread::cond notify $condition}
+          $obj debug "--- destroying after finish"
+          $obj destroy
+        }
 
       } -instproc set_cond_timeout {} {
-	my instvar condition
-	if {[my exists_status $condition] && 
-	    [my get_status $condition] eq "COND_WAIT_TIMEOUT"} {
-	  my set_status $condition COND_WAIT_REFRESH
-	  catch {thread::cond notify $condition}
-	}
-	
+        my instvar condition
+        if {[my exists_status $condition] && 
+            [my get_status $condition] eq "COND_WAIT_TIMEOUT"} {
+          my set_status $condition COND_WAIT_REFRESH
+          catch {thread::cond notify $condition}
+        }
+        
       } -instproc start_request {payload obj} {
-	my debug "JOB start request $obj"
-	my set_cond_timeout
+        my debug "JOB start request $obj"
+        my set_cond_timeout
 
       } -instproc request_data {payload obj} {
-	my debug "JOB request data $obj [string length $payload]"
-	my set_cond_timeout
+        my debug "JOB request data $obj [string length $payload]"
+        my set_cond_timeout
 
       } -instproc start_reply {payload obj} {
-	my debug "JOB start reply $obj"
-	my set_cond_timeout
+        my debug "JOB start reply $obj"
+        my set_cond_timeout
 
       } -instproc reply_data {payload obj} {
-	my debug "JOB reply data $obj [string length $payload]"
-	my set_cond_timeout
+        my debug "JOB reply data $obj [string length $payload]"
+        my set_cond_timeout
 
       }
   
@@ -805,10 +805,17 @@ namespace eval ::xo {
     catch {close [my set F]}
     next
   }
-   
+  
   #
   # To activate trace for all requests, uncomment the following line.
   # To trace a single request, mixin ::xo::HttpRequestTrace into the request.
   #                           
   # HttpCore instmixin add ::xo::HttpRequestTrace
 }
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

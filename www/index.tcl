@@ -36,7 +36,7 @@ proc local_link cl {
 proc info_classes {cl key {dosort 0}} {
   upvar all_classes all_classes
   set infos ""
-  set classes [$cl info $key]
+  set classes [::xo::getObjectProperty $cl $key]
   if {$dosort} {
     set classes [lsort $classes]
   }
@@ -52,7 +52,11 @@ proc info_classes {cl key {dosort 0}} {
 }
 
 set output "<ul>"
-foreach cl [lsort [::xotcl::Class allinstances]] {
+set classes [::xotcl::Class allinstances]
+if {[info commands ::nx::Class] ne ""} {
+    lappend classes {*}[nx::Class info instances -closure]
+}
+foreach cl [lsort $classes] {
   if {!$all_classes && [string match "::xotcl::*" $cl]} \
       continue
   
@@ -63,9 +67,9 @@ foreach cl [lsort [::xotcl::Class allinstances]] {
   append output [info_classes $cl mixin]
   append output [info_classes $cl instmixin]
 
-  foreach key {procs instprocs} {
+  foreach key {proc instproc} {
     set infos ""
-    foreach i [lsort [$cl info $key]] {append infos [::xotcl::api method_link $cl $key $i] ", "}
+    foreach i [lsort [::xo::getObjectProperty $cl $key]] {append infos [::xotcl::api method_link $cl $key $i] ", "}
     set infos [string trimright $infos ", "]
     if {$infos ne ""} {
       append output "<li><em>$key:</em> $infos</li>\n"

@@ -16,10 +16,10 @@ ad_library {
 if {![::xotcl::Object isclass ::xotcl::RecreationClass]} {
   ::xotcl::Class create ::xotcl::RecreationClass -ad_doc {
     <p>This meta-class controlls the behavior of classes (and optionally
-    their instances), when the classes (or their instances) are	
+    their instances), when the classes (or their instances) are    
     overwritten by same named new objects; we call this situation
     a recreate of an object.</p>
-					     
+    
     <p>Normally, when files with e.g. class definitions are sourced,
     the classes and objects are newly defined. When e.g. class 
     definitions exists already in this file, these classes are 
@@ -42,7 +42,7 @@ if {![::xotcl::Object isclass ::xotcl::RecreationClass]} {
     <li><b>reconfigure:</b> reconfigure class (default 1)
     <li><b>reinit:</b> run init after configure for this class (default unset)
     <li><b>instrecreate:</b> handle recreate of class instances (default unset)
-      When this flag is set to 0, instreconfigure and instreinit are ignored.
+    When this flag is set to 0, instreconfigure and instreinit are ignored.
     <li><b>instreconfigure:</b> reconfigure instances of this class (default 1)
     <li><b>instreinit:</b> re-init instances of this class (default unset)
     </ul>
@@ -54,43 +54,43 @@ if {![::xotcl::Object isclass ::xotcl::RecreationClass]} {
     {instreinit}
   } -superclass ::xotcl::Class \
       -instproc recreate {obj args} {
-	#my log "### recreateclass instproc $obj <$args>"
-	# the minimal reconfiguration is to set the class and remove methods
-	$obj class [self]
-	foreach p [$obj info procs] {$obj proc $p {} {}}
-	if {![my exists instrecreate]} {
-	  #my log "### no instrecreate for $obj <$args>"
-	  next
-	  return
-	}
-	if {[my exists instreconfigure]} {
-	  # before we set defaults, we must unset vars
-	  foreach var [$obj info vars] {$obj unset $var}
-	  # set defaults and run configure
+        #my log "### recreateclass instproc $obj <$args>"
+        # the minimal reconfiguration is to set the class and remove methods
+        $obj class [self]
+        foreach p [$obj info procs] {$obj proc $p {} {}}
+        if {![my exists instrecreate]} {
+          #my log "### no instrecreate for $obj <$args>"
+          next
+          return
+        }
+        if {[my exists instreconfigure]} {
+          # before we set defaults, we must unset vars
+          foreach var [$obj info vars] {$obj unset $var}
+          # set defaults and run configure
           $obj set_instance_vars_defaults
-	  $obj configure {*}$args
-	  #my log "### instproc recreate $obj + configure $args ..."
-	}
-	if {[my exists instreinit]} {
-	  #my log "### instreinit for $obj <$args>"
-	  $obj init 
-	  #my log "### instproc recreate $obj + init ..."
-	}
+          $obj configure {*}$args
+          #my log "### instproc recreate $obj + configure $args ..."
+        }
+        if {[my exists instreinit]} {
+          #my log "### instreinit for $obj <$args>"
+          $obj init 
+          #my log "### instproc recreate $obj + init ..."
+        }
       } -proc recreate {obj args} {
-	#my log "### recreateclass proc $obj <$args>"
-	# the minimal reconfiguration is to set the class and remove methods
-	$obj class [self]
-	foreach p [$obj info instprocs] {$obj instproc $p {} {}}
-	if {[my exists reconfigure]} {
-	  # before we set defaults, we must unset vars
-	  foreach var [$obj info vars] {$obj unset $var}
-	  # set defaults and run configure
+        #my log "### recreateclass proc $obj <$args>"
+        # the minimal reconfiguration is to set the class and remove methods
+        $obj class [self]
+        foreach p [$obj info instprocs] {$obj instproc $p {} {}}
+        if {[my exists reconfigure]} {
+          # before we set defaults, we must unset vars
+          foreach var [$obj info vars] {$obj unset $var}
+          # set defaults and run configure
           $obj set_instance_vars_defaults
-	  $obj configure {*}$args
-	}
-	if {[my exists reinit]} {
-	  $obj init
-	}
+          $obj configure {*}$args
+        }
+        if {[my exists reinit]} {
+          $obj init
+        }
       }
 
   ::Serializer exportObjects {
@@ -174,3 +174,10 @@ if {[string match "1.3.*" $version]} {
   }
   #::xotcl::Class instmixin RR
 }
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

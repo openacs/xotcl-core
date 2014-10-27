@@ -27,11 +27,18 @@ if {[server_cluster_enabled_p]} {
   array set node [site_node::get -url $url] 
   if {$node(url) ne "/"} {
     ns_log notice "***\n*** WARNING: there appears a package mounted on\
-	$url\n***Cluster configuration will not work\
-	since there is a conflict with the aolserver filter with the same name!\n"
+       $url\n***Cluster configuration will not work\
+       since there is a conflict with the aolserver filter with the same name!\n"
   }
   
   #ns_register_filter trace GET $url ::xo::Cluster
   ns_register_filter preauth GET $url ::xo::Cluster 
   #ad_register_filter -priority 900 preauth GET $url ::xo::Cluster
 }
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

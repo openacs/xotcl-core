@@ -37,7 +37,7 @@
 # - Consquences
 #   1) Since default values are copied into
 #      per-package-instance-values altering the default has no
-#      immediate effect.  It would be nice to alter in an openacs
+#      immediate effect.  It would be nice to alter in an OpenACS
 #      installation e.g. the default-values for all forums for a
 #      certain parameter, and that this value is used in cases, where
 #      the admin has not changed the package parameters
@@ -160,19 +160,19 @@ namespace eval ::xo {
   # Methods on the parameter class object
   #
   parameter proc get_package_key_from_id {
-    -package_id:required
-  } {
+                                          -package_id:required
+                                        } {
     return [ns_cache eval xotcl_object_type_cache package_key-$package_id {
-      db_string [my qn get_package_key] \
-          "select package_key from apm_packages where package_id = $package_id"
+      ::xo::dc get_value get_package_key \
+          "select package_key from apm_packages where package_id = :package_id"
     }]
   }
   parameter proc get_package_id_from_package_key {
-    -package_key:required
-  } {
+                                                  -package_key:required
+                                                } {
     return [ns_cache eval xotcl_object_type_cache package_id-$package_key {
-      db_string [my qn get_package_id] \
-          [::xo::db::sql select -vars package_id -from apm_packages \
+      ::xo::dc get_value get_package_id \
+          [::xo::dc select -vars package_id -from apm_packages \
                -where "package_key = :package_key" -limit 1]
     }]
   }
@@ -196,11 +196,11 @@ namespace eval ::xo {
   }
 
   parameter proc get_parameter_object {
-    -parameter_name:required
-    -package_id
-    -package_key
-    {-retry true}
-  } {
+                                       -parameter_name:required
+                                       -package_id
+                                       -package_key
+                                       {-retry true}
+                                     } {
     ::xo::PackageMgr instvar package_class
     if {![info exists package_key]} {
       set package_key [my get_package_key_from_id -package_id $package_id]
@@ -241,6 +241,7 @@ namespace eval ::xo {
                              and package_key = :package_key
                            }] \
                  -object_class ::xo::db::apm_parameter \
+                 -ignore_missing_package_ids true \
                  -as_ordered_composite false -named_objects true -destroy_on_cleanup false]
       #
       # Check for "retry" to avoid potential recursive loops
@@ -264,10 +265,10 @@ namespace eval ::xo {
   }
 
   parameter proc get_from_package_key {
-    -package_key:required
-    -parameter:required
-    -default
-  } {
+                                       -package_key:required
+                                       -parameter:required
+                                       -default
+                                     } {
     set parameter_obj [my get_parameter_object -package_key $package_key -parameter_name $parameter]
     if {$parameter_obj eq ""} {
       if {[info exists default]} {return $default}
@@ -280,17 +281,17 @@ namespace eval ::xo {
   }
 
   parameter proc get {
-    -package_id
-    -parameter:required
-    -default
-    {-retry true}
-  } {
+                      -package_id
+                      -parameter:required
+                      -default
+                      {-retry true}
+                    } {
     if {![info exists package_id]} {
       # try to get the package id; 
       # if everything fails, use kernel_id (to be compatible with trad. parameter::get)
-      set package_id [expr {[info command ::xo::cc] ne "" ? 
-		    [::xo::cc package_id] : 
-		    [ns_conn isconnected] ? [ad_conn package_id] : [ad_acs_kernel_id]}]
+      set package_id [expr {[info commands ::xo::cc] ne "" ? 
+                            [::xo::cc package_id] : 
+                            [ns_conn isconnected] ? [ad_conn package_id] : [ad_acs_kernel_id]}]
     }
     set parameter_obj [my get_parameter_object -parameter_name $parameter -package_id $package_id -retry $retry]
     if {$parameter_obj ne ""} {
@@ -356,21 +357,22 @@ namespace eval ::xo {
   ::xo::db::apm_parameter instantiate_objects \
       -sql [::xo::db::apm_parameter instance_select_query] \
       -object_class ::xo::db::apm_parameter \
+      -ignore_missing_package_ids true \
       -as_ordered_composite false -named_objects true -destroy_on_cleanup false
-#  ns_log notice "--p got [llength [::xo::db::apm_parameter info instances]] parameters"
+  #  ns_log notice "--p got [llength [::xo::db::apm_parameter info instances]] parameters"
   #foreach p [::xo::db::apm_parameter info instances] { ns_log notice [$p serialize] }
 
   parameter proc initialize_parameters {} {
     # Get those parameter values, which are different from the default and
     # remember theses per package_id.
-    db_foreach [my qn get_non_default_values] {
+    xo::dc foreach get_non_default_values {
       select p.parameter_id, p.package_key, v.package_id, p.parameter_name, 
-             p.default_value, v.attr_value 
+      p.default_value, v.attr_value 
       from apm_parameters p, apm_parameter_values v 
       where p.parameter_id = v.parameter_id 
       and coalesce(attr_value,'') <> coalesce(p.default_value,'')
     } {
-#      ns_log notice "--p $parameter_id $package_key $package_id $parameter_name <$attr_value>"
+      #      ns_log notice "--p $parameter_id $package_key $package_id $parameter_name <$attr_value>"
       $parameter_id set_per_package_instance_value $package_id $attr_value
     }
   }
@@ -381,9 +383,9 @@ namespace eval ::xo {
   # For the time being: catch changed parameter values
   #
   ad_proc -public -callback subsite::parameter_changed -impl xotcl-param-procs {
-   -package_id:required
-   -parameter:required
-   -value:required
+    -package_id:required
+    -parameter:required
+    -value:required
   } {
     Implementation of subsite::parameter_changed for xotcl param procs
     
@@ -398,8 +400,8 @@ namespace eval ::xo {
     #
     set package_key [apm_package_key_from_id $package_id]
     set parameter_obj [::xo::parameter get_parameter_object \
-                            -package_key $package_key \
-                            -parameter_name $parameter]
+                           -package_key $package_key \
+                           -parameter_name $parameter]
     
     if {$parameter_obj eq ""} {
       # We have still no parameter. There must be something significantly wrong.
@@ -416,43 +418,50 @@ namespace eval ::xo {
   #
   #  A few test cases
   #
-#   ns_log notice "xotcl-request-monitor.max-url-stats=[parameter get_from_package_key \
-#       -package_key xotcl-request-monitor \
-#       -parameter max-url-stats]"
+  #   ns_log notice "xotcl-request-monitor.max-url-stats=[parameter get_from_package_key \
+      #       -package_key xotcl-request-monitor \
+      #       -parameter max-url-stats]"
 
-#   set cmd1 "::parameter::get_from_package_key \
-#       -package_key xotcl-request-monitor \
-#       -parameter max-url-stats"
-#   set cmd2 "::xo::parameter get_from_package_key \
-#       -package_key xotcl-request-monitor \
-#       -parameter max-url-stats"
-#   ns_log notice "GET_PACKAGE_KEY old: [time $cmd1 100], new: [time $cmd2 100]"
+  #   set cmd1 "::parameter::get_from_package_key \
+      #       -package_key xotcl-request-monitor \
+      #       -parameter max-url-stats"
+  #   set cmd2 "::xo::parameter get_from_package_key \
+      #       -package_key xotcl-request-monitor \
+      #       -parameter max-url-stats"
+  #   ns_log notice "GET_PACKAGE_KEY old: [time $cmd1 100], new: [time $cmd2 100]"
 
-#   set pid 4906
-#   set pname trend-elements 
-#   ns_log notice "xotcl-request-monitor.$pname=[parameter get \
-#       -package_id $pid -parameter $pname]"
-#   set cmd1 "::parameter::get -package_id $pid -parameter $pname"
-#   set cmd2 "::xo::parameter get -package_id $pid -parameter $pname"
-#   ns_log notice "GET old: [time $cmd1 100], new: [time $cmd2 100]"
+  #   set pid 4906
+  #   set pname trend-elements 
+  #   ns_log notice "xotcl-request-monitor.$pname=[parameter get \
+      #       -package_id $pid -parameter $pname]"
+  #   set cmd1 "::parameter::get -package_id $pid -parameter $pname"
+  #   set cmd2 "::xo::parameter get -package_id $pid -parameter $pname"
+  #   ns_log notice "GET old: [time $cmd1 100], new: [time $cmd2 100]"
 
   #
   #
   #
   #
-#   set p [parameter get_parameter_object -package_key xowiki -parameter_name dummy]
-#   ns_log notice "--p getobject => $p"
-#   if {$p eq ""} {
-#     set p [::xo::db::apm_parameter new_persistent_object  \
-#                -package_key "xowiki" \
-#                -parameter_name "dummy" \
-#                -default_value "testing" \
-#                -description "Description of test parameter" \
-#                -section_name ""]
-#     ns_log notice "--p created new parameter $p"
-#   }
-#   $p append default_value "1"
-#   $p save
+  #   set p [parameter get_parameter_object -package_key xowiki -parameter_name dummy]
+  #   ns_log notice "--p getobject => $p"
+  #   if {$p eq ""} {
+  #     set p [::xo::db::apm_parameter new_persistent_object  \
+      #                -package_key "xowiki" \
+      #                -parameter_name "dummy" \
+      #                -default_value "testing" \
+      #                -description "Description of test parameter" \
+      #                -section_name ""]
+  #     ns_log notice "--p created new parameter $p"
+  #   }
+  #   $p append default_value "1"
+  #   $p save
   # $p delete
   
 }
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

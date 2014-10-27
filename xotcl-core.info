@@ -10,12 +10,13 @@
     <inherit-templates-p>t</inherit-templates-p>
     <auto-mount>xotcl</auto-mount>
 
-    <version name="0.126" url="http://media.wu-wien.ac.at/download/xotcl-core-0.126.apm">
+    <version name="0.132" url="http://media.wu-wien.ac.at/download/xotcl-core-0.132.apm">
         <owner url="mailto:neumann@wu-wien.ac.at">Gustaf Neumann</owner>
         <summary>XOTcl library functionality (e.g. thread handling, online documentation, Generic Form and List Classes)</summary>
-        <release-date>2011-01-14</release-date>
-        <vendor>Gustaf Neumann, WU Wien</vendor>
-        <description format="text/html">This component contains some core functionality for OpenACS
+        <release-date>2014-03-24</release-date>
+        <vendor url="http://wu.ac.at">WU Vienna</vendor>
+        <description format="text/html">&lt;pre&gt;
+This component contains some core functionality for OpenACS
 applications using XOTcl. It includes
 XOTcl thread handling for OpenACS (supporting persistent and
 volatile threads) and a definitions for
@@ -26,29 +27,34 @@ and ad_instproc. This component  provides as
 well an XOTcl Object and Class browser, as well as
 means to control the recreation of objects and classes
 when components are reloaded. 
-0.23: contains a major overhaul of the Generic classes. Object preliminary object layer for content repository, oo templating. 
-0.36: brings caching support for cr-items. 
-0.38: important change: uses cr_items.name instead of cr_revision.title to label content items. This effects as well the api (lookup uses -name instead of -title). 
-0.40: updating package_id in acs_objects, requires now openacs 5.2.*; 
-0.41: supporting storage_type file, on_submit method and html for forms; 
-0.43: context and connection context; 
-0.44: use connection_context, sch regression test works;
-0.45: xo:db require operations;
+0.23: contains a major overhaul of the Generic classes. Object preliminary 
+      object layer for content repository, oo templating
+0.36: caching support for cr-items
+0.38: important change: uses cr_items.name instead of cr_revision.title 
+      to label content items. This effects as well the api (lookup uses -name instead of -title). 
+0.40: updating package_id in acs_objects, requires now OpenACS 5.2.*
+0.41: supporting storage_type file, on_submit method and html for forms
+0.43: context and connection context
+0.44: use connection_context, sch regression test works
+0.45: xo:db require operations
 0.48: policies
 0.49: stored procedures object proxies (postgres and Oracle)
 0.51: require package
-0.52: distinguish between ImageField and ImageAnchorField, start using slots, multivalued form entries, bulk-actions, improved localization, improved sql layer (:.xo::db::sql)
+0.52: distinguish between ImageField and ImageAnchorField, start using slots, 
+      multivalued form entries, bulk-actions, improved localization, improved sql layer (:.xo::db::sql)
 0.70: oo interface to acs-object, acs-object-types and cr-items/revisions based on XOTcl slots 
+&lt;/pre&gt;
 </description>
         <license>BSD-Style</license>
-        <maturity>0</maturity>
+        <maturity>2</maturity>
 
-        <provides url="xotcl-core" version="0.126"/>
-        <requires url="acs-kernel" version="5.2.0"/>
+        <provides url="xotcl-core" version="0.132"/>
+	<requires url="acs-kernel" version="5.8.1"/>
+        
 
         <callbacks>
-            <callback type="before-install"  proc="::xotcl-core::before_install_callback"/>
-            <callback type="after-upgrade"  proc="::xotcl-core::after_upgrade_callback"/>
+            <callback type="before-install"  proc="::xotcl-core::before-install"/>
+            <callback type="after-upgrade"  proc="::xotcl-core::after-upgrade"/>
         </callbacks>
         <parameters>
             <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="NslogRedirector"  default="0" description="Allow redirections of nslog. The redirector filters ns_log messages and sends these not only to the error log (standard behaviour) but also to ds_comments in the developer support. This way, a developer can view the log messages for the current request directly in the browser when the developer support is activated, without having to watch the log file. 

@@ -47,7 +47,7 @@ namespace eval ::xo {
     }
     if {$actual_query eq " "} {
       if {[ns_conn isconnected]} {
-	set actual_query [ns_conn query]
+        set actual_query [ns_conn query]
       }
       #my log "--CONN ns_conn query = <$actual_query>"
     }
@@ -76,13 +76,13 @@ namespace eval ::xo {
     # get the query parameters (from the form if necessary)
     if {[my istype ::xo::ConnectionContext]} {
       foreach param [array names ""] {
-	#my log "--cc check $param [info exists passed_args($param)]"
-	set name [string range $param 1 end]
-	if {![info exists passed_args($param)] &&
-	    [my exists_form_parameter $name]} {
-	  #my log "--cc adding passed_args(-$name) [my form_parameter $name]"
-	  set passed_args($param) [my form_parameter $name]
-	}
+        #my log "--cc check $param [info exists passed_args($param)]"
+        set name [string range $param 1 end]
+        if {![info exists passed_args($param)] &&
+            [my exists_form_parameter $name]} {
+          #my log "--cc adding passed_args(-$name) [my form_parameter $name]"
+          set passed_args($param) [my form_parameter $name]
+        }
       }
     }
     
@@ -90,7 +90,7 @@ namespace eval ::xo {
     if {[info exists caller_parameters]} {
       #my log "--cc caller_parameters=$caller_parameters"
       array set caller_param $caller_parameters
-    
+      
       foreach param [array names caller_param] {
         if {[info exists ($param)]} { 
           set passed_args($param) $caller_param($param) 
@@ -211,19 +211,23 @@ namespace eval ::xo {
   }
 
   ConnectionContext proc require {
-    -url
-    {-package_id 0} 
-    {-parameter ""}
-    {-user_id -1}
-    {-actual_query " "}
-    {-keep_cc false}
-  } {
+                                  -url
+                                  {-package_id 0} 
+                                  {-parameter ""}
+                                  {-user_id -1}
+                                  {-actual_query " "}
+                                  {-keep_cc false}
+                                } {
     set exists_cc [my isobject ::xo::cc]
 
     # if we have a connection context and we want to keep it, do
     # nothing and return.
     if {$exists_cc && $keep_cc} {
       return
+    }
+
+    if {[info exists ::ds_show_p] && [ds_database_enabled_p]} {
+      ::xo::dc profile on
     }
 
     if {![info exists url]} {
@@ -248,8 +252,8 @@ namespace eval ::xo {
       my create ::xo::cc \
           -package_id $package_id \
           [list -parameter_declaration $parameter] \
-	  -user_id $user_id \
-	  -actual_query $actual_query \
+          -user_id $user_id \
+          -actual_query $actual_query \
           -locale $locale \
           -url $url
       #::xo::show_stack
@@ -259,7 +263,7 @@ namespace eval ::xo {
       #my msg "--cc ::xo::cc reused $url -package_id $package_id"
       ::xo::cc configure \
           -url $url \
-	  -actual_query $actual_query \
+          -actual_query $actual_query \
           -locale $locale \
           [list -parameter_declaration $parameter]
       #if {$package_id ne ""} {
@@ -296,13 +300,13 @@ namespace eval ::xo {
       } else {
         my set user_id 0
         my set untrusted_user_id 0
-	array set ::ad_conn [list user_id $user_id untrusted_user_id $user_id session_id ""]
+        array set ::ad_conn [list user_id $user_id untrusted_user_id $user_id session_id ""]
       }
     } else {
       my set user_id $user_id
       my set untrusted_user_id $user_id
       if {![info exists ::ad_conn(user_id)]} {
-	array set ::ad_conn [list user_id $user_id untrusted_user_id $user_id session_id ""]
+        array set ::ad_conn [list user_id $user_id untrusted_user_id $user_id session_id ""]
       }
     }
   }
@@ -338,7 +342,7 @@ namespace eval ::xo {
       # for requests bypassing the ordinary connection setup (resources in oacs 5.2+)
       # we have to get the user_id by ourselves
       if { [catch {
-        if {[info command ad_cookie] ne ""} {
+        if {[info commands ad_cookie] ne ""} {
           # we have the xotcl-based cookie code
           set cookie_list [ad_cookie get_signed_with_expr "ad_session_id"]
         } else {
@@ -407,7 +411,7 @@ namespace eval ::xo {
                           -package_id $package_id]]
   }
   ConnectionContext instproc role=community_member {-user_id:required -package_id} {
-    if {[info command ::dotlrn_community::get_community_id] ne ""} {
+    if {[info commands ::dotlrn_community::get_community_id] ne ""} {
       set community_id [my cache [list [dotlrn_community::get_community_id -package_id $package_id]]]
       if {$community_id ne ""} {
         return [my cache [list dotlrn::user_is_community_member_p \
@@ -455,11 +459,11 @@ namespace eval ::xo {
     #my set $key
   }
   
-#   ConnectionContext instproc destroy {} {
-#     my log "--i destroy [my url]"
-#     #::xo::show_stack
-#     next
-#   }
+  #   ConnectionContext instproc destroy {} {
+  #     my log "--i destroy [my url]"
+  #     #::xo::show_stack
+  #     next
+  #   }
 
 
   ConnectionContext instproc load_form_parameter {} {
@@ -535,7 +539,7 @@ namespace eval ::xo {
 
     set query [list [list $var $value]]
     foreach pair [split $old_query &] {
-      foreach {key value} [split $pair =] break
+      lassign [split $pair =] key value
       if {$key eq $var} continue
       lappend query [list [{*}$decodeCmd $key] [{*}$decodeCmd $value]]
     }
@@ -554,7 +558,7 @@ namespace eval ::xo {
 
     set query [{*}$encodeCmd $var]=[{*}$encodeCmd $value]
     foreach pair [split $old_query &] {
-      foreach {key value} [split $pair =] break
+      lassign [split $pair =] key value
       if {[{*}$decodeCmd $key] eq $var} continue
       append query &$pair
     }
@@ -562,3 +566,10 @@ namespace eval ::xo {
   }
 
 }
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

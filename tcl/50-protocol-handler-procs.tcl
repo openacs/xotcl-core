@@ -97,7 +97,7 @@ namespace eval ::xo {
       ns_returnunauthorized
       return filter_return
     }
-  
+    
     # set common data for all kind of requests 
     my initialize
 
@@ -116,12 +116,12 @@ namespace eval ::xo {
     This method is typically called via *-init.tcl.
 
     Note, that the specified url must not have an entry
-    in the site-nodes, otherwise the openacs request 
+    in the site-nodes, otherwise the OpenACS request 
     processor performs always the cockie-based authorization.
 
     To change that, it would be necessary to register the
     filter before the request processor (currently, there
-    are no hooks for that).
+                                         are no hooks for that).
   } {
     set filter_url [my url]*
     set url [my url]/*
@@ -178,15 +178,14 @@ namespace eval ::xo {
       DELETE LOCK UNLOCK OPTIONS
       REPORT
     } {
-      ns_register_filter preauth $method $filter_url [self]
-      ns_register_filter preauth $method $root       [self]
-      ns_register_proc $method $url  [self] handle_request
-      ns_register_proc $method $root [self] handle_request
+       ns_register_filter preauth $method $filter_url [self]
+       ns_register_filter preauth $method $root       [self]
+       ns_register_proc $method $url  [self] handle_request
+       ns_register_proc $method $root [self] handle_request
 
-      
-      #my log "--ns_register_filter preauth $method $filter_url  [self]"
-      #my log "--ns_register_proc $method $url [self] handle_request"
-    }
+       #my log "--ns_register_filter preauth $method $filter_url  [self]"
+       #my log "--ns_register_proc $method $url [self] handle_request"
+     }
     ns_register_proc OPTIONS  / ::xo::minimalProctocolHandler OPTIONS
     ns_register_proc PROPFIND / ::xo::minimalProctocolHandler PROPFIND
   }
@@ -207,10 +206,11 @@ namespace eval ::xo {
     dispatches the HTTP requests.
   } {
     my instvar uri method user_id
-  
+    
     #my log "--handle_request method=$method uri=$uri\
-    # 	userid=$user_id -ns_conn query '[ns_conn query]'"
-    if {[my exists package]} {
+        #     userid=$user_id -ns_conn query '[ns_conn query]'"
+    if {[my exists package] && $uri ne "/"} {
+      # We don't call package-initialze for $uri = "/"
       my set package_id [my get_package_id]
     }
     if {[my procsearch $method] ne ""} {
@@ -243,7 +243,7 @@ namespace eval ::xo {
 
   ProtocolHandler instproc multiStatus {body} {
     append _ {<?xml version="1.0" encoding="utf-8" ?>} \n \
-	{<D:multistatus xmlns:D="DAV:">} $body \n </D:multistatus> \n
+        {<D:multistatus xmlns:D="DAV:">} $body \n </D:multistatus> \n
   }
 
   ProtocolHandler instproc multiStatusResonse {
@@ -253,8 +253,8 @@ namespace eval ::xo {
   } {
     #my log "multiStatusResonse href $href propstats $propstats"
     append reply \n \
-	{<D:response xmlns:lp1="DAV:" xmlns:lp2="http://apache.org/dav/props/" xmlns:g0="DAV:">} \
-	"\n<D:href>$href</D:href>\n"
+        {<D:response xmlns:lp1="DAV:" xmlns:lp2="http://apache.org/dav/props/" xmlns:g0="DAV:">} \
+        "\n<D:href>$href</D:href>\n"
     # The multi-status respons has 2 formats
     # - with <D:propstat> (used in PROPFIND and PROPPATCH)
     # - without <D:propstat> (used in other cases, e.g. DELETE, COPY, MOVE for collections)
@@ -262,23 +262,23 @@ namespace eval ::xo {
     #
     foreach {props status} $propstats {
       if {$propstatus} {
-	append reply <D:propstat>\n
-	if {[llength $props] > 0} {
-	  append reply <D:prop>\n
-	  foreach {name value} $props {
-	    if {$value ne ""} { 
-	      append reply <$name>$value</$name>\n
-	    } else {
-	      append reply <$name/>\n
-	    }
-	  }
-	  append reply </D:prop>\n
-	} else {
-	  append reply <D:prop/>\n
-	}
-	append reply <D:status>$status</D:status>\n</D:propstat>\n
+        append reply <D:propstat>\n
+        if {[llength $props] > 0} {
+          append reply <D:prop>\n
+          foreach {name value} $props {
+            if {$value ne ""} { 
+              append reply <$name>$value</$name>\n
+            } else {
+              append reply <$name/>\n
+            }
+          }
+          append reply </D:prop>\n
+        } else {
+          append reply <D:prop/>\n
+        }
+        append reply <D:status>$status</D:status>\n</D:propstat>\n
       } else {
-	append reply <D:status>$status</D:status>\n
+        append reply <D:status>$status</D:status>\n
       }
     }
     append reply </D:response>\n
@@ -286,13 +286,13 @@ namespace eval ::xo {
 
   ProtocolHandler instproc multiStatusError {status} {
     lappend davprops \
-	D:getlastmodified "" \
-	D:getcontentlength "" \
-	D:creationdate "" \
-	D:resourcetype ""
+        D:getlastmodified "" \
+        D:getcontentlength "" \
+        D:creationdate "" \
+        D:resourcetype ""
     set r [my multiStatus [my multiStatusResonse \
-			       -href [ns_urldecode [ns_conn url]] \
-			       -propstats [list $davprops $status]]]
+                               -href [ns_urldecode [ns_conn url]] \
+                               -propstats [list $davprops $status]]]
     my log multiStatusError=$r
     ns_return 207 text/xml $r
   }
@@ -313,21 +313,21 @@ namespace eval ::xo {
     ns_set put [ns_conn outputheaders] Allow OPTIONS
     ns_return 200 text/plain {}
   }
- 
+  
   ProtocolHandler instproc PROPFIND {} {
     #my log "--ProtocolHandler PROPFIND [ns_conn content]"
     # when GET is not supported on this resource, the get* properties are not be sent
     # see http://www.webdav.org/specs/rfc4918.html, 9.1.5
     lappend davprops \
-	lp1:resourcetype    <D:collection/> \
-	lp1:creationdate    [my tcl_time_to_iso8601 "2013-06-30 01:21:22.648325+02"] \
-	D:supportedlock     {} \
-	D:lockdiscovery     {}
-	
-     ns_return 207 text/xml [my multiStatus \
-				 [my multiStatusResonse \
-				      -href [my set uri] \
-				      -propstats [list $davprops "HTTP/1.1 200 OK"]]]
+        lp1:resourcetype    <D:collection/> \
+        lp1:creationdate    [my tcl_time_to_iso8601 "2013-06-30 01:21:22.648325+02"] \
+        D:supportedlock     {} \
+        D:lockdiscovery     {}
+    
+    ns_return 207 text/xml [my multiStatus \
+                                [my multiStatusResonse \
+                                     -href [my set uri] \
+                                     -propstats [list $davprops "HTTP/1.1 200 OK"]]]
   }
 
   ::xo::ProtocolHandler create ::xo::minimalProctocolHandler
@@ -339,3 +339,11 @@ namespace eval ::xo {
     my multiStatusError "HTTP/1.1 403 Forbidden"
   }
 }
+
+
+#
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:
