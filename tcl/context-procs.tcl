@@ -465,23 +465,23 @@ namespace eval ::xo {
   #     next
   #   }
 
+  ConnectionContext instproc load_form_parameter_from_values {values} {
+    foreach {att value} $values {
+      # For some unknown reasons, Safari 3.* returns sometimes
+      # entries with empty names... We ignore these for now
+      if {$att eq ""} continue
+      if {[my exists form_parameter($att)]} {
+        my set form_parameter_multiple($att) 1
+      }
+      my lappend form_parameter($att) $value
+    }
+  }
 
   ConnectionContext instproc load_form_parameter {} {
-    my instvar form_parameter
-
     if {[ns_conn isconnected] && [ns_conn method] eq "POST"} {
-      #array set form_parameter [ns_set array [ns_getform]]
-      foreach {att value} [ns_set array [ns_getform]] {
-        # For some unknown reasons, Safari 3.* returns sometimes
-        # entries with empty names... We ignore these for now
-        if {$att eq ""} continue
-        if {[info exists form_parameter($att)]} {
-          my set form_parameter_multiple($att) 1
-        }
-        lappend form_parameter($att) $value
-      }
+      my load_form_parameter_from_values [ns_set array [ns_getform]]
     } else {
-      array set form_parameter {}
+      my array set form_parameter {}
     }
   }
 
