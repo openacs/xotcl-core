@@ -172,7 +172,7 @@ namespace eval ::xo::db {
     # PostgreSQL
     #
     set pg_version [::xo::dc get_value get_version {
-      select substring(version() from 'PostgreSQL #"[0-9]+.[0-9+]#".%' for '#')   }]
+      select substring(version() from 'PostgreSQL #"[0-9]+.[0-9]+#"%' for '#')   }]
     ns_log notice "--Postgres Version $pg_version"      
     if {$pg_version < 8.2} {
       ns_log notice "--Postgres Version $pg_version older than 8.2, use locks"
@@ -180,6 +180,7 @@ namespace eval ::xo::db {
       # We define a locking function, really locking the tables...
       #
       CrClass instproc lock {tablename mode} {
+        ::xo::dc dml fix_content_length "update cr_revisions "
         ::xo::dc lock_objects "LOCK TABLE $tablename IN $mode MODE"
       }
     } else {
