@@ -178,7 +178,7 @@ namespace eval ::Generic {
     }
     #ns_log notice "-- redirect to $link // [string match "*\?*" $link]"
     ad_returnredirect $link
-    ad_script_abort
+    #ad_script_abort
   }
   
   Form ad_instproc generate {
