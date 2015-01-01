@@ -766,12 +766,15 @@ namespace eval ::xo {
   }
 
   ::xo::system_stats proc recordtimes {} {
-    array set i [my gettid]
-    array set i [my thread_info [pid] $i(tid)]
-    if {[info exists i(stime)]} {
-      set group [my thread_classify $i(name)]
-      nsv_incr [self] $group,stime $i(stime)
-      nsv_incr [self] $group,utime $i(utime)
+    set threadInfo [my gettid]
+    if {$threadInfo ne ""} {
+      array set i $threadInfo
+      array set i [my thread_info [pid] $i(tid)]
+      if {[info exists i(stime)]} {
+        set group [my thread_classify $i(name)]
+        nsv_incr [self] $group,stime $i(stime)
+        nsv_incr [self] $group,utime $i(utime)
+      }
     }
   }
 
