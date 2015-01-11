@@ -742,7 +742,7 @@ namespace eval ::xo {
   }
 
   ::xo::system_stats proc gettid {} {
-    set hex [ns_thread getid]
+    set hex [ns_thread id]
     foreach t [ns_info threads] {
       if {[lindex $t 2] eq $hex} {
         return [list name [lindex $t 0] tid [lindex $t 7]]
