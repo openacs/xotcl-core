@@ -238,13 +238,20 @@ namespace eval ::xo {
   ::xo::Package instforward returnredirect         {%my set context} %proc
 
   ::xo::Package instproc get_parameter {attribute {default ""}} {
-    set param [::xo::parameter get \
+    set package_id [my id]
+    set parameter_obj [::xo::parameter get_parameter_object \
+                           -parameter_name $attribute \
+                           -package_id $package_id \
+                           -retry false]
+    set success 0
+    if {$parameter_obj ne ""} {
+      set value [$parameter_obj get -package_id $package_id]
+      if {[$parameter_obj set __success]} {return $value}
+    }
+    return [parameter::get_global_value \
+                   -package_key [my set package_key] \
                    -parameter $attribute \
-                   -package_id [my id] \
-                   -default $default \
-                   -retry false]
-    #my log "--get_parameter <$attribute> <$default> returned <$param>"
-    return $param
+                   -default $default]
   }
   
   ::xo::Package instproc init args {
