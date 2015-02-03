@@ -1003,7 +1003,7 @@ proc ::xo::getObjectProperty {o what args} {
 
   # The argument list is e.g. "foo -name x -title y" 
   #
-  # It is placed into one arguemnt to avoid interference with the "-"
+  # It is placed into one argument to avoid interference with the "-"
   # argument parsing since it will always start with a non-dashed
   # value.
   #
@@ -1021,8 +1021,9 @@ proc ::xo::getObjectProperty {o what args} {
   
   # copy slot and configure it
   set newSlot [self]::slot::$name
+
   $slot copy $newSlot
-  $newSlot configure {*}$config
+  $newSlot configure -domain [self] -manager $newSlot -create_acs_attribute false {*}$config
 }
 
 
