@@ -122,8 +122,12 @@ namespace eval ::xo {
 
   Context instproc query_parameter {name {default ""}} {
     my instvar queryparm
-    return [expr {[info exists queryparm($name)] ? $queryparm($name) : $default}]
+    if {[info exists queryparm($name)]} {
+      return $queryparm($name)
+    } 
+    return $default
   }
+  
   Context instproc exists_query_parameter {name} {
     #my log "--qp my exists $name => [my exists queryparm($name)]"
     my exists queryparm($name)
@@ -510,6 +514,17 @@ namespace eval ::xo {
   ConnectionContext instproc get_all_form_parameter {} {
     return [my array get form_parameter]
   }
+
+  #
+  # Version of query_parameter respecting set-parameter
+  #
+  ConnectionContext instproc query_parameter {name {default ""}} {
+    if {[my exists_parameter $name]} {
+      return [my get_parameter $name]
+    }
+    next
+  }
+
   
   ConnectionContext instproc set_parameter {name value} {
     set key [list get_parameter $name]
