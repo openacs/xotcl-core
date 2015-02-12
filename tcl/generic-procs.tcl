@@ -92,11 +92,18 @@ namespace eval ::Generic {
     }
     return $vars
   }
+  Form instproc get_id_field {} {
+    my instvar data
+    if {[$data istype ::xo::db::CrItem]} {
+      return item_id
+    }
+    return object_id
+  }
   Form instproc new_data {} {
     my instvar data
     #my log "--- new_data ---"
     $data save_new
-    return [$data set object_id]
+    return [$data set [my get_id_field]]
   }
   Form instproc edit_data {} {
     #my log "--- edit_data --- setting form vars=[my form_vars]"
@@ -111,7 +118,7 @@ namespace eval ::Generic {
 	$data rename -old_name $old_name -new_name $new_name
       }
     }
-    return [$data set object_id]
+    return [$data set [my get_id_field]]
   }
 
   Form instproc request {privilege} {
