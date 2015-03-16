@@ -620,7 +620,11 @@ bgdelivery ad_proc returnfile {
       } elseif {[llength $ranges]>1} {
         ns_log warning "Multiple ranges are currently not supported, ignoring range request"
       }
-      my write_headers $status_code $mime_type $bytes
+      if {$::xo::naviserver && ![string match text/* $mime_type]} {
+        my write_headers -binary -- $status_code $mime_type $bytes
+      } else {
+        my write_headers $status_code $mime_type $bytes
+      }
     }
 
     if {$bytes == 0} {
