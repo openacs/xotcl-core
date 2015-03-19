@@ -371,7 +371,7 @@ namespace eval ::xo {
 namespace eval ::xo {
   # 
   # Make reporting back of the version numbers of the most important 
-  # nvolved components easier.
+  # involved components easier.
   #
   proc report_version_numbers {{pkg_list {acs-kernel xotcl-core xotcl-request-monitor xowiki s5 xoportal xowf}}} {
     append _ "Database: "
@@ -401,6 +401,19 @@ namespace eval ::xo {
       }
     }
     return $_
+  }
+
+  proc pg_version {} {
+    #
+    # Return 2 digit version number (suitable for number compare
+    # operations) from PostgreSQL or 0.0 if not available
+    #
+    set version 0.0
+    if {[db_driverkey {}] eq "postgresql"} {
+      set version_string [db_string dbqd.null.get_version {select version() from dual}]
+      regexp {PostgreSQL ([0-9]+[.][0-9+])} $version_string . version
+    }
+    return $version
   }
 }
 
