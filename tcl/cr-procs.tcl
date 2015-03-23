@@ -934,6 +934,7 @@ namespace eval ::xo::db {
           my update_revision $revision_id publish_date [my publish_date]
         }
         my set revision_id $revision_id
+        my update_item_index
       } else {
         # if we do not make the revision live, use the old revision_id,
         # and let CrCache save it ...... TODO: is this still needed? comment out for testing
@@ -976,6 +977,13 @@ namespace eval ::xo::db {
     ::xo::clusterwide ns_cache flush xotcl_object_cache ::[my item_id]
   }
 
+  CrItem ad_instproc update_item_index {} {
+    Dummy stub to allow subclasses to produce an more efficient
+    index for items based on live revisions.
+  } {
+    next
+  }
+  
   CrItem ad_instproc save_new {
     -package_id 
     -creation_user 
@@ -1016,6 +1024,7 @@ namespace eval ::xo::db {
       $__class instvar storage_type object_type
       [self class] lock acs_objects "SHARE ROW EXCLUSIVE"
       set revision_id [xo::dc nextval acs_object_id_seq]
+      my set revision_id $revision_id
 
       if {![my exists name] || $name eq ""} {
         # we have an autonamed item, use a unique value for the name
@@ -1044,9 +1053,9 @@ namespace eval ::xo::db {
         if {$use_given_publish_date} {
           my update_revision $revision_id publish_date [my publish_date]
         }
+        my update_item_index
       }
     }
-    my set revision_id $revision_id
 
     my db_1row [my qn get_dates] {
       select creation_date, last_modified 
