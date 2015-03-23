@@ -1079,6 +1079,7 @@ namespace eval ::xo::db {
     my instvar item_id
     ::xo::dc dml update_rename \
         "update cr_items set name = :new_name where item_id = :item_id"
+    my update_item_index
   }
 
   CrItem instproc revisions {} {
