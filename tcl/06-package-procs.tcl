@@ -276,11 +276,6 @@ namespace eval ::xo {
       my instance_name $instance_name
     }
 
-    #
-    # Save the relation between class and package_key for fast lookup
-    #
-    set ::xo::package_class([my set package_key]) [my info class]
-    
     if {[ns_conn isconnected]} {
       # in case of of host-node map, simplify the url to avoid redirects
       # .... but ad_host works only, when we are connected.... 
@@ -305,6 +300,12 @@ namespace eval ::xo {
     if {[my info class] ne $target_class && [my isclass $target_class]} {
       my class $target_class
     }
+    
+    #
+    # Save the relation between class and package_key for fast lookup
+    #
+    set ::xo::package_class([my set package_key]) [my info class]
+
     my initialize
   }
 
