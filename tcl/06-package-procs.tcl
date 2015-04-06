@@ -148,6 +148,9 @@ namespace eval ::xo {
   PackageMgr ad_proc get_package_class_from_package_key {package_key} {
     Obtain the package class from a package key
   } {
+    set key ::xo::package_class($package_key)
+    if {[info exists $key]} {return [set $key]}
+    
     foreach p [::xo::PackageMgr allinstances] {
       # Sanity check for old apps, having not set the package key.
       # TODO: remove this in future versions, when package_keys are enforced
@@ -156,9 +159,11 @@ namespace eval ::xo {
         continue
       }
       if {[$p package_key] eq $package_key} {
+        set $key $p
         return $p
       }
     }
+
     return ""
   }
 
@@ -270,6 +275,12 @@ namespace eval ::xo {
       my package_key $package_key
       my instance_name $instance_name
     }
+
+    #
+    # Save the relation between class and package_key for fast lookup
+    #
+    set ::xo::package_class([my set package_key]) [my info class]
+    
     if {[ns_conn isconnected]} {
       # in case of of host-node map, simplify the url to avoid redirects
       # .... but ad_host works only, when we are connected.... 
