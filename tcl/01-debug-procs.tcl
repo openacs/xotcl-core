@@ -371,7 +371,7 @@ namespace eval ::xo {
 namespace eval ::xo {
   # 
   # Make reporting back of the version numbers of the most important 
-  # nvolved components easier.
+  # involved components easier.
   #
   proc report_version_numbers {{pkg_list {acs-kernel xotcl-core xotcl-request-monitor xowiki s5 xoportal xowf}}} {
     append _ "Database: "
@@ -401,6 +401,23 @@ namespace eval ::xo {
       }
     }
     return $_
+  }
+
+  proc pg_version {} {
+    #
+    # Return 2 digit version number (suitable for number compare
+    # operations) from PostgreSQL or 0.0 if not available
+    #
+    set key ::xo::pg_version
+    if {[info exists $key]} {
+      return [set $key]
+    }
+    set version 0.0
+    if {[db_driverkey {}] eq "postgresql"} {
+      set version_string [db_string dbqd.null.get_version {select version() from dual}]
+      regexp {PostgreSQL ([0-9]+[.][0-9+])} $version_string . version
+    }
+    return [set $key $version]
   }
 }
 
@@ -742,7 +759,7 @@ namespace eval ::xo {
   }
 
   ::xo::system_stats proc gettid {} {
-    set hex [ns_thread getid]
+    set hex [ns_thread id]
     foreach t [ns_info threads] {
       if {[lindex $t 2] eq $hex} {
         return [list name [lindex $t 0] tid [lindex $t 7]]
@@ -766,12 +783,15 @@ namespace eval ::xo {
   }
 
   ::xo::system_stats proc recordtimes {} {
-    array set i [my gettid]
-    array set i [my thread_info [pid] $i(tid)]
-    if {[info exists i(stime)]} {
-      set group [my thread_classify $i(name)]
-      nsv_incr [self] $group,stime $i(stime)
-      nsv_incr [self] $group,utime $i(utime)
+    set threadInfo [my gettid]
+    if {$threadInfo ne ""} {
+      array set i $threadInfo
+      array set i [my thread_info [pid] $i(tid)]
+      if {[info exists i(stime)]} {
+        set group [my thread_classify $i(name)]
+        nsv_incr [self] $group,stime $i(stime)
+        nsv_incr [self] $group,utime $i(utime)
+      }
     }
   }
 
@@ -1000,7 +1020,7 @@ proc ::xo::getObjectProperty {o what args} {
 
   # The argument list is e.g. "foo -name x -title y" 
   #
-  # It is placed into one arguemnt to avoid interference with the "-"
+  # It is placed into one argument to avoid interference with the "-"
   # argument parsing since it will always start with a non-dashed
   # value.
   #
@@ -1018,8 +1038,9 @@ proc ::xo::getObjectProperty {o what args} {
   
   # copy slot and configure it
   set newSlot [self]::slot::$name
+
   $slot copy $newSlot
-  $newSlot configure {*}$config
+  $newSlot configure -domain [self] -manager $newSlot -create_acs_attribute false {*}$config
 }
 
 

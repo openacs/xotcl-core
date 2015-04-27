@@ -615,12 +615,16 @@ bgdelivery ad_proc returnfile {
           #
           # See http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html (14.16)
           #
-          ns_log notice "### ignore invalid <$range>, pos > size-1, Content-Range: bytes $from-$to/$size // $ranges"
+          ns_log notice "### ignore invalid range <$range>, pos > size-1, Content-Range: bytes $from-$to/$size // $ranges"
         }
       } elseif {[llength $ranges]>1} {
         ns_log warning "Multiple ranges are currently not supported, ignoring range request"
       }
-      my write_headers $status_code $mime_type $bytes
+      if {$::xo::naviserver && ![string match text/* $mime_type]} {
+        my write_headers -binary -- $status_code $mime_type $bytes
+      } else {
+        my write_headers $status_code $mime_type $bytes
+      }
     }
 
     if {$bytes == 0} {

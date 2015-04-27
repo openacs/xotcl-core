@@ -705,13 +705,16 @@ namespace eval ::xo::db {
 	-c_name $column_name
   }
 
-  require proc table {name definition} {
+  require proc table {name definition {populate ""}} {
     if {![my exists_table $name]} {
       set lines {}
       foreach col [dict keys $definition] {lappend lines "$col [dict get $definition $col]"}
       set definition [join $lines ",\n"]
       # my log "--table $name does not exist, creating with definition: $definition"
       ::xo::dc dml create-table-$name "create table $name ($definition)"
+      if {$populate ne ""} {
+        ::xo::dc dml populate-table-$name $populate
+      }
     } else {
       # The table exists already. Check the colums, whether we have to
       # add columns. We do not alter attribute types, and we do not
@@ -1934,7 +1937,11 @@ namespace eval ::xo::db {
     foreach selection $sets {
       if {$named_objects} {
         set object_name ::[ns_set get $selection $object_named_after]
-        set o [$object_class create $object_name]
+        if {[info commands $object_name] eq ""} {
+          set o [$object_class create $object_name]
+        } else {
+          set o $object_name
+        }
       } else {
         set o [$object_class new]
       }

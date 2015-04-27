@@ -10,10 +10,10 @@
     <inherit-templates-p>t</inherit-templates-p>
     <auto-mount>xotcl</auto-mount>
 
-    <version name="0.132" url="http://media.wu-wien.ac.at/download/xotcl-core-0.132.apm">
+    <version name="0.137" url="http://media.wu-wien.ac.at/download/xotcl-core-0.137.apm">
         <owner url="mailto:neumann@wu-wien.ac.at">Gustaf Neumann</owner>
         <summary>XOTcl library functionality (e.g. thread handling, online documentation, Generic Form and List Classes)</summary>
-        <release-date>2014-03-24</release-date>
+        <release-date>2015-02-11</release-date>
         <vendor url="http://wu.ac.at">WU Vienna</vendor>
         <description format="text/html">&lt;pre&gt;
 This component contains some core functionality for OpenACS
@@ -48,7 +48,7 @@ when components are reloaded.
         <license>BSD-Style</license>
         <maturity>2</maturity>
 
-        <provides url="xotcl-core" version="0.132"/>
+        <provides url="xotcl-core" version="0.137"/>
 	<requires url="acs-kernel" version="5.8.1"/>
         
 

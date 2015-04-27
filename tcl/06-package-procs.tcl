@@ -148,6 +148,9 @@ namespace eval ::xo {
   PackageMgr ad_proc get_package_class_from_package_key {package_key} {
     Obtain the package class from a package key
   } {
+    set key ::xo::package_class($package_key)
+    if {[info exists $key]} {return [set $key]}
+    
     foreach p [::xo::PackageMgr allinstances] {
       # Sanity check for old apps, having not set the package key.
       # TODO: remove this in future versions, when package_keys are enforced
@@ -156,9 +159,11 @@ namespace eval ::xo {
         continue
       }
       if {[$p package_key] eq $package_key} {
+        set $key $p
         return $p
       }
     }
+
     return ""
   }
 
@@ -238,13 +243,20 @@ namespace eval ::xo {
   ::xo::Package instforward returnredirect         {%my set context} %proc
 
   ::xo::Package instproc get_parameter {attribute {default ""}} {
-    set param [::xo::parameter get \
+    set package_id [my id]
+    set parameter_obj [::xo::parameter get_parameter_object \
+                           -parameter_name $attribute \
+                           -package_id $package_id \
+                           -retry false]
+    set success 0
+    if {$parameter_obj ne ""} {
+      set value [$parameter_obj get -package_id $package_id]
+      if {[$parameter_obj set __success]} {return $value}
+    }
+    return [parameter::get_global_value \
+                   -package_key [my set package_key] \
                    -parameter $attribute \
-                   -package_id [my id] \
-                   -default $default \
-                   -retry false]
-    #my log "--get_parameter <$attribute> <$default> returned <$param>"
-    return $param
+                   -default $default]
   }
   
   ::xo::Package instproc init args {
@@ -263,6 +275,7 @@ namespace eval ::xo {
       my package_key $package_key
       my instance_name $instance_name
     }
+
     if {[ns_conn isconnected]} {
       # in case of of host-node map, simplify the url to avoid redirects
       # .... but ad_host works only, when we are connected.... 
@@ -287,6 +300,12 @@ namespace eval ::xo {
     if {[my info class] ne $target_class && [my isclass $target_class]} {
       my class $target_class
     }
+    
+    #
+    # Save the relation between class and package_key for fast lookup
+    #
+    set ::xo::package_class([my set package_key]) [my info class]
+
     my initialize
   }
 
