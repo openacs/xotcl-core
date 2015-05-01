@@ -8,148 +8,11 @@ ad_page_contract {
   {documented_only 1}
   {with_children 0}
   {dpi 96}
-}
-
-::xotcl::Object instproc dotquote {e} {
-  return \"$e\" 
-}
-::xotcl::Object instproc dotquotel {l} {
-  set result [list]
-  foreach e $l { lappend result \"$e\" }
-  return $result
-}
-::xotcl::Object instproc dot_append_method {{-documented_methods 1} e methods_ref kind} {
-  my upvar $methods_ref methods
-  set infokind $kind
-  if {$kind eq "instproc"} {append infokind s}
-  ::xotcl::api scope_from_object_reference scope e
-  foreach method [xo::getObjectProperty $e $kind] {
-    if {$documented_methods} {
-      set proc_index [::xotcl::api proc_index $scope $e $kind $method]
-      #my msg "check $method => [nsv_exists api_proc_doc $proc_index]"
-      if {[nsv_exists api_proc_doc $proc_index]} {
-        lappend methods $method
-      }
-    } else {
-      lappend methods $method
-    }
-  }
-}
-::xotcl::Object instproc dotclass {{-documented_methods 1} e} {
-  set definition ""
-  append definition "[my dotquote $e] \[label=\"\{$e|"
-  foreach slot [$e info slots] {
-    set name ""
-    catch {set name $slot name}
-    if {$name ne ""} {
-       append definition "[$slot name]\\l"
-    }
-  }
-  append definition "|"
-  ::xotcl::api scope_from_object_reference scope e
-  set methods [list]
-  my dot_append_method -documented_methods $documented_methods $e methods instproc
-  my dot_append_method -documented_methods $documented_methods $e methods instforward
-  foreach method [lsort $methods] {
-    append definition "$method\\l"
-  }
-  append definition "\}\"\];\n"
+  {format png}
 }
 
 
-::xotcl::Object instproc dotcode {
-  {-with_children 0} 
-  {-omit_base_classes 1} 
-  {-documented_methods 1} 
-  {-dpi 96} 
-  things
-} {
-  set classes [list]
-  set objects [list]
-
-  foreach e $things {
-    if {![my isobject $e]} continue
-    if {$omit_base_classes && $e eq "::xotcl::Object" || $e eq "::xotcl::Class"} continue
-    lappend [expr {[my isclass $e] ? "classes" : "objects"}] $e
-  }
-  set instances ""
-  foreach e $things {
-    if {![my isobject $e]} continue
-    if {$omit_base_classes && $e eq "::xotcl::Object" || $e eq "::xotcl::Class"} continue
-    set c [$e info class]
-    if {$omit_base_classes && $c eq "::xotcl::Object" || $c eq "::xotcl::Class"} continue
-    append instances "[my dotquote $e]->[my dotquote $c];\n"
-  }
-  set superclasses ""
-  foreach e $classes {
-    if {![my isobject $e]} continue
-    if {$e eq "::xotcl::Object"} continue
-    set reduced_sc [list]
-    foreach sc [::xo::getObjectProperty $e superclass] {
-      if {$omit_base_classes && $sc eq "::xotcl::Object"
-          || $sc eq "::xotcl::Class"} continue
-      lappend reduced_sc $sc
-    }
-    if {$reduced_sc eq {}} continue
-    foreach sc $reduced_sc {
-      append superclasses "[my dotquote $e]->[my dotquotel $sc];\n"
-    }
-  }
-  set children ""
-  set mixins ""
-  foreach e $things {
-    if {![my isobject $e]} continue
-    if {$omit_base_classes && $e eq "::xotcl::Object" || $e eq "::xotcl::Class"} continue
-    if {$with_children} {
-      foreach c [$e info children] {
-        if {$c ni $things} continue
-        append children "[my dotquote $c]->[my dotquote $e];\n"
-      }
-    }
-    set m [xo::getObjectProperty $e mixin]
-    #puts "-- $e mixin $m"
-    if {$m eq ""} continue
-    append mixins "[my dotquote $e]->[my dotquotel $m];\n"
-  }
-  set tclasses ""
-  set instmixins ""
-  foreach e $classes {
-    set m [xo::getObjectProperty $e instmixin]
-    #puts "-- $e instmixin $m"
-    if {$m eq ""} continue
-    #foreach mixin $m {
-    #  append tclasses [my dotclass -documented_methods $documented_methods $mixin]
-    #}
-    append instmixins "[my dotquote $e]->[my dotquotel $m];\n"
-  }
-
-  foreach e $classes {
-    append tclasses [my dotclass -documented_methods $documented_methods $e]
-  }
-  #label = \".\\n.\\nObject relations of [self]\"
-  #edge \[dir=back, constraint=0\] \"::Decorate_Action\" -> \"::Action\";
-  set objects  [join [my dotquotel $objects] {; }]
-  set classes  [join [my dotquotel $classes] {; }]
-  set imcolor hotpink4
-
-  set font "fontname = \"Helvetica\",fontsize = 8,"
-  #set font "fontname = \"Bitstream Vera Sans\",fontsize = 8,"
-# rankdir = BT; labeldistance = 20;
-  return "digraph {
-   dpi = $dpi;
-   rankdir = BT;
-   node \[$font shape=record\]; $tclasses
-   edge \[arrowhead=empty\]; $superclasses
-   node \[color=Green,shape=ellipse,fontcolor=Blue, style=filled, fillcolor=darkseagreen1\]; $objects
-   edge \[color=Blue,style=dotted,arrowhead=normal,label=\"instance of\",fontsize=10\]; $instances
-   edge \[color=pink,arrowhead=diamond, style=dotted\]; $children
-   edge \[label=instmixin,fontsize=10,color=$imcolor,fontcolor=$imcolor,arrowhead=none,arrowtail=vee,style=dashed,dir=back,constraint=0\]; $instmixins
-   edge \[label=mixin,fontsize=10,color=$imcolor,fontcolor=$imcolor,arrowhead=none,arrowtail=vee,style=dashed,dir=back,constraint=0\]; $mixins
-
-}"
-}
-
-set dot_code [::xotcl::Object dotcode -dpi $dpi \
+set dot_code [::xo::dotcode -dpi $dpi \
                   -with_children $with_children -documented_methods $documented_only \
                   $classes]
 set dot ""
@@ -159,11 +22,11 @@ if {$dot eq "" && [file executable /usr/bin/dot]} {set dot /usr/bin/dot}
 if {$dot eq ""} {ns_return 404 plain/text "dot not found"; ad_script_abort}
  
 set tmpnam [ad_tmpnam]
-set tmpfile $tmpnam.png
-set f [open $tmpnam.dot w]; puts $f $dot_code; close $f
+set tmpfile $tmpnam.$format
+set f [open $tmpnam.$format w]; puts $f $dot_code; close $f
 
 #ns_log notice "png $tmpnam dot $tmpnam.dot"
-set f [open "|$dot  -Tpng -o $tmpfile" w]; puts $f $dot_code; close $f
+set f [open "|$dot  -T$format -o $tmpfile" w]; puts $f $dot_code; close $f
 ns_returnfile 200 [ns_guesstype $tmpfile] $tmpfile
 file delete $tmpfile
 

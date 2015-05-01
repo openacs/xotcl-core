@@ -2,19 +2,24 @@ ad_page_contract {
   Show an xotcl class or object
   
   @author Gustaf Neumann
-  @cvs-id $id:$
+  @cvs-id $Id$
 } -query {
   {object:optional ::xotcl::Object}
   {show_methods:optional 1}
   {show_source:optional 0}
   {show_variables:optional 0}
+  {as_img:boolean 0}
+  {with_children:boolean 0}
+  {with_instance_relations:boolean 0}
+  {above:naturalnum 1}
+  {below:naturalnum 2}
 } -properties {
   title:onevalue
   context:onevalue
   output:onevalue
 }
 
-set context [list "XOTcl"]
+set context [list "XOTcl Object"]
 set output ""
 
 ::xotcl::api scope_from_object_reference scope object
@@ -167,16 +172,9 @@ proc class_summary {c scope} {
   return "<strong> [::xotcl::api object_link $scope $c] </strong> $result"
 }
 
-proc reverse list {
-  set result [list]
-  for {set i [expr {[llength $list] - 1}]} {$i >= 0} {incr i -1}      {
-    lappend result [lindex $list $i]
-  }
-  return $result
-}
 proc superclass_hierarchy {cl scope} {
   set l [list]
-  foreach c [reverse [concat $cl [DO $cl info heritage]]] {
+  foreach c [lreverse [concat $cl [DO $cl info heritage]]] {
     lappend s [class_summary $c $scope]
   }
   return $s
@@ -189,10 +187,17 @@ set index [::xotcl::api object_index $scope $object]
 append output "<blockquote>\n"
 
 if {$isclass} {
-  append output "<h4>Class Hierarchy of $object</h4>"
-  append output [draw_as_tree [superclass_hierarchy $object $scope]]
+  set hierarchy 0
+  if {$hierarchy} {
+    append output "<h4>Class Hierarchy of $object</h4>"
+    append output [draw_as_tree [superclass_hierarchy $object $scope]]
+  } else {
+    append output "</blockquote>\n"
+    append output "<h4>Class $object</h4>"
+    append output "<blockquote>\n"
+    append output [class_summary $object $scope]
+  }
 
-  #set class_hierarchy [ns_urlencode [concat $object [$object info heritage]]]
   #
   # compute list of classes with siblings
   set class_hierarchy [list]
@@ -201,12 +206,32 @@ if {$isclass} {
     lappend class_hierarchy {*}[DO xo::getObjectProperty $c subclass]
   }
   if {[llength $class_hierarchy]>5} {set class_hierarchy {}}
-  lappend class_hierarchy {*}[DO $object info heritage]
+
+  # Display just up to two extra two levels of heritage to keep the
+  # class in quesiton in focus.
+  set heritage [DO $object info heritage]
+  if {[llength $heritage]>$above} {
+    set heritage [lrange $heritage 0 $above-1]
+  }
+  lappend class_hierarchy {*}$heritage
+  
   if {$object ni $class_hierarchy} {lappend class_hierarchy $object}
-  #::xotcl::Object msg class_hierarchy=$class_hierarchy
-  set class_hierarchy [ns_urlencode $class_hierarchy]
+
+  if {$below > 0} {
+    set subclasses [DO $object info subclass]
+    for {set level 1} {$level < $below} {incr level} {
+      foreach sc $subclasses {
+        foreach c [DO $sc info subclass] {
+          if {$c ni $subclasses} {
+            lappend subclasses $c
+          }
+        }
+      }
+    }
+    lappend class_hierarchy {*}$subclasses
+  }
+  
   set documented_only [expr {$show_methods < 2}]
-  #set class_hierarchy [ns_urlencode [concat $object [$object info heritage]]]
 }
 
 if {[nsv_exists api_library_doc $index]} {
@@ -263,7 +288,6 @@ append obj_create_source \
 if {$class_references ne ""} {
   append output "<h4>Class Relations</h4><ul>\n$class_references</ul>\n"
 }
-append output "</blockquote>\n"
 
 if {$show_source} {
   append output [::xotcl::api source_to_html $obj_create_source] \n
@@ -341,6 +365,50 @@ if {$isclass} {
         </blockquote>\n
   }
 }
+
+if {!$as_img} {
+  #
+  # Construct the dot code from the provided classes.
+  #
+  # TODO: it would be nice to pass the selected options from the
+  # dimensional slide to dotcode, since with svg, the dot code
+  # constructs URLS for navigation in the class tree.
+  #
+  set dot_code [::xo::dotcode -dpi 72 \
+                    -with_children $with_children \
+                    -with_instance_relations $with_instance_relations \
+                    -omit_base_classes 0 \
+                    -current_object $object \
+                    -documented_methods $documented_only \
+                    $class_hierarchy]
+
+  set dot ""
+  catch {set dot [::util::which dot]}
+  # final ressort for cases, where ::util::which is not available
+  if {$dot eq "" && [file executable /usr/bin/dot]} {set dot /usr/bin/dot}
+  if {$dot eq ""} {ns_return 404 plain/text "dot not found"; ad_script_abort}
+ 
+  set tmpnam [ad_tmpnam]
+  set tmpfile $tmpnam.svg
+  set f [open $tmpnam.dot w]; puts $f $dot_code; close $f
+
+  #ns_log notice "svg $tmpnam dot $tmpnam.dot"
+  set f [open "|$dot  -Tsvg -o $tmpfile" w]; puts $f $dot_code; close $f
+  set f [open  $tmpfile]; set svg [read $f]; close $f
+
+  # delete the first three lines generated from dot
+  regsub {^[^\n]+\n[^\n]+\n[^\n]+\n} $svg "" svg
+  set css {
+    svg g a:link {text-decoration: none;}
+    div.inner {width: 100%; margin: 0 auto;}
+  }
+  set svg "<style>$css</style><div><div class='inner'>$svg</div></div>"
+
+  file delete $tmpfile
+  file delete $tmpnam.dot
+}
+
+append output "</blockquote>\n"
 
 
 DO $s destroy
