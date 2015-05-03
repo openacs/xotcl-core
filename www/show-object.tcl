@@ -47,7 +47,6 @@ interp alias {} DO {} ::xotcl::api inscope $scope
 set my_class [DO $object info class]
 set title "[::xotcl::api object_link $scope $my_class] $object"
 set isclass [::xotcl::api isclass $scope $object]
-
 set isnx [xo::getObjectProperty $object isnxobject]
 
 set s [DO Serializer new]
@@ -211,15 +210,24 @@ if {$isclass} {
   # Display just up to two extra two levels of heritage to keep the
   # class in quesiton in focus.
   set heritage [DO $object info heritage]
-  if {[llength $heritage]>$above} {
-    set heritage [lrange $heritage 0 $above-1]
-  }
+  set subclasses [DO $object info subclass]
+  
+  if {[llength $heritage] > $above} {
+    # In case we have nothing to show from the subclasses,
+    # show one more superclass to provide a better overview.
+    if {$below > 0 && [llength $subclasses] == 0} {
+      incr above
+    }
+    if {[llength $heritage] > $above} {
+      set heritage [lrange $heritage 0 $above-1]
+    }
+  } 
   lappend class_hierarchy {*}$heritage
   
   if {$object ni $class_hierarchy} {lappend class_hierarchy $object}
 
   if {$below > 0} {
-    set subclasses [DO $object info subclass]
+
     for {set level 1} {$level < $below} {incr level} {
       foreach sc $subclasses {
         foreach c [DO $sc info subclass] {
