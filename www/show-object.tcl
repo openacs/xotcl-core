@@ -186,6 +186,8 @@ proc superclass_hierarchy {cl scope} {
 set index [::xotcl::api object_index $scope $object]
 append output "<blockquote>\n"
 
+set class_hierarchy [list]
+
 if {$isclass} {
   set hierarchy 0
   if {$hierarchy} {
@@ -200,7 +202,6 @@ if {$isclass} {
 
   #
   # compute list of classes with siblings
-  set class_hierarchy [list]
   foreach c [DO xo::getObjectProperty $object superclass] {
     if {$c eq "::xotcl::Object"} {continue}
     lappend class_hierarchy {*}[DO xo::getObjectProperty $c subclass]
@@ -230,9 +231,8 @@ if {$isclass} {
     }
     lappend class_hierarchy {*}$subclasses
   }
-  
-  set documented_only [expr {$show_methods < 2}]
 }
+set documented_only [expr {$show_methods < 2}]
 
 if {[nsv_exists api_library_doc $index]} {
   array set doc_elements [nsv_get api_library_doc $index]
