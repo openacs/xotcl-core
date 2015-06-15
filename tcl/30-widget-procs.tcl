@@ -741,7 +741,7 @@ namespace eval ::xo::Table {
     set href [export_vars -base [ad_conn url] $query]
     html::a -href $href -title $title {
       html::t [my _ label]
-      html::img -src $img -alt "" -border 0
+      html::img -src $img -alt ""
     }
   }
 
@@ -805,7 +805,7 @@ namespace eval ::xo::Table {
     set name [my name]
     set value [$line set [my id]]
     html::input -type checkbox -name $name -value $value \
-        -id "$name,$value" \
+        -id "$name---$value" \
         -title "Mark/Unmark this row"
   }
 
@@ -885,7 +885,7 @@ Class TableWidget \
 #
 
 Class ListWidget -superclass ::xo::OrderedComposite -instproc render {} {
-  html::ul {
+  html::ul -class plainlist {
     foreach o [my children] {
       html::li {
         $o render
@@ -936,12 +936,10 @@ namespace eval ::xo {
     set ::_xo_need_js($name)  1
   }
   Page proc requireLink {-rel -type -title -href} {
-    regsub -all ' $title "&apos;" title
-    regsub -all ' $href "&apos;" href
     if {$::xo::use_template_head} {
       template::head::add_link -rel $rel -href $href -type $type -title $title
     } else {
-      set key "rel='$rel' type='$type' title='$title' href='$href'"
+      set key "rel='[ns_quotehtml $rel]' type='[ns_quotehtml $type]' title='[ns_quotehtml $title]' href='[ns_quotehtml $href]'"
       set ::_xo_need_link($key) 1
     }
   }

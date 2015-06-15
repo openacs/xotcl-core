@@ -27,7 +27,7 @@ set context [list "Cache Statistics"]
 
 if { $flush ne "0" } {
   ns_cache flush $cache $flush
-  ad_returnredirect "[ns_conn url]?cache=$cache"
+  ad_returnredirect [export_vars -base [ns_conn url] {cache}]
   ad_script_abort
 } 
 
@@ -35,7 +35,7 @@ if {$flushall == 1} {
   foreach i [ns_cache names $cache] {
     ns_cache flush $cache $i
   }
-  ad_returnredirect "[ns_conn url]?cache=$cache"
+  ad_returnredirect [export_vars -base [ns_conn url] {cache}]
   ad_script_abort
 }
 
@@ -54,7 +54,7 @@ if { $cache == 0 } {
 
   foreach item [lsort [ns_cache_names]] {
     t1 add -name $item \
-        -name.href "?cache=$item" \
+        -name.href "?cache=[ns_quotehtml $item]" \
         -stats [ns_cache_stats $item] \
         -size [lindex [ns_cache_size $item] 1]
 
@@ -67,7 +67,8 @@ if { $cache == 0 } {
 } else {
   set item_list [ns_cache names $cache]
   set item_count [llength $item_list]
-  append output "<a href='?cache=$cache&flushall=1'>flush all</a> items of $cache"
+  set href [export_vars -base . {cache {flushall 1}}]
+  append output "<a href='[ns_quotehtml $href]'>flush all</a> items of [ns_quotehtml $cache]"
 
   append output "<h3>Items in cache $cache ($item_count) with size [ns_cache_size $cache]</h3>\n"
   append output "<form>
@@ -85,7 +86,8 @@ if { $cache == 0 } {
     regexp -- {-set name ([^\\]+)\\} $entry _ n
     set show_url  [export_vars -base [ns_conn url] [list cache [list item $name]]]
     set flush_url [export_vars -base [ns_conn url] [list cache [list flush $name]]]
-    append entries "<li><a href=\"$show_url\">$name</a> $n ([string length $entry] bytes, <a href=\"$flush_url\">flush</a>)</li>"
+    append entries "<li><a href=\"[ns_quotehtml $show_url]\">$name</a> $n ([string length $entry] bytes, " \
+        "<a href=\"[ns_quotehtml $flush_url]\">flush</a>)</li>"
   }
   append entries "</ul>"
   if {$filter ne ""} {
