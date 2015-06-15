@@ -140,7 +140,9 @@ namespace eval ::Generic {
   Form instproc set_form_data {} {
     my instvar data data_id
     foreach var [$data info vars] {
-      my var $var [list [$data set $var]]
+      if {![$data array exists $var]} {
+        my var $var [list [$data set $var]]
+      }
     }
     # Alias object_id to the id of our object
     if {[$data exists $data_id]} {
