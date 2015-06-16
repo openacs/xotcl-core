@@ -39,7 +39,7 @@ pre it {
 @svg;literal@
 </if>
 <else>
-<img style='float: right; max-width: 800px;' src='./show-class-graph?classes=@class_hierarchy@&documented_only=@documented_only@'>
+<img style='float: right; max-width: 800px;' src='./show-class-graph?classes=@class_hierarchy@&amp;documented_only=@documented_only@'>
 </else>
 </if>
 @output;noquote@
