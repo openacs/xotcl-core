@@ -274,7 +274,7 @@ if {[nsv_exists api_library_doc $index]} {
   append output "</dl>\n"
 
   set url "/api-doc/procs-file-view?path=[ns_urlencode $doc_elements(script)]"
-  append output "Defined in <a href='$url'>$doc_elements(script)</a><p>"
+  append output "Defined in <a href='[ns_quotehtml $url]'>$doc_elements(script)</a><p>"
 
   array unset doc_elements
 }

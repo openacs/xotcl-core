@@ -230,7 +230,7 @@ namespace eval ::xo {
       if {![info exists color]} {
         set color [my user_color $user_id]
       }
-      set creator "<a style='color:$color;' target='_blank' href='$url'>$name</a>"
+      set creator "<a style='color:$color;' target='_blank' href='[ns_quotehtml $url]'>$name</a>"
     } elseif { $user_id == 0 } {
       set creator "Nobody"
     } else {
