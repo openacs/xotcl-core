@@ -5,9 +5,9 @@ ad_page_contract {
   @cvs-id $id:$
 } -query {
   {object:optional ::xotcl::Object}
-  {show_methods:optional 1}
-  {show_source:optional 0}
-  {show_variables:optional 0}
+  {show_methods:naturalnum,optional 1}
+  {show_source:naturalnum,optional 0}
+  {show_variables:naturalnum,optional 0}
 } -properties {
   title:onevalue
   context:onevalue
