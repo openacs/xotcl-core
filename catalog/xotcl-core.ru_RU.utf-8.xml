@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<message_catalog package_key="xotcl-core" locale="ru_RU" charset="utf-8">
+
+  <msg key="add">Добавить %type%</msg>
+  <msg key="add_item">Добавить пункт</msg>
+  <msg key="add_long">Добавить новый пункт типа %type%</msg>
+  <msg key="create_new_type">Создать новый %type%</msg>
+  <msg key="delete_item">Удалить пункт</msg>
+  <msg key="edit_item">Редактировать пункт</msg>
+  <msg key="edit_type">Редактировать %type%</msg>
+  <msg key="has_entered_the_room">вошёл в комнату</msg>
+  <msg key="live_revision">Текущая ревизия</msg>
+  <msg key="No_Data">Нет данных</msg>
+  <msg key="nobody">Гость</msg>
+  <msg key="permission_denied">В разрешении отказано</msg>
+  <msg key="policy-error-insufficient_permissions">&lt;blockquote&gt; Вы не имеете достаточно полномочий для выполнения метода %method% для объекта %object%. &lt;/blockquote&gt;</msg>
+  <msg key="revision_title">Ревизии записи</msg>
+  <msg key="revisions">Ревизии</msg>
+  <msg key="view_item">Просмотреть пункт</msg>
+</message_catalog>
