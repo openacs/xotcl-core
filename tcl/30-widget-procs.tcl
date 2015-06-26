@@ -805,7 +805,7 @@ namespace eval ::xo::Table {
     set name [my name]
     set value [$line set [my id]]
     html::input -type checkbox -name $name -value $value \
-        -id "$name---$value" \
+        -id "$name---[string map {/ _} $value]" \
         -title "Mark/Unmark this row"
   }
 
@@ -833,7 +833,7 @@ namespace eval ::xo::Table {
             }
           } else {
             set name [[self]::__bulkactions set __identifier]
-            html::form -name $name {
+            html::form -name $name -action "" {
               html::div -class table {
                 html::table -class [my set css.table-class] {my render-body}
                 my render-bulkactions
