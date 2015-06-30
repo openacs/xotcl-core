@@ -417,7 +417,7 @@ namespace eval ::xo::db {
 
     @return cr item object
   } {
-    #my log "-- [self args]"
+    #my log "-- generic fetch_object [self args]"
     if {![::xotcl::Object isobject $object]} {
       # if the object does not yet exist, we have to create it
       my create $object
@@ -1501,7 +1501,7 @@ namespace eval ::xo::db {
     {-initialize true}
   } {
     set serialized_object [ns_cache eval xotcl_object_cache $object {
-      #my log "--CACHE true fetch [self args]" 
+      #my log "--CACHE true fetch [self args], call shadowed method [self next]" 
       set loaded_from_db 1
       # Call the showdowed method with initializing turned off. We
       # want to store object before the after-load initialize in the

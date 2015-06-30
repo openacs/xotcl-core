@@ -1119,6 +1119,7 @@ namespace eval ::xo::db {
     if {[info exists ::xo::db::fnargs($key)]} {
       return $::xo::db::fnargs($key)
     }
+    
     ns_log notice "obtain fnargs for $key from PostgreSQL via parsing function definition"
 
     #
@@ -1465,6 +1466,12 @@ namespace eval ::xo::db {
 
     foreach item [::xo::dc get_all_package_functions] {
       lassign $item package_name object_name
+
+      if {[string match "*TRG" [string toupper $object_name]]} {
+        # no need to provide interfae to trigger functions
+        continue
+      }
+      
       set class_name ::xo::db::sql::[string tolower $package_name] 
       if {![my isobject $class_name]} { ::xo::db::Class create $class_name }
       $class_name dbproc_nonposargs [string tolower $object_name]
