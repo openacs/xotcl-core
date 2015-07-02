@@ -5,10 +5,10 @@ ad_page_contract {
   @cvs-id $Id$
 } -query {
   {classes}
-  {documented_only 1}
-  {with_children 0}
-  {dpi 96}
-  {format png}
+  {documented_only:boolean 1}
+  {with_children:boolean 0}
+  {dpi:integer 96}
+  {format:word png}
 }
 
 

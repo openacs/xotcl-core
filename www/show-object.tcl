@@ -4,7 +4,7 @@ ad_page_contract {
   @author Gustaf Neumann
   @cvs-id $Id$
 } -query {
-  {object:optional ::xotcl::Object}
+  {object:token,optional ::xotcl::Object}
   {show_methods:naturalnum,optional 1}
   {show_source:naturalnum,optional 0}
   {show_variables:naturalnum,optional 0}
