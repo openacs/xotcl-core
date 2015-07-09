@@ -1040,7 +1040,8 @@ proc ::xo::getObjectProperty {o what args} {
   set newSlot [self]::slot::$name
 
   $slot copy $newSlot
-  $newSlot configure -domain [self] -manager $newSlot -create_acs_attribute false {*}$config
+  $newSlot configure -domain [self] -manager $newSlot -create_acs_attribute false -create_table_attribute false {*}$config
+  my set db_slot($name) $newSlot 
 }
 
 
