@@ -149,7 +149,7 @@ if {[info commands ::nx::Object] ne ""} {
   ::xo::XOTcl1_ParameterHandler instproc parameter {list} {
     set result {}
     foreach element $list {
-      if {$l == [llength $element]} {
+      if {[llength $element] == 1} {
         lappend result [my __stripped_parameter $element]
       } else {
         lappend result [concat [my __stripped_parameter $element] [lrange $element 1 end]]
