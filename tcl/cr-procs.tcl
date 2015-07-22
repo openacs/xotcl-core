@@ -445,6 +445,15 @@ namespace eval ::xo::db {
           # "data". Therefore, we cannot use simply -column_name for the slot.
           lappend atts "n.data AS text"
         }
+
+        ::xowiki::Page::slot::text {
+          #
+          # this is just a hotfix for now
+          #
+          #ns_log notice [$slot serialize]
+          lappend atts "n.data as text"
+        }
+        
         ::xo::db::CrItem::slot::name {
           lappend atts i.[$slot column_name]
         }
