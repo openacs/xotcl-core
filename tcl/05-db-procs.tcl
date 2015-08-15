@@ -706,7 +706,7 @@ namespace eval ::xo::db {
   }
 
   require proc table {name definition {populate ""}} {
-    my log "==== require table $name exists: [my exists_table $name]\n$definition"
+    #my log "==== require table $name exists: [my exists_table $name]\n$definition"
     if {![my exists_table $name]} {
       set lines {}
       foreach col [dict keys $definition] {lappend lines "$col [dict get $definition $col]"}
