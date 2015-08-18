@@ -22,6 +22,7 @@ namespace eval ::xo {
     {parameter_declaration ""} 
     {actual_query " "}
     {package_id 0}
+    {invoke_object}
     locale
   }
 
