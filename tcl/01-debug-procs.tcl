@@ -956,7 +956,7 @@ proc ::xo::getObjectProperty {o what args} {
   
   # search for slot
   foreach c [my info heritage] {
-    if {[info command ${c}::slot::$name] ne ""} {
+    if {[info commands ${c}::slot::$name] ne ""} {
       set slot ${c}::slot::$name
       break
     }

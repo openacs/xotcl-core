@@ -522,7 +522,7 @@ bgdelivery ad_proc returnfile {
     set query [::xo::cc actual_query]
     set use_h264 [expr {[string match "video/mp4*" $mime_type] && $query ne "" 
                         && ([string match {*start=[1-9]*} $query] || [string match {*end=[1-9]*} $query])
-                        && [info command h264open] ne ""}]
+                        && [info commands h264open] ne ""}]
 
     if {[info commands ns_driversection] ne ""} {
       set use_writerThread [ns_config [ns_driversection] writerthreads 0]
