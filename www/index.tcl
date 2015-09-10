@@ -89,3 +89,9 @@ foreach cl [lsort $classes] {
 }
 append output </ul>
 
+
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

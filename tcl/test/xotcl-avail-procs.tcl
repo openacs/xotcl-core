@@ -41,3 +41,8 @@ aa_register_case -cats {api smoke} check_xotcl {
   }
   
 }
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

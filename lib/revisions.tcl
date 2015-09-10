@@ -97,3 +97,9 @@ db_multirow -unclobber -extend {
   set author_link [acs_community_member_link -user_id $author_id -label $author]
 }
 
+
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:
