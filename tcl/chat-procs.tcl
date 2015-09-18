@@ -58,7 +58,7 @@ namespace eval ::xo {
     my instvar array now
     set user_id [expr {[info exists uid] ? $uid : [my set user_id]}]
     set color   [my user_color $user_id]
-    set msg     [ad_quotehtml $msg]
+    set msg     [ns_quotehtml $msg]
     my log "-- msg=$msg"
     
     if {$get_new 
