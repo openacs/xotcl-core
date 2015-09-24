@@ -73,14 +73,6 @@ namespace eval ::Generic {
                                   [list type [$class pretty_name]]]
     }
 
-# It's a local variable that nobody uses... commented in doubt
-#     # check, if the specified fields are available from the data source
-#     # and ignore the unavailable entries
-#     set checked_fields [list]
-#     set available_atts [$class array names db_slot]
-#     #my log "-- available atts <$available_atts>"
-#     lappend available_atts [$class id_column] item_id
-
     if {![my exists fields]} {my mkFields}
     #my log --fields=[my fields]
   }
@@ -114,8 +106,19 @@ namespace eval ::Generic {
       set old_name [::xo::cc form_parameter __object_name ""]
       set new_name [$data set name]
       if {$old_name ne $new_name} {
+        #
+        # The item was renamed.
+        #
 	#my log "--- rename from $old_name to $new_name"
 	$data rename -old_name $old_name -new_name $new_name
+        #
+        # Check, whether we have to change the redirect url due to
+        # renaming. When the method returns non-empty use this value.
+        #
+        set url [$data changed_redirect_url]
+        if {$url ne ""} {
+          my submit_link $url
+        }
       }
     }
     return [$data set [my get_id_field]]

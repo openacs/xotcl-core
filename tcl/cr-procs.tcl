@@ -1091,6 +1091,17 @@ namespace eval ::xo::db {
     my update_item_index
   }
 
+  #
+  # The method "changed_redirect_url" is a helper method for old-style
+  # wiki pages, still using ad_form. Form.edit_data calls this method
+  # after a rename operation to optionally redirect the browser after
+  # the edit operation to the new url, unless an explicit return_url
+  # was specified.
+  #
+  CrItem instproc changed_redirect_url {} {
+    return ""
+  }
+
   CrItem instproc revisions {} {
 
     set isAdmin [acs_user::site_wide_admin_p]
