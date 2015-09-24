@@ -110,11 +110,11 @@ namespace eval ::Generic {
     my instvar data
     $data save
     # Renaming is meant for cr_items and such
-    if {[$data info commands rename] ne ""} {
+    if {[$data istype ::xo::db::CrItem]} {
       set old_name [::xo::cc form_parameter __object_name ""]
       set new_name [$data set name]
       if {$old_name ne $new_name} {
-	#my msg "rename from $old_name to $new_name"
+	#my log "--- rename from $old_name to $new_name"
 	$data rename -old_name $old_name -new_name $new_name
       }
     }
