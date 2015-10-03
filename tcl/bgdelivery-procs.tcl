@@ -273,7 +273,7 @@ if {![string match "*contentsentlength*" $msg]} {
   set ::subscription_count 0
   set ::message_count 0
 
-  ::xotcl::Class Subscriber -parameter {key channel user_id mode}
+  ::xotcl::Class create Subscriber -parameter {key channel user_id mode}
   Subscriber proc current {-key } {
     my instvar subscriptions
     set result [list]
@@ -399,7 +399,7 @@ if {![string match "*contentsentlength*" $msg]} {
   # HttpSpooler
   ###############
 
-  Class ::HttpSpooler -parameter {channel {timeout 10000} {counter 0}}
+  Class create ::HttpSpooler -parameter {channel {timeout 10000} {counter 0}}
   ::HttpSpooler instproc init {} {
     my set running 0
     my set release 0
