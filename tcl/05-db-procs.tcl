@@ -263,7 +263,7 @@ namespace eval ::xo::db {
   ::xo::db::Driver abstract instproc list           {{-dbn ""} qn sql}
   ::xo::db::Driver abstract instproc dml            {{-dbn ""} qn sql}
   ::xo::db::Driver abstract instproc foreach        {{-dbn ""} qn sql script}
-  ::xo::db::Driver abstract instproc transaction    {{-dbn ""} script}
+  ::xo::db::Driver abstract instproc transaction    {{-dbn ""} script args}
   ::xo::db::Driver abstract instproc ds {onOff}
 
   #
@@ -342,8 +342,20 @@ namespace eval ::xo::db {
     if {$sql eq ""} {set sql [my get_sql $qn]}
     return [my uplevel [list ::dbi_dml $sql]]
   }
-  ::xo::db::DBI instproc transaction {{-dbn ""} script} {
-    return [my uplevel [list ::dbi_eval -transaction committed $script]]
+  ::xo::db::DBI instproc transaction {{-dbn ""} script args} {
+    if {$args ne ""} {
+      lassign $args op on_error_code
+      set result ""
+      if {$op ne "on_error"} {error "only 'on_error' as argument afer script allowed"}
+      if {[catch {
+        set result [my uplevel [list ::dbi_eval -transaction committed $script]]
+      }]} {
+        my uplevel $on_error_code
+      }
+      return $result
+    } else {
+      return [my uplevel [list ::dbi_eval -transaction committed $script]]
+    }
   }
 
   ::xo::db::DBI instproc get_value {{-dbn ""} qn sql {default ""}} {
@@ -423,8 +435,8 @@ namespace eval ::xo::db {
     # built-in
   }
 
-  ::xo::db::DB instproc transaction {{-dbn ""} script} {
-    return [my uplevel [list ::db_transaction -dbn $dbn $script]]
+  ::xo::db::DB instproc transaction {{-dbn ""} script args} {
+    return [my uplevel [list ::db_transaction -dbn $dbn $script {*}$args]]
   }
 
   ::xo::db::DB instproc sets {{-dbn ""} qn sql} {

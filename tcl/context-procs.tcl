@@ -347,12 +347,7 @@ namespace eval ::xo {
       # for requests bypassing the ordinary connection setup (resources in oacs 5.2+)
       # we have to get the user_id by ourselves
       if { [catch {
-        if {[info commands ad_cookie] ne ""} {
-          # we have the xotcl-based cookie code
-          set cookie_list [ad_cookie get_signed_with_expr "ad_session_id"]
-        } else {
-          set cookie_list [ad_get_signed_cookie_with_expr "ad_session_id"]
-        }
+        set cookie_list [ad_get_signed_cookie_with_expr "ad_session_id"]
         set cookie_data [split [lindex $cookie_list 0] {,}]
         set untrusted_user_id [lindex $cookie_data 1]
         set requestor $untrusted_user_id
