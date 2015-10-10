@@ -230,7 +230,7 @@ if {$isclass} {
 
     for {set level 1} {$level < $below} {incr level} {
       foreach sc $subclasses {
-        foreach c [DO $sc info subclass] {
+        foreach c [DO xo::getObjectProperty $sc subclass] {
           if {$c ni $subclasses} {
             lappend subclasses $c
           }
