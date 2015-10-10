@@ -209,8 +209,8 @@ if {$isclass} {
 
   # Display just up to two extra two levels of heritage to keep the
   # class in quesiton in focus.
-  set heritage [DO $object info heritage]
-  set subclasses [DO $object info subclass]
+  set heritage [[DO xo::getObjectProperty $object heritage]
+  set subclasses [DO xo::getObjectProperty $object subclass]
   
   if {[llength $heritage] > $above} {
     # In case we have nothing to show from the subclasses,
