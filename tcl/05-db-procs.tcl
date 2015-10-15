@@ -346,7 +346,7 @@ namespace eval ::xo::db {
     if {$args ne ""} {
       lassign $args op on_error_code
       set result ""
-      if {$op ne "on_error"} {error "only 'on_error' as argument afer script allowed"}
+      if {$op ne "on_error"} {error "only 'on_error' as argument after script allowed"}
       if {[catch {
         set result [my uplevel [list ::dbi_eval -transaction committed $script]]
       }]} {
@@ -2102,6 +2102,7 @@ namespace eval ::xo::db {
     {-orderby ""}
     {-page_size 20}
     {-page_number ""}
+    {-initialize true}
   } {
     Returns a set (ordered composite) of the answer tuples of 
     an 'instance_select_query' with the same attributes. Note, that
@@ -2118,7 +2119,8 @@ namespace eval ::xo::db {
                          -orderby $orderby \
                          -page_size $page_size \
                          -page_number $page_number \
-                        ]]
+                        ] \
+               -initialize $initialize]
     return $s
   }
   ##############

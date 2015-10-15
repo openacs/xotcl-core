@@ -654,6 +654,7 @@ namespace eval ::xo::db {
     {-page_size 20}
     {-page_number ""}
     {-base_table "cr_revisions"}
+    {-initialize true}
   } {
     Returns a set (ordered composite) of the answer tuples of 
     an 'instance_select_query' with the same attributes.
@@ -671,7 +672,8 @@ namespace eval ::xo::db {
                     -page_size $page_size \
                     -page_number $page_number \
                     -base_table $base_table \
-                   ]]
+                   ] \
+              -initialize $initialize]
     return $s
   }
 
