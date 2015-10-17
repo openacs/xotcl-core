@@ -280,7 +280,7 @@ if {[info commands ::nx::Object] ne ""} {
     my __api_make_forward_doc "" $method_name
   }
 
-::xotcl::Object instproc ad_instforward {
+::xotcl::Class instproc ad_instforward {
   {-private:switch false}
   {-deprecated:switch false}
   {-warn:switch false}
