@@ -93,8 +93,8 @@ ad_library {
 ::Serializer exportObjects {
   ::xotcl::THREAD
   ::xotcl::THREAD::Client
-  ::xotcl::THREAD::Proxy
 }
+#  ::xotcl::THREAD::Proxy
 
 ################## main thread support ##################
 Class create ::xotcl::THREAD \
