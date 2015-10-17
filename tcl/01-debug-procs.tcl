@@ -22,8 +22,6 @@ package require xotcl::serializer
   ::xotcl::Object instproc destroy_on_cleanup
   ::xotcl::Object instproc set_instance_vars_defaults
   ::xotcl::Class instproc extend_slot 
-  ::xotcl::nonposArgs proc integer
-  ::xotcl::nonposArgs proc optional
 }
 
 if {$::xotcl::version < 1.5} {
@@ -57,6 +55,12 @@ if {$::xotcl::version < 1.5} {
           validator
         }
   }
+  
+  ::Serializer exportMethods {
+    ::xotcl::nonposArgs proc integer
+    ::xotcl::nonposArgs proc optional
+  }
+  
 } else {
   namespace eval ::xo {
     # create xo::Attribute as a subclass of the slot ::xotcl::Attribute
@@ -103,7 +107,6 @@ if {[info commands ::nx::Object] ne ""} {
 
   ::Serializer exportMethods {
     ::nx::Object method serialize
-    ::nx::Object method show-object
     ::nx::Object method set_instance_vars_defaults
     ::nx::Object method destroy_on_cleanup
     ::nx::Object method qn
