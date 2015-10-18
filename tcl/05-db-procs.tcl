@@ -256,13 +256,13 @@ namespace eval ::xo::db {
   #
 
   ::xotcl::Class create ::xo::db::Driver
-  ::xo::db::Driver abstract instproc sets           {{-dbn ""} qn sql} 
-  ::xo::db::Driver abstract instproc 0or1row        {{-dbn ""} qn sql}
-  ::xo::db::Driver abstract instproc 1row           {{-dbn ""} qn sql}
-  ::xo::db::Driver abstract instproc list_of_lists  {{-dbn ""} qn sql}
-  ::xo::db::Driver abstract instproc list           {{-dbn ""} qn sql}
-  ::xo::db::Driver abstract instproc dml            {{-dbn ""} qn sql}
-  ::xo::db::Driver abstract instproc foreach        {{-dbn ""} qn sql script}
+  ::xo::db::Driver abstract instproc sets           {{-dbn ""} {-bind ""} qn sql} 
+  ::xo::db::Driver abstract instproc 0or1row        {{-dbn ""} {-bind ""} qn sql}
+  ::xo::db::Driver abstract instproc 1row           {{-dbn ""} {-bind ""} qn sql}
+  ::xo::db::Driver abstract instproc list_of_lists  {{-dbn ""} {-bind ""} qn sql}
+  ::xo::db::Driver abstract instproc list           {{-dbn ""} {-bind ""} qn sql}
+  ::xo::db::Driver abstract instproc dml            {{-dbn ""} {-bind ""} qn sql}
+  ::xo::db::Driver abstract instproc foreach        {{-dbn ""} {-bind ""} qn sql script}
   ::xo::db::Driver abstract instproc transaction    {{-dbn ""} script args}
   ::xo::db::Driver abstract instproc ds {onOff}
 
@@ -296,17 +296,19 @@ namespace eval ::xo::db {
     }
   }
 
-  ::xo::db::DBI instproc sets {{-dbn ""} qn sql} {
+  ::xo::db::DBI instproc sets {{-dbn ""} {-bind ""} qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    return [my uplevel [list dbi_rows -result sets $sql]]
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    return [my uplevel [list dbi_rows -result sets {*}$bindOpt -- $sql]]
   }
 
   #
   # foreach based on "dbi_rows + results avlists"
   #
-  ::xo::db::DBI instproc foreach {{-dbn ""} qn sql body} {
+  ::xo::db::DBI instproc foreach {{-dbn ""} {-bind ""} qn sql body} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    set avlists [my uplevel [list dbi_rows -result avlists -- $sql]]
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    set avlists [my uplevel [list dbi_rows -result avlists {*}$bindOpt -- $sql]]
     foreach avlist $avlists {
       foreach {a v} $avlist {my uplevel [list set $a $v]}
       my uplevel $body
@@ -315,32 +317,38 @@ namespace eval ::xo::db {
   #
   # foreach based on "dbi_eval"
   #
-  #::xo::db::DBI instproc foreach {{-dbn ""} qn sql body} {
+  #::xo::db::DBI instproc foreach {{-dbn ""} {-bind ""} qn sql body} {
   #  if {$sql eq ""} {set sql [my get_sql $qn]}
+  #  if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
   #  my uplevel [list dbi_foreach $sql $body]
   #}
 
-  ::xo::db::DBI instproc 0or1row {{-dbn ""} qn sql} {
+  ::xo::db::DBI instproc 0or1row {{-dbn ""} {-bind ""} qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    return [my uplevel [list ::dbi_0or1row $sql]]
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    return [my uplevel [list ::dbi_0or1row {*}$bindOpt $sql]]
   }
-  ::xo::db::DBI instproc 1row {{-dbn ""} qn sql} {
+  ::xo::db::DBI instproc 1row {{-dbn ""} {-bind ""} qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    return [my uplevel [list ::dbi_1row $sql]]
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    return [my uplevel [list ::dbi_1row {*}$bindOpt $sql]]
   }
-  ::xo::db::DBI instproc list_of_lists {{-dbn ""} qn sql} {
+  ::xo::db::DBI instproc list_of_lists {{-dbn ""} {-bind ""} qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    return [my uplevel [list ::dbi_rows -result lists -max 1000000 $sql]]
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    return [my uplevel [list ::dbi_rows -result lists -max 1000000 {*}$bindOpt -- $sql]]
   }
-  ::xo::db::DBI instproc list {{-dbn ""} qn sql} {
+  ::xo::db::DBI instproc list {{-dbn ""} {-bind ""} qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    set flat [my uplevel [list ::dbi_rows -columns __columns $sql]]
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    set flat [my uplevel [list ::dbi_rows -columns __columns {*}$bindOpt -- $sql]]
     if {[my uplevel {llength $__columns}] > 1} {error "query is returing more than one column"}
     return $flat
   }
-  ::xo::db::DBI instproc dml {{-dbn ""} qn sql} {
+  ::xo::db::DBI instproc dml {{-dbn ""} {-bind ""} qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    return [my uplevel [list ::dbi_dml $sql]]
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    return [my uplevel [list ::dbi_dml {*}$bindOpt -- $sql]]
   }
   ::xo::db::DBI instproc transaction {{-dbn ""} script args} {
     if {$args ne ""} {
@@ -388,10 +396,11 @@ namespace eval ::xo::db {
   #
   # foreach based on "dbi_rows + results avlists"
   #
-  ::xo::db::DBI::Profile instproc foreach {{-dbn ""} qn sql body} {
+  ::xo::db::DBI::Profile instproc foreach {{-dbn ""} {-bind ""} qn sql body} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     set start_time [expr {[clock clicks -microseconds]/1000.0}]
-    set avlists [my uplevel [list dbi_rows -result avlists -- $sql]]
+    set avlists [my uplevel [list dbi_rows -result avlists {*}$bindOpt -- $sql]]
     ds_add db $dbn "exec foreach" $qn $sql $start_time [expr {[clock clicks -microseconds]/1000.0}] 0 ""
     foreach avlist $avlists {
       foreach {a v} $avlist {my uplevel [list set $a $v]}
@@ -402,8 +411,9 @@ namespace eval ::xo::db {
   #
   # foreach based on "dbi_foreach"
   #
-  #::xo::db::DBI::Profile instproc foreach {{-dbn ""} qn sql body} {
+  #::xo::db::DBI::Profile instproc foreach {{-dbn ""} {-bind ""} qn sql body} {
   #  if {$sql eq ""} {set sql [my get_sql $qn]}
+  #  if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
   #  set start_time [expr {[clock clicks -microseconds]/1000.0}]
   #  set result [next]
   #  ds_add db $dbn "exec [self proc]" $qn $sql $start_time [expr {[clock clicks -microseconds]/1000.0}] 0 ""
@@ -419,7 +429,7 @@ namespace eval ::xo::db {
   # interaction when "ns_cache eval" calls 1row with a mixin, doing a
   # :uplevel (the mixin should be transparant). Without "ns_cache eval"
   # things look fine.
-  ::xo::db::DBI::Profile instproc 1row {{-dbn ""} qn sql} {
+  ::xo::db::DBI::Profile instproc 1row {{-dbn ""} {-bind ""} qn sql} {
     set start_time [expr {[clock clicks -microseconds]/1000.0}]
     set result [my uplevel [list ::dbi_1row $sql]]
     ds_add db $dbn [my ds_map [self proc]] $qn $sql $start_time [expr {[clock clicks -microseconds]/1000.0}] 0 ""
@@ -439,11 +449,12 @@ namespace eval ::xo::db {
     return [my uplevel [list ::db_transaction -dbn $dbn $script {*}$args]]
   }
 
-  ::xo::db::DB instproc sets {{-dbn ""} qn sql} {
+  ::xo::db::DB instproc sets {{-dbn ""} {-bind ""} qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     db_with_handle -dbn $dbn db {
       set result [list]
-      set answers [uplevel [list ns_pg_bind select $db $sql]]
+      set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
       while { [::db_getrow $db $answers] } {
         lappend result [ns_set copy $answers]
       }
@@ -451,42 +462,50 @@ namespace eval ::xo::db {
     return $result
   }
 
-  ::xo::db::DB instproc foreach {{-dbn ""} qn sql body} {
+  ::xo::db::DB instproc foreach {{-dbn ""} {-bind ""} qn sql body} {
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     set qn [uplevel [list [self] qn $qn]]
-    uplevel [list ::db_foreach -dbn $dbn $qn $sql $body]
+    uplevel [list ::db_foreach -dbn $dbn $qn $sql $body {*}$bindOpt]
   }
 
-  ::xo::db::DB instproc exec_0or1row {sql} {
+  ::xo::db::DB instproc exec_0or1row {{-bind ""} sql} {
     # Helper, used from several postgres-spefic one-tuple queries
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     ::db_with_handle h {
-      return [uplevel [list ns_pg_bind 0or1row $h $sql]]
+      return [uplevel [list ns_pg_bind 0or1row $h {*}$bindOpt $sql]]
     }
   }
 
-  ::xo::db::DB instproc 0or1row {{-dbn ""} qn sql} {
-    uplevel [list ::db_0or1row [uplevel [list [self] qn $qn]] $sql]
+  ::xo::db::DB instproc 0or1row {{-dbn ""} {-bind ""} qn sql} {
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    uplevel [list ::db_0or1row [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
   }
-  ::xo::db::DB instproc 1row {{-dbn ""} qn sql} {
-    uplevel [list ::db_1row [uplevel [list [self] qn $qn]] $sql]
+  ::xo::db::DB instproc 1row {{-dbn ""} {-bind ""} qn sql} {
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    uplevel [list ::db_1row [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
   }
-  ::xo::db::DB instproc dml {{-dbn ""} qn sql} {
-    uplevel [list ::db_dml [uplevel [list [self] qn $qn]] $sql]
+  ::xo::db::DB instproc dml {{-dbn ""} {-bind ""} qn sql} {
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    uplevel [list ::db_dml [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
     return [db_resultrows]
   }
-  ::xo::db::DB instproc get_value {{-dbn ""} qn sql {default ""}} {
-    uplevel [list ::db_string [uplevel [list [self] qn $qn]] $sql -default $default]
+  ::xo::db::DB instproc get_value {{-dbn ""} {-bind ""} qn sql {default ""}} {
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    uplevel [list ::db_string [uplevel [list [self] qn $qn]] $sql -default $default {*}$bindOpt]
   }
-  ::xo::db::DB instproc list_of_lists {qn sql} {
-    uplevel [list ::db_list_of_lists [uplevel [list [self] qn $qn]] $sql]
+  ::xo::db::DB instproc list_of_lists {{-bind ""} qn sql} {
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    uplevel [list ::db_list_of_lists [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
   }
-  ::xo::db::DB instproc list {qn sql} {
-    uplevel [list ::db_list [uplevel [list [self] qn $qn]] $sql]
+  ::xo::db::DB instproc list {{-bind ""} qn sql} {
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    uplevel [list ::db_list [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
   }
 
   proc ::xo::db::pg_0or1row {sql} {
     ns_log notice "::xo::db::pg_0or1row decprecated"
     ::db_with_handle h {
-      return [uplevel [list ns_pg_bind 0or1row $h $sql]]
+      return [uplevel [list ns_pg_bind 0or1row $h {*}$bindOpt $sql]]
     }
   }
 
@@ -517,9 +536,9 @@ namespace eval ::xo::db {
   #
   # DB driver functions, optimized for PostgreSQL
   #
-  ::xo::db::DB-postgresql instproc 0or1row {qn sql} {
+  ::xo::db::DB-postgresql instproc 0or1row {{-bind ""} qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    set answers [uplevel [list [self] exec_0or1row $sql]]
+    set answers [uplevel [list [self] exec_0or1row -bind $bind $sql]]
     if {$answers ne ""} {
       foreach {att val} [ns_set array $answers] { uplevel [list set $att $val] }
       ns_set free $answers
@@ -527,9 +546,9 @@ namespace eval ::xo::db {
     }
     return 0
   }
-  ::xo::db::DB-postgresql instproc 1row {qn sql} {
+  ::xo::db::DB-postgresql instproc 1row {{-bind ""} qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    set answers [uplevel [list [self] exec_0or1row $sql]]
+    set answers [uplevel [list [self] exec_0or1row -bind $bind $sql]]
     if {$answers ne ""} {
       foreach {att val} [ns_set array $answers] { uplevel [list set $att $val] }
       ns_set free $answers
@@ -537,9 +556,9 @@ namespace eval ::xo::db {
     }
     error "query $sql did not return an answer"
   }
-  ::xo::db::DB-postgresql instproc get_value {qn sql {default ""}} {
+  ::xo::db::DB-postgresql instproc get_value {{-bind ""} qn sql {default ""}} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    set answers [uplevel [list [self] exec_0or1row $sql]]
+    set answers [uplevel [list [self] exec_0or1row -bind $bind $sql]]
     if {$answers ne ""} {
       set result [ns_set value $answers 0]
       ns_set free $answers
@@ -547,11 +566,12 @@ namespace eval ::xo::db {
     }
     return $default
   }
-  ::xo::db::DB-postgresql instproc list_of_lists {qn sql} {
+  ::xo::db::DB-postgresql instproc list_of_lists {{-bind ""} qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     db_with_handle db {
       set result [list]
-      set answers [uplevel [list ns_pg_bind select $db $sql]]
+      set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
       while { [db_getrow $db $answers] } {
         set row [list]
         foreach {att value} [ns_set array $answers] {lappend row $value}
@@ -561,11 +581,12 @@ namespace eval ::xo::db {
     }
     return $result
   }
-  ::xo::db::DB-postgresql instproc list {qn sql} {
+  ::xo::db::DB-postgresql instproc list {{-bind ""} qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     db_with_handle db {
       set result [list]
-      set answers [uplevel [list ns_pg_bind select $db $sql]]
+      set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
       while { [::db_getrow $db $answers] } {
         lappend result [ns_set value $answers 0]
       }
@@ -1051,7 +1072,9 @@ namespace eval ::xo::db {
           default_value min_n_values max_n_values
 
       # ignore some erroneous definitions in the acs meta model
-      if {[my exists exclude_attribute($table_name,$attribute_name)]} continue
+      if {[my exists exclude_attribute($table_name,$attribute_name)]} {
+        continue
+      }
 
       set defined_att($attribute_name) 1
       set cmd [list ::xo::db::Attribute create $attribute_name \
@@ -1486,7 +1509,16 @@ namespace eval ::xo::db {
       }
       
       set class_name ::xo::db::sql::[string tolower $package_name] 
-      if {![my isobject $class_name]} { ::xo::db::Class create $class_name }
+      if {![my isobject $class_name]} {
+        ::xo::db::Class create $class_name
+      } elseif {![$class_name istype ::xo::db::Class]} {
+        #
+        # The methods of ::xo::db::sql::util like "table_exists" fall
+        # into this category. Make sure, that we do not create new
+        # objects via the next command.
+        #
+        continue
+      }
       $class_name dbproc_nonposargs [string tolower $object_name]
     }
   }
