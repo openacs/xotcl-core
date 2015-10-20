@@ -533,7 +533,7 @@ namespace eval ::xo::db {
     my get_context package_id creation_user creation_ip
     #my log "ID [self] create $args"
     if {[catch {set p [my create ::0 {*}$args]} errorMsg]} {
-      my log "Error: $errorMsg, $::errorInfo"
+      ad_log error $errorMsg
     }
     #my log "ID [::0 serialize]"
     set item_id [::0 save_new \

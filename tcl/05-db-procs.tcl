@@ -1917,7 +1917,7 @@ namespace eval ::xo::db {
                   ""]
       #[self class] set during_fetch 1
       if {[catch {my create ::$id {*}$args} errorMsg]} {
-        my log "Error: $errorMsg, $::errorInfo"
+        ad_log error $errorMsg
       }
       #[self class] unset during_fetch
       my initialize_acs_object ::$id $id
