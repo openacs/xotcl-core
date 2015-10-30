@@ -980,7 +980,8 @@ namespace eval ::xo {
         foreach file $::_xo_js_order {
           if {[string match "*;*" $file]} {
             # it is not a file, but some javascipt statements
-            append statements [string map {< "&lt;" > "&gt;"} $file] \n
+            #append statements [string map {< "&lt;" > "&gt;"} $file] \n
+            append statements $file \n
           } else {
             template::head::add_script -src $file -type text/javascript -order [incr order]
           }
