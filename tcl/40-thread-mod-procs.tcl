@@ -1,74 +1,74 @@
 ad_library {
   Tcl API for Thread management provides some support for threads
-   under the AOL-server and XOTcl. It contains
-   essentially two classes THREAD and Proxy.
+  under the AOL-server and XOTcl. It contains
+  essentially two classes THREAD and Proxy.
   <p>
-   The class THREAD is used to create, initialize
-   and destroy threads and to pass commands to these 
-   threads. It is designed in a way to create threads
-   lazyly such that thread definitions can be included
-   in the modules directory of the aolserver and 
-   therefore be part of the aolserver blueprints.
-   When an instance of THREAD is created (e.g. t1), 
-   an init-command is provided. e.g.:
+  The class THREAD is used to create, initialize
+  and destroy threads and to pass commands to these 
+  threads. It is designed in a way to create threads
+  lazyly such that thread definitions can be included
+  in the modules directory of the aolserver and 
+  therefore be part of the aolserver blueprints.
+  When an instance of THREAD is created (e.g. t1), 
+  an init-command is provided. e.g.:
   <pre>
-    ::xotcl::THREAD create t1 {
-      Class Counter -parameter {{value 1}}
-      Counter instproc ++ {} {my incr value}
-      Counter c1
-      Counter c2
-    }
+  ::xotcl::THREAD create t1 {
+    Class Counter -parameter {{value 1}}
+    Counter instproc ++ {} {my incr value}
+    Counter c1
+    Counter c2
+  }
   </pre>
-   Commands are sent to the thread via the
-   "do" method, which returns the result of the
-   command evaluated in the specified thread. 
-   When the first command is sent to a 
-   non-initialized thread, such as
+  Commands are sent to the thread via the
+  "do" method, which returns the result of the
+  command evaluated in the specified thread. 
+  When the first command is sent to a 
+  non-initialized thread, such as
   <pre>
-    set x [t1 do c1 ++]
+  set x [t1 do c1 ++]
   </pre> 
-   the actual thread is created and the thread 
-   ID is remembered in a tsv array. When a
-   THREAD object is destroyed, the associated
-   thread is terminated as well. 
+  the actual thread is created and the thread 
+  ID is remembered in a tsv array. When a
+  THREAD object is destroyed, the associated
+  thread is terminated as well. 
   
-   Notice that according to the aol-server behavior it
-   is possible to create **persistent threads**
-   (when the thread object is created during
+  Notice that according to the aol-server behavior it
+  is possible to create **persistent threads**
+  (when the thread object is created during
    startup and provided to all request threads
-   through the blueprint, or to create **volatile
-   threads** that are created during a request
-   and which are deleted when the thread cleanup
-   is called after some timeout. Volatile threads can 
-   shared as well (when different request-threads
-   create the same-named thread objects) and can 
-   be used for caching proposes. Flushing the cache
-   can be done in the thread's exitHandler.
+   through the blueprint), or to create **volatile
+  threads** that are created during a request
+  and which are deleted when the thread cleanup
+  is called after some timeout. Volatile threads can 
+  shared as well (when different request-threads
+                  create the same-named thread objects) and can 
+  be used for caching proposes. Flushing the cache
+  can be done in the thread's exitHandler.
   
-   The Proxy class can be used to simplify
-   the interaction with a thread and to 
-   hide the fact, that certain classes/objects
-   are part of a thread. The following command
-   creates a Proxy for an object c1 in thread t1.
-   After this, c1 can be used like an local object.
+  The Proxy class can be used to simplify
+  the interaction with a thread and to 
+  hide the fact, that certain classes/objects
+  are part of a thread. The following command
+  creates a Proxy for an object c1 in thread t1.
+  After this, c1 can be used like an local object.
   <pre>
-    ::xotcl::THREAD::Proxy c1 -attach t1
-    set x [c1 ++]
+  ::xotcl::THREAD::Proxy c1 -attach t1
+  set x [c1 ++]
   </pre>
   The Proxy forwards all commands to the 
   attached thread except the methods attatch, filter, 
   detachAll and destroy. The attach method can be used 
   to reattach a proxy instance to a different thread, such as 
   <pre>  
-    c1 attach t2
+  c1 attach t2
   </pre>
-   A proxy can be (temporarily) detachted from a thread via
+  A proxy can be (temporarily) detachted from a thread via
   <pre>
-    c1 filter ""
+  c1 filter ""
   </pre>
   Later forwarding to the thread can be re-enabled via 
   <pre>
-    c1 filter forward
+  c1 filter forward
   </pre>
   When a proxy is attached to a thread and 
   receives a destroy command, both the proxy
@@ -98,7 +98,11 @@ ad_library {
 
 ################## main thread support ##################
 Class create ::xotcl::THREAD \
-    -parameter {{persistent 0} {lightweight 0}}
+    -parameter {
+      {persistent 0}
+      {lightweight 0}
+      {exithandler {my log "EXITHANDLER of slave thread SELF [pid]"}}
+    }
 
 ::xotcl::THREAD instproc check_blueprint {} {
   if {![[self class] exists __blueprint_checked]} {
@@ -127,10 +131,10 @@ Class create ::xotcl::THREAD \
   }
   append initcmd {
     ns_thread name SELF
-    ::xotcl::Object setExitHandler {
-      #my log "EXITHANDLER of slave thread SELF [pid]"
-    }
   }
+  append initcmd [subst {
+    ::xotcl::Object setExitHandler [list [my exithandler]]
+  }]
   regsub -all SELF $initcmd [self] initcmd
   append initcmd \n\
       [list set ::xotcl::currentScript [info script]] \n\
@@ -202,19 +206,19 @@ Class create ::xotcl::THREAD \
       }
       nsv_set [self class] [self] $tid
       if {[my persistent]} {
-    my log "--created new persistent [self class] as $tid pid=[pid]"
+        my log "--created new persistent [self class] as $tid pid=[pid]"
       } else {
-    my log "--created new [self class] as $tid pid=[pid]"
+        my log "--created new [self class] as $tid pid=[pid]"
       }
       #my log "--THREAD DO send [self] epoch = [ns_ictl epoch]"
       if {[my lightweight]} {
       } elseif {![ns_ictl epoch]} {
-    #ns_log notice "--THREAD send [self] no epoch"
-    # We are during initialization. For some unknown reasons, XOTcl 
-    # is not available in newly created threads, so we have to care 
-    # for full initialization, including xotcl blueprint.
-    _ns_savenamespaces
-    set initcmd [ns_ictl get]
+        #ns_log notice "--THREAD send [self] no epoch"
+        # We are during initialization. For some unknown reasons, XOTcl 
+        # is not available in newly created threads, so we have to care 
+        # for full initialization, including xotcl blueprint.
+        _ns_savenamespaces
+        set initcmd [ns_ictl get]
       }
       append initcmd [my set initcmd]
       #ns_log notice "INIT $initcmd"
@@ -231,9 +235,9 @@ Class create ::xotcl::THREAD \
   if {![my exists tid]} {
     # this is the first call 
     if {![my persistent] && ![my exists recreate]} {
-      # for a shared thread, we do ref-counting through preseve
-      my log "must preserve for sharing request-thread [pid]"
+      # for a shared thread, we do ref-counting through preserve
       set tid [nsv_get [self class] [self]]
+      my log "THREAD::PRESERVE must preserve for sharing request-thread [pid] tid $tid"
       ::thread::preserve $tid
     }
     my set tid $tid
@@ -260,7 +264,7 @@ Class create ::xotcl::THREAD \
 ################## forwarding  proxy ##################
 # Class ::xotcl::THREAD::Proxy -parameter {attach} 
 # ::xotcl::THREAD::Proxy configure \
-#     -instproc forward args {
+    #     -instproc forward args {
 #       set cp [self calledproc]
 #       if { $cp eq "attach"
 #        || $cp eq "filter" 
@@ -284,7 +288,7 @@ Class create ::xotcl::THREAD \
 # sample Thread client routine, calls a same named object in the server thread
 # a thread client should be created in an connection thread dynamically to 
 # avoid name clashes in the blueprint.
- 
+
 Class create ::xotcl::THREAD::Client -parameter {server {serverobj [self]}}
 ::xotcl::THREAD::Client instproc do args {
   [my server] do [my serverobj] {*}$args
