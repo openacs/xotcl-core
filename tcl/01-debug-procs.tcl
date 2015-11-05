@@ -454,7 +454,7 @@ namespace eval ::xo {
   # variables of a connection thread are deleted. Therefore
   # the triggered calls should not use database handles,
   # since these are as well managed via global variables,
-  # the will be deleted as well at this time,.
+  # the will be deleted as well at this time.
   # 
   # To come up with an approach working for 4.5 and 4.0.10, we
   # distinguish between a at_cleanup and at_close, so connection
