@@ -988,6 +988,7 @@ namespace eval ::xo::db {
         -revision_id $revision_id \
         -publish_status $publish_status
     ::xo::clusterwide ns_cache flush xotcl_object_cache ::[my item_id]
+    ::xo::clusterwide ns_cache flush xotcl_object_cache ::$revision_id
   }
 
   CrItem ad_instproc update_item_index {} {
