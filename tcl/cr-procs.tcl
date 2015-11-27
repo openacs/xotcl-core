@@ -1111,7 +1111,7 @@ namespace eval ::xo::db {
 
     set isAdmin [acs_user::site_wide_admin_p]
 
-    ::TableWidget t1 -volatile \
+    ::TableWidget create t1 -volatile \
         -columns {
           Field version_number -label "" -html {align right}
           ImageAnchorField edit -label "" -src /resources/acs-subsite/Zoom16.gif \

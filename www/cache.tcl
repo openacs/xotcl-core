@@ -41,7 +41,7 @@ if {$flushall == 1} {
 
 if { $cache == 0 } {
 
-  TableWidget t1 \
+  TableWidget create t1 \
       -actions [subst {
         Action new -label Refresh -url [ad_conn url] -tooltip "Reload this page"
       }] \

@@ -56,7 +56,6 @@ namespace eval ::xo::tdom {
     }
   }
 
-  #Object create ::xo::tmp
   ::xo::tdom::Class instproc unknown args {
     set configurecmds [lrange $args 0 end-1]
     set createcmd [lindex $args end]
@@ -271,7 +270,7 @@ namespace eval ::xo {
     }
   }
 
-  Class Localizer -parameter {type key url}
+  Class create Localizer -parameter {type key url}
 
   Localizer instproc render {} {
     html::a -title [my key] -href [my url] {
@@ -297,7 +296,7 @@ namespace eval ::xo {
 
   ## todo : make these checks only in trn mode (additional mixin)
   
-  Class Drawable \
+  Class create Drawable \
       -superclass ::xo::tdom::AttributeManager \
       -instproc _ {attr} {
         my set $attr
@@ -305,7 +304,7 @@ namespace eval ::xo {
       -instproc render_localizer {} {
       }
 
-  Class TRN-Mode \
+  Class create TRN-Mode \
       -instproc _ {attr} {
         return [::xo::localize [my set $attr]]
       } \
@@ -347,7 +346,7 @@ namespace eval ::xo {
   #
   # define an abstract table
   #
-  Class Table -superclass OrderedComposite \
+  Class create Table -superclass OrderedComposite \
       -parameter [expr {[apm_version_names_compare [ad_acs_version] 5.3.0] == 1 ? 
                         {{no_data  "#xotcl-core.No_Data#"} {renderer TABLE3} name} :
                         {{no_data  "#xotcl-core.No_Data#"} {renderer TABLE2} name} 
@@ -455,7 +454,7 @@ Class create Table::Line \
 # Define elements of a Table
 #
 namespace eval ::xo::Table {
-  Class Action \
+  Class create Action \
       -superclass ::xo::OrderedComposite::Child \
       -parameter {label url {tooltip {}}} 
   #-proc destroy {} {
@@ -464,7 +463,7 @@ namespace eval ::xo::Table {
   #      next
   #    }
 
-  Class Field \
+  Class create Field \
       -superclass ::xo::OrderedComposite::Child \
       -parameter {label {html {}} {orderby ""} name {richtext false} no_csv {CSSclass ""} {hide 0}} \
       -instproc init {} {
@@ -478,7 +477,7 @@ namespace eval ::xo::Table {
         return $slots
       }
 
-  Class BulkAction \
+  Class create BulkAction \
       -superclass ::xo::OrderedComposite::Child \
       -parameter {name id {html {}} {hide 0}} \
       -instproc actions {cmd} {
@@ -496,7 +495,7 @@ namespace eval ::xo::Table {
         ;
       }
 
-  Class AnchorField \
+  Class create AnchorField \
       -superclass ::xo::Table::Field \
       -instproc get-slots {} {
         set slots [list -[my name]]
@@ -506,13 +505,13 @@ namespace eval ::xo::Table {
         return $slots
       }
 
-  Class HiddenField \
+  Class create HiddenField \
       -superclass ::xo::Table::Field \
       -instproc get-slots {} {
         return [list -[my name]]
       }
 
-  Class ImageField \
+  Class create ImageField \
       -parameter {src width height border title alt} \
       -superclass ::xo::Table::Field \
       -instproc get-slots {} {
@@ -529,30 +528,30 @@ namespace eval ::xo::Table {
         return $slots
       }
 
-  Class ImageAnchorField \
+  Class create ImageAnchorField \
       -superclass ::xo::Table::ImageField \
       -instproc get-slots {} {
         return [concat [next]  -[my name].href ""]
       }
 
-  Class ImageField_EditIcon \
+  Class create ImageField_EditIcon \
       -superclass ImageAnchorField -parameter {
         {src /resources/acs-subsite/Edit16.gif} {width 16} {height 16} {border 0} 
         {title "[_ xotcl-core.edit_item]"} {alt "edit"}
       }
   
-  Class ImageField_AddIcon \
+  Class create ImageField_AddIcon \
       -superclass ImageAnchorField -parameter {
         {src /resources/acs-subsite/Add16.gif} {width 16} {height 16} {border 0} 
         {title "[_ xotcl-core.add_item]"} {alt "add"}
       }
 
-  Class ImageField_ViewIcon \
+  Class create ImageField_ViewIcon \
       -superclass ImageAnchorField -parameter {
         {src /resources/acs-subsite/Zoom16.gif} {width 16} {height 16} {border 0} 
         {title "[_ xotcl-core.view_item]"} {alt "view"}
       }
-  Class ImageField_DeleteIcon \
+  Class create ImageField_DeleteIcon \
       -superclass ImageAnchorField -parameter {
         {src /resources/acs-subsite/Delete16.gif} {width 16} {height 16} {border 0} 
         {title "[_ xotcl-core.delete_item]"} {alt "delete"}
@@ -571,7 +570,7 @@ namespace eval ::xo::Table {
   #
   # Class for rendering ::xo::Table as the html TABLE
   #
-  Class TABLE \
+  Class create TABLE \
       -superclass ::xo::Drawable \
       -instproc init_renderer {} {
         #my log "--"
@@ -809,7 +808,7 @@ namespace eval ::xo::Table {
         -title "Mark/Unmark this row"
   }
 
-  Class TABLE2 \
+  Class create TABLE2 \
       -superclass TABLE \
       -instproc render-actions {} {
         set actions [[self]::__actions children]
@@ -852,7 +851,7 @@ namespace eval ::xo::Table {
   Class create TABLE2::ImageAnchorField -superclass TABLE::ImageAnchorField
   Class create TABLE2::BulkAction -superclass TABLE::BulkAction
 
-  Class TABLE3 \
+  Class create TABLE3 \
       -superclass TABLE2 \
       -instproc init_renderer {} {
         next 
@@ -870,7 +869,7 @@ namespace eval ::xo::Table {
   Class create TABLE3::BulkAction -superclass TABLE::BulkAction
 }
 
-Class TableWidget \
+Class create TableWidget \
     -superclass ::xo::Table \
     -instproc init {} {
       set trn_mixin [expr {[lang::util::translator_mode_p] ?"::xo::TRN-Mode" : ""}]
@@ -884,7 +883,7 @@ Class TableWidget \
 # Pure List widget
 #
 
-Class ListWidget -superclass ::xo::OrderedComposite -instproc render {} {
+Class create ListWidget -superclass ::xo::OrderedComposite -instproc render {} {
   html::ul -class plainlist {
     foreach o [my children] {
       html::li {
@@ -899,14 +898,14 @@ Class ListWidget -superclass ::xo::OrderedComposite -instproc render {} {
 # Define two Master templates, an empty one and one page master
 #
 
-Object defaultMaster -proc decorate {node} {
+Object create defaultMaster -proc decorate {node} {
   $node appendFromScript {
     set slave [tmpl::div]
   }
   return $slave
 }
 
-Object pageMaster -proc decorate {node} {
+Object create pageMaster -proc decorate {node} {
   $node appendFromScript {
     html::div -class defaultMasterClass {
       html::t "hello header"
