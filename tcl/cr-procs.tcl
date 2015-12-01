@@ -55,17 +55,25 @@ namespace eval ::xo::db {
 
     @return object_type typically an XOTcl class
   } {
-    set object_type [ns_cache eval xotcl_object_type_cache \
-                         [expr {$item_id ? $item_id : $revision_id}] {
-                           if {$item_id} {
-                             ::xo::dc 1row get_class_from_item_id \
-                                 "select content_type as object_type from cr_items where item_id=:item_id"
-                           } else {
-                             ::xo::dc 1row get_class_from_revision_id \
-                                 "select object_type from acs_objects where object_id=:revision_id"
-                           }
-                           return $object_type
-                         }]
+    #
+    # Use a request-spanning cache. When the type whould changes, we
+    # would require xo::broadcast or server restart.
+    #
+    set key ::xo::object_type($item_id,$revision_id)
+    if {[info exists $key]} {
+      return [set $key]
+    }
+    set $key [ns_cache eval xotcl_object_type_cache \
+                  [expr {$item_id ? $item_id : $revision_id}] {
+                    if {$item_id} {
+                      ::xo::dc 1row get_class_from_item_id \
+                          "select content_type as object_type from cr_items where item_id=:item_id"
+                    } else {
+                      ::xo::dc 1row get_class_from_revision_id \
+                          "select object_type from acs_objects where object_id=:revision_id"
+                    }
+                    return $object_type
+                  }]
   }
 
   CrClass ad_proc get_instance_from_db {
