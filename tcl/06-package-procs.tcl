@@ -393,8 +393,15 @@ namespace eval ::xo {
     set __vars [list]
     foreach _var $variables {
       if {[llength $_var] == 2} {
+        #
+        # The variable specification is a pair of name and value
+        #
         lappend __vars [lindex $_var 0] [uplevel subst [lindex $_var 1]]
       } else {
+        #
+        # We have just a variable name, provide an linked variable to
+        # access the value.
+        #
         set localvar local.$_var
         upvar $_var $localvar
         if {[array exists $localvar]} {
@@ -413,9 +420,12 @@ namespace eval ::xo {
         upvar #$level $f $f
       }
     }
-    #my log "--before adp"   ; # $__vars
+    #
+    # Substitute the template with the themed template
+    #
+    set adp [template::themed_template $adp]
+    
     set text [template::adp_include $adp $__vars]
-    #my log "--after adp"
     if { [lang::util::translator_mode_p] } {
       set text [::xo::localize $text 1]
     }
