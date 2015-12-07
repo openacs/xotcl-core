@@ -181,7 +181,7 @@ namespace eval ::xo {
   # ConnectionContext, a context with user and url-specific information
   #
 
-  Class ConnectionContext -superclass Context -parameter {
+  Class create ConnectionContext -superclass Context -parameter {
     user_id
     requestor
     user

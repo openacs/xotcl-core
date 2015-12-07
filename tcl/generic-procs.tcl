@@ -269,7 +269,7 @@ namespace eval ::Generic {
   #
   # List template class
   #
-  Class List -parameter {
+  Class create List -parameter {
     {actions ""}
     {name {[namespace tail [self]]}}
     {bulk_actions ""}

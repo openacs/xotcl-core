@@ -376,7 +376,7 @@ if {[info commands ::nx::Object] ne ""} {
 #   ns_log notice "hello world $id"
 # }
 
-# Class ::SpecializedTest -superclass ::Test -ad_doc {
+# Class create ::SpecializedTest -superclass ::Test -ad_doc {
 #   A Class defined as a subclass of ::Test for testing the
 #   documentation stuff...
 # }

@@ -7,8 +7,8 @@ ad_library {
 }
 
 namespace eval ::xo {
-  Class Message -parameter {time user_id msg color}
-  Class Chat -superclass ::xo::OrderedComposite \
+  Class create Message -parameter {time user_id msg color}
+  Class create Chat -superclass ::xo::OrderedComposite \
       -parameter {
         chat_id 
         user_id 

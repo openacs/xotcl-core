@@ -13,10 +13,10 @@ ad_library {
   an init-command is provided. e.g.:
   <pre>
   ::xotcl::THREAD create t1 {
-    Class Counter -parameter {{value 1}}
+    Class create Counter -parameter {{value 1}}
     Counter instproc ++ {} {my incr value}
-    Counter c1
-    Counter c2
+    Counter create c1
+    Counter create c2
   }
   </pre>
   Commands are sent to the thread via the
@@ -253,16 +253,16 @@ Class create ::xotcl::THREAD \
 # create a sample persistent thread that can be acessed 
 # via request threads
 #::xotcl::THREAD create t0 {
-#  Class Counter -parameter {{value 1}}
+#  Class create Counter -parameter {{value 1}}
 #  Counter instproc ++ {} {my incr value}
 #  
-#  Counter c1
-#  Counter c2
+#  Counter create c1
+#  Counter create c2
 #} -persistent 1
 #
 
 ################## forwarding  proxy ##################
-# Class ::xotcl::THREAD::Proxy -parameter {attach} 
+# Class create ::xotcl::THREAD::Proxy -parameter {attach} 
 # ::xotcl::THREAD::Proxy configure \
     #     -instproc forward args {
 #       set cp [self calledproc]

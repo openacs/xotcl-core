@@ -8,7 +8,7 @@ ad_library {
 
 namespace eval ::xo {
   
-  Class Policy
+  Class create Policy
 
   Policy instproc defined_methods {class} {
     set c [self]::$class

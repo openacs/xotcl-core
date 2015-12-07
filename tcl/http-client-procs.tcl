@@ -462,7 +462,7 @@ namespace eval ::xo {
   # Synchronous (blocking) requests
   #
 
-  Class HttpRequest -superclass HttpCore -slots {
+  Class create HttpRequest -superclass HttpCore -slots {
     Attribute create timeout -type integer
   }
 
@@ -530,7 +530,7 @@ namespace eval ::xo {
   # Asynchronous (non-blocking) requests
   #
 
-  Class AsyncHttpRequest -superclass HttpCore -slots {
+  Class create AsyncHttpRequest -superclass HttpCore -slots {
     Attribute create timeout -type integer -default 10000 ;# 10 seconds
     Attribute create request_manager
   }
@@ -752,7 +752,7 @@ namespace eval ::xo {
   # - http://wp.netscape.com/eng/ssl3/3-SPEC.HTM
   # - - - - - - - - - - - - - - - - - - 
   
-  Class Tls
+  Class create Tls
   Tls instproc open_connection {} {
     my instvar S
     #
@@ -770,7 +770,7 @@ namespace eval ::xo {
   # Trace Requests
   #                                 
 
-  Class HttpRequestTrace 
+  Class create HttpRequestTrace 
   nsv_set HttpRequestTrace count 0
 
   HttpRequestTrace instproc init {} {

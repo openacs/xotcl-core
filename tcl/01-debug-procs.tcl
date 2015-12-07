@@ -330,7 +330,7 @@ if {[info commands ::xotcl::nonposArgs] ne ""} {
   return $qn
 }
 namespace eval ::xo {
-  Class Timestamp
+  Class create Timestamp
   Timestamp instproc init {} {my set time [clock clicks -milliseconds]}
   Timestamp instproc diffs {} {
     set now [clock clicks -milliseconds]
