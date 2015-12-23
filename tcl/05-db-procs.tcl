@@ -485,6 +485,7 @@ namespace eval ::xo::db {
     uplevel [list ::db_1row [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
   }
   ::xo::db::DB instproc dml {{-dbn ""} {-bind ""} qn sql} {
+    if {$sql eq ""} {set sql [my get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     uplevel [list ::db_dml [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
     return [db_resultrows]
@@ -1009,7 +1010,7 @@ namespace eval ::xo::db {
           ::xo::dc dml drop_table "drop table $table_name"
         }
       } errorMsg]} {
-        my log "error during drop_type"
+        ns_log error "error during drop_type: $errorMsg"
       }
     }
     ::xo::db::sql::acs_object_type drop_type \
