@@ -1115,7 +1115,7 @@ namespace eval ::xo::db {
     return ""
   }
 
-  CrItem instproc revisions {} {
+  CrItem instproc www-revisions {} {
 
     set isAdmin [acs_user::site_wide_admin_p]
 
