@@ -103,6 +103,13 @@ if {[info commands ::nx::Object] ne ""} {
       mixins mixins
     }
   }
+
+  #
+  # Make sure, the ::nsf::debug namespace exists (might not be
+  # available in older versions of nsf)
+  #
+  namespace eval ::nsf::debug {}
+  
   proc ::nsf::debug::call {level objectInfo methodInfo arglist} {
       ns_log Warning "DEBUG call($level) - $objectInfo $methodInfo $arglist"
   }
