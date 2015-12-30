@@ -124,7 +124,7 @@ if {![string match "*contentsentlength*" $msg]} {
     }
   }
   fileSpooler proc tick {} {
-    if {[catch {my cleanup} errorMsg]} {ns_log notice "Error during filespooler cleanup: $errorMsg"}
+    if {[catch {my cleanup} errorMsg]} {ns_log error "Error during filespooler cleanup: $errorMsg"}
     my set to [after [my set tick_interval] [list [self] tick]]
   }
   fileSpooler tick
@@ -344,7 +344,7 @@ if {![string match "*contentsentlength*" $msg]} {
       set subs1 [list]
       foreach s $subscriptions($key) {
         if {[catch {$s $method $argument} errMsg]} {
-          ns_log notice "error in $method to subscriber $s (key=$key): $errMsg"
+          ns_log error "error in $method to subscriber $s (key=$key): $errMsg"
           $s destroy
         } else {
           lappend subs1 $s

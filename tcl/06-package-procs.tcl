@@ -194,7 +194,7 @@ namespace eval ::xo {
         # compatibility, but complain in ns_log. 
         #
         # (E.g. hypermail2xowiki uses this)
-        ns_log notice "Could not find ::xo::Package with key $package_key ($package_id)"
+        ns_log warning "Could not find ::xo::Package with key $package_key ($package_id)"
         set package_class [self]
       }
 

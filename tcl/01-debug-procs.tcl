@@ -1,5 +1,3 @@
-## tell serializer to export methods, although these are methods of 
-# ::xotcl::Object
 
 if {$::tcl_version < 8.5
     || ([regexp {8[.]5[.]([0-9]+)$} $::tcl_patchLevel _ minor] && $minor < 4)
@@ -7,9 +5,22 @@ if {$::tcl_version < 8.5
   ns_log error "We require for this version of xotcl-core at least Tcl 8.5.4 (avail: Tcl $::tcl_patchLevel)"
   return
 }
+if {[info exists ::xotcl_version] || ([info exists ::xotcl::version] && $::xotcl::version < 2.0)} {
+  ns_log error "We require for this version of xotcl-core at least XOTcl 2.0"
+  return
+}
 
 package require xotcl::serializer
 
+#
+# Keep the initcmds of classes for documentaiton purposes.
+#
+::nsf::configure keepcmds 1
+
+#
+# Tell serializer to export methods, although these are methods of the
+# base classes.
+#
 ::Serializer exportMethods {
   ::xotcl::Object instproc log 
   ::xotcl::Object instproc ds
@@ -24,59 +35,20 @@ package require xotcl::serializer
   ::xotcl::Class instproc extend_slot 
 }
 
-if {$::xotcl::version < 1.5} {
-  # XOTcl 1.5 comes already with a predefined, more powerful
-  # implementation of contains.
-
-  ::Serializer exportMethods {
-    ::xotcl::Object instproc contains
-  }
-  ::xotcl::Object instproc contains cmds {
-    my requireNamespace
-    namespace eval [self] $cmds
-  }
-  # XOTcl 1.5 or newer supports slots. Here we have to 
-  # emulate slots up to a certain point
-  namespace eval ::xo {
-    ::xotcl::MetaSlot create ::xo::Attribute \
-        -parameter {
-          {name "[namespace tail [::xotcl::self]]"}
-          {domain "[lindex [regexp -inline {^(.*)::slot::[^:]+$} [::xotcl::self]] 1]"}
-          {multivalued false}
-          {required false}
-          default
-          type
-          spec
-          pretty_name 
-          {pretty_plural ""}
-          {datatype "text"} 
-          constraint_values
-          help_text 
-          validator
-        }
-  }
-  
-  ::Serializer exportMethods {
-    ::xotcl::nonposArgs proc integer
-    ::xotcl::nonposArgs proc optional
-  }
-  
-} else {
-  namespace eval ::xo {
-    # create xo::Attribute as a subclass of the slot ::xotcl::Attribute
-    ::xotcl::MetaSlot create ::xo::Attribute \
-        -superclass ::xotcl::Attribute \
-        -parameter {
-          spec
-          {required false}
-          pretty_name 
-          {pretty_plural ""}
-          {datatype "text"}
-          constraint_values
-          help_text 
-          validator
-        }
-  }
+namespace eval ::xo {
+  # create xo::Attribute as a subclass of the slot ::xotcl::Attribute
+  ::xotcl::MetaSlot create ::xo::Attribute \
+      -superclass ::xotcl::Attribute \
+      -parameter {
+        spec
+        {required false}
+        pretty_name 
+        {pretty_plural ""}
+        {datatype "text"}
+        constraint_values
+        help_text 
+        validator
+      }
 }
 
 set ::xo::naviserver [expr {[ns_info name] eq "NaviServer"}]
@@ -97,27 +69,28 @@ if {[info commands ::nx::Object] ne ""} {
   ::nx::Slot public alias set -frame object ::set
   ::nx::Slot public method exists {var}   {::nsf::var::exists [self] $var}
   ::nx::Object public method serialize {} {::Serializer deepSerialize [self]}
-  ::nx::Object method set_instance_vars_defaults {} {:configure}
   ::nx::Object public method destroy_on_cleanup {} {set ::xo::cleanup([self]) [list [self] destroy]}
   ::nx::Object method qn {query_name} {
     return "dbqd.[:uplevel [list current class]]-[:uplevel [list current method]].$query_name"
   }
-  ::xotcl::Object instproc set_instance_vars_defaults {} {:configure}
   ::xotcl::Object proc setExitHandler {code} {::nsf::exithandler set $code}
+  ::xotcl::Object instproc set_instance_vars_defaults {} {:configure}
 
   ::Serializer exportMethods {
     ::nx::Object method serialize
-    ::nx::Object method set_instance_vars_defaults
     ::nx::Object method destroy_on_cleanup
     ::nx::Object method qn
     ::nx::Slot method istype
     ::nx::Slot method exists
     ::nx::Slot method set
+    ::nx::Object nsfproc ::nsf::debug::call
+    ::nx::Object nsfproc ::nsf::debug::exit
   }
 
   if {[nx::Class  info methods -path "info superclasses"] eq ""} {
-    # map method names to improve robustness for earlier versions
-    # (should be transitional code).
+    # There is no "info superclasses" defined, it must be a beta
+    # release of nsf.  Map method names to improve robustness for
+    # earlier versions (should be transitional code).
     array set ::xo::mapMethodNames {
       superclasses superclass
       subclasses subclass
@@ -130,37 +103,12 @@ if {[info commands ::nx::Object] ne ""} {
       mixins mixins
     }
   }
-
-} else {
-  ::xotcl::Object instproc set_instance_vars_defaults {} {
-    set pcl [[my info class] info parameterclass]
-    $pcl searchDefaults [self]
+  proc ::nsf::debug::call {level objectInfo methodInfo arglist} {
+      ns_log Warning "DEBUG call($level) - $objectInfo $methodInfo $arglist"
   }
-
-  #
-  # The XOTcl1_ParameterHandler is for forward compatibility in XOTcl1
-  # to allow to load programs with xotcl2/nx value checkers in
-  # parameter declarations. The handler simply strips (ignores)
-  # xotcl2's parameter declarations.
-  #
-  namespace eval ::xo {}
-  ::xotcl::Class create ::xo::XOTcl1_ParameterHandler
-  ::xo::XOTcl1_ParameterHandler instproc __stripped_parameter {element} {
-    regexp {^([^:]+):} $element _ element
-    return $element
+  proc ::nsf::debug::exit {level objectInfo methodInfo usec} {
+      ns_log Warning "DEBUG exit($level) - $objectInfo $methodInfo $usec usec"
   }
-  ::xo::XOTcl1_ParameterHandler instproc parameter {list} {
-    set result {}
-    foreach element $list {
-      if {[llength $element] == 1} {
-        lappend result [my __stripped_parameter $element]
-      } else {
-        lappend result [concat [my __stripped_parameter $element] [lrange $element 1 end]]
-      }
-    }
-    next $result
-  }
-  ::xotcl::Class instmixin ::xo::XOTcl1_ParameterHandler
 }
 
 
@@ -813,7 +761,7 @@ proc ::xo::getObjectProperty {o what args} {
     }
     "instproc" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instprocs {*}$args]}
-      return [$o info methods -type scripted {*}$args]
+      return [$o info methods -type scripted -callprotection all {*}$args]
     }
     "instcommand" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instcommands {*}$args]}
@@ -823,13 +771,20 @@ proc ::xo::getObjectProperty {o what args} {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instforward {*}$args]}
       return [$o info methods -type forwarder {*}$args]
     }
+    "instmethodtype" {
+      return [$o ::nsf::methods::class::info::method type {*}$args]
+    }
+    "methodtype" {
+      return [$o ::nsf::methods::object::info::method type {*}$args]
+    }
     "proc" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}$args]}
       return [$o info object methods -type scripted {*}$args]
     }
     "command" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}$args]}
-      return [$o info object methods {*}$args]
+      #if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}$args]}
+      #return [$o info object methods {*}$args]
+      return [$o ::nsf::methods::object::info::methods {*}$args]
     }
     "forward" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info forward {*}$args]}
@@ -877,13 +832,34 @@ proc ::xo::getObjectProperty {o what args} {
       if {"::xotcl::Object" in $p} {return 1}
       return [nsf::is object $o]
     }
+    "isbaseclass" {
+      if {[info commands $o] eq ""} {return 0}
+      if {[catch {set p [$o info precedence]}]} {return 0}
+      return [expr {[lindex $p end] eq $o}]
+    }
+    "instmethodparameter" {
+      return [$o ::nsf::methods::class::info::method parameter {*}$args]
+    }
+    "methodparameter" {
+      return [$o ::nsf::methods::object::info::method parameter {*}$args]
+    }
     "instargs" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instargs {*}$args]}
-      return [$o info method args {*}$args]
+      set posargs {}
+      foreach m [$o info method args {*}$args] p [$o info method parameters {*}$args] {
+        if {[string range [lindex $p 0] 0 0] eq "-"} continue
+        lappend posargs $m
+      }
+      return $posargs
     }
     "args" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info args {*}$args]}
-      return [$o info object method args {*}$args]
+      set posargs {}
+      foreach m [$o info object method args {*}$args] p [$o info object method parameters {*}$args] {
+        if {[lrange [string index $p 0] 0 0] eq "-"} continue
+        lappend posargs $m
+      }
+      return $posargs
     }
     "instargdefault" {
       if {"::xotcl::Object" in [$o info precedence]} {
@@ -904,7 +880,7 @@ proc ::xo::getObjectProperty {o what args} {
         return [uplevel [list $o info default {*}$args]]
       }
       lassign $args method arg varName
-      foreach p [$o info object method parameter $method] {
+      foreach p [$o info object method parameters $method] {
         lassign $p name default
         if {$name eq $arg} {
           uplevel [list set $varName $default]

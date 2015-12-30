@@ -12,7 +12,7 @@ ad_library {
 
 namespace eval ::xo {
 
-  Class create Context -ad_doc {
+  ::xotcl::Class create Context -ad_doc {
     This class provides a context for evaluation, somewhat similar to an 
     activation record in programming languages. It combines the parameter
     declaration (e.g. of a page, an includelet) with the actual parameters
@@ -26,7 +26,8 @@ namespace eval ::xo {
     locale
   }
 
-  # syntactic sugar for includelets, to allow the same syntax as 
+  #
+  # Syntactic sugar for includelets, to allow the same syntax as 
   # for "Package initialize ...."; however, we do not allow currently
   # do switch user or package id etc., just the parameter declaration
   Context instproc initialize {{-parameter ""}} {

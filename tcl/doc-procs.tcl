@@ -1,9 +1,9 @@
 ad_library {
-  generic doc procs
+    generic doc procs
 
-  @creation-date 2015-04-30
-  @author Gustaf Neumann
-  @cvs-id $Id$  
+    @creation-date 2015-04-30
+    @author Gustaf Neumann
+    @cvs-id $Id$  
 }
 
 namespace eval ::xo {
@@ -23,18 +23,19 @@ namespace eval ::xo {
 	upvar $methods_ref methods
 	set infokind $kind
 	if {$kind eq "instproc"} {append infokind s}
-	::xotcl::api scope_from_object_reference scope e
-	foreach method [xo::getObjectProperty $e $kind] {
+	::xo::api scope_from_object_reference scope e
+        if {$kind eq "proc"} {set prefix "&rarr; "} {set prefix ""}
+	foreach methodName [xo::getObjectProperty $e $kind] {
             if {$documented_methods} {
-		set proc_index [::xotcl::api proc_index $scope $e $kind $method]
-		#my msg "check $method => [nsv_exists api_proc_doc $proc_index]"
-		if {[nsv_exists api_proc_doc $proc_index]} {
-		    lappend methods $method
-		}
-	    } else {
-		lappend methods $method
-	    }
-	}
+                set proc_index [::xo::api proc_index $scope $e $kind $methodName]
+                #my msg "check $methodName => [nsv_exists api_proc_doc $proc_index]"
+                if {[nsv_exists api_proc_doc $proc_index]} {
+                    lappend methods $prefix$methodName
+                }
+            } else {
+                lappend methods $prefix$methodName
+            }
+        }
     }
     
     ad_proc dotclass {{-is_focus 0} {-documented_methods 1} e} {
@@ -55,9 +56,10 @@ namespace eval ::xo {
 	    }
 	}
 	append definition "|"
-	::xotcl::api scope_from_object_reference scope e
+	::xo::api scope_from_object_reference scope e
 	set methods [list]
-	dot_append_method -documented_methods $documented_methods $e methods instproc
+        dot_append_method -documented_methods $documented_methods $e methods proc
+        dot_append_method -documented_methods $documented_methods $e methods instproc
 	dot_append_method -documented_methods $documented_methods $e methods instforward
 	foreach method [lsort $methods] {append definition "$method\\l" }
 	append definition "\}\"\];\n"
@@ -85,98 +87,94 @@ namespace eval ::xo {
 	set mclasses {}
 	
 	foreach e $things {
-	    if {![::xotcl::Object isobject $e]} continue
-	    if {$omit_base_classes && ($e eq "::xotcl::Object" || $e eq "::xotcl::Class")} continue
-	    lappend [expr {[::xotcl::Object isclass $e] ? "classes" : "objects"}] $e
+            if {![::nsf::is object $e] || ($omit_base_classes && [::nsf::is baseclass $e])} continue
+            lappend [expr {[::nsf::is class $e] ? "classes" : "objects"}] $e
 	}
 	set instances ""
 	if {$with_instance_relations} {
-	    foreach e $things {
-		if {![::xotcl::Object isobject $e]} continue
-		if {$omit_base_classes && ($e eq "::xotcl::Object" || $e eq "::xotcl::Class")} continue
-		set c [$e info class]
-		if {$omit_base_classes && ($c eq "::xotcl::Object" || $c eq "::xotcl::Class")} continue
-		if {$c ni $things} {lappend iclasses $c}
-		append instances "[dotquote $e]->[dotquote $c];\n"
-	    }
+            foreach e $things {
+                if {![::nsf::is object $e] || ($omit_base_classes && [::nsf::is baseclass $e])} continue
+                set c [$e info class]
+                if {$omit_base_classes && [::nsf::is baseclass $c]} continue
+                if {$c ni $things} {lappend iclasses $c}
+                append instances "[dotquote $e]->[dotquote $c];\n"
+            }
 	}
 	set superclasses ""
 	foreach e $classes {
-	    if {![::xotcl::Object isobject $e]} continue
-	    if {$e eq "::xotcl::Object"} continue
-	    set reduced_sc [list]
-	    foreach sc [::xo::getObjectProperty $e superclass] {
-		if {$omit_base_classes && ($sc eq "::xotcl::Object" || $sc eq "::xotcl::Class")} continue
-		lappend reduced_sc $sc
-	    }
-	    if {$reduced_sc eq {}} continue
-	    foreach sc $reduced_sc {
-		if {$sc in $things} {
-		    append superclasses "[dotquote $e]->[dotquotel $sc];\n"
-		}
-	    }
+            if {![::nsf::is object $e]} continue
+            set reduced_sc [list]
+            foreach sc [::xo::getObjectProperty $e superclass] {
+                if {$omit_base_classes && [::nsf::is baseclass $sc]} continue
+                lappend reduced_sc $sc
+            }
+            if {$reduced_sc eq {}} continue
+            foreach sc $reduced_sc {
+                if {$sc in $things} {
+                    append superclasses "[dotquote $e]->[dotquotel $sc];\n"
+                }
+            }
 	}
-	set children ""
-	set mixins ""
-	foreach e $things {
-	    if {![::xotcl:::Object isobject $e]} continue
-	    if {$omit_base_classes && ($e eq "::xotcl::Object" || $e eq "::xotcl::Class")} continue
-	    if {$with_children} {
-		foreach c [$e info children] {
-		    if {$c ni $things} continue
-		    append children "[dotquote $c]->[dotquote $e];\n"
-		}
-	    }
-	    set m [xo::getObjectProperty $e mixin]
-	    #puts "-- $e mixin $m"
-	    if {$m eq ""} continue
-	    foreach mixin $m {
-		if {$mixin ni $things} {lappend mclasses $m}
-		append mixins "[dotquote $e]->[dotquotel $mixin];\n"
-	    }
-	}
-	set tclasses ""
-	set instmixins ""
-	foreach e $classes {
-	    set m [xo::getObjectProperty $e instmixin]
-	    #puts "-- $e instmixin $m"
-	    if {$m eq ""} continue
-	    #foreach mixin $m {
-	    #  append tclasses [dotclass -documented_methods $documented_methods $mixin]
-	    #}
+        set children ""
+        set mixins ""
+        foreach e $things {
+            if {![::nsf::is object $e] || ($omit_base_classes && [::nsf::is baseclass $e])} continue
+            if {$with_children} {
+                foreach c [$e info children] {
+                    if {$c ni $things} continue
+                    append children "[dotquote $c]->[dotquote $e];\n"
+                }
+            }
+            set m [xo::getObjectProperty $e mixin]
+            #puts "-- $e mixin $m"
+            if {$m eq ""} continue
+            foreach mixin $m {
+                if {$mixin ni $things} {lappend mclasses $m}
+                append mixins "[dotquote $e]->[dotquotel $mixin];\n"
+            }
+        }
+        set tclasses ""
+        set instmixins ""
+        foreach e $classes {
+            set m [xo::getObjectProperty $e instmixin]
+            #puts "-- $e instmixin $m"
+            if {$m eq ""} continue
+            #foreach mixin $m {
+            #  append tclasses [dotclass -documented_methods $documented_methods $mixin]
+            #}
 
-	    foreach mixin $m {
-		if {$mixin ni $things} {lappend mclasses $mixin}
-		append instmixins "[dotquote $e]->[dotquotel $mixin];\n"
-	    }
-	}
+            foreach mixin $m {
+                if {$mixin ni $things} {lappend mclasses $mixin}
+                append instmixins "[dotquote $e]->[dotquotel $mixin];\n"
+            }
+        }
 
-	foreach e $classes {
-	    append tclasses [dotclass -is_focus [expr {$e eq $current_object}] -documented_methods $documented_methods $e]
-	}
-	set tobjects {}
-	foreach e $objects {
-	    append tobjects [dotobject $e]
-	}
-	set tmclasses {}
-	foreach e $mclasses {
-	    append tmclasses [dotobject $e]
-	}
-	set ticlasses {}
-	foreach e $iclasses {
-	    append ticlasses [dotobject $e]
-	}
+        foreach e $classes {
+            append tclasses [dotclass -is_focus [expr {$e eq $current_object}] -documented_methods $documented_methods $e]
+        }
+        set tobjects {}
+        foreach e $objects {
+            append tobjects [dotobject $e]
+        }
+        set tmclasses {}
+        foreach e $mclasses {
+            append tmclasses [dotobject $e]
+        }
+        set ticlasses {}
+        foreach e $iclasses {
+            append ticlasses [dotobject $e]
+        }
+        
+        #label = \".\\n.\\nObject relations of [self]\"
+        #edge \[dir=back, constraint=0\] \"::Decorate_Action\" -> \"::Action\";
+        set objects  [join [dotquotel $objects] {; }]
+        #set classes  [join [dotquotel $classes] {; }]
+        set imcolor hotpink4
 
-	#label = \".\\n.\\nObject relations of [self]\"
-	#edge \[dir=back, constraint=0\] \"::Decorate_Action\" -> \"::Action\";
-	set objects  [join [dotquotel $objects] {; }]
-	#set classes  [join [dotquotel $classes] {; }]
-	set imcolor hotpink4
-
-	set font "fontname = \"Helvetica\",fontsize = 8,"
-	#set font "fontname = \"Bitstream Vera Sans\",fontsize = 8,"
-	# rankdir = BT; labeldistance = 20;
-	return "digraph {
+        set font "fontname = \"Helvetica\",fontsize = 8,"
+        #set font "fontname = \"Bitstream Vera Sans\",fontsize = 8,"
+        # rankdir = BT; labeldistance = 20;
+        return "digraph {
    dpi = $dpi;
    rankdir = BT;
    node \[$font shape=record\]; $tclasses
@@ -196,6 +194,6 @@ namespace eval ::xo {
 
 # Local variables:
 #    mode: tcl
-#    tcl-indent-level: 2
+#    tcl-indent-level: 4
 #    indent-tabs-mode: nil
 # End:
