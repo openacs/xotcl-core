@@ -153,28 +153,27 @@ proc class_summary {c scope} {
   set pretty_parameter ""
   set line "[::xo::api object_link $scope $c] create ..."
   set parameters [lsort [DO xo::getObjectProperty $c parameter]]
-  if {$parameters ne ""} {
-    set length [expr {6 + [string length $c]}]
+  if {[llength $parameters] > 0} {
+    #
+    # Initial line length is length of class name + "create" + "..." +
+    # white space
+    #
+    set llength [expr {8 + [string length $c]}]
+    set pstart "&nbsp;\\<br>[string repeat {&nbsp;} 10]"
+    
     foreach p $parameters {
-      if {$length > 60} {
-        append line "&nbsp;\\<br>[string repeat {&nbsp;} 10]"
-        set length 10
-      }
       if {[llength $p]>1} {
         lassign $p p default
-        append line " \[-$p (default <span style='color: green; font-style: italic'>\"$default\"</span>)\]"
-        incr length [expr {[string length $p] + [string length $default]* 2 + 4}]
+        append line $pstart " \[ -$p (default <span style='color: green; font-style: italic'>\"$default\"</span>) \]"
       } else {
-        append line " \[-$p <i>$p</i>\]"
-        incr length [expr {[string length $p] * 2 + 4}]
+        append line $pstart " \[ -$p <i>$p</i> \]"
       }
-
       #set param($p) 1
     }
-    #append result "<h4>Parameter for instances:</h4> <blockquote>[join $pretty {, }]</blockquote>\n" 
   }
+  append line "<p>\n"
   
-  return "<tt>$line</tt>"
+  return "<pre>$line</pre>"
 }
 
 #
@@ -241,10 +240,11 @@ if {[nsv_exists api_library_doc $index]} {
   append output [lindex $doc_elements(main) 0]
   append output "<dl>\n"
   if { [info exists doc_elements(param)] && [llength $doc_elements(param)] > 0} {
-    append output "<dt><b>Documented Parameters:</b>\n"
+    append output "<dt><b>Documented Parameters:</b></dt><dd><dl>\n"
     foreach par $doc_elements(param) {
-      append output "<dd><em>-[lindex $par 0]</em> [lrange $par 1 end]\n"
+      append output "<dt><em>-[lindex $par 0]</em></dt><dd>[lrange $par 1 end]</dd>\n"
     }
+    append output "</dl></dd>"
   }
   if { [info exists doc_elements(see)] } {
     append output "<dt><b>See Also:</b>\n"

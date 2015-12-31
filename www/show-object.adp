@@ -1,6 +1,7 @@
 <master>
 <property name="doc(title)">@title;literal@</property>
 <property name="context">@context;literal@</property>
+<property name="head">
 <style>
 pre.code {
         font-size: 80%;
@@ -25,6 +26,7 @@ pre it {
         font-style: italic;
         color: green;
 }
+dd {margin-left: 2em;}
 </style>
 </property>
 
