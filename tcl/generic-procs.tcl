@@ -25,29 +25,24 @@ namespace eval ::Generic {
     {submit_link "."}
     {action "[::xo::cc url]"}
   } -ad_doc {
-    <p>Class for the simplified generation of forms. This class was designed 
+    <p>This class was designed 
     together with the content repository class 
-    <a href='/xotcl/show-object?object=::xo::db::CrClass'>::xo::db::CrClass</a>,
-    but it can be used also with different classes. The only requirement is the 
-    presence of an 'item_id' form field. 
-    </p>
-    <p>
+    <a href='/xotcl/show-object?object=::xo::db::CrClass'>::xo::db::CrClass</a>
+    for the generation of HTML forms, but it can be used also with different classes.
+    The only hard requirement is the  presence of an 'item_id' form field. 
     For generic acs_objects, 'item_id' will correspond to 'object_id' column in 'acs_objects' 
     table. For content repository items, 'item_id' will be the column by the same name in 
     cr_revisions/cr_items.
-    <p/>
-    <ul>
-      <li><b>fields:</b> form elements as described in <a href='/api-doc/proc-view?proc=ad_form'>ad_form</a>.
-      <li><b>data:</b> data object (e.g. instance if CrItem) 
-      <li><b>package_id:</b> package_id of the object. Will default to data's 'package_id' variable
-      <li><b>folder_id:</b> associated folder id. Will default to data's 'parent_id' variable. 
-	If 'parent_id' is missing too, package's 'folder_id' will be used.
-      <li><b>name:</b> of this form, used for naming the template, 
-	defaults to the object name
-      <li><b>add_page_title:</b> page title when adding content items
-      <li><b>edit_page_title:</b> page title when editing content items
-      <li><b>with_categories:</b> display form with categories (default false)
-      <li><b>submit_link:</b> link for page after submit
+
+    @param add_page_title  page title when adding content items
+    @param edit_page_title page title when editing content items
+    @param data            data object (e.g. instance if CrItem)
+    @param folder_id       associated folder id. Will default to data's 'parent_id' variable. 
+                           If 'parent_id' is missing too, package's 'folder_id' will be used.
+    @param name            name of the form, used for naming the template, defaults to the object name
+    @param package_id      package_id of the object. Will default to data's 'package_id' variable
+    @param submit_link     link for page after submit
+    @param with_categories display form with categories (default false)
     </ul>
   }
   
