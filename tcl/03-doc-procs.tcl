@@ -19,7 +19,6 @@ ad_library {
   ::xotcl::Class  instproc ad_instproc
   ::xotcl::Class  instproc ad_instforward
   ::xotcl::Object instproc ad_doc
-  ::xotcl::Object instproc __api_make_forward_doc
   ::nx::Class method init
 }
 
@@ -399,7 +398,9 @@ ad_library {
                                            scope obj inst proc_name
                                            docString
                                          } {
-    set varargs_p [expr {"args" in [::xo::getObjectProperty $obj ${inst}args $proc_name]}]
+    set methodType [::xo::getObjectProperty $obj ${inst}methodtype $proc_name]
+    set varargs_p [expr {$methodType eq "scripted"
+                         && "args" in [::xo::getObjectProperty $obj ${inst}args $proc_name]}]
 
     set doc [dict create \
                  param "" \
@@ -418,38 +419,43 @@ ad_library {
       set doc [dict replace $doc {*}[array get doc_elements]]
     }
 
-    set defaults [list]
-    foreach a [::xo::getObjectProperty $obj ${inst}args $proc_name] {
-      if {[::xo::getObjectProperty $obj ${inst}argdefault $proc_name $a d]} {
-        lappend defaults $a $d
-      }
-    }
-    
-    foreach def [::xo::getObjectProperty $obj ${inst}methodparameter $proc_name] {
-      lassign $def f default
-      set pair [split [lindex $f 0 0] :]
-      lassign $pair flaggedName flags
-      if {[string range $flaggedName 0 0] eq "-"} {
-        set isFlag 1
-        set name [string range $flaggedName 1 end]
-      } else {
-        set isFlag 0
-        set name $flaggedName
-      }
-      if {$isFlag} {
-        dict lappend doc switches $name
-        dict lappend doc flags $name $flags
-        #my log "default_value $proc_name: $sw -> '[lindex $f 1]' <$pair/$f>"
-        if {$flags eq "switch" && $default eq ""} {
-          set default "false"
+    if {$methodType ne "scripted"} {
+      dict set doc default_values {}
+      dict set doc positionals {}
+    } else {
+      set defaults [list]
+      foreach a [::xo::getObjectProperty $obj ${inst}args $proc_name] {
+        if {[::xo::getObjectProperty $obj ${inst}argdefault $proc_name $a d]} {
+          lappend defaults $a $d
         }
       }
-      #my log "default_value $proc_name: $sw -> 'default' <$pair/$f>"
-      if {[llength $def] > 1} {lappend defaults $name $default}
+      
+      foreach def [::xo::getObjectProperty $obj ${inst}methodparameter $proc_name] {
+        lassign $def f default
+        set pair [split [lindex $f 0 0] :]
+        lassign $pair flaggedName flags
+        if {[string range $flaggedName 0 0] eq "-"} {
+          set isFlag 1
+          set name [string range $flaggedName 1 end]
+        } else {
+          set isFlag 0
+          set name $flaggedName
+        }
+        if {$isFlag} {
+          dict lappend doc switches $name
+          dict lappend doc flags $name $flags
+          #my log "default_value $proc_name: $sw -> '[lindex $f 1]' <$pair/$f>"
+          if {$flags eq "switch" && $default eq ""} {
+            set default "false"
+          }
+        }
+        #my log "default_value $proc_name: $sw -> 'default' <$pair/$f>"
+        if {[llength $def] > 1} {lappend defaults $name $default}
+      }
+      dict set doc default_values $defaults
+      dict set doc positionals [::xo::getObjectProperty $obj ${inst}args $proc_name]
     }
-    dict set doc default_values $defaults
-    dict set doc positionals [::xo::getObjectProperty $obj ${inst}args $proc_name]
-
+    
     # argument documentation finished
     set proc_index [::xo::api proc_index $scope $obj ${inst}proc $proc_name]
     if {![nsv_exists api_proc_doc $proc_index]} {
@@ -457,7 +463,8 @@ ad_library {
     }
     #ns_log notice "SETTING api_proc_doc '$proc_index' <$doc>"
     nsv_set api_proc_doc $proc_index $doc
-  }  
+  }
+  
 
   :public object method get_init_block {scope obj} {
     #
@@ -527,35 +534,6 @@ ad_library {
   return $r
 }
 
-::xotcl::Object instproc __api_make_forward_doc {inst method_name} {
-  upvar doc doc private private public public deprecated deprecated
-  if {$doc eq ""} {
-    set doc_elements(main) ""
-  } else {
-    ad_parse_documentation_string $doc doc_elements
-    #my log "doc_elements=[array get doc_elements]"
-  }
-  set defaults [list]
-  set doc_elements(protection) [expr {$private ? "protected" : "public"}]
-  set doc_elements(deprecated_p) $deprecated
-  set doc_elements(warn_p) $deprecated
-  set doc_elements(varargs_p) false
-  set doc_elements(flags) [list]
-  set doc_elements(switches) [list]
-  set doc_elements(default_values) [list]
-  set doc_elements(positionals) [list] 
-  # argument documentation finished
-  set scope [::xo::api scope]
-  set doc_elements(script) [::xo::api script_name $scope]
-  set proc_index [::xo::api proc_index $scope [self] ${inst}forward $method_name]
-  if {![nsv_exists api_proc_doc $proc_index]} {
-    nsv_lappend api_proc_doc_scripts $doc_elements(script) $proc_index
-  }
-  #my log "doc_elements=[array get doc_elements]"
-  #my log "SETTING api_proc_doc '$proc_index'"
-  nsv_set api_proc_doc $proc_index [array get doc_elements]
-}
-
 ::xotcl::Object instproc ad_proc {
   {-private:switch false}
   {-deprecated:switch false}
@@ -601,7 +579,12 @@ ad_library {
   {-debug:switch false} 
   method_name doc args} {
     uplevel [self] forward $method_name $args
-    my __api_make_forward_doc "" $method_name
+    ::xo::api update_method_doc \
+        -protection [expr {$private ? "private" : "public"}] \
+        -deprecated=$deprecated \
+        -debug=$private \
+        [::xo::api scope] [self] \
+        "" $method_name $doc
   }
 
 ::xotcl::Class instproc ad_instforward {
@@ -611,7 +594,12 @@ ad_library {
   {-debug:switch false} 
   method_name doc args} {
     uplevel [self] instforward $method_name $args
-    my __api_make_forward_doc inst $method_name
+    ::xo::api update_method_doc \
+      -protection [expr {$private ? "private" : "public"}] \
+      -deprecated=$deprecated \
+      -debug=$private \
+      [::xo::api scope] [self] \
+      "inst" $method_name $doc
   }
 
 ::xotcl::Object instproc ad_doc {doc_string} {
