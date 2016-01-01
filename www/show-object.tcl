@@ -44,7 +44,7 @@ if {$scope ne ""} {
   auth::require_login
 }
 
-interp alias {} DO {} ::xo::api inscope $scope 
+interp alias {} DO {} ::xo::api scope_eval $scope 
 
 set my_class [DO $object info class]
 set title "$my_class $object"

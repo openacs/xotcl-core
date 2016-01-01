@@ -39,14 +39,15 @@ ad_library {
   :public object method method_label { -kind:switch proc_spec } {
     switch [llength $proc_spec] {
       1 {}
-      3 {lassign $proc_spec obj methodType method}
+      3 {lassign $proc_spec obj methodType method; set scope ""}
       4 {lassign $proc_spec scope obj methodType method}
       default {
         ns_log notice "Unexpected format <$proc_spec> consists of [llength $proc_spec] parts"
       }
     }
     if {[info exists method]} {
-      set isNx [::nsf::directdispatch $obj ::nsf::methods::object::info::hastype ::nx::Class]
+      set isNx [:scope_eval $scope \
+                    ::nsf::directdispatch $obj ::nsf::methods::object::info::hastype ::nx::Class]
       if {$kind} {
         return [set :methodLabel($isNx-$methodType)]
       } else {
@@ -88,7 +89,7 @@ ad_library {
       ns_log warning "unexpected method type <$methodType>"
       set modifier ""
     }
-    set debug_p [{*}$scope ::nsf::method::property $obj {*}$modifier $method debug]
+    set debug_p [:scope_eval $scope ::nsf::method::property $obj {*}$modifier $method debug]
 
     #
     # Increment global form_id
@@ -158,16 +159,20 @@ ad_library {
     }
   }
 
+  :public object method scope_eval {scope args} {
+    if {$scope eq ""} {
+      {*}$args
+    } else {
+      $scope do {*}$args
+    }
+  }
+  
   :public object method isclass {scope obj} {
-    expr {$scope eq "" ? 
-          [xo::getObjectProperty $obj isclass] : 
-          [$scope do xo::getObjectProperty $obj isclass]}
+    :scope_eval $scope xo::getObjectProperty $obj isclass
   }
 
   :public object method isobject {scope obj} {
-    expr {$scope eq "" ? 
-          [xo::getObjectProperty $obj isobject] : 
-          [$scope do xo::getObjectProperty $obj isobject]}
+    :scope_eval $scope xo::getObjectProperty $obj isobject
   }
 
   :public object method scope {} {
@@ -188,10 +193,6 @@ ad_library {
     set scope ""
     regexp {^(.+) .+ (inst)?proc (.+)$} $proc_index match scope
     return $scope
-  }
-
-  :public object method inscope {scope args} {
-    expr {$scope eq "" ? [eval $args] : [$scope do {*}$args]}
   }
 
   :public object method script_name {scope} {
@@ -217,7 +218,7 @@ ad_library {
   }
 
   :public object method object_url {{-show_source 0} {-show_methods 1} scope obj} {
-    set object [expr {$scope eq "" ? $obj : "$scope do $obj"}]
+    set object [:scope_eval $scope $obj]
     return [export_vars -base /xotcl/show-object {object show_source show_methods}]
   }
 
@@ -472,14 +473,8 @@ ad_library {
     #
     # Get the init block of an object/class or return empty
     #
-    if {$scope eq ""} {
-      if {[::nsf::var::exists $obj __cmd(__initblock)]} {
-        return [::nsf::var::set $obj __cmd(__initblock)]
-      }
-    } else {
-      if {[$scope do ::nsf::var::exists $obj __cmd(__initblock)]} {
-        return [$scope do [::nsf::var::exists $obj __cmd(__initblock)]]
-      }
+    if {[:scope_eval $scope ::nsf::var::exists $obj __cmd(__initblock)]} {
+      return [:scope_eval $scope ::nsf::var::set $obj __cmd(__initblock)]
     }
     return ""
   }
@@ -490,20 +485,12 @@ ad_library {
       set dummy [:get_doc_block $init_block body]
       return $body
     } else {
-      if {$scope eq ""} {
-        return [$obj serialize]
-      } else {
-        return [$scope do $obj serialize]
-      }
+      return [:scope_eval $scope $obj serialize]
     }
   }
 
   :public object method get_method_source {scope obj prefix method} {
-    if {$scope eq ""} {
-      return [::Serializer methodSerialize $obj $method $prefix]
-    } else {
-      return [$scope do ::Serializer methodSerialize $obj $method $prefix]
-    }
+    :scope_eval $scope ::Serializer methodSerialize $obj $method $prefix
   }
 
   :public object method update_nx_docs {{objects ""}} {
