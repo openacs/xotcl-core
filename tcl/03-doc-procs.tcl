@@ -27,8 +27,10 @@ ad_library {
   array set :methodLabel {
     1-instproc "method"
     1-proc "object method"
+    1-forward "object forward"
     0-instproc "instproc"
     0-proc "proc"
+    0-forward "forward"
   }
   
   #
