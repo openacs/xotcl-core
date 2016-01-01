@@ -316,9 +316,11 @@ if {$show_methods} {
     append output "<h3>Methods (to be applied on the object)</h3>\n" <ul> \n
     foreach m $methods {
       set type [DO ::xo::getObjectProperty $object methodtype $m]
-      set out [local_api_documentation -proc_type $type $show_methods $scope $object proc $m]
-      if {$out ne ""} {
-        append output [api_src_doc $out $show_source $scope $object proc $m]
+      if {$type ne "object"} {
+        set out [local_api_documentation -proc_type $type $show_methods $scope $object proc $m]
+        if {$out ne ""} {
+          append output [api_src_doc $out $show_source $scope $object proc $m]
+        }
       }
     }
   }
