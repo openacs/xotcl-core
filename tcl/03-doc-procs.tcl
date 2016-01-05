@@ -218,7 +218,7 @@ ad_library {
   }
 
   :public object method object_url {{-show_source 0} {-show_methods 1} scope obj} {
-    set object [:scope_eval $scope $obj]
+    set object [:scope_eval $scope nsf::object::qualify $obj]
     return [export_vars -base /xotcl/show-object {object show_source show_methods}]
   }
 
