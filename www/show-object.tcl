@@ -311,18 +311,26 @@ if {$show_methods} {
   #
   # per-object methods
   #
-  set methods [lsort [DO ::xo::getObjectProperty $object command]]
+  set methods0 [lsort [DO ::xo::getObjectProperty $object command]]
+  #
+  # filter (sub)objects, which are callable via the method interface
+  #
+  set methods {}
+  foreach m $methods0 {
+    if {[DO ::xo::getObjectProperty $object methodtype $m] eq "object"} {
+      continue
+    }
+    lappend methods $m
+  }
   if {[llength $methods] > 0} {
     append output "<h3>Methods (to be applied on the object)</h3>\n" <ul> \n
     foreach m $methods {
-      set type [DO ::xo::getObjectProperty $object methodtype $m]
-      if {$type ne "object"} {
-        set out [local_api_documentation -proc_type $type $show_methods $scope $object proc $m]
-        if {$out ne ""} {
-          append output [api_src_doc $out $show_source $scope $object proc $m]
-        }
+      set out [local_api_documentation -proc_type $type $show_methods $scope $object proc $m]
+      if {$out ne ""} {
+        append output [api_src_doc $out $show_source $scope $object proc $m]
       }
     }
+    append output </ul> \n
   }
 
   if {$isclass} {
@@ -345,9 +353,9 @@ if {$show_methods} {
           }
         }
       }
+      append output </ul> \n
     }
   }
-  append output </ul> \n
 }
 
 if {$show_variables && !$isnx} {
