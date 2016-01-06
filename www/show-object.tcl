@@ -98,7 +98,7 @@ nsf::proc local_api_documentation {{-proc_type scripted} show_methods scope obje
   return $result
 }
 
-proc info_option {scope object kind {dosort 0}} {
+proc class_relation {scope object kind {dosort 0}} {
   upvar class_references class_references
 
   set isnx [DO xo::getObjectProperty $object isnxobject]
@@ -276,16 +276,18 @@ if {[nsv_exists api_library_doc $index]} {
 set obj_create_source "$my_class create $object"
 
 set class_references ""
+class_relation $scope $object class
 
 if {$isclass} {
   append obj_create_source \
-      [info_option $scope $object class] \
-      [info_option $scope $object superclass] \
-      [info_option $scope $object instmixin] 
+      [class_relation $scope $object superclass] \
+      [class_relation $scope $object instmixin]
+
+  class_relation $scope $object subclass
 }
 
 append obj_create_source \
-    [info_option $scope $object mixin]
+    [class_relation $scope $object mixin]
 
 if {$class_references ne ""} {
   append output "<h4>Class Relations</h4><ul>\n$class_references</ul>\n"
