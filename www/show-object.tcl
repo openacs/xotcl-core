@@ -88,7 +88,7 @@ nsf::proc local_api_documentation {{-proc_type scripted} show_methods scope obje
                            $proc_index]
     set result $documentation
   } else {
-    if {$show_methods == 2} {
+    if {$show_methods > 1} {
       set result "<h4><em>$method</em> ($proc_type)</h4>\n"
       append result [::xo::api debug_widget [list {*}$scope $object $kind $method]]
     } else {
@@ -281,8 +281,7 @@ if {$isclass} {
   append obj_create_source \
       [info_option $scope $object class] \
       [info_option $scope $object superclass] \
-      [info_option $scope $object instmixin] \
-      [info_option $scope $object subclass 1]
+      [info_option $scope $object instmixin] 
 }
 
 append obj_create_source \
@@ -311,27 +310,27 @@ if {$show_methods} {
   #
   # per-object methods
   #
-  set methods0 [lsort [DO ::xo::getObjectProperty $object command]]
-  #
-  # filter (sub)objects, which are callable via the method interface
-  #
-  set methods {}
-  foreach m $methods0 {
-    if {[DO ::xo::getObjectProperty $object methodtype $m] eq "object"} {
-      continue
-    }
-    lappend methods $m
-  }
+  set methods [lsort [DO ::xo::getObjectProperty $object command]]
   if {[llength $methods] > 0} {
-    append output "<h3>Methods (to be applied on the object)</h3>\n" <ul> \n
+    set method_output ""
     foreach m $methods {
       set type [DO ::xo::getObjectProperty $object methodtype $m]
+      if {$type eq "object"} {
+        #
+        # filter (sub)objects, which are callable via the method interface
+        #
+        continue
+      }
       set out [local_api_documentation -proc_type $type $show_methods $scope $object proc $m]
       if {$out ne ""} {
-        append output [api_src_doc $out $show_source $scope $object proc $m]
+        append method_output [api_src_doc $out $show_source $scope $object proc $m]
       }
     }
-    append output </ul> \n
+    if {$method_output ne ""} {
+      append output \
+          "<h3>Methods (to be applied on the object) //$methods</h3>\n" \
+          <ul> \n $method_output </ul> \n
+    }
   }
 
   if {$isclass} {
@@ -340,21 +339,25 @@ if {$show_methods} {
     #
     set methods [lsort [DO ::xo::getObjectProperty $object instcommand]]
     if {[llength $methods] > 0} {
-      append output "<h3>Methods (to be applied on instances)</h3>\n" <ul> \n
+      set method_output ""
       foreach m $methods {
         set type [DO ::xo::getObjectProperty $object instmethodtype $m]
         set out [local_api_documentation -proc_type $type $show_methods $scope $object instproc $m]
         if {$out ne ""} {
-          append output "<a name='instproc-$m'></a><li>$out"
+          append method_output "<a name='instproc-$m'></a><li>$out"
           if { $show_source } { 
-            append output \
+            append method_output \
                 "<pre class='code'>" \
                 [::apidoc::tcl_to_html [::xo::api proc_index $scope $object instproc $m]] \
                 </pre>
           }
         }
       }
-      append output </ul> \n
+      if {$method_output ne ""} {
+        append output \
+            "<h3>Methods (to be applied on instances)</h3>\n" \
+            <ul> \n $method_output </ul> \n
+      }
     }
   }
 }
