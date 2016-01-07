@@ -113,8 +113,8 @@ if {[info commands ::nx::Object] ne ""} {
   proc ::nsf::debug::call {level objectInfo methodInfo arglist} {
     ns_log Warning "DEBUG call($level) - {$objectInfo} {$methodInfo} $arglist"
   }
-  proc ::nsf::debug::exit {level objectInfo methodInfo usec} {
-    ns_log Warning "DEBUG exit($level) - {$objectInfo} {$methodInfo} $usec usec"
+  proc ::nsf::debug::exit {level objectInfo methodInfo result usec} {
+    ns_log Warning "DEBUG exit($level) - {$objectInfo} {$methodInfo} $usec usec -> $result"
   }
 }
 
