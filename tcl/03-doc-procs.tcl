@@ -505,7 +505,13 @@ ad_library {
       if {[string match ::nx::* $o]} continue
       ::xo::api update_object_doc "" $o ""
     }
-    
+  }
+
+  :public object method get_proc_definition_flags {debug deprecated} {
+    if {$::nsf::version < 2.1} {
+      return ""
+    }
+    return [list -debug=$debug -deprecated=$deprecated]
   }
 }
 
@@ -533,11 +539,12 @@ ad_library {
   doc 
   body
 } {
-  uplevel [list [self] proc $proc_name $arguments $body]
+  set flags [::xo::api get_proc_definition_flags $debug $deprecated]
+  uplevel [list [self] proc {*}$flags $proc_name $arguments $body]
   ::xo::api update_method_doc \
       -protection [expr {$private ? "private" : "public"}] \
       -deprecated=$deprecated \
-      -debug=$private \
+      -debug=$debug \
       [::xo::api scope] [self] \
       "" $proc_name $doc
 }
@@ -552,11 +559,12 @@ ad_library {
   doc 
   body
 } {
-  uplevel [list [self] instproc $proc_name $arguments $body]
+  set flags [::xo::api get_proc_definition_flags $debug $deprecated]
+  uplevel [list [self] instproc {*}$flags $proc_name $arguments $body]
   ::xo::api update_method_doc \
       -protection [expr {$private ? "private" : "public"}] \
       -deprecated=$deprecated \
-      -debug=$private \
+      -debug=$debug \
       [::xo::api scope] [self] \
       inst $proc_name $doc
 }
@@ -567,11 +575,12 @@ ad_library {
   {-warn:switch false}
   {-debug:switch false} 
   method_name doc args} {
-    uplevel [self] forward $method_name $args
+    set flags [::xo::api get_proc_definition_flags $debug $deprecated]
+    uplevel [self] forward {*}$flags $method_name $args
     ::xo::api update_method_doc \
         -protection [expr {$private ? "private" : "public"}] \
         -deprecated=$deprecated \
-        -debug=$private \
+        -debug=$debug \
         [::xo::api scope] [self] \
         "" $method_name $doc
   }
@@ -582,11 +591,12 @@ ad_library {
   {-warn:switch false}
   {-debug:switch false} 
   method_name doc args} {
-    uplevel [self] instforward $method_name $args
+    set flags [::xo::api get_proc_definition_flags $debug $deprecated]
+    uplevel [self] instforward {*}$flags $method_name $args
     ::xo::api update_method_doc \
       -protection [expr {$private ? "private" : "public"}] \
       -deprecated=$deprecated \
-      -debug=$private \
+      -debug=$debug \
       [::xo::api scope] [self] \
       "inst" $method_name $doc
   }
