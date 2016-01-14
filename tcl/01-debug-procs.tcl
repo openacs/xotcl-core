@@ -759,12 +759,10 @@ namespace eval ::xo {
 proc ::xo::getObjectProperty {o what args} {
   switch $what {
     "mixin" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info mixin]}
-      return [$o info object {*}$::xo::mapMethodNames(mixins)]
+      return [$o ::nsf::methods::object::info::mixins]
     }
     "instmixin" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info instmixin]}
-      return [$o info {*}$::xo::mapMethodNames(mixins)]
+      return [$o ::nsf::methods::class::info::mixins]
     }
     "instproc" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instprocs {*}$args]}
@@ -789,8 +787,6 @@ proc ::xo::getObjectProperty {o what args} {
       return [$o info object methods -type scripted {*}$args]
     }
     "command" {
-      #if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}$args]}
-      #return [$o info object methods {*}$args]
       return [$o ::nsf::methods::object::info::methods {*}$args]
     }
     "forward" {
@@ -803,7 +799,7 @@ proc ::xo::getObjectProperty {o what args} {
     }
     "class" {
       #if {"::xotcl::Object" in [$o info precedence]} {return [$o info class]}
-      return [$o info class]
+      return [$o ::nsf::methods::object::info::class]
     }
     "superclass" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info superclass]}

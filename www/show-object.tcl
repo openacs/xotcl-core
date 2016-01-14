@@ -46,12 +46,10 @@ if {$scope ne ""} {
 
 interp alias {} DO {} ::xo::api scope_eval $scope 
 
-set my_class [DO $object info class]
+set my_class [DO xo::getObjectProperty $object class]
 set title "$my_class $object"
 set isclass [::xo::api isclass $scope $object]
-
-set isnx [xo::getObjectProperty $object isnxobject]
-
+set isnx [DO xo::getObjectProperty $object isnxobject]
 set s [DO Serializer new]
 
 set dimensional_slider [ad_dimensional {
@@ -330,7 +328,7 @@ if {$show_methods} {
     }
     if {$method_output ne ""} {
       append output \
-          "<h3>Methods (to be applied on the object) //$methods</h3>\n" \
+          "<h3>Methods (to be applied on the object)</h3>\n" \
           <ul> \n $method_output </ul> \n
     }
   }
