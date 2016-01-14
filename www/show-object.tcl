@@ -282,6 +282,8 @@ if {$isclass} {
       [class_relation $scope $object instmixin]
 
   class_relation $scope $object subclass
+  class_relation $scope $object instmixinof
+  class_relation $scope $object mixinof
 }
 
 append obj_create_source \

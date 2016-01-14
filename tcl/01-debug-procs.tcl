@@ -764,6 +764,13 @@ proc ::xo::getObjectProperty {o what args} {
     "instmixin" {
       return [$o ::nsf::methods::class::info::mixins]
     }
+    "mixinof" {
+      return [$o ::nsf::methods::class::info::mixinof -scope object]
+    }
+    "instmixinof" {
+      return [$o ::nsf::methods::class::info::mixinof -scope class]
+    }
+
     "instproc" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instprocs {*}$args]}
       return [$o info methods -type scripted -callprotection all {*}$args]
