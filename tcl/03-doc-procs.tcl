@@ -31,6 +31,8 @@ ad_library {
     0-instproc "instproc"
     0-proc "proc"
     0-forward "forward"
+    0-Class "Class"
+    0-Object "Object"
   }
   
   #
@@ -85,6 +87,8 @@ ad_library {
       set modifier "-per-object"
     } elseif {$methodType in {instproc nsfproc}} {
       set modifier ""
+    } elseif {$methodType eq "Class"} {
+      return ""
     } else {
       ns_log warning "unexpected method type <$methodType>"
       set modifier ""
@@ -225,7 +229,7 @@ ad_library {
 
   :public object method object_index {scope obj} {
     set kind [expr {[:isclass $scope $obj] ? "Class" : "Object"}]
-    return "$scope$kind $obj"
+    return "$scope $kind $obj"
   }
 
   :public object method proc_index {scope obj instproc proc_name} {
@@ -291,9 +295,10 @@ ad_library {
   }
 
   :public object method update_object_doc {scope obj doc_string} {
+    ns_log notice "update_object_doc $scope $obj ..."
     #
-    # Update the api browser informatio nsvs with information about
-    # the provided object.
+    # Update the api browser nsvs with information about the provided
+    # object.
     #
 
     # If no doc string is provided, try to get it from the object
@@ -335,6 +340,7 @@ ad_library {
                  positionals "" \
                  flags $flags \
                 ]
+    #ns_log notice "proc_index <$proc_index> -> $doc"
     nsv_set api_proc_doc $proc_index $doc
     nsv_set api_library_doc $proc_index $doc
 
@@ -352,7 +358,7 @@ ad_library {
       append oldDoc ", $entry"
     }
     set elements(main) [list $oldDoc]
-    #my log "elements = [array get elements]"
+    #ns_log notice "elements = [array get elements]"
     nsv_set api_library_doc $file_index [array get elements]
 
     if {[::nsf::dispatch $obj ::nsf::methods::object::info::hastype ::nx::Class]} {
@@ -603,7 +609,7 @@ ad_library {
   }
 
 ::xotcl::Object instproc ad_doc {doc_string} {
-  ::xo::api update_object_doc "" [self] $doc_string
+  ::xo::api update_object_doc [::xo::api scope] [self] $doc_string
 }
 
 # Class ::Test -ad_doc {
