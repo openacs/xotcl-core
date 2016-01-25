@@ -46,6 +46,9 @@ if {$scope ne ""} {
 
 interp alias {} DO {} ::xo::api scope_eval $scope 
 
+# get object fully qualified
+set object [DO namespace origin $object]
+
 set my_class [DO xo::getObjectProperty $object class]
 set title "$my_class $object"
 set isclass [::xo::api isclass $scope $object]
@@ -325,7 +328,9 @@ if {$show_methods} {
       }
       set out [local_api_documentation -proc_type $type $show_methods $scope $object proc $m]
       if {$out ne ""} {
+        ns_log notice "CALL [list api_src_doc $out $show_source $scope $object proc $m]"
         append method_output [api_src_doc $out $show_source $scope $object proc $m]
+        ns_log notice "CALL [list api_src_doc $out $show_source $scope $object proc $m] DONE"
       }
     }
     if {$method_output ne ""} {
@@ -414,7 +419,7 @@ if {!$as_img} {
   if {$dot eq "" && [file executable /usr/bin/dot]} {set dot /usr/bin/dot}
   if {$dot eq ""} {
     #ns_return 404 plain/text "dot not found"
-    ns_log warning "no dot available"
+    ns_log warning "program 'dot' is not available"
     #ad_script_abort
   } else {
  
