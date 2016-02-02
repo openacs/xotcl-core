@@ -904,7 +904,7 @@ namespace eval ::xo::db {
     #my instvar creation_user
     set __atts [list creation_user]
     set __vars $__atts
-    
+
     # The modifying_user is not maintained by the CR (bug?)
     # xotcl-core handles this by having the modifying user as
     # creation_user of the revision.
@@ -930,6 +930,15 @@ namespace eval ::xo::db {
       lappend __vars $__slot_name
     }
 
+    if {$use_given_publish_date} {
+      my instvar publish_date
+      lappend __atts publish_date
+      lappend __vars publish_date
+      set publish_date_flag [list -publish_date $publish_date]
+    } else {
+      set publish_date_flag ""
+    }
+
     ::xo::dc transaction {
       [my info class] instvar storage_type
       set revision_id [xo::dc nextval acs_object_id_seq]
@@ -943,17 +952,14 @@ namespace eval ::xo::db {
       my fix_content $revision_id $text
 
       if {$live_p} {
+        #
+        # Update the life revision with the publish status and
+        # optionally the publish_date
+        #
         ::xo::db::sql::content_item set_live_revision \
             -revision_id $revision_id \
-            -publish_status [my set publish_status]
-        #
-        # set_live revision updates publish_date to the current date.
-        # In order to keep a given publish date, we have to update the
-        # field manually.
-        #
-        if {$use_given_publish_date} {
-          my update_revision $revision_id publish_date [my publish_date]
-        }
+            -publish_status [my set publish_status] \
+            {*}$publish_date_flag
         my set revision_id $revision_id
         my update_item_index
       } else {
@@ -1018,8 +1024,10 @@ namespace eval ::xo::db {
     @param creation_user user_id if the creating user
     @param live_p make this revision the live revision
   } {
+    
     set __class [my info class]
     my instvar parent_id item_id import_file name
+    
     if {![info exists package_id] && [my exists package_id]} {
       set package_id [my package_id]
     }
@@ -1040,6 +1048,15 @@ namespace eval ::xo::db {
       if {![info exists $__slot_name]} {set $__slot_name ""}
       lappend __atts [$__slot column_name]
       lappend __vars $__slot_name
+    }
+    
+    if {$use_given_publish_date} {
+      my instvar publish_date
+      lappend __atts publish_date
+      lappend __vars publish_date
+      set publish_date_flag [list -publish_date $publish_date]
+    } else {
+      set publish_date_flag ""
     }
 
     ::xo::dc transaction {
@@ -1069,12 +1086,14 @@ namespace eval ::xo::db {
       my fix_content $revision_id $text
 
       if {$live_p} {
+        #
+        # Update the life revision with the publish status and
+        # optionally the publish_date
+        #
         ::xo::db::sql::content_item set_live_revision \
             -revision_id $revision_id \
-            -publish_status [my set publish_status] 
-        if {$use_given_publish_date} {
-          my update_revision $revision_id publish_date [my publish_date]
-        }
+            -publish_status [my set publish_status] \
+            {*}$publish_date_flag
         my update_item_index
       }
     }
