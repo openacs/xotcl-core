@@ -29,7 +29,7 @@ package require xotcl::serializer
   ::xotcl::Object instproc debug
   ::xotcl::Object instproc qn
   ::xotcl::Object instproc serialize
-  ::xotcl::Object instproc show-object
+  ::xotcl::Object instproc www-show-object
   ::xotcl::Object instproc destroy_on_cleanup
   ::xotcl::Object instproc set_instance_vars_defaults
   ::xotcl::Class instproc extend_slot 
@@ -168,7 +168,7 @@ if {[info exists ::acs::preferdbi]} {
   ::Serializer deepSerialize [self]
 }
 
-::xotcl::Object instproc show-object {} {
+::xotcl::Object instproc www-show-object {} {
   #
   # Allow to show an arbitrary object via API-browser.  Per-default,
   # e.g. site-wide can use e.g. /xowiki/index?m=show-object
