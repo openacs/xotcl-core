@@ -931,14 +931,16 @@ namespace eval ::xo::db {
     }
 
     if {$use_given_publish_date} {
-      my instvar publish_date
-      lappend __atts publish_date
-      lappend __vars publish_date
+      if {"publish_date" ni $__atts} {
+        my instvar publish_date
+        lappend __atts publish_date
+        lappend __vars publish_date
+      }
       set publish_date_flag [list -publish_date $publish_date]
     } else {
       set publish_date_flag ""
     }
-
+    
     ::xo::dc transaction {
       [my info class] instvar storage_type
       set revision_id [xo::dc nextval acs_object_id_seq]
@@ -1051,9 +1053,11 @@ namespace eval ::xo::db {
     }
     
     if {$use_given_publish_date} {
-      my instvar publish_date
-      lappend __atts publish_date
-      lappend __vars publish_date
+      if {"publish_date" ni $__atts} {
+        my instvar publish_date
+        lappend __atts publish_date
+        lappend __vars publish_date
+      }
       set publish_date_flag [list -publish_date $publish_date]
     } else {
       set publish_date_flag ""
