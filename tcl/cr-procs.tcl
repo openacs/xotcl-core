@@ -976,26 +976,6 @@ namespace eval ::xo::db {
     return $item_id
   }
 
-  if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} {
-    ns_log notice "--OpenACS Version 5.2 or newer [ad_acs_version]"
-    CrItem set content_item__new_args {
-      -name $name -parent_id $parent_id -creation_user $creation_user \
-          -creation_ip $creation_ip \
-          -item_subtype "content_item" -content_type $object_type \
-          -description $description -mime_type $mime_type -nls_language $nls_language \
-          -is_live f -storage_type $storage_type -package_id $package_id
-    }
-  } else {
-    ns_log notice "--OpenACS Version 5.1 or older [ad_acs_version]"
-    CrItem set content_item__new_args {
-      -name $name -parent_id $parent_id -creation_user $creation_user \
-          -creation_ip $creation_ip \
-          -item_subtype "content_item" -content_type $object_type \
-          -description $description -mime_type $mime_type -nls_language $nls_language \
-          -is_live f -storage_type $storage_type
-    }
-  }
-
   CrItem ad_instproc set_live_revision {-revision_id:required {-publish_status "ready"}} {
     @param revision_id
     @param publish_status one of 'live', 'ready' or 'production'
@@ -1078,9 +1058,14 @@ namespace eval ::xo::db {
         set title [expr {[my exists __title_prefix] ? 
                          "[my set __title_prefix] ($name)" : $name}]
       }
-      #my msg --[subst [[self class] set content_item__new_args]]
-      set item_id [eval ::xo::db::sql::content_item new \
-                       [[self class] set content_item__new_args]]
+
+      set item_id [::xo::db::sql::content_item new \
+                       -name $name -parent_id $parent_id -creation_user $creation_user \
+                       -creation_ip $creation_ip \
+                       -item_subtype "content_item" -content_type $object_type \
+                       -description $description -mime_type $mime_type -nls_language $nls_language \
+                       -is_live f -storage_type $storage_type -package_id $package_id -with_child_rels f]
+      
       if {$storage_type eq "file"} {
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }

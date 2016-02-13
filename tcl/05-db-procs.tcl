@@ -511,28 +511,10 @@ namespace eval ::xo::db {
   }
 
   #
-  # The view-insert operation is an operation inserting into a view as eg. in
+  # The default insert-view operation (different in postgres and oracle)
   #
-  #    insert into xowiki_form_pagei (...) values (...)
-  #
-  # Depending on the version of the CR and the driver, we need
-  # different calls to the driver. The default operation is "dml", but
-  # in the DB-postgres combo, we need 0or1row.
-  # Provide the appropriate db_* call for the view update. Earlier
-  # versions up to 5.3.0d1 used db_dml, newer versions (since around
-  # july 2006) have to use 0or1row, when the patch for deadlocks
-  # and duplicate items was applied...
-  #
-  apm_version_get -package_key acs-content-repository -array info
-  array get info
-  if {[apm_version_names_compare $info(version_name) 5.3.0d1] >= 1} {
-    ::xo::db::DB-postgresql instproc insert-view-operation {} { return 0or1row }
-  }
-  array unset info
-
-  # the default insert-view operation
   ::xo::db::Driver instproc insert-view-operation {} { return dml }
-
+  ::xo::db::DB-postgresql instproc insert-view-operation {} { return 0or1row }
 
   #
   # DB driver functions, optimized for PostgreSQL
