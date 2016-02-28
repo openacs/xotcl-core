@@ -71,10 +71,17 @@ ad_library {
       } {
       return ""
     }
-
     switch [llength $proc_spec] {
       1 {lassign [list "" ::nx::Object nsfproc $proc_spec] scope obj methodType method
-        if {![string match ::* $method]} {set method ::$method}
+        if {![string match ::* $method]} {
+          set method ::$method
+        }
+        #
+        # In case $proc_spec is a cmd, it has to be a nsfproc
+        #
+        if {[nsf::cmd::info type $method] ne "nsfproc"} {
+          return ""
+        }
       }
       3 {lassign $proc_spec obj methodType method; set scope ""}
       4 {lassign $proc_spec scope obj methodType method}
