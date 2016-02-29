@@ -371,7 +371,7 @@ if {$show_methods} {
 
 if {$show_variables && !$isnx} {
   set vars ""
-  foreach v [lsort [DO $object info vars]] {
+  foreach v [lsort [DO ::xo::getObjectProperty $object vars]] {
     if {[DO ::xo::getObjectProperty $object array-exists $v]} {
       append vars "$object array set $v [list [DO ::xo::getObjectProperty $object array-get $v]]\n"
     } else {

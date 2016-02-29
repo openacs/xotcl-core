@@ -910,6 +910,10 @@ proc ::xo::getObjectProperty {o what args} {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o set {*}$args]}
       return [$o eval [list set :[lindex $args 0]]]
     }
+    "vars" {
+      return [$o ::nsf::methods::object::info::vars]
+    }
+
     "isnxobject" {
       if {[info commands ::nsf::dispatch] ne "" && [info commands $o] ne ""} {
         return [::nsf::dispatch $o ::nsf::methods::object::info::hastype ::nx::Object]
