@@ -220,7 +220,7 @@ ad_library {
   }
 
   :public object method object_link {{-noimg:boolean off} scope obj} {
-    set link "<a href='[:object_url $scope $obj]'>"
+    set link "<a href='[ns_quotehtml [:object_url $scope $obj]]'>"
     if {$noimg} {
       return "$link$obj</a>"
     } else {
