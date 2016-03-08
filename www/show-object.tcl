@@ -444,7 +444,9 @@ if {!$as_img} {
   }
 }
 
-append output "</blockquote>\n"
+if {$isclass} {
+  append output "</blockquote>\n"
+}
 
 
 DO $s destroy
