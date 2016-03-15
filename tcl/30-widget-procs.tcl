@@ -206,6 +206,29 @@ namespace eval ::xo {
   # Localization
   #
 
+  #
+  # The following pair of functions implement a crude method for
+  # avoiding i16n substitutions. These are necessary, since xowiki
+  # provides all its markup finally as "content" that is currently
+  # internationalized without distinctions. However, sometimes
+  # (e.g. values in forms) should be presented without i18n
+  # processing. In such cases, the two functions below can be used to
+  # prevent such substitutions.
+  #
+  proc remove_escapes {text} {
+    regsub -all \x001# $text "#" text
+    return $text
+  }
+  
+  proc escape_message_keys {text} {
+    regsub -all {(\#[a-zA-Z0-9_:-]+\.[a-zA-Z0-9_:-]+)\#} $text "\\1\x001#" text
+    return $text
+  }
+
+  #
+  # xo::localize function
+  #
+
   set ::xo::acs_lang_url [apm_package_url_from_key acs-lang]admin
 
   proc localize {text {inline 0}} {

@@ -429,10 +429,12 @@ namespace eval ::xo {
     if { [lang::util::translator_mode_p] } {
       set text [::xo::localize $text 1]
     }
-    #my log "--after adp"
-    return $text
+    #my log "--after adp $text"
+
+    return [::xo::remove_escapes $text]
   }
-  
+
+        
   #ns_log notice [::xo::Package serialize]
 
 }
