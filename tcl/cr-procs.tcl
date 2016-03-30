@@ -48,8 +48,8 @@ namespace eval ::xo::db {
   #
 
   CrClass ad_proc get_object_type {
-    -item_id
-    {-revision_id 0}
+    -item_id:integer,required
+    {-revision_id:integer 0}
   } {
     Return the object type for an item_id or revision_id.
 
@@ -77,8 +77,8 @@ namespace eval ::xo::db {
   }
 
   CrClass ad_proc get_instance_from_db {
-    {-item_id 0}
-    {-revision_id 0}
+    {-item_id:integer 0}
+    {-revision_id:integer 0}
   } {
     Instantiate the live revision or the specified revision of an 
     CrItem. The XOTcl object is destroyed automatically on cleanup 

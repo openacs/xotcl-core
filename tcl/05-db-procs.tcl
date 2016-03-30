@@ -931,7 +931,7 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::Class ad_proc get_instance_from_db {
-    -id:required
+    -id:required,integer
   } {
     Create an XOTcl object from an acs_object_id. This method
     determines the type and initializes the object from the
