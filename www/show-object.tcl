@@ -5,14 +5,14 @@ ad_page_contract {
   @cvs-id $Id$
 } -query {
   {object:nohtml,trim ::xotcl::Object}
-  {show_methods:naturalnum 1}
-  {show_source:naturalnum 0}
-  {show_variables:naturalnum 0}
-  {as_img:boolean 0}
-  {with_children:boolean 0}
-  {with_instance_relations:boolean 0}
-  {above:naturalnum 1}
-  {below:naturalnum 2}
+  {show_methods:range(0|2),notnull 1}
+  {show_source:range(0|1),notnull 0}
+  {show_variables:range(0|1),notnull 0}
+  {as_img:boolean,notnull 0}
+  {with_children:boolean,notnull 0}
+  {with_instance_relations:boolean,notnull 0}
+  {above:naturalnum,notnull 1}
+  {below:naturalnum,notnull 2}
 } -properties {
   title:onevalue
   context:onevalue
