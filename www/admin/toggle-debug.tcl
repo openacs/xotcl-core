@@ -4,7 +4,7 @@ ad_page_contract {
     @creation-date ...
 } {
     {proc_spec ""}
-    {return_url "."}
+    {return_url:return_url "."}
 }
 
 if {![acs_user::site_wide_admin_p]} {
@@ -57,6 +57,9 @@ if {[info exists method]} {
 }
 set cmd [list {*}$scope ::nsf::method::property $obj {*}$modifier $method debug [expr {!$debug_p}]]
 ns_log notice "setting debug flag with cmd\n$cmd"
-ns_eval {*}$cmd
+if {[catch {ns_eval {*}$cmd} errorMsg] } {
+    ns_log notice "toggle-debug raised error: $errorMsg"
+}
+ns_log notice "calling return redirect to $return_url"
 
 ad_returnredirect $return_url
