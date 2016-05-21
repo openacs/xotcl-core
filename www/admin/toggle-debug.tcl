@@ -4,7 +4,7 @@ ad_page_contract {
     @creation-date ...
 } {
     {proc_spec ""}
-    {return_url:return_url "."}
+    {return_url:localurl "."}
 }
 
 if {![acs_user::site_wide_admin_p]} {
