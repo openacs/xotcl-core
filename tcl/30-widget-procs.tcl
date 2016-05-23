@@ -189,6 +189,12 @@ namespace eval ::xo::tdom {
     foreach o [my children] { $o render }
   }
 
+  ::xo::tdom::Object instproc CSRFToken {} {
+    if {[info exists ::__csrf_token]} {
+      ::html::input -type hidden -name __csrf_token -value [set ::__csrf_token] {}
+    }
+  }
+
 }
 
 
