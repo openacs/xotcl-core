@@ -189,7 +189,11 @@ namespace eval ::xo::tdom {
     foreach o [my children] { $o render }
   }
 
-  ::xo::tdom::Object instproc CSRFToken {} {
+  #
+  # General of HTML markup CSRF tokens in tdom contexts
+  #
+  namespace eval ::html {}
+  proc ::html::CSRFToken {} {
     if {[info exists ::__csrf_token]} {
       ::html::input -type hidden -name __csrf_token -value [set ::__csrf_token] {}
     }
@@ -355,7 +359,7 @@ namespace eval ::xo {
         next
         my render_localizer
       }
-  
+   
   #
   # for the time being, just a proc
   #
@@ -826,6 +830,7 @@ namespace eval ::xo::Table {
       html::input -type checkbox -name __bulkaction \
           -onclick "acs_ListCheckAll('$name', this.checked)" \
           -title "Mark/Unmark all rows"
+      ::html::CSRFToken
     }
   }
   TABLE::BulkAction instproc render-data {line} {
