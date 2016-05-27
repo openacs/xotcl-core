@@ -4,11 +4,17 @@ ad_page_contract {
   @author Gustaf Neumann
   @cvs-id $Id$
 } -query {
-  {all_classes:optional 0}
+  {all_classes:notnull 0}
 } -properties {
   title:onevalue
   context:onevalue
   output:onevalue
+} -validate {
+  check_enum -requires all_classes {
+    if {$all_classes ni {0 1}} {
+      ad_complain "value not in enumeration domain"
+    }
+  }
 }
 
 set title "XOTcl Classes Defined in Connection Threads"
