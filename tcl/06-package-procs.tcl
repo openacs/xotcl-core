@@ -251,7 +251,9 @@ namespace eval ::xo {
     set success 0
     if {$parameter_obj ne ""} {
       set value [$parameter_obj get -package_id $package_id]
-      if {[$parameter_obj set __success]} {return $value}
+      #ns_log notice "core: get_param for $attribute after GET: [$parameter_obj serialize] -> '$value'"
+      #if {$value ne "" || [$parameter_obj set __success]} {return $value}
+      return $value
     }
     return [parameter::get_global_value \
                    -package_key [my set package_key] \
