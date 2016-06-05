@@ -108,7 +108,10 @@ namespace eval ::xo {
     }
     
     #my log "--cc calling parser eval [self] __parse $parse_args"
-    [self] __parse {*}$parse_args
+    if {[catch {[self] __parse {*}$parse_args} errorMsg]} {
+      ad_return_complaint 1 [ns_quotehtml $errorMsg]
+      ad_script_abort
+    }
     #my msg "--cc qp [array get queryparm] // $actual_query"
   }
 
