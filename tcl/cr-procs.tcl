@@ -1163,10 +1163,7 @@ namespace eval ::xo::db {
                         content_revision__get_number(r.revision_id) as version_number " \
                  -from  "cr_items ci, cr_revisions r, acs_objects o" \
                  -where "ci.item_id = :page_id and r.item_id = ci.item_id and o.object_id = r.revision_id 
-             and exists (select 1 from acs_object_party_privilege_map m
-                         where m.object_id = r.revision_id
-                          and m.party_id = :user_id
-                          and m.privilege = 'read')" \
+                         and acs_permission__permission_p(r.revision_id, :user_id, 'read')" \
                  -orderby "r.revision_id desc"]
     
     ::xo::dc foreach revisions_select $sql {
