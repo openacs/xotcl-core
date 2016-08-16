@@ -535,6 +535,15 @@ namespace eval ::xo {
     #
     ns_log notice "ON DELETE $args"
     ::xo::broadcast clear
+
+    #
+    # Make sure, no handles are allocated any more. Otherwise, when
+    # the thread is reused, there would be a conflict, when the thread
+    # has already a handle associated but tries to obtain an
+    # additional handle.
+    #
+    db_release_unused_handles
+    
     set t0 [clock clicks -milliseconds]
     ::xo::system_stats recordtimes
     #
