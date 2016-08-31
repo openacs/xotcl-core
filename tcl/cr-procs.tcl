@@ -79,6 +79,7 @@ namespace eval ::xo::db {
   CrClass ad_proc get_instance_from_db {
     {-item_id:integer 0}
     {-revision_id:integer 0}
+    {-initialize:boolean true}
   } {
     Instantiate the live revision or the specified revision of an 
     CrItem. The XOTcl object is destroyed automatically on cleanup 
@@ -88,7 +89,7 @@ namespace eval ::xo::db {
   } { 
     set object_type [my get_object_type -item_id $item_id -revision_id $revision_id]
     set class [::xo::db::Class object_type_to_class $object_type]
-    return [$class get_instance_from_db -item_id $item_id -revision_id $revision_id]
+    return [$class get_instance_from_db -item_id $item_id -revision_id $revision_id -initialize $initialize]
   }
 
   CrClass ad_proc get_parent_id {
@@ -417,7 +418,7 @@ namespace eval ::xo::db {
     -item_id:required
     {-revision_id 0}
     -object:required
-    {-initialize true}
+    {-initialize:boolean true}
   } {
     Load a content item into the specified object. If revision_id is
     provided, the specified revision is returned, otherwise the live
@@ -510,6 +511,7 @@ namespace eval ::xo::db {
   CrClass ad_instproc get_instance_from_db {
     {-item_id 0}
     {-revision_id 0}
+    {-initialize:boolean true}
   } { 
     Retrieve either the live revision or a specified revision
     of a content item with all attributes into a newly created object.
@@ -524,7 +526,8 @@ namespace eval ::xo::db {
     set object ::[expr {$revision_id ? $revision_id : $item_id}]
     if {![my isobject $object]} {
       my fetch_object -object $object \
-          -item_id $item_id -revision_id $revision_id
+          -item_id $item_id -revision_id $revision_id \
+          -initialize $initialize
       $object destroy_on_cleanup
     }
     return $object
@@ -1406,6 +1409,7 @@ namespace eval ::xo::db {
   ::xo::db::CrFolder ad_proc get_instance_from_db {
     {-item_id 0}
     {-revision_id 0}
+    {-initialize:boolean true}
   } {
     The "standard" get_instance_from_db methods return objects following the
     naming convention "::<acs_object_id>", e.g. ::1234
@@ -1420,7 +1424,7 @@ namespace eval ::xo::db {
   } {
     set object ::cr_folder$item_id
     if {![my isobject $object]} {
-      my fetch_object -object $object -item_id $item_id
+      my fetch_object -object $object -item_id $item_id -initialize $initialize
       $object destroy_on_cleanup
     }
     return $object
@@ -1446,7 +1450,7 @@ namespace eval ::xo::db {
     -item_id:required
     {-revision_id 0}
     -object:required
-    {-initialize true}
+    {-initialize:boolean true}
   } {
     We overwrite the default fetch_object method here.
     We join acs_objects, cr_items and cr_folders and fetch
@@ -1536,7 +1540,7 @@ namespace eval ::xo::db {
     -item_id:required
     {-revision_id 0}
     -object:required
-    {-initialize true}
+    {-initialize:boolean true}
   } {
     set serialized_object [ns_cache eval xotcl_object_cache $object {
       #my log "--CACHE true fetch [self args], call shadowed method [self next]" 
