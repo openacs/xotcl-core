@@ -955,8 +955,6 @@ namespace eval ::xo {
   #
   # templating and CSS
   #
-  set use_template_head 1
-
   Class create Page
   Page proc requireCSS {{-order 1} name} {
     set ::_xo_need_css($name) [expr {[array size ::_xo_need_css]+1000*$order}]
@@ -969,12 +967,7 @@ namespace eval ::xo {
     set ::_xo_need_js($name)  1
   }
   Page proc requireLink {-rel -type -title -href} {
-    if {$::xo::use_template_head} {
-      template::head::add_link -rel $rel -href $href -type $type -title $title
-    } else {
-      set key "rel='[ns_quotehtml $rel]' type='[ns_quotehtml $type]' title='[ns_quotehtml $title]' href='[ns_quotehtml $href]'"
-      set ::_xo_need_link($key) 1
-    }
+    template::head::add_link -rel $rel -href $href -type $type -title $title
   }
   Page proc set_property {name element value} {
     set ::xo_property_${name}($element) $value
@@ -998,59 +991,31 @@ namespace eval ::xo {
   }
 
   Page proc header_stuff {} {
-    set result ""
-    if {$::xo::use_template_head} {
-      foreach style [my sort_keys_by_value [array get ::_xo_need_style]] {
-        template::head::add_style -style $style
-      }
-      set count 10
-      foreach file [my sort_keys_by_value [array get ::_xo_need_css]] {
-        template::head::add_css -href $file -media all -order [incr count]
-      }
-      if {[info exists ::_xo_js_order]} {
-        set statements ""
-        set order 10
-        foreach file $::_xo_js_order {
-          if {[string match "*;*" $file]} {
-            # it is not a file, but some javascipt statements
-            #append statements [string map {< "&lt;" > "&gt;"} $file] \n
-            append statements $file \n
-          } else {
-            template::head::add_script -src $file -type text/javascript -order [incr order]
-          }
-        }
-        if {$statements ne ""} {
-          template::head::add_script -script $statements -type text/javascript -order [incr order]
-        }
-      }
 
-      
-    } else {
-      foreach link [array names ::_xo_need_link] {
-        append result "<link $link>\n"
-      }
-      foreach style [my sort_keys_by_value [array get ::_xo_need_style]] {
-        append result "<style type='text/css'>$style</style>\n"
-      }
-      foreach file [my sort_keys_by_value [array get ::_xo_need_css]] {
-        append result "<link type='text/css' rel='stylesheet' href='$file' media='all' >\n"
-      }
-      if {[info exists ::_xo_js_order]} {
-        set statements ""
-        foreach file $::_xo_js_order {
-          if {[string match "*;*" $file]} {
-            # it is not a file, but some javascipt statements
-            append statements $file \n
-          } else {
-            append result "<script src='$file' type='text/javascript'></script>\n"
-          }
+    foreach style [my sort_keys_by_value [array get ::_xo_need_style]] {
+      template::head::add_style -style $style
+    }
+    set count 10
+    foreach file [my sort_keys_by_value [array get ::_xo_need_css]] {
+      template::head::add_css -href $file -media all -order [incr count]
+    }
+    if {[info exists ::_xo_js_order]} {
+      set statements ""
+      set order 10
+      foreach file $::_xo_js_order {
+        if {[string match "*;*" $file]} {
+          # it is not a file, but some javascipt statements
+          #append statements [string map {< "&lt;" > "&gt;"} $file] \n
+          append statements $file \n
+        } else {
+          template::head::add_script -src $file -type text/javascript -order [incr order]
         }
-        if {$statements ne ""} {
-          append result \n "<script type='text/javascript' >$statements</script>\n"
-        }
+      }
+      if {$statements ne ""} {
+        template::head::add_script -script $statements -type text/javascript -order [incr order]
       }
     }
-    return $result
+    return ""
   }
 }
 ::xo::library source_dependent
