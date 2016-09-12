@@ -11,7 +11,7 @@ namespace eval ::Generic {
   #
   # Form template class
   #
-  Class Form -parameter {
+  Class create Form -parameter {
     fields 
     data
     {package_id ""}

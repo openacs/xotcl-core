@@ -167,7 +167,7 @@ if {[string match "1.3.*" $version]} {
   ns_log notice "-- softrecreate"
   ::xotcl::configure softrecreate true
 
-  Class RR -instproc recreate args { 
+  Class create RR -instproc recreate args { 
     my log "-- [self args]"; next
   } -instproc create args { 
     my log "-- [self args]"; next
