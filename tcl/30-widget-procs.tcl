@@ -638,13 +638,18 @@ namespace eval ::xo::Table {
 
       html::ul -class compact {
         foreach ba $bulkactions {
+          set id [::xowiki::Includelet html_id $ba]
           html::li {
-            html::a -title [$ba tooltip] -class button -href # \
-                -onclick "acs_ListBulkActionClick('$name','[$ba url]'); return false;" \
+            html::a -title [$ba tooltip] -id $id -class button -href # \
                 {
                   html::t [$ba label]
                 }
           }
+          template::add_body_script -script [subst {
+            document.getElementById('$id').addEventListener('click', function (event) {
+              acs_ListBulkActionClick('$name','[$ba url]');
+            }, false);
+          }]
         }
       }
     }
@@ -827,12 +832,17 @@ namespace eval ::xo::Table {
     set name [my name]
     #my msg [my serialize]
     html::th -class list { 
-      html::input -type checkbox -name __bulkaction \
-          -onclick "acs_ListCheckAll('$name', this.checked)" \
+      html::input -type checkbox -name __bulkaction -id __bulkaction \
           -title "Mark/Unmark all rows"
       ::html::CSRFToken
     }
+    template::add_body_script -script [subst {
+      document.getElementById('__bulkaction').addEventListener('click', function (event) {
+        acs_ListCheckAll('$name', this.checked);
+      }, false);
+    }]
   }
+  
   TABLE::BulkAction instproc render-data {line} {
     #my msg [my serialize]
     set name [my name]
