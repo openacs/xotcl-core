@@ -116,9 +116,10 @@ ad_library {
       #
       # jquery is just needed for the used ajax call
       #
-      template::head::add_javascript -src https://code.jquery.com/jquery-1.11.3.min.js
-      
-      template::add_script -script {
+      template::head::add_javascript -src //code.jquery.com/jquery-1.11.3.min.js
+      security::csp::require script-src code.jquery.com
+
+      template::add_body_script -script {
         function ajax_submit(form) {
           console.log(form);
           $.ajax({
@@ -137,6 +138,10 @@ ad_library {
     #
     template::head::add_css -href https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css
     template::head::add_javascript -src https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js
+    
+    security::csp::require style-src maxcdn.bootstrapcdn.com
+    security::csp::require script-src maxcdn.bootstrapcdn.com
+
     template::head::add_css -href "/resources/xotcl-core/titatoggle/titatoggle-dist.css"
     #
     # Return an HTML snippet with a form and the computed form-ID
@@ -146,13 +151,21 @@ ad_library {
       <form id="$form_id" class="form" method="POST" action="/xotcl/admin/toggle-debug">
       <div class="checkbox checkbox-slider--b-flat">
       <label class="checkbox-inline">
-      <input class="debug form-control" name="debug" type="checkbox" $state onclick="ajax_submit(this.form);"><span>Debug</span>
+      <input class="debug form-control" id="$form_id-control" name="debug" type="checkbox" $state><span>Debug</span>
       <input name="proc_spec" type="hidden" value="$proc_spec">
       <input name="return_url" type="hidden" value="[ns_quotehtml [ad_return_url]]">
       </label>
       </div>
       </form>
     }]
+
+    template::add_body_script -script [subst {
+      document.getElementById('$form_id-control').addEventListener('click', function (event) {
+        event.preventDefault();
+        mode_button_ajax_submit(this.form);
+      });
+    }
+
     return $html
   }
 
