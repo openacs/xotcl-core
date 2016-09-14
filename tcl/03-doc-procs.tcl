@@ -162,7 +162,7 @@ ad_library {
     template::add_body_script -script [subst {
       document.getElementById('$form_id-control').addEventListener('click', function (event) {
         event.preventDefault();
-        mode_button_ajax_submit(this.form);
+        ajax_submit(this.form);
       });
     }]
 
