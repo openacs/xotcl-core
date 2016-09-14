@@ -328,9 +328,9 @@ if {$show_methods} {
       }
       set out [local_api_documentation -proc_type $type $show_methods $scope $object proc $m]
       if {$out ne ""} {
-        ns_log notice "CALL [list api_src_doc $out $show_source $scope $object proc $m]"
+        #ns_log notice "CALL [list api_src_doc $out $show_source $scope $object proc $m]"
         append method_output [api_src_doc $out $show_source $scope $object proc $m]
-        ns_log notice "CALL [list api_src_doc $out $show_source $scope $object proc $m] DONE"
+        #ns_log notice "CALL [list api_src_doc $out $show_source $scope $object proc $m] DONE"
       }
     }
     if {$method_output ne ""} {
