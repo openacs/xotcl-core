@@ -121,7 +121,7 @@ ad_library {
 
       template::add_body_script -script {
         function ajax_submit(form) {
-          console.log(form);
+          //console.log(form);
           $.ajax({
             type: "POST",
             url: "/xotcl/admin/toggle-debug",
@@ -141,6 +141,7 @@ ad_library {
     
     security::csp::require style-src maxcdn.bootstrapcdn.com
     security::csp::require script-src maxcdn.bootstrapcdn.com
+    security::csp::require font-src maxcdn.bootstrapcdn.com
 
     template::head::add_css -href "/resources/xotcl-core/titatoggle/titatoggle-dist.css"
     #
@@ -161,7 +162,6 @@ ad_library {
 
     template::add_body_script -script [subst {
       document.getElementById('$form_id-control').addEventListener('click', function (event) {
-        event.preventDefault();
         ajax_submit(this.form);
       });
     }]
