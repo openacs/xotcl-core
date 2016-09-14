@@ -137,7 +137,7 @@ ad_library {
     # Add the required js and CSS. We use here bootstrap + titatoggle. 
     #
     template::head::add_css -href https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css
-    template::head::add_javascript -src https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js
+    template::head::add_javascript -src https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js -order 1
     
     security::csp::require style-src maxcdn.bootstrapcdn.com
     security::csp::require script-src maxcdn.bootstrapcdn.com
