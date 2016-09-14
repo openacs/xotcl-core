@@ -164,7 +164,7 @@ ad_library {
         event.preventDefault();
         mode_button_ajax_submit(this.form);
       });
-    }
+    }]
 
     return $html
   }
