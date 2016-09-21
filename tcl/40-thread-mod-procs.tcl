@@ -101,7 +101,7 @@ Class create ::xotcl::THREAD \
     -parameter {
       {persistent 0}
       {lightweight 0}
-      {exithandler {my log "EXITHANDLER of slave thread SELF [pid]"}}
+      {exithandler {ns_log notice "EXITHANDLER of slave thread SELF [pid]"}}
     }
 
 ::xotcl::THREAD instproc check_blueprint {} {
