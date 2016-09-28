@@ -446,11 +446,11 @@ namespace eval ::Generic {
     set elements [concat $elements [my set elements]]
     if {!$no_delete_p} {
       set title [_ xotcl-core.delete_item]
-      set confirm "[_ acs-subsite.Delete]?"
+      template::add_confirm_handler -class acs-confirm -message [_ acs-subsite.Delete]?
       lappend elements \
 	delete [list \
 	    link_url_col delete_url \
-            link_html [list title $title onClick "return(confirm('${confirm}'));"] \
+            link_html [list title $title class acs-confirm] \
 	    display_template [list <img src="/resources/acs-subsite/Delete16.gif" width="16" height="16" border="0">] \
 	    sub_class narrow]
     }
