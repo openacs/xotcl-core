@@ -11,7 +11,7 @@ namespace eval ::Generic {
   #
   # Form template class
   #
-  Class Form -parameter {
+  Class create Form -parameter {
     fields 
     data
     {package_id ""}
@@ -265,7 +265,7 @@ namespace eval ::Generic {
   #
   # List template class
   #
-  Class List -parameter {
+  Class create List -parameter {
     {actions ""}
     {name {[namespace tail [self]]}}
     {bulk_actions ""}
