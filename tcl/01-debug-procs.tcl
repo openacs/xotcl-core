@@ -569,6 +569,14 @@ namespace eval ::xo {
     set t1 [clock clicks -milliseconds]
     ns_log notice "ON DELETE done ([expr {$t1-$t0}]ms)"
   }
+
+  proc ::xo::stats {{msg ""}} {
+    set xobjs   [llength [::xotcl::Object info instances -closure]]
+    set nobjs   [llength [::nx::Object info instances  -closure]]
+    set tmpObjs [llength [info commands ::nsf::__#*]]
+    set tdoms   [llength [concat [info commands domNode0*] [info commands domDoc0x*]]]
+    ns_log notice "xo::stats $msg: current objects xotcl $xobjs nx $nobjs tmp $tmpObjs tDOM $tdoms"
+  }
   
   #
   # ::xo::Module is very similar to a plain tcl namespace: When it is
