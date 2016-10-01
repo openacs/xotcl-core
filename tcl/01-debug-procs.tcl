@@ -614,7 +614,10 @@ namespace eval ::xo {
     @param value      the new value
   } {
     set package_key [apm_package_key_from_id $package_id]
-    if {$package_key eq "xotcl-core" && $parameter eq "NslogRedirector"} {
+    if {$package_key eq "xotcl-core"
+        && $parameter eq "NslogRedirector"
+        && [info commands ::xo::ns_log_redirector_manager] ne ""
+      } {
       ::xo::ns_log_redirector_manager set_level $value
       #
       # Update the blueprint to reflect the parameter change
