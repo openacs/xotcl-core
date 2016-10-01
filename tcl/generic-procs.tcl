@@ -641,7 +641,7 @@ namespace eval ::Generic {
     my multirow
 
     # Don't put handlers directly on the HTML, but rather define them in javascript afterwards
-    template::add_acs_confirm_handler -CSSclass acs-confirm -message [_ acs-subsite.Delete]?
+    template::add_confirm_handler -CSSclass acs-confirm -message [_ acs-subsite.Delete]?
   }
 
   List instproc to_csv {} {
