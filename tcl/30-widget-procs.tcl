@@ -645,11 +645,10 @@ namespace eval ::xo::Table {
                   html::t [$ba label]
                 }
           }
-          template::add_body_script -script [subst {
-            document.getElementById('$id').addEventListener('click', function (event) {
-              acs_ListBulkActionClick('$name','[$ba url]');
-            }, false);
-          }]
+          template::add_event_listener \
+              -id $id \
+              -preventdefault=false \
+              -script [subst {acs_ListBulkActionClick('$name','[$ba url]');}]
         }
       }
     }
