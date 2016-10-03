@@ -165,8 +165,14 @@ if {[info exists ::acs::preferdbi]} {
   }
 }
 
-::xotcl::Object instproc serialize {} {
-  ::Serializer deepSerialize [self]
+if {[::package vcompare [package require xotcl::serializer] 2.0] < -1} {
+  #
+  # The serializer of xotcl/2.0 registers already a method "serialize"
+  # on Object. Don't mess with that.
+  #
+  ::xotcl::Object instproc serialize {} {
+    ::Serializer deepSerialize [self]
+  }
 }
 
 ::xotcl::Object instproc www-show-object {} {
