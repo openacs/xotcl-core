@@ -463,8 +463,8 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::DB instproc foreach {{-dbn ""} {-bind ""} qn sql body} {
+    if {$sql eq ""} {set sql [my get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
-    set qn [uplevel [list [self] qn $qn]]
     uplevel [list ::db_foreach -dbn $dbn $qn $sql $body {*}$bindOpt]
   }
 
