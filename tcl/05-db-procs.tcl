@@ -306,7 +306,8 @@ namespace eval ::xo::db {
   # foreach based on "dbi_rows + results avlists"
   #
   ::xo::db::DBI instproc foreach {{-dbn ""} {-bind ""} qn sql body} {
-    if {$sql eq ""} {set sql [my get_sql $qn]}
+    #if {$sql eq ""} {set sql [my get_sql $qn]}
+    if {$sql eq ""} {set qn [uplevel [list [self] qn $qn]]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     set avlists [my uplevel [list dbi_rows -result avlists {*}$bindOpt -- $sql]]
     foreach avlist $avlists {
@@ -463,8 +464,9 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::DB instproc foreach {{-dbn ""} {-bind ""} qn sql body} {
-    if {$sql eq ""} {set sql [my get_sql $qn]}
+    #if {$sql eq ""} {set sql [my get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    set qn [uplevel [list [self] qn $qn]]
     uplevel [list ::db_foreach -dbn $dbn $qn $sql $body {*}$bindOpt]
   }
 
