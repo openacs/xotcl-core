@@ -226,12 +226,12 @@ namespace eval ::xo {
   # prevent such substitutions.
   #
   proc remove_escapes {text} {
-    regsub -all \x001# $text "#" text
+    regsub -all \x01# $text "#" text
     return $text
   }
   
   proc escape_message_keys {text} {
-    regsub -all {(\#[a-zA-Z0-9_:-]+\.[a-zA-Z0-9_:-]+)\#} $text "\\1\x001#" text
+    regsub -all {(\#[a-zA-Z0-9_:-]+\.[a-zA-Z0-9_:-]+)\#} $text "\\1\x01#" text
     return $text
   }
 
@@ -247,21 +247,21 @@ namespace eval ::xo {
     if {![$obj exists __localizer]} {
       $obj set __localizer [list]
     }
-    if {[string first \x002 $text] == -1} {
+    if {[string first \x02 $text] == -1} {
       return $text
     } else {
       set return_text ""
       if {$inline} {
         # Attempt to move all message keys outside of tags
-        while { [regsub -all {(<[^>]*)(\x002\(\x001[^\x001]*\x001\)\x002)([^>]*>)} $text {\2\1\3} text] } {}
+        while { [regsub -all {(<[^>]*)(\x02\(\x01[^\x01]*\x01\)\x02)([^>]*>)} $text {\2\1\3} text] } {}
         
         # Attempt to move all message keys outside of <select>...</select> statements
-        regsub -all -nocase {(<option\s[^>]*>[^<]*)(\x002\(\x001[^\x001]*\x001\)\x002)([^<]*</option[^>]*>)} $text {\2\1\3} text
+        regsub -all -nocase {(<option\s[^>]*>[^<]*)(\x02\(\x01[^\x01]*\x01\)\x02)([^<]*</option[^>]*>)} $text {\2\1\3} text
         
-        while { [regsub -all -nocase {(<select[^>]*>[^<]*)(\x002\(\x001[^\x001]*\x001\)\x002)} $text {\2\1} text] } {}
+        while { [regsub -all -nocase {(<select[^>]*>[^<]*)(\x02\(\x01[^\x01]*\x01\)\x02)} $text {\2\1} text] } {}
       }
 
-      while {[regexp {^([^\x002]*)\x002\(\x001([^\x001]*)\x001\)\x002(.*)$} $text _ \
+      while {[regexp {^([^\x02]*)\x02\(\x01([^\x01]*)\x01\)\x02(.*)$} $text _ \
                   before key text]} {
         append return_text $before
         lassign [split $key .] package_key message_key
