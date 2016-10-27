@@ -948,7 +948,13 @@ namespace eval ::xo::db {
       [my info class] instvar storage_type
       set revision_id [xo::dc nextval acs_object_id_seq]
       if {$storage_type eq "file"} {
-        my instvar import_file
+        my instvar import_file mime_type name
+        # Get the mime_type from the file, eventually creating a new
+        # one if it's unrecognized.
+        set mime_type [cr_check_mime_type \
+                           -mime_type $mime_type \
+                           -filename  $name \
+                           -file      $import_file]
         set text [cr_create_content_file $item_id $revision_id $import_file]
       }
       ::xo::dc [::xo::dc insert-view-operation] revision_add \
@@ -1062,12 +1068,29 @@ namespace eval ::xo::db {
                          "[my set __title_prefix] ($name)" : $name}]
       }
 
+      if {$storage_type eq "file"} {
+        # Get the mime_type from the file, eventually creating a new
+        # one if it's unrecognized.
+        set mime_type [cr_check_mime_type \
+                           -mime_type $mime_type \
+                           -filename  $name \
+                           -file      $import_file]
+      }
+      
       set item_id [::xo::db::sql::content_item new \
-                       -name $name -parent_id $parent_id -creation_user $creation_user \
-                       -creation_ip $creation_ip \
-                       -item_subtype "content_item" -content_type $object_type \
-                       -description $description -mime_type $mime_type -nls_language $nls_language \
-                       -is_live f -storage_type $storage_type -package_id $package_id -with_child_rels f]
+                       -name            $name \
+                       -parent_id       $parent_id \
+                       -creation_user   $creation_user \
+                       -creation_ip     $creation_ip \
+                       -item_subtype    "content_item" \
+                       -content_type    $object_type \
+                       -description     $description \
+                       -mime_type       $mime_type \
+                       -nls_language    $nls_language \
+                       -is_live         f \
+                       -storage_type    $storage_type \
+                       -package_id      $package_id \
+                       -with_child_rels f]
       
       if {$storage_type eq "file"} {
         set text [cr_create_content_file $item_id $revision_id $import_file]
