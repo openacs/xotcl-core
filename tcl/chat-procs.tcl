@@ -3,38 +3,49 @@ ad_library {
 
   @creation-date 2006-02-02
   @author Gustaf Neumann
-  @cvs-id $Id$  
+  @cvs-id $Id$
 }
 
 namespace eval ::xo {
   Class create Message -parameter {time user_id msg color}
   Class create Chat -superclass ::xo::OrderedComposite \
       -parameter {
-        chat_id 
-        user_id 
-        session_id 
+        chat_id
+        user_id
+        session_id
         {mode default}
-        {encoder urlencode} 
-        {timewindow 600} 
+        {encoder urlencode}
+        {timewindow 600}
         {sweepinterval 599}
+        {login_messages_p t}
+        {logout_messages_p t}
       }
 
   Chat instproc init {} {
     my instvar array
     # my log "-- "
     my set now [clock clicks -milliseconds]
-    if {![my exists user_id]}    {my set user_id [ad_conn user_id]}
-    if {![my exists session_id]} {my set session_id [ad_conn session_id]}
+    if {![my exists user_id]} {
+      my set user_id [ad_conn user_id]
+    }
+    if {![my exists session_id]} {
+      my set session_id [ad_conn session_id]
+    }
     set cls [my info class]
     set array $cls-[my set chat_id]
     if {![nsv_exists $cls initialized]} {
       my log "-- initialize $cls"
       $cls initialize_nsvs
       ::xo::clusterwide nsv_set $cls initialized \
-          [ad_schedule_proc -thread "t" [my sweepinterval] $cls sweep_all_chats]
+          [ad_schedule_proc \
+               -thread "t" [my sweepinterval] $cls sweep_all_chats]
     }
-    if {![nsv_exists $array-seen newest]} {::xo::clusterwide nsv_set $array-seen newest 0}
-    if {![nsv_exists $array-color idx]}   {::xo::clusterwide nsv_set $array-color idx 0}
+    if {![nsv_exists $array-seen newest]} {
+      ::xo::clusterwide nsv_set $array-seen newest 0
+    }
+    if {![nsv_exists $array-color idx]} {
+      ::xo::clusterwide nsv_set $array-color idx 0
+    }
     if {[my user_id] != 0 || [my session_id] != 0} {
       my init_user_color
     }
@@ -44,8 +55,9 @@ namespace eval ::xo {
 
   Chat instproc register_nsvs {msg_id user_id msg color secs} {
     my instvar array now
+    # Tell the system we are back again, in case we were auto logged out
     if { ![nsv_exists $array-login $user_id] } {
-      ::xo::clusterwide nsv_set $array-login $user_id $secs
+      ::xo::clusterwide nsv_set $array-login $user_id [clock seconds]
     }
     ::xo::clusterwide nsv_set $array $msg_id [list $now $secs $user_id $msg $color]
     ::xo::clusterwide nsv_set $array-seen newest $now
@@ -58,12 +70,19 @@ namespace eval ::xo {
     my instvar array now
     set user_id [expr {[info exists uid] ? $uid : [my set user_id]}]
     set color   [my user_color $user_id]
+    # apisano: the vanilla chat you can include in a xowiki::Object
+    # page is not able to deliver messages like '%'. Usage by the chat
+    # package is fine, but probably something should be done to have a
+    # consistent quoting of special chars.  This commented line is not
+    # ok, because would corrupt some chars in the chat package, which
+    # is our main usage.
+    # set msg [my encode $msg]
     set msg     [ns_quotehtml $msg]
-    my log "-- msg=$msg"
-    
-    if {$get_new 
-        && [info commands ::thread::mutex] ne "" 
-        && [info commands ::bgdelivery] ne ""} { 
+    # my log "-- msg=$msg"
+
+    if {$get_new
+        && [info commands ::thread::mutex] ne ""
+        && [info commands ::bgdelivery] ne ""} {
       # we could use the streaming interface
       my broadcast_msg [Message new -volatile -time [clock seconds] \
                             -user_id $user_id -msg $msg -color $color]
@@ -76,20 +95,20 @@ namespace eval ::xo {
   Chat instproc current_message_valid {} {
     expr { [my exists user_id] && [my set user_id] != -1 }
   }
-  
+
   Chat instproc active_user_list {} {
     nsv_array get [my set array]-login
   }
-  
+
   Chat instproc nr_active_users {} {
     expr { [llength [nsv_array get [my set array]-login]] / 2 }
   }
-  
+
   Chat instproc last_activity {} {
     if { ![nsv_exists [my set array]-seen last] } { return "-" }
     return [clock format [nsv_get [my set array]-seen last] -format "%d.%m.%y %H:%M:%S"]
   }
-  
+
   Chat instproc check_age {key ago} {
     my instvar array timewindow
     if {$ago > $timewindow} {
@@ -120,7 +139,7 @@ namespace eval ::xo {
     }
     my render
   }
-  
+
   Chat instproc get_all {} {
     my instvar array now session_id
     foreach {key value} [nsv_array get $array] {
@@ -135,35 +154,32 @@ namespace eval ::xo {
   }
 
   Chat instproc sweeper {} {
-    my instvar array now
+    my instvar array now logout_messages_p
     my log "--core-chat starting"
     foreach {user timestamp} [nsv_array get $array-last-activity] {
       ns_log Notice "--core-chat at user $user with $timestamp"
       set ago [expr {($now - $timestamp) / 1000}]
       ns_log Notice "--core-chat Checking: now=$now, timestamp=$timestamp, ago=$ago"
       # was 1200
-      if {$ago > 300} { 
-        my add_msg -get_new false -uid $user "auto logout" 
-        nsv_unset $array-last-activity $user 
-        nsv_unset $array-login $user
-        nsv_unset $array-color $user
+      if {$ago > 300} {
+        my logout -user_id $user -msg "auto logout"
         catch {::bgdelivery do ::Subscriber sweep chat-[my chat_id]}
       }
     }
     my log "-- ending"
   }
 
-  Chat instproc logout {} {
-    my instvar array user_id
+  Chat instproc logout {{-user_id ""} {-msg ""}} {
+    set user_id [expr {$user_id ne "" ? $user_id : [my set user_id]}]
     ns_log Notice "--core-chat User $user_id logging out of chat"
-    my add_msg -get_new false [_ chat.has_left_the_room].
-    catch {
-      # do not try to clear nsvs, if they are not available
-      # this situation could occur after a server restart, after which the user tries to leave the room
-      ::xo::clusterwide nsv_unset $array-last-activity $user_id
-      ::xo::clusterwide nsv_unset $array-login $user_id
-      ::xo::clusterwide nsv_unset $array-color $user_id
+    if {[my set logout_messages_p]} {
+      if {$msg eq ""} {set msg [_ chat.has_left_the_room].}
+      my add_msg -get_new false $msg
     }
+    my instvar array
+    ::xo::clusterwide nsv_unset -nocomplain $array-login         $user_id
+    ::xo::clusterwide nsv_unset -nocomplain $array-color         $user_id
+    ::xo::clusterwide nsv_unset -nocomplain $array-last-activity $user_id
   }
 
   Chat instproc init_user_color {} {
@@ -178,7 +194,7 @@ namespace eval ::xo {
       ::xo::clusterwide nsv_incr $array-color idx
     }
   }
-  
+
   Chat instproc get_users {} {
     set output ""
     foreach {user_id timestamp} [my active_user_list] {
@@ -187,10 +203,10 @@ namespace eval ::xo {
         set userlink  [my user_link -user_id $user_id]
         append output "<TR><TD class='user'>$userlink</TD><TD class='timestamp'>$diff</TD></TR>\n"
       }
-    }  
+    }
     return $output
   }
-  
+
   Chat instproc user_active {user_id} {
     my instvar array
     # was the user already active?
@@ -200,15 +216,20 @@ namespace eval ::xo {
 
   Chat instproc login {} {
     my log "--chat login"
-    my instvar user_id
-    if {![my user_active $user_id]} {
+    my instvar array user_id now
+    if {[my set login_messages_p] && ![my user_active $user_id]} {
       my add_msg -get_new false [_ xotcl-core.has_entered_the_room]
+    } elseif {![nsv_exists $array-login $user_id]} {
+      # give some proof of our presence to the chat system when we
+      # don't issue the login message
+      ::xo::clusterwide nsv_set $array-login $user_id [clock seconds]
+      ::xo::clusterwide nsv_set $array-last-activity $user_id $now
     }
     my encoder noencode
-    #my log "--c setting session_id [my set session_id]: [my set now]"
+    my log "--c setting session_id [my set session_id]: $now"
     return [my get_all]
   }
-  
+
   Chat instproc user_color { user_id } {
     my instvar array
     if { ![nsv_exists $array-color $user_id] } {
@@ -222,7 +243,7 @@ namespace eval ::xo {
     acs_user::get -user_id $user_id -array user
     return [expr {$user(screen_name) ne "" ? $user(screen_name) : $user(name)}]
   }
-  
+
   Chat instproc user_link { -user_id -color } {
     if {$user_id > 0} {
       set name [my user_name $user_id]
@@ -235,17 +256,17 @@ namespace eval ::xo {
       set creator "Nobody"
     } else {
       set creator "System"
-    }  
-    return [my encode $creator]  
+    }
+    return [my encode $creator]
   }
-  
+
   Chat instproc urlencode   {string} {ns_urlencode $string}
   Chat instproc noencode    {string} {set string}
   Chat instproc encode      {string} {my [my encoder] $string}
   Chat instproc json_encode {string} {
     string map [list \n \\n {"} {\"} ' {\'}] $string"
   }
-                
+
   Chat instproc json_encode_msg {msg} {
     set old [my encoder]
     my encoder noencode ;# just for user_link
@@ -277,15 +298,15 @@ namespace eval ::xo {
    Chat instproc subscribe {-uid} {
      set user_id [expr {[info exists uid] ? $uid : [my set user_id]}]
      set color [my user_color $user_id]
-     bgdelivery subscribe chat-[my chat_id] "" [my mode] 
-     if {![my user_active $user_id]} {
-       my broadcast_msg [Message new -volatile -time [clock seconds] \
-                             -user_id $user_id -color $color \
-                             -msg [_ xotcl-core.has_entered_the_room] ]
+     bgdelivery subscribe chat-[my chat_id] "" [my mode]
+     if {[my set login_messages_p] && ![my user_active $user_id]} {
+       # my broadcast_msg [Message new -volatile -time [clock seconds] \
+       #                       -user_id $user_id -color $color \
+       #                       -msg [_ xotcl-core.has_entered_the_room] ]
      }
      #my get_all
    }
-                
+
    Chat instproc render {} {
      my orderby time
      set result "<div class='messages'>\n"
@@ -296,7 +317,7 @@ namespace eval ::xo {
        set timelong  [clock format [$child time]]
        set timeshort [clock format [$child time] -format {[%H:%M:%S]}]
        set userlink  [my user_link -user_id $user_id -color $color]
-       
+
        append result "<p class='line'><span class='timestamp'>$timeshort</span> " \
                         "<span class='user'>$userlink</span> " \
                         "<span class='message'>[my encode $msg]</span></p>\n"
@@ -319,22 +340,22 @@ namespace eval ::xo {
      }
      my log "-- ending"
    }
-                
+
    ChatClass method initialize_nsvs {} {
      # read the last_activity information at server start into a nsv array
      ::xo::dc foreach get_rooms {
-       select room_id, to_char(max(creation_date),'HH24:MI:SS YYYY-MM-DD') as last_activity 
+       select room_id, to_char(max(creation_date),'HH24:MI:SS YYYY-MM-DD') as last_activity
        from chat_msgs group by room_id
      } {
        ::xo::clusterwide nsv_set [self]-$room_id-seen last [clock scan $last_activity]
      }
    }
-                
+
    ChatClass method flush_messages {-chat_id:required} {
      set array "[self]-$chat_id"
-     ::xo::clusterwide nsv_unset $array
-     ::xo::clusterwide nsv_unset $array-seen
-     ::xo::clusterwide nsv_unset $array-last-activity
+     ::xo::clusterwide nsv_unset -nocomplain $array
+     ::xo::clusterwide nsv_unset -nocomplain $array-seen
+     ::xo::clusterwide nsv_unset -nocomplain $array-last-activity
    }
 
    ChatClass method init {} {
