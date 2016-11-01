@@ -14,7 +14,7 @@ namespace eval ::xo {
         user_id
         session_id
         {mode default}
-        {encoder urlencode}
+        {encoder noencode}
         {timewindow 600}
         {sweepinterval 599}
         {login_messages_p t}
@@ -70,13 +70,6 @@ namespace eval ::xo {
     my instvar array now
     set user_id [expr {[info exists uid] ? $uid : [my set user_id]}]
     set color   [my user_color $user_id]
-    # apisano: the vanilla chat you can include in a xowiki::Object
-    # page is not able to deliver messages like '%'. Usage by the chat
-    # package is fine, but probably something should be done to have a
-    # consistent quoting of special chars.  This commented line is not
-    # ok, because would corrupt some chars in the chat package, which
-    # is our main usage.
-    # set msg [my encode $msg]
     set msg     [ns_quotehtml $msg]
     # my log "-- msg=$msg"
 
@@ -127,6 +120,9 @@ namespace eval ::xo {
       foreach {key value} [nsv_array get $array] {
         lassign $value timestamp secs user msg color
         if {$timestamp > $last} {
+          #
+          # add the message to the ordered composite.
+          #
           my add [Message new -time $secs -user_id $user -msg $msg -color $color]
         } else {
           my check_age $key [expr {($now - $timestamp) / 1000}]
@@ -264,7 +260,7 @@ namespace eval ::xo {
   Chat instproc noencode    {string} {set string}
   Chat instproc encode      {string} {my [my encoder] $string}
   Chat instproc json_encode {string} {
-    string map [list \n \\n {"} {\"} ' {\'}] $string"
+    string map [list \n \\n \" \\\" ' {\'}] $string
   }
 
   Chat instproc json_encode_msg {msg} {
@@ -278,91 +274,91 @@ namespace eval ::xo {
     return [subst -nocommands {{'messages': [
             {'user':'$userlink', 'time': '$timeshort', 'msg':'$text'}
            ]\n}
-         }]
-   }
+    }]
+  }
 
-   Chat instproc js_encode_msg {msg} {
-     set json [my json_encode_msg $msg]
-     return "<script type='text/javascript' language='javascript'>
+  Chat instproc js_encode_msg {msg} {
+    set json [my json_encode_msg $msg]
+    return "<script type='text/javascript' language='javascript'>
     var data = $json;
     parent.getData(data);
     </script>\n"
-   }
+  }
 
-   Chat instproc broadcast_msg {msg} {
-     my log "--chat broadcast_msg $msg"
-     ::xo::clusterwide \
-         bgdelivery send_to_subscriber chat-[my chat_id] [my json_encode_msg $msg]
-   }
+  Chat instproc broadcast_msg {msg} {
+    my log "--chat broadcast_msg"
+    ::xo::clusterwide \
+        bgdelivery send_to_subscriber chat-[my chat_id] [my json_encode_msg $msg]
+  }
 
-   Chat instproc subscribe {-uid} {
-     set user_id [expr {[info exists uid] ? $uid : [my set user_id]}]
-     set color [my user_color $user_id]
-     bgdelivery subscribe chat-[my chat_id] "" [my mode]
-     if {[my set login_messages_p] && ![my user_active $user_id]} {
-       # my broadcast_msg [Message new -volatile -time [clock seconds] \
-       #                       -user_id $user_id -color $color \
-       #                       -msg [_ xotcl-core.has_entered_the_room] ]
-     }
-     #my get_all
-   }
+  Chat instproc subscribe {-uid} {
+    set user_id [expr {[info exists uid] ? $uid : [my set user_id]}]
+    set color [my user_color $user_id]
+    bgdelivery subscribe chat-[my chat_id] "" [my mode]
+    if {[my set login_messages_p] && ![my user_active $user_id]} {
+      my broadcast_msg [Message new -volatile -time [clock seconds] \
+                            -user_id $user_id -color $color \
+                            -msg [_ xotcl-core.has_entered_the_room] ]
+    }
+    #my get_all
+  }
 
-   Chat instproc render {} {
-     my orderby time
-     set result "<div class='messages'>\n"
-     foreach child [my children] {
-       set msg       [$child msg]
-       set user_id   [$child user_id]
-       set color     [$child color]
-       set timelong  [clock format [$child time]]
-       set timeshort [clock format [$child time] -format {[%H:%M:%S]}]
-       set userlink  [my user_link -user_id $user_id -color $color]
-
-       append result "<p class='line'><span class='timestamp'>$timeshort</span> " \
+  Chat instproc render {} {
+    my orderby time
+    set result "<div class='messages'>\n"
+    foreach child [my children] {
+      set msg       [$child msg]
+      set user_id   [$child user_id]
+      set color     [$child color]
+      set timelong  [clock format [$child time]]
+      set timeshort [clock format [$child time] -format {[%H:%M:%S]}]
+      set userlink  [my user_link -user_id $user_id -color $color]
+      ns_log notice "encode <$msg> using encoder [my encoder] gives <[my encode $msg]>"
+      append result "<p class='line'><span class='timestamp'>$timeshort</span> " \
                         "<span class='user'>$userlink</span> " \
                         "<span class='message'>[my encode $msg]</span></p>\n"
-     }
-     append result "</div>"
-     return $result
-   }
+    }
+    append result "</div>"
+    return $result
+  }
 
-   ############################################################################
-   # Chat meta class, since we need to define general class-specific methods
-   ############################################################################
-   Class create ChatClass -superclass ::xotcl::Class
-   ChatClass method sweep_all_chats {} {
-     my log "-- starting"
-     foreach nsv [nsv_names "[self]-*-seen"] {
-       if { [regexp "[self]-(\[0-9\]+)-seen" $nsv _ chat_id] } {
-         my log "--Chat_id $chat_id"
-         my new -volatile -chat_id $chat_id -user_id 0 -session_id 0 -init -sweeper
-       }
-     }
-     my log "-- ending"
-   }
+  ############################################################################
+  # Chat meta class, since we need to define general class-specific methods
+  ############################################################################
+  Class create ChatClass -superclass ::xotcl::Class
+  ChatClass method sweep_all_chats {} {
+    my log "-- starting"
+    foreach nsv [nsv_names "[self]-*-seen"] {
+      if { [regexp "[self]-(\[0-9\]+)-seen" $nsv _ chat_id] } {
+        my log "--Chat_id $chat_id"
+        my new -volatile -chat_id $chat_id -user_id 0 -session_id 0 -init -sweeper
+      }
+    }
+    my log "-- ending"
+  }
 
-   ChatClass method initialize_nsvs {} {
-     # read the last_activity information at server start into a nsv array
-     ::xo::dc foreach get_rooms {
-       select room_id, to_char(max(creation_date),'HH24:MI:SS YYYY-MM-DD') as last_activity
-       from chat_msgs group by room_id
-     } {
-       ::xo::clusterwide nsv_set [self]-$room_id-seen last [clock scan $last_activity]
-     }
-   }
+  ChatClass method initialize_nsvs {} {
+    # read the last_activity information at server start into a nsv array
+    ::xo::dc foreach get_rooms {
+      select room_id, to_char(max(creation_date),'HH24:MI:SS YYYY-MM-DD') as last_activity
+      from chat_msgs group by room_id
+    } {
+      ::xo::clusterwide nsv_set [self]-$room_id-seen last [clock scan $last_activity]
+    }
+  }
 
-   ChatClass method flush_messages {-chat_id:required} {
-     set array "[self]-$chat_id"
-     ::xo::clusterwide nsv_unset -nocomplain $array
-     ::xo::clusterwide nsv_unset -nocomplain $array-seen
-     ::xo::clusterwide nsv_unset -nocomplain $array-last-activity
-   }
+  ChatClass method flush_messages {-chat_id:required} {
+    set array "[self]-$chat_id"
+    ::xo::clusterwide nsv_unset -nocomplain $array
+    ::xo::clusterwide nsv_unset -nocomplain $array-seen
+    ::xo::clusterwide nsv_unset -nocomplain $array-last-activity
+  }
 
-   ChatClass method init {} {
-     # default setting is set19 from http://www.graphviz.org/doc/info/colors.html
-     # per parameter settings in the chat package are available (param UserColors)
-     my set colors [list #1b9e77 #d95f02 #7570b3 #e7298a #66a61e #e6ab02 #a6761d #666666]
-   }
+  ChatClass method init {} {
+    # default setting is set19 from http://www.graphviz.org/doc/info/colors.html
+    # per parameter settings in the chat package are available (param UserColors)
+    my set colors [list #1b9e77 #d95f02 #7570b3 #e7298a #66a61e #e6ab02 #a6761d #666666]
+  }
 }
 
 #

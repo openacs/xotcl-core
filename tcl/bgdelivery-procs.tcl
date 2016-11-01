@@ -323,9 +323,12 @@ if {![string match "*contentsentlength*" $msg]} {
   }
 
   Subscriber instproc send {msg} {
+    #ns_log notice "SEND <$msg> [my mode]"
     my log ""
     if {[my mode] eq "scripted"} {
-      set smsg "<script type='text/javascript'>\nvar data = $msg;\n\
+      set emsg [encoding convertto utf-8 $msg]
+      #ns_log notice "SEND data <$msg> encoded <$emsg>"
+      set smsg "<script type='text/javascript'>\nvar data = $emsg;\n\
             parent.getData(data);</script>\n"
       set smsg [format %x [string length $smsg]]\r\n$smsg\r\n
     } else {
@@ -376,17 +379,17 @@ if {![string match "*contentsentlength*" $msg]} {
     fconfigure [my channel] -translation binary
 
     if {[my mode] eq "scripted"} {
-      set content_type text/html
+      set content_type "text/html;chartype=utf-8"
       set encoding "Cache-Control: no-cache\r\nTransfer-Encoding: chunked\r\n"
       set body "<html><body>[string repeat { } 1024]\r\n"
       set body [format %x [string length $body]]\r\n$body\r\n
     } else {
-      #set content_type text/plain 
       # Chrome refuses to expose partial response to ajax unless we
-      # set content_type to octet stream.  Drawback is we now need to
-      # treat special characters on the client side.
+      # set content_type to octet stream.  Drawback is we have to
+      # force the translation on the channel.
       set content_type "application/octet-stream"
       set encoding ""
+      fconfigure [my channel] -encoding utf-8
       set body ""
     }
 
