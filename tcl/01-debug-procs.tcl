@@ -423,7 +423,7 @@ namespace eval ::xo {
   # related info can still be obtained. 
   #
   if {[catch {set registered [ns_ictl gettraces freeconn]}]} {
-    ns_log notice "*** you should really upgrade to Aolserver 4.5"
+    ns_log notice "*** you should really upgrade to AOLserver 4.5 or better NaviServer"
     # "ns_ictl oncleanup" is called after variables are deleted
     if {[ns_ictl epoch] == 0} {
       ns_ictl oncleanup ::xo::at_cleanup
@@ -448,8 +448,8 @@ namespace eval ::xo {
       }
     }
     if {"::xo::at_delete" ni [ns_ictl gettraces delete]} {
-      if {[catch {ns_ictl ondelete ::xo::at_delete} errorMsg]} {
-        ns_log Warning "ns_ictl ondelete returned: $errorMsg"
+      if {[catch {ns_ictl trace delete ::xo::at_delete} errorMsg]} {
+        ns_log Warning "rhe command 'ns_ictl trace delete' returned: $errorMsg"
       }
     }    
 
