@@ -412,15 +412,15 @@ namespace eval ::xo {
   # For aolserver 4.5 we use oncleanup, which is at least before
   # the cleanup of variables.
   #
-  # In contrary, in 4.0.10, on cleanup is called after the global
+  # In contrary, in 4.0.10, "on cleanup" is called after the global
   # variables of a connection thread are deleted. Therefore
   # the triggered calls should not use database handles,
   # since these are as well managed via global variables,
   # the will be deleted as well at this time.
   # 
-  # To come up with an approach working for 4.5 and 4.0.10, we
-  # distinguish between a at_cleanup and at_close, so connection
-  # related info can still be obtained. 
+  # To come up with an approach working for AOLserver 4.5 and 4.0.10,
+  # we distinguish between a at_cleanup and at_close, so connection
+  # related info can still be obtained.
   #
   if {[catch {set registered [ns_ictl gettraces freeconn]}]} {
     ns_log notice "*** you should really upgrade to AOLserver 4.5 or better NaviServer"
@@ -431,14 +431,6 @@ namespace eval ::xo {
       ns_ictl ondelete ::xo::at_delete
     }
     
-    #     proc trace_cleanup {args} {
-    #       set name [lindex $args 1]
-    #       #ns_log notice "*** cleanup <$args> '$name'"
-    #       if {[::xotcl::Object isobject $name]} {
-    #     ns_log notice "*** cleanup $name destroy"
-    #     $name destroy
-    #       }
-    #     }
   } else {
 
     # register only once
