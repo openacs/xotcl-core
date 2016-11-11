@@ -279,7 +279,7 @@ namespace eval ::xo {
 
   Chat instproc js_encode_msg {msg} {
     set json [my json_encode_msg $msg]
-    return "<script type='text/javascript' language='javascript'>
+    return "<script type='text/javascript' language='javascript' nonce='$::__csp_nonce'>
     var data = $json;
     parent.getData(data);
     </script>\n"

@@ -328,7 +328,7 @@ if {![string match "*contentsentlength*" $msg]} {
     if {[my mode] eq "scripted"} {
       set emsg [encoding convertto utf-8 $msg]
       #ns_log notice "SEND data <$msg> encoded <$emsg>"
-      set smsg "<script type='text/javascript'>\nvar data = $emsg;\n\
+      set smsg "<script type='text/javascript' nonce='$::__csp_nonce'>\nvar data = $emsg;\n\
             parent.getData(data);</script>\n"
       set smsg [format %x [string length $smsg]]\r\n$smsg\r\n
     } else {
