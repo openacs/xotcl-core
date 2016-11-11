@@ -467,6 +467,7 @@ namespace eval ::xo::db {
     #if {$sql eq ""} {set sql [my get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     set qn [uplevel [list [self] qn $qn]]
+    #ns_log notice "### [list ::db_foreach -dbn $dbn $qn $sql $body {*}$bindOpt]"
     uplevel [list ::db_foreach -dbn $dbn $qn $sql $body {*}$bindOpt]
   }
 
