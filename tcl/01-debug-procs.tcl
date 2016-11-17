@@ -22,7 +22,7 @@ package require xotcl::serializer
 # base classes.
 #
 ::Serializer exportMethods {
-  ::xotcl::Object instproc log 
+  ::xotcl::Object instproc log
   ::xotcl::Object instproc ds
   ::xotcl::Object instproc msg
   ::xotcl::Object instproc __timediff
@@ -32,7 +32,7 @@ package require xotcl::serializer
   ::xotcl::Object instproc www-show-object
   ::xotcl::Object instproc destroy_on_cleanup
   ::xotcl::Object instproc set_instance_vars_defaults
-  ::xotcl::Class instproc extend_slot 
+  ::xotcl::Class instproc extend_slot
 }
 
 namespace eval ::xo {
@@ -42,11 +42,11 @@ namespace eval ::xo {
       -parameter {
         spec
         {required false}
-        pretty_name 
+        pretty_name
         {pretty_plural ""}
         {datatype "text"}
         constraint_values
-        help_text 
+        help_text
         validator
       }
 }
@@ -95,7 +95,7 @@ if {[info commands ::nx::Object] ne ""} {
       superclasses superclass
       subclasses subclass
       mixins "mixin classes"
-    } 
+    }
   } else {
     array set ::xo::mapMethodNames {
       superclasses superclasses
@@ -109,7 +109,7 @@ if {[info commands ::nx::Object] ne ""} {
   # available in older versions of nsf)
   #
   namespace eval ::nsf::debug {}
-  
+
   proc ::nsf::debug::call {level objectInfo methodInfo arglist} {
     ns_log Warning "DEBUG call($level) - {$objectInfo} {$methodInfo} $arglist"
   }
@@ -126,7 +126,7 @@ namespace eval ::xo {
     next
     # provide a default pretty name for the attribute based on message keys
     if {![info exists pretty_name]} {
-      set object_type [my domain] 
+      set object_type [my domain]
       if {[regexp {^::([^:]+)::} $object_type _ head]} {
         set tail [namespace tail $object_type]
         set pretty_name "#$head.$tail-$name#"
@@ -320,7 +320,7 @@ namespace eval ::xo {
       append msg "flags=[ad_conn flags] status=[ad_conn status] req=[ad_conn request]"
     }
     ::xotcl::Object log $msg
-    set max [info level]  
+    set max [info level]
     if {$m<$max} {set max $m}
     ::xotcl::Object  log "### Call Stack (level: command)"
     for {set i 0} {$i < $max} {incr i} {
@@ -334,8 +334,8 @@ namespace eval ::xo {
 }
 
 namespace eval ::xo {
-  # 
-  # Make reporting back of the version numbers of the most important 
+  #
+  # Make reporting back of the version numbers of the most important
   # involved components easier.
   #
   proc report_version_numbers {{pkg_list {acs-kernel xotcl-core xotcl-request-monitor xowiki s5 xoportal xowf}}} {
@@ -404,7 +404,7 @@ namespace eval ::xo {
   #   1) there was no way to control the order of the deletions
   #   2) the global variables used for managing db handles might
   #      be deleted already
-  #   3) the traces are executed at a time when the connection 
+  #   3) the traces are executed at a time when the connection
   #      is already closed
   # Aolserver 4.5 supports a trace for freeconn. We can register
   # a callback to be executed before the connection is freed,
@@ -417,7 +417,7 @@ namespace eval ::xo {
   # the triggered calls should not use database handles,
   # since these are as well managed via global variables,
   # the will be deleted as well at this time.
-  # 
+  #
   # To come up with an approach working for AOLserver 4.5 and 4.0.10,
   # we distinguish between a at_cleanup and at_close, so connection
   # related info can still be obtained.
@@ -430,7 +430,7 @@ namespace eval ::xo {
       ns_ictl oninit [list ns_atclose ::xo::at_close]
       ns_ictl ondelete ::xo::at_delete
     }
-    
+
   } else {
 
     # register only once
@@ -443,7 +443,7 @@ namespace eval ::xo {
       if {[catch {ns_ictl trace delete ::xo::at_delete} errorMsg]} {
         ns_log Warning "rhe command 'ns_ictl trace delete' returned: $errorMsg"
       }
-    }    
+    }
 
     proc ::xo::freeconn {} {
       catch {::xo::at_close}
@@ -541,12 +541,12 @@ namespace eval ::xo {
     # additional handle.
     #
     db_release_unused_handles
-    
+
     set t0 [clock clicks -milliseconds]
     ::xo::system_stats recordtimes
     #
     # Check, if we have a new XOTcl implementation with ::xotcl::finalize
-    # 
+    #
     if {[info commands ::xotcl::finalize] ne ""} {
       ::xotcl::finalize
     } else {
@@ -576,7 +576,7 @@ namespace eval ::xo {
     set nssets  [llength [ns_set list]]
     ns_log notice "xo::stats $msg: current objects xotcl $xobjs nx $nobjs tmp $tmpObjs tDOM $tdoms ns_set $nssets"
   }
-  
+
   #
   # ::xo::Module is very similar to a plain tcl namespace: When it is
   # created/recreated, it does not perform a cleanup of its
@@ -588,7 +588,7 @@ namespace eval ::xo {
   # arguments directly in it. It is as well possible to use mixins
   # etc.
   #
-  Class create Module 
+  Class create Module
   Module instproc init    args {my requireNamespace}
   Module instproc cleanup args {ns_log notice "create/recreate [self] without cleanup"}
 }
@@ -606,7 +606,7 @@ namespace eval ::xo {
     -value:required
   } {
     Implementation of subsite::parameter_changed for xotcl-core parameters
-    
+
     @param package_id the package_id of the package the parameter was changed for
     @param parameter  the parameter name
     @param value      the new value
@@ -636,7 +636,7 @@ namespace eval ::xo {
 
 namespace eval ::xo {
 
-  ::xotcl::Object create ::xo::system_stats 
+  ::xotcl::Object create ::xo::system_stats
 
   if {$::tcl_platform(os) eq "Linux"} {
     ::xo::system_stats proc thread_info {pid tid} {
@@ -913,7 +913,7 @@ proc ::xo::getObjectProperty {o what args} {
       }
       return 0
     }
-    
+
     "array-exists" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o array exists {*}$args]}
       return [$o eval [list array exists :{*}$args]]
@@ -952,7 +952,7 @@ proc ::xo::getObjectProperty {o what args} {
 #
 ::xotcl::Class instproc extend_slot {arg} {
 
-  # The argument list is e.g. "foo -name x -title y" 
+  # The argument list is e.g. "foo -name x -title y"
   #
   # It is placed into one argument to avoid interference with the "-"
   # argument parsing since it will always start with a non-dashed
@@ -960,7 +960,7 @@ proc ::xo::getObjectProperty {o what args} {
   #
   set name [lindex $arg 0]
   set config [lrange $arg 1 end]
-  
+
   # search for slot
   foreach c [my info heritage] {
     if {[info commands ${c}::slot::$name] ne ""} {
@@ -969,15 +969,23 @@ proc ::xo::getObjectProperty {o what args} {
     }
   }
   if {![info exists slot]} {error "can't find slot $name"}
-  
+
   # copy slot and configure it
   set newSlot [self]::slot::$name
 
   $slot copy $newSlot
   $newSlot configure -domain [self] -manager $newSlot -create_acs_attribute false -create_table_attribute false {*}$config
-  my set db_slot($name) $newSlot 
+  my set db_slot($name) $newSlot
 }
 
+# allow the use of naturalnum with ::xowiki::Package initialize
+if {[info commands ::nx::methodParameterSlot] ne ""} {
+  ::nx::methodParameterSlot object method type=naturalnum {name value} {
+    if {![string is integer $value] || $value < 0 } {
+      return -code error "Value '$value' of parameter $name is not a natural number."
+    }
+  }
+}
 
 #ns_log notice "*** FREECONN? [ns_ictl gettraces freeconn]"
 #ns_ictl trace freeconn {ns_log notice "*** FREECONN  isconnected=[ns_conn isconnected]"}
