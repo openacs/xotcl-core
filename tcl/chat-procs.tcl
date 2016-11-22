@@ -65,10 +65,10 @@ namespace eval ::xo {
     ::xo::clusterwide nsv_set $array-last-activity $user_id $now
   }
 
-  Chat instproc add_msg {{-get_new:boolean true} -uid msg} {
+  Chat instproc add_msg {{-get_new:boolean true} {-uid ""} msg} {
     my log "--chat adding $msg"
     my instvar array now
-    set user_id [expr {[info exists uid] ? $uid : [my set user_id]}]
+    set user_id [expr {$uid ne "" ? $uid : [my set user_id]}]
     set color   [my user_color $user_id]
     set msg     [ns_quotehtml $msg]
     # my log "-- msg=$msg"
