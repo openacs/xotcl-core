@@ -78,7 +78,7 @@ namespace eval ::xo {
         && [info commands ::bgdelivery] ne ""} {
       # we could use the streaming interface
       my broadcast_msg [Message new -volatile -time [clock seconds] \
-                            -user_id $user_id -msg $msg -color $color]
+                            -user_id $user_id -color $color [list -msg $msg]]
     }
     my register_nsvs $now.$user_id $user_id $msg $color [clock seconds]
     # this in any case a valid result, but only needed for the polling interface
