@@ -66,7 +66,7 @@ namespace eval ::xo {
   }
 
   Chat instproc add_msg {{-get_new:boolean true} {-uid ""} msg} {
-    my log "--chat adding $msg"
+    # my log "--chat adding $msg"
     my instvar array now
     set user_id [expr {$uid ne "" ? $uid : [my set user_id]}]
     set color   [my user_color $user_id]
