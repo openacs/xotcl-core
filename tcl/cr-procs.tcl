@@ -970,6 +970,7 @@ namespace eval ::xo::db {
         ::xo::db::sql::content_item set_live_revision \
             -revision_id $revision_id \
             -publish_status [my set publish_status] \
+            -is_latest true \
             {*}$publish_date_flag
         my set revision_id $revision_id
         my update_item_index
