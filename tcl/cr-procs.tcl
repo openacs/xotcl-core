@@ -986,13 +986,18 @@ namespace eval ::xo::db {
     return $item_id
   }
 
-  CrItem ad_instproc set_live_revision {-revision_id:required {-publish_status "ready"}} {
+  CrItem ad_instproc set_live_revision {
+    -revision_id:required
+    {-publish_status "ready"}
+    {-is_latest:boolean false}
+  } {
     @param revision_id
     @param publish_status one of 'live', 'ready' or 'production'
   } {
     ::xo::db::sql::content_item set_live_revision \
         -revision_id $revision_id \
-        -publish_status $publish_status
+        -publish_status $publish_status \
+        -is_latest $is_latest
     ::xo::clusterwide ns_cache flush xotcl_object_cache ::[my item_id]
     ::xo::clusterwide ns_cache flush xotcl_object_cache ::$revision_id
   }
@@ -1109,6 +1114,7 @@ namespace eval ::xo::db {
         ::xo::db::sql::content_item set_live_revision \
             -revision_id $revision_id \
             -publish_status [my set publish_status] \
+            -is_latest true \
             {*}$publish_date_flag
         my update_item_index
       }
