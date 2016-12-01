@@ -31,7 +31,6 @@ namespace eval ::xo::db {
   # Backend language specific (SQL Dialects)
   #
   ::xotcl::Class create ::xo::db::SQL
-  ::xo::db::SQL abstract instproc map_datatype {type} 
   ::xo::db::SQL abstract instproc select {type} 
   ::xo::db::SQL abstract instproc date_trunc {type} 
   ::xo::db::SQL abstract instproc date_trunc_expression {type}
@@ -39,6 +38,14 @@ namespace eval ::xo::db {
   #
   # generic (fallback) methods
   #
+  ::xo::db::SQL instproc map_datatype {type} {
+    # If a mapping is not found we keep the type unaltered, but this
+    # will currently break acs_attributes_datatype_fk when creating
+    # acs_attributes with a unmapped type.
+    return [::xo::dc get_value map "
+     select database_type from acs_datatypes
+      where datatype = :type" $type]
+  }
   ::xo::db::SQL instproc map_function_name        {sql} {return $sql}
   ::xo::db::SQL instproc datatype_constraint      {type table att} {return ""}
   ::xo::db::SQL instproc interval {interval} {
@@ -69,6 +76,7 @@ namespace eval ::xo::db {
       long_text { set type text }
       date      { set type "timestamp with time zone" }
       ltree     { set type [expr {[my has_ltree] ? "ltree" : "text" }] }
+      default   { return [next] }
     }
     return $type
   }
@@ -175,6 +183,7 @@ namespace eval ::xo::db {
       long_text { set type clob }
       boolean   { set type char(1) }
       ltree     { set type varchar2(1000) }
+      default   { return [next] }
     }
     return $type
   }
