@@ -277,8 +277,11 @@ namespace eval ::xo {
     }
     set package_id [my get_package_id_from_package_key -package_key $package_key]
     set value [$parameter_obj get -package_id $package_id]
-    if {$value eq "" && [$parameter_obj set __success] == 0} {return $default}
-    return $value
+    if {$value eq "" && [$parameter_obj set __success] == 0 && [info exists default]} {
+      return $default
+    } else {
+      return $value
+    }
   }
 
   parameter proc get {
