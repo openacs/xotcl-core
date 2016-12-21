@@ -714,8 +714,11 @@ namespace eval ::xo::db {
     }
   }
 
-  require proc view {name definition} {
+  require proc view {name definition {-rebuild_p false}} {
     if {[db_driverkey ""] eq "oracle"} {set name [string toupper $name]}
+    if {$rebuild_p} {
+      ::xo::dc dml drop-view-$name "drop view if exists $name"
+    }
     if {![::xo::db::sql::util view_exists -name $name]} {
       ::xo::dc dml create-view-$name "create view $name AS $definition"
     }
@@ -745,6 +748,53 @@ namespace eval ::xo::db {
       ::xo::dc dml create-index-$name \
           "create $uniquepart index $name ON $table $using ($colExpSQL)"
     }
+  }
+
+  require proc unique {-table -col} {
+    # Unique could be there by a index too
+    set idxname [::xo::dc mk_sql_constraint_name $table $col un_idx]
+    if {[::xo::db::sql::util index_exists -name $idxname]} return
+    if {![::xo::db::sql::util unique_exists -table $table -column $col]} {
+      ::xo::dc dml alter-table-$table \
+          "alter table $table add unique ($col)"
+    }
+  }
+
+  require proc not_null {-table -col} {
+    if {![::xo::db::sql::util not_null_exists -table $table -column $col]} {
+      ::xo::dc dml alter-table-$table \
+          "alter table $table alter column $col set not null"
+    }
+  }
+
+  require proc default {-table -col -value} {
+    set default [::xo::db::sql::util get_default -table $table -column $col]
+    if {$default ne $value} {
+      ::xo::dc dml alter-table-$table \
+          "alter table $table alter column $col set default '$value'"
+    }
+  }
+
+  require proc references {-table -col -ref} {
+    # Check for already existing foreign keys.
+    set ref [string trim $ref]
+    # try to match the full reftable(refcol) syntax...
+    if {![regexp {^(\w*)\s*\(\s*(\w*)\s*\)\s*(.*)$} $ref match reftable refcol rest]} {
+      # if fails only table was given, assume refcol is reftable's
+      # primary key
+      set reftable [lindex $ref 0]
+      set refcol [::xo::db::sql::util get_primary_keys -table $reftable]
+      # only one primary key is supported for the table
+      if {[llength $refcol] != 1} return
+    }
+    if {[::xo::db::sql::util foreign_key_exists \
+             -table $table -column $col \
+             -reftable $reftable -refcolumn $refcol]} {
+      ad_log notice "foreign key already exists for table $table column $col to ${reftable}(${refcol})"
+      return
+    }
+    ::xo::dc dml alter-table-$table \
+      "alter table $table add foreign key ($col) references $ref"
   }
 
   require proc package {package_key} {
@@ -1513,6 +1563,7 @@ namespace eval ::xo::db {
   #
   ::xo::db::Class create_all_functions
 
+
   #
   # The object require provides an interface to create certain
   # resources in case they are not created already.
@@ -1652,17 +1703,19 @@ namespace eval ::xo::db {
 
   ::xo::db::Class instproc db_slots {} {
 
-    my instvar id_column db_slot
+    my instvar id_column db_slot db_constraints
     array set db_slot [list]
+    array set db_constraints [list]
     #
     # First get all ::xo::db::Attribute slots and check later,
     # if we have to add the id_column automatically.
     #
-    #my log "--setting db_slot all=[my info slots]"
+    # my log "--setting db_slot all=[my info slots]"
     foreach att [my info slots] {
       #my log "--checking $att [$att istype ::xo::db::Attribute] [$att info class]"
       if {![$att istype ::xo::db::Attribute]} continue
       set db_slot([$att name]) $att
+      my collect_constraints $att
     }
     if {[self] ne "::xo::db::Object"} {
       if {[my exists id_column] && ![info exists db_slot($id_column)]} {
@@ -1679,6 +1732,34 @@ namespace eval ::xo::db {
     #my log "--setting db_slot of [self] to [array names db_slot]"
   }
 
+  # read attribute constraints and store them so they can be added
+  # after plain table creation
+  ::xo::db::Class instproc collect_constraints {att} {
+    my instvar db_constraints table_name
+    set attname [$att name]
+    # Index is always created after table creation, so it is always ok
+    # to collect this...
+    if {[$att exists index]} {
+      lappend db_constraints($attname) [list index [$att set index]]
+    }
+    # ...in all other cases, when column doesn not exist will be
+    # created properly. No need to collect constraints.
+    if {[::xo::db::require exists_column $table_name $attname]} {
+      if {[$att exists unique] && [$att set unique]} {
+        lappend db_constraints($attname) unique
+      }
+      if {[$att exists not_null] && [$att set not_null]} {
+        lappend db_constraints($attname) not_null
+      }
+      if {![string is space [$att set references]]} {
+        lappend db_constraints($attname) [list references [$att set references]]
+      }
+      if {[$att exists default]} {
+        lappend db_constraints($attname) [list default [$att set default]]
+      }
+    }
+  }
+
   ::xo::db::Class instproc table_definition {} {
     my instvar id_column table_name db_slot
     array set column_specs [list]
@@ -1690,6 +1771,43 @@ namespace eval ::xo::db {
       set column_name [$slot column_name]
       set column_specs($column_name) \
           [$slot column_spec -id_column [expr {$column_name eq $id_column}]]
+    }
+
+    # Requires collected constraints on object's table.
+    ::xo::db::Class instproc require_constraints {} {
+      my instvar db_constraints
+      set table_name [my table_name]
+      foreach col [array names db_constraints] {
+        foreach constr $db_constraints($col) {
+          set type  [lindex $constr 0]
+          set value [join [lrange $constr 1 end]]
+          switch $type {
+            "unique" {
+              ::xo::db::require unique \
+                  -table $table_name -col $col
+            }
+            "index" {
+              set value [expr {[string is true $value] ? "" : $value}]
+              ::xo::db::require index -using $value \
+                  -table $table_name -col $col
+            }
+            "not_null" {
+              ::xo::db::require not_null \
+                  -table $table_name -col $col
+            }
+            "references" {
+              ::xo::db::require references \
+                  -table $table_name -col $col \
+                  -ref $value
+            }
+            "default" {
+              ::xo::db::require default \
+                  -table $table_name -col $col \
+                  -value $value
+            }
+          }
+        }
+      }
     }
 
     if {[array size column_specs] > 0} {
@@ -1809,7 +1927,6 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::Class instproc init {} {
-
     if {![::xo::db::Class object_type_exists_in_db -object_type [my object_type]]} {
       my create_object_type
     }
@@ -1821,6 +1938,7 @@ namespace eval ::xo::db {
       set table_definition [my table_definition]
       if {$table_definition ne ""} {
         ::xo::db::require table [my table_name] $table_definition
+        my require_constraints
       }
 
       my mk_update_method
@@ -2235,6 +2353,9 @@ namespace eval ::xo::db {
         {max_n_values 1}
         {create_acs_attribute true}
         {create_table_attribute true}
+        {not_null}
+        {unique}
+        {index}
       }
 
   ::xo::db::Attribute instproc create_attribute {} {
@@ -2270,10 +2391,14 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::Attribute instproc column_spec {{-id_column false}} {
-    my instvar sqltype name references default
+    my instvar sqltype name references default not_null unique
+    set table_name [[my domain] table_name]
     set column_spec ""
     append column_spec " " [::xo::dc map_datatype $sqltype]
-    if {[info exists default]} {append column_spec " DEFAULT '$default'" }
+    #
+    # Default
+    #
+    if {[info exists default]} {append column_spec " DEFAULT '$default' "}
     #
     # References
     #
@@ -2283,18 +2408,24 @@ namespace eval ::xo::db {
       set sc [[my domain] info superclass]
       if {![$sc istype ::xo::db::Class]} {set sc ::xo::db::Object}
       append column_spec " REFERENCES [$sc table_name]([$sc id_column])\
-        ON DELETE CASCADE"
+        ON DELETE CASCADE "
     }
     #
-    # Constraints
+    # Unique
     #
-    set table_name [[my domain] table_name]
+    if {[info exists unique]} {append column_spec " UNIQUE "}
+    #
+    # Not null
+    #
+    if {[info exists not_null]} {append column_spec " NOT NULL "}
+    #
+    # Primary key
+    #
     if {$id_column} {
       # add automatically a constraint for the id_column
-      set cname [::xo::dc mk_sql_constraint_name $table_name $name pk]
-      append column_spec "\n\tCONSTRAINT $cname PRIMARY KEY"
+      append column_spec " PRIMARY KEY "
     }
-    append column_spec " " [::xo::dc datatype_constraint $sqltype $table_name $name]
+    append column_spec [::xo::dc datatype_constraint $sqltype $table_name $name]
     return $column_spec
   }
 
