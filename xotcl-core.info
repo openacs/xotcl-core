@@ -44,7 +44,7 @@ Features:
         <maturity>2</maturity>
 
         <provides url="xotcl-core" version="0.152"/>
-	<requires url="acs-kernel" version="5.9.0"/>
+	<requires url="acs-kernel" version="5.9.1d20"/>
 	<requires url="acs-templating" version="5.9.1d7"/>
 	<requires url="acs-api-browser" version="5.9.1d1"/>
 	<requires url="acs-content-repository" version="5.9.1d23"/>
