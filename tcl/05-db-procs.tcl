@@ -780,7 +780,7 @@ namespace eval ::xo::db {
     set default [::xo::db::sql::util get_default -table $table -column $col]
     if {$default ne $value} {
       ::xo::dc dml alter-table-$table \
-          "alter table $table alter column $col set default '$value'"
+          "alter table $table alter column $col set default :value"
     }
   }
 
