@@ -664,8 +664,14 @@ namespace eval ::xo::db {
     ::xo::dc has_hstore
   }
 
-
+  
   ::xotcl::Object create require
+
+  # some features for this object require kernel to be >= 5.9.1d20, so
+  # some database checking utils are present. Take note whether this
+  # is the case, or we still need to run the upgrade script
+  require set 5_9_1d20_p [expr {[apm_version_names_compare \
+                                     5.9.1d20 [ad_acs_version]] >= 0}]
 
   require proc exists_table {name} {
     if {[db_driverkey ""] eq "oracle"} {
@@ -751,6 +757,7 @@ namespace eval ::xo::db {
   }
 
   require proc unique {-table -col} {
+    if {!${:5_9_1d20_p}} return
     # Unique could be there by a index too
     set idxname [::xo::dc mk_sql_constraint_name $table $col un_idx]
     if {[::xo::db::sql::util index_exists -name $idxname]} return
@@ -761,6 +768,7 @@ namespace eval ::xo::db {
   }
 
   require proc not_null {-table -col} {
+    if {!${:5_9_1d20_p}} return
     if {![::xo::db::sql::util not_null_exists -table $table -column $col]} {
       ::xo::dc dml alter-table-$table \
           "alter table $table alter column $col set not null"
@@ -768,6 +776,7 @@ namespace eval ::xo::db {
   }
 
   require proc default {-table -col -value} {
+    if {!${:5_9_1d20_p}} return
     set default [::xo::db::sql::util get_default -table $table -column $col]
     if {$default ne $value} {
       ::xo::dc dml alter-table-$table \
@@ -776,6 +785,7 @@ namespace eval ::xo::db {
   }
 
   require proc references {-table -col -ref} {
+    if {!${:5_9_1d20_p}} return
     # Check for already existing foreign keys.
     set ref [string trim $ref]
     # try to match the full reftable(refcol) syntax...
