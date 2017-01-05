@@ -756,6 +756,48 @@ namespace eval ::xo::db {
     }
   }
 
+  require proc sequence {
+    -name
+    -start_with
+    -increment_by
+    -minvalue
+    -maxvalue
+    {-cycle false}
+    {-cache 1}
+  } {
+    if {[db_driverkey ""] eq "oracle"} {
+      set name [string toupper $name]
+      if {[::xo::dc 0or1row exists "
+         SELECT 1 FROM user_sequences
+          WHERE sequence_name = :name limit 1"]} return
+      set if_not_exists ""
+    } else {
+      # postgres doesn't need to check explicitly
+      set if_not_exists "IF NOT EXISTS"
+    }
+
+    set clause {}
+    if {[info exists start_with]} {
+      lappend clause "START WITH $start_with"
+    }
+    if {[info exists increment_by]} {
+      lappend clause "INCREMENT BY $increment_by"
+    }
+    if {[info exists minvalue]} {
+      lappend clause "MINVALUE $minvalue"
+    }
+    if {[info exists maxvalue]} {
+      lappend clause "MAXVALUE $maxvalue"
+    }
+    if {!$cycle} {
+      lappend clause "NO"
+    }
+    lappend clause "CYCLE"
+    lappend clause "CACHE $cache"    
+    ::xo::dc dml create-seq "
+       CREATE SEQUENCE $if_not_exists $name [join $clause]"
+  }
+
   require proc unique {-table -col} {
     if {!${:5_9_1d20_p}} return
     # Unique could be there by a index too
