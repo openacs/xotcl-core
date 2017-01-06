@@ -1609,10 +1609,10 @@ namespace eval ::xo::db {
         ::xo::dc 0or1row query $query
       }
     }
-
+  } else {
     # If we have the proper utils, require object can be enhanced with
     # new procs
-    if {[::xo::db::sql::util info methods get_default] ne ""} {    
+    if {[::xo::db::sql::util info commands get_default] ne ""} {
       require proc unique {-table -col} {
         # Unique could be there by a index too
         set idxname [::xo::dc mk_sql_constraint_name $table $col un_idx]
