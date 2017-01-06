@@ -667,12 +667,6 @@ namespace eval ::xo::db {
   
   ::xotcl::Object create require
 
-  # some features for this object require kernel to be >= 5.9.1d20, so
-  # some database checking utils are present. Take note whether this
-  # is the case, or we still need to run the upgrade script
-  require set 5_9_1d20_p [expr {[apm_version_names_compare \
-                                     5.9.1d20 [ad_acs_version]] >= 0}]
-
   require proc exists_table {name} {
     if {[db_driverkey ""] eq "oracle"} {
       set name [string toupper $name]
@@ -798,56 +792,14 @@ namespace eval ::xo::db {
        CREATE SEQUENCE $if_not_exists $name [join $clause]"
   }
 
-  require proc unique {-table -col} {
-    if {!${:5_9_1d20_p}} return
-    # Unique could be there by a index too
-    set idxname [::xo::dc mk_sql_constraint_name $table $col un_idx]
-    if {[::xo::db::sql::util index_exists -name $idxname]} return
-    if {![::xo::db::sql::util unique_exists -table $table -column $col]} {
-      ::xo::dc dml alter-table-$table \
-          "alter table $table add unique ($col)"
-    }
-  }
-
-  require proc not_null {-table -col} {
-    if {!${:5_9_1d20_p}} return
-    if {![::xo::db::sql::util not_null_exists -table $table -column $col]} {
-      ::xo::dc dml alter-table-$table \
-          "alter table $table alter column $col set not null"
-    }
-  }
-
-  require proc default {-table -col -value} {
-    if {!${:5_9_1d20_p}} return
-    set default [::xo::db::sql::util get_default -table $table -column $col]
-    if {$default ne $value} {
-      ::xo::dc dml alter-table-$table \
-          "alter table $table alter column $col set default :value"
-    }
-  }
-
-  require proc references {-table -col -ref} {
-    if {!${:5_9_1d20_p}} return
-    # Check for already existing foreign keys.
-    set ref [string trim $ref]
-    # try to match the full reftable(refcol) syntax...
-    if {![regexp {^(\w*)\s*\(\s*(\w*)\s*\)\s*(.*)$} $ref match reftable refcol rest]} {
-      # if fails only table was given, assume refcol is reftable's
-      # primary key
-      set reftable [lindex $ref 0]
-      set refcol [::xo::db::sql::util get_primary_keys -table $reftable]
-      # only one primary key is supported for the table
-      if {[llength $refcol] != 1} return
-    }
-    if {[::xo::db::sql::util foreign_key_exists \
-             -table $table -column $col \
-             -reftable $reftable -refcolumn $refcol]} {
-      ad_log notice "foreign key already exists for table $table column $col to ${reftable}(${refcol})"
-      return
-    }
-    ::xo::dc dml alter-table-$table \
-      "alter table $table add foreign key ($col) references $ref"
-  }
+  # some features for this object require kernel to be >= 5.9.1d20, so
+  # some database checking utils are present. Create only stubs by now
+  # and then we'll check whether the proper implementations can be
+  # created.
+  require proc unique {-table -col} {}
+  require proc not_null {-table -col} {}
+  require proc default {-table -col -value} {}
+  require proc references {-table -col -ref} {}
 
   require proc package {package_key} {
     if {![my exists required_package($package_key)]} {
@@ -1655,6 +1607,57 @@ namespace eval ::xo::db {
                          {select 1 from user_tab_columns where table_name = :t_name and column_name = :c_name} :
                          {select 1 from information_schema.columns where table_name = :t_name and column_name = :c_name}}]
         ::xo::dc 0or1row query $query
+      }
+    }
+
+    # If we have the proper utils, require object can be enhanced with
+    # new procs
+    if {[::xo::db::sql::util info methods get_default] ne ""} {    
+      require proc unique {-table -col} {
+        # Unique could be there by a index too
+        set idxname [::xo::dc mk_sql_constraint_name $table $col un_idx]
+        if {[::xo::db::sql::util index_exists -name $idxname]} return
+        if {![::xo::db::sql::util unique_exists -table $table -column $col]} {
+          ::xo::dc dml alter-table-$table \
+              "alter table $table add unique ($col)"
+        }
+      }
+
+      require proc not_null {-table -col} {
+        if {![::xo::db::sql::util not_null_exists -table $table -column $col]} {
+          ::xo::dc dml alter-table-$table \
+              "alter table $table alter column $col set not null"
+        }
+      }
+
+      require proc default {-table -col -value} {
+        set default [::xo::db::sql::util get_default -table $table -column $col]
+        if {$default ne $value} {
+          ::xo::dc dml alter-table-$table \
+              "alter table $table alter column $col set default :value"
+        }
+      }
+
+      require proc references {-table -col -ref} {
+        # Check for already existing foreign keys.
+        set ref [string trim $ref]
+        # try to match the full reftable(refcol) syntax...
+        if {![regexp {^(\w*)\s*\(\s*(\w*)\s*\)\s*(.*)$} $ref match reftable refcol rest]} {
+          # if fails only table was given, assume refcol is reftable's
+          # primary key
+          set reftable [lindex $ref 0]
+          set refcol [::xo::db::sql::util get_primary_keys -table $reftable]
+          # only one primary key is supported for the table
+          if {[llength $refcol] != 1} return
+        }
+        if {[::xo::db::sql::util foreign_key_exists \
+                 -table $table -column $col \
+                 -reftable $reftable -refcolumn $refcol]} {
+          ad_log notice "foreign key already exists for table $table column $col to ${reftable}(${refcol})"
+          return
+        }
+        ::xo::dc dml alter-table-$table \
+            "alter table $table add foreign key ($col) references $ref"
       }
     }
   }
