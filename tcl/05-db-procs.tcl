@@ -792,15 +792,6 @@ namespace eval ::xo::db {
        CREATE SEQUENCE $if_not_exists $name [join $clause]"
   }
 
-  # some features for this object require kernel to be >= 5.9.1d20, so
-  # some database checking utils are present. Create only stubs by now
-  # and then we'll check whether the proper implementations can be
-  # created.
-  require proc unique {-table -col} {}
-  require proc not_null {-table -col} {}
-  require proc default {-table -col -value} {}
-  require proc references {-table -col -ref} {}
-
   require proc package {package_key} {
     if {![my exists required_package($package_key)]} {
       foreach path [apm_get_package_files \
@@ -1659,6 +1650,15 @@ namespace eval ::xo::db {
         ::xo::dc dml alter-table-$table \
             "alter table $table add foreign key ($col) references $ref"
       }
+    } else {
+      # some features for this object require kernel to be >=
+      # 5.9.1d20, so some database checking utils are present. Create
+      # only stubs if we have the code but still have to run the
+      # upgrade scripts.
+      require proc unique {-table -col} {}
+      require proc not_null {-table -col} {}
+      require proc default {-table -col -value} {}
+      require proc references {-table -col -ref} {}
     }
   }
   ###
