@@ -1653,7 +1653,7 @@ namespace eval ::xo::db {
         if {[::xo::db::sql::util foreign_key_exists \
                  -table $table -column $col \
                  -reftable $reftable -refcolumn $refcol]} {
-          ad_log notice "foreign key already exists for table $table column $col to ${reftable}(${refcol})"
+          ns_log debug "foreign key already exists for table $table column $col to ${reftable}(${refcol})"
           return
         }
         ::xo::dc dml alter-table-$table \
