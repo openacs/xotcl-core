@@ -764,10 +764,13 @@ namespace eval ::xo::db {
       if {[::xo::dc 0or1row exists "
          SELECT 1 FROM user_sequences
           WHERE sequence_name = :name limit 1"]} return
-      set if_not_exists ""
     } else {
-      # postgres doesn't need to check explicitly
-      set if_not_exists "IF NOT EXISTS"
+      # postgres could avoid this check and use 'if not exists' from
+      # version 9.5
+      if {[::xo::dc 0or1row exists "
+         SELECT 1 FROM information_schema.sequences 
+          WHERE sequence_schema = 'public' 
+            AND sequence_name = :name"]} return
     }
 
     set clause {}
@@ -789,7 +792,7 @@ namespace eval ::xo::db {
     lappend clause "CYCLE"
     lappend clause "CACHE $cache"    
     ::xo::dc dml create-seq "
-       CREATE SEQUENCE $if_not_exists $name [join $clause]"
+       CREATE SEQUENCE $name [join $clause]"
   }
 
   require proc package {package_key} {
