@@ -288,8 +288,13 @@ if {[info commands ::xotcl::nonposArgs] ne ""} {
 
 ::xotcl::Object instproc qn query_name {
   #set qn "dbqd.[my uplevel [list self class]]-[my uplevel [list self proc]].$query_name"
-  set qn "dbqd.[my uplevel {info level 0}].$query_name"
-  return $qn
+  set l [info level]
+  if {$l < 2} {
+    set prefix topLevel
+  } else {
+    set prefix [my uplevel {info level 0}]
+  }
+  return "dbqd.$prefix.$query_name"
 }
 namespace eval ::xo {
   Class create Timestamp
