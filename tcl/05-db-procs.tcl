@@ -274,6 +274,7 @@ namespace eval ::xo::db {
   ::xo::db::Driver abstract instproc foreach        {{-dbn ""} {-bind ""} qn sql script}
   ::xo::db::Driver abstract instproc transaction    {{-dbn ""} script args}
   ::xo::db::Driver abstract instproc ds {onOff}
+  ::xo::db::Driver abstract instproc prepare        {{-dbn ""} -name:required {-argtypes ""} sql}
 
   #
   # Driver specific and Driver/Dialect specific hooks
@@ -375,7 +376,9 @@ namespace eval ::xo::db {
       return [my uplevel [list ::dbi_eval -transaction committed $script]]
     }
   }
-
+  ::xo::db::DBI instproc prepare {{-dbn ""} -name:required {-argtypes ""} sql} {
+    return $sql
+  }
   ::xo::db::DBI instproc get_value {{-dbn ""} qn sql {default ""}} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
     set answers [my uplevel [list ::dbi_rows -result sets -max 1 $sql]]
@@ -457,6 +460,9 @@ namespace eval ::xo::db {
 
   ::xo::db::DB instproc transaction {{-dbn ""} script args} {
     return [my uplevel [list ::db_transaction -dbn $dbn $script {*}$args]]
+  }
+  ::xo::db::DB instproc prepare {{-dbn ""} -name:required {-argtypes ""} sql} {
+    return $sql
   }
 
   ::xo::db::DB instproc sets {{-dbn ""} {-bind ""} qn sql} {
@@ -588,6 +594,58 @@ namespace eval ::xo::db {
       ns_set free $answers
     }
     return $result
+  }
+
+  ::xo::db::DB-postgresql instproc prepare {{-dbn ""} -name:required {-argtypes ""} sql} {
+    #
+    # Define a key for keeping the prepared statements in nsv based on
+    # the provided name and the argtypes.
+    #
+    set key ${name}__[join [split $argtypes ,] _]
+
+    if {[nsv_exists pepared_statement $key]} {
+      #
+      # The perepared statement exists already
+      #
+      lassign [nsv_get pepared_statement $key] prepare execute
+    } else {
+      #
+      # Compute a PREPARE statement and an EXECUTE statement on the
+      # fly. Note, that the incoming SQL statement must not have tcl
+      # vars, but has to use bind vars.
+      #
+      set c 0; set l ""; set last 0; set arguments {}
+      foreach pair [regexp -all -inline -indices {:[a-zA-Z0_9_]+\M} $sql ] {
+        lassign $pair from to
+        lappend arguments [string range $sql $from $to]
+        append l [string range $sql $last $from-1] \$[incr c]
+        set last [incr to]
+      }
+      append l [string range $sql $last end]
+      
+      set prepare "PREPARE $name ($argtypes) AS $l"
+      set execute "EXECUTE $name ([join $arguments ,])"
+      nsv_set pepared_statement $key [list $prepare $execute]
+    }
+    #ns_log notice "name <$name> \n$prepare\n$execute"
+
+    #
+    # Get the DB-handle. We cache the information, whether the
+    # prepared statement was defined per pg sesson in a namespaced
+    # per-thread variable, which survives multiple queries.
+    #
+    db_with_handle db {set handle $db}
+    
+    set varName ::xo::preared($handle,$key)
+    if {![info exists $varName]} {
+      set $varName 1
+      if {![::xo::dc 0or1row check_prepared {select 1 from pg_prepared_statements where name = :key}]} {
+        ns_log notice "do prepare $prepare"
+        ::xo::dc dml create_prepared $prepare
+      }
+    }
+    #ns_log notice "execute $execute"
+    return $execute
   }
 
   ##########################################################################
