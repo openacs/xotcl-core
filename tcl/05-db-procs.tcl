@@ -274,7 +274,7 @@ namespace eval ::xo::db {
   ::xo::db::Driver abstract instproc foreach        {{-dbn ""} {-bind ""} qn sql script}
   ::xo::db::Driver abstract instproc transaction    {{-dbn ""} script args}
   ::xo::db::Driver abstract instproc ds {onOff}
-  ::xo::db::Driver abstract instproc prepare        {{-dbn ""} -name:required {-argtypes ""} sql}
+  ::xo::db::Driver abstract instproc prepare        {{-dbn ""} {-argtypes ""} sql}
 
   #
   # Driver specific and Driver/Dialect specific hooks
@@ -376,7 +376,7 @@ namespace eval ::xo::db {
       return [my uplevel [list ::dbi_eval -transaction committed $script]]
     }
   }
-  ::xo::db::DBI instproc prepare {{-dbn ""} -name:required {-argtypes ""} sql} {
+  ::xo::db::DBI instproc prepare {{-dbn ""} {-argtypes ""} sql} {
     return $sql
   }
   ::xo::db::DBI instproc get_value {{-dbn ""} qn sql {default ""}} {
@@ -461,7 +461,7 @@ namespace eval ::xo::db {
   ::xo::db::DB instproc transaction {{-dbn ""} script args} {
     return [my uplevel [list ::db_transaction -dbn $dbn $script {*}$args]]
   }
-  ::xo::db::DB instproc prepare {{-dbn ""} -name:required {-argtypes ""} sql} {
+  ::xo::db::DB instproc prepare {{-dbn ""} {-argtypes ""} sql} {
     return $sql
   }
 
@@ -596,50 +596,63 @@ namespace eval ::xo::db {
     return $result
   }
 
-  ::xo::db::DB-postgresql instproc prepare {{-dbn ""} -name:required {-argtypes ""} sql} {
+  ::xo::db::DB-postgresql instproc prepare {{-dbn ""} {-argtypes ""} sql} {
     #
-    # Define a key for keeping the prepared statements in nsv based on
-    # the provided name and the argtypes.
+    # Define a md5 key for the prepared statement in nsv based on the
+    # sql statement.
     #
-    set key ${name}__[join [split $argtypes ,] _]
-
+    set key [ns_md5 $sql]
     if {[nsv_exists pepared_statement $key]} {
       #
       # The perepared statement exists already
       #
-      lassign [nsv_get pepared_statement $key] prepare execute
+      lassign [nsv_get pepared_statement $key] prepare execute prepName sql
     } else {
       #
       # Compute a PREPARE statement and an EXECUTE statement on the
-      # fly. Note, that the incoming SQL statement must not have tcl
+      # fly. Notice, that the incoming SQL statement must not have tcl
       # vars, but has to use bind vars.
       #
-      set c 0; set l ""; set last 0; set arguments {}
+      set c 0; set l ""; set last 0;
+      set execArgs {}; set prepArgs {}
       foreach pair [regexp -all -inline -indices {:[a-zA-Z0_9_]+\M} $sql ] {
         lassign $pair from to
-        lappend arguments [string range $sql $from $to]
+        lappend execArgs [string range $sql $from $to]
+        lappend prepArgs unknown
         append l [string range $sql $last $from-1] \$[incr c]
         set last [incr to]
       }
       append l [string range $sql $last end]
-      
-      set prepare "PREPARE $name ($argtypes) AS $l"
-      set execute "EXECUTE $name ([join $arguments ,])"
-      nsv_set pepared_statement $key [list $prepare $execute]
+
+      set argtypes [split $argtypes ,]
+      if {[llength $argtypes] == [llength $prepArgs]} {
+        set prepArgs $argtypes
+      }
+      set c [nsv_incr pepared_statement count]
+      set prepName __P$c
+      set prepare "PREPARE $prepName ([join $prepArgs ,]) AS $l"
+      set execute "EXECUTE $prepName ([join $execArgs ,])"
+      nsv_set pepared_statement $key [list $prepare $execute $prepName $sql]
     }
-    #ns_log notice "name <$name> \n$prepare\n$execute"
 
     #
-    # Get the DB-handle. We cache the information, whether the
-    # prepared statement was defined per pg sesson in a namespaced
-    # per-thread variable, which survives multiple queries.
+    # Get the DB-handle.
     #
     db_with_handle db {set handle $db}
-    
+
+    #
+    # Cache the information, whether the prepared statement was
+    # defined per pg sesson in a namespaced per-thread variable, which
+    # survives multiple queries.
+    #
     set varName ::xo::preared($handle,$key)
     if {![info exists $varName]} {
+      #
+      # We have to check for the prepared statement and to create the
+      # prepared statement if necessary.
+      #
       set $varName 1
-      if {![::xo::dc 0or1row check_prepared {select 1 from pg_prepared_statements where name = :key}]} {
+      if {![::xo::dc 0or1row check_prepared {select 1 from pg_prepared_statements where name = :prepName}]} {
         ns_log notice "do prepare $prepare"
         ::xo::dc dml create_prepared $prepare
       }
@@ -695,12 +708,20 @@ namespace eval ::xo::db {
   if {[catch {ns_cache flush xotcl_object_cache NOTHING}]} {
     ns_log notice "xotcl-core: creating xotcl-object caches"
 
+    #ns_cache_create \
+    #    -maxentry 200000 \
+    #    xotcl_object_cache \
+    #    [parameter::get_from_package_key \
+    #         -package_key xotcl-core \
+    #         -parameter XOTclObjectCacheSize \
+    #         -default 400000]
+
     ns_cache create xotcl_object_cache \
         -size [parameter::get_from_package_key \
-                   -package_key xotcl-core \
-                   -parameter XOTclObjectCacheSize \
-                   -default 400000]
-
+             -package_key xotcl-core \
+             -parameter XOTclObjectCacheSize \
+             -default 400000]
+    
     ns_cache create xotcl_object_type_cache \
         -size [parameter::get_from_package_key \
                    -package_key xotcl-core \
@@ -743,8 +764,8 @@ namespace eval ::xo::db {
       set column_name [string tolower $column_name]
     }
     ::xo::db::sql::util table_column_exists \
-	-t_name $table_name \
-	-c_name $column_name
+        -t_name $table_name \
+        -c_name $column_name
   }
 
   require proc table {name definition {populate ""}} {

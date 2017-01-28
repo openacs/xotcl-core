@@ -10,7 +10,7 @@
     <inherit-templates-p>t</inherit-templates-p>
     <auto-mount>xotcl</auto-mount>
 
-    <version name="0.153" url="http://media.wu-wien.ac.at/download/xotcl-core-0.153.apm">
+    <version name="0.154" url="http://media.wu-wien.ac.at/download/xotcl-core-0.154.apm">
         <owner url="mailto:neumann@wu-wien.ac.at">Gustaf Neumann</owner>
         <summary>XOTcl library functionality (e.g. thread handling, online documentation, Generic Form and List Classes)</summary>
         <release-date>2016-09-10</release-date>
@@ -43,7 +43,7 @@ Features:
         <license>BSD-Style</license>
         <maturity>2</maturity>
 
-        <provides url="xotcl-core" version="0.153"/>
+        <provides url="xotcl-core" version="0.154"/>
 	<requires url="acs-kernel" version="5.9.1d20"/>
 	<requires url="acs-templating" version="5.9.1d7"/>
 	<requires url="acs-api-browser" version="5.9.1d1"/>
