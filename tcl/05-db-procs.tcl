@@ -629,7 +629,7 @@ namespace eval ::xo::db {
         set prepArgs $argtypes
       }
       set c [nsv_incr pepared_statement count]
-      set prepName __P$c
+      set prepName __p$c
       set prepare "PREPARE $prepName ([join $prepArgs ,]) AS $l"
       set execute "EXECUTE $prepName ([join $execArgs ,])"
       nsv_set pepared_statement $key [list $prepare $execute $prepName $sql]
@@ -708,20 +708,29 @@ namespace eval ::xo::db {
   if {[catch {ns_cache flush xotcl_object_cache NOTHING}]} {
     ns_log notice "xotcl-core: creating xotcl-object caches"
 
-    #ns_cache_create \
-    #    -maxentry 200000 \
-    #    xotcl_object_cache \
-    #    [parameter::get_from_package_key \
-    #         -package_key xotcl-core \
-    #         -parameter XOTclObjectCacheSize \
-    #         -default 400000]
+    if {[info commands ns_cache_create] ne ""} {
+      #
+      # Version for NaviServer, which provides allows to provide
+      # maximum size for a single cache entry.
+      #
+      ns_cache_create \
+          -maxentry 200000 \
+          xotcl_object_cache \
+          [parameter::get_from_package_key \
+               -package_key xotcl-core \
+               -parameter XOTclObjectCacheSize \
+               -default 400000]
+    } else {
+      #
+      # Version for AOLserver
+      #
+      ns_cache create xotcl_object_cache \
+          -size [parameter::get_from_package_key \
+                     -package_key xotcl-core \
+                     -parameter XOTclObjectCacheSize \
+                     -default 400000]
+    }
 
-    ns_cache create xotcl_object_cache \
-        -size [parameter::get_from_package_key \
-             -package_key xotcl-core \
-             -parameter XOTclObjectCacheSize \
-             -default 400000]
-    
     ns_cache create xotcl_object_type_cache \
         -size [parameter::get_from_package_key \
                    -package_key xotcl-core \
