@@ -657,16 +657,16 @@ namespace eval ::xo::db {
     # defined per pg sesson in a namespaced per-thread variable, which
     # survives multiple queries.
     #
-    set varName ::xo::preared($handle,$key)
+    set varName ::xo::prepared($handle,$key)
     if {![info exists $varName]} {
       #
       # We have to check for the prepared statement and to create the
       # prepared statement if necessary.
       #
-      set $varName 1
-      if {![::xo::dc 0or1row check_prepared {select 1 from pg_prepared_statements where name = :prepName}]} {
+      if {![::xo::dc 0or1row -dbn $dbn check_prepared {select 1 from pg_prepared_statements where name = :prepName}]} {
         ns_log notice "do prepare $prepare"
-        ::xo::dc dml create_prepared $prepare
+        ::xo::dc dml -dbn $dbn create_prepared $prepare
+        set $varName 1
       }
     }
     #ns_log notice "execute $execute"
