@@ -1007,6 +1007,7 @@ namespace eval ::xo::db {
 
   #::xo::db::Class set __default_superclass ::xo::db::Object  ;# will be supported in XOTcl 1.6
 
+
   #
   # Define an XOTcl interface for creating new object types
   #
@@ -2257,6 +2258,12 @@ namespace eval ::xo::db {
       }
     }
 
+    #
+    # This should go into 01-sebug procs, but serializer does not
+    # export aliases for xotcl objects.
+    #
+    nsf::method::alias ::xotcl::Object lassign -frame object ::lassign
+
     set sets [uplevel [list ::xo::dc sets -dbn $dbn [self proc] $sql]]
     foreach selection $sets {
       if {$named_objects} {
@@ -2277,7 +2284,10 @@ namespace eval ::xo::db {
         }
         lappend __result $o
       }
-      foreach {att val} [ns_set array $selection] {$o set $att $val}
+      #foreach {att val} [ns_set array $selection] {$o set $att $val}
+      set selection [ns_set array $selection]
+      $o lassign [dict values $selection] {*}[dict keys $selection]
+
       if {[$o exists object_type]} {
         # set the object type if it looks like managed from XOTcl
         if {[string match "::*" [set ot [$o set object_type]] ]} {
