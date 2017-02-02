@@ -657,7 +657,8 @@ namespace eval ::xo::db {
     # defined per pg sesson in a namespaced per-thread variable, which
     # survives multiple queries.
     #
-    set varName ::xo::prepared($handle,$key)
+    #set varName ::xo::prepared($handle,$key)
+    set varName __prepared($key)    
     if {![info exists $varName]} {
       #
       # We have to check for the prepared statement and to create the
