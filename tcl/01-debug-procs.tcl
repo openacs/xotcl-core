@@ -32,6 +32,7 @@ package require xotcl::serializer
   ::xotcl::Object instproc www-show-object
   ::xotcl::Object instproc destroy_on_cleanup
   ::xotcl::Object instproc set_instance_vars_defaults
+  ::xotcl::Object instproc mset
   ::xotcl::Class instproc extend_slot
 }
 
@@ -173,6 +174,13 @@ if {[::package vcompare [package require xotcl::serializer] 2.0] < -1} {
   ::xotcl::Object instproc serialize {} {
     ::Serializer deepSerialize [self]
   }
+}
+
+::xotcl::Object instproc mset {pairs} {
+  #
+  # Import all attribute value pairs into the current XOTcl object.
+  #
+  nsf::directdispatch [self] -frame object ::lassign [dict values $pairs] {*}[dict keys $pairs]
 }
 
 ::xotcl::Object instproc www-show-object {} {

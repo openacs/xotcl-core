@@ -275,7 +275,7 @@ namespace eval ::xo::db {
   ::xo::db::Driver abstract instproc foreach        {{-dbn ""} {-bind ""} -prepare qn sql script}
   ::xo::db::Driver abstract instproc transaction    {{-dbn ""} script args}
   ::xo::db::Driver abstract instproc ds {onOff}
-  ::xo::db::Driver abstract instproc prepare        {{-dbn ""} {-argtypes ""} sql}
+  ::xo::db::Driver abstract instproc prepare        {-handle {-argtypes ""} sql}
 
   #
   # Driver specific and Driver/Dialect specific hooks
@@ -377,7 +377,7 @@ namespace eval ::xo::db {
       return [my uplevel [list ::dbi_eval -transaction committed $script]]
     }
   }
-  ::xo::db::DBI instproc prepare {{-dbn ""} {-argtypes ""} sql} {
+  ::xo::db::DBI instproc prepare {-handle {-argtypes ""} sql} {
     return $sql
   }
   ::xo::db::DBI instproc get_value {{-dbn ""} -prepare qn sql {default ""}} {
@@ -462,15 +462,15 @@ namespace eval ::xo::db {
   ::xo::db::DB instproc transaction {{-dbn ""} script args} {
     return [my uplevel [list ::db_transaction -dbn $dbn $script {*}$args]]
   }
-  ::xo::db::DB instproc prepare {{-dbn ""} {-argtypes ""} sql} {
+  ::xo::db::DB instproc prepare {-handle {-argtypes ""} sql} {
     return $sql
   }
 
   ::xo::db::DB instproc sets {{-dbn ""} {-bind ""} -prepare qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    if {[info exists prepare]} {set sql [:prepare -dbn $dbn -argtypes $prepare $sql]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     db_with_handle -dbn $dbn db {
+      if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
       set result [list]
       set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
       while { [::db_getrow $db $answers] } {
@@ -487,15 +487,16 @@ namespace eval ::xo::db {
     #
     # the prepare in the next line works probably only with inline sql statements
     #
-    if {[info exists prepare]} {set sql [:prepare -dbn $dbn -argtypes $prepare $sql]}
+    #if {[info exists prepare]} {set sql [:prepare -dbn $dbn -argtypes $prepare $sql]}
     #ns_log notice "### [list ::db_foreach -dbn $dbn $qn $sql $body {*}$bindOpt]"
     uplevel [list ::db_foreach -dbn $dbn $qn $sql $body {*}$bindOpt]
   }
 
-  ::xo::db::DB instproc exec_0or1row {{-bind ""} sql} {
+  ::xo::db::DB instproc exec_0or1row {-prepare {-bind ""} sql} {
     # Helper, used from several postgres-spefic one-tuple queries
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     ::db_with_handle h {
+      if {[info exists prepare]} {set sql [:prepare -handle $h -argtypes $prepare $sql]}
       return [uplevel [list ns_pg_bind 0or1row $h {*}$bindOpt $sql]]
     }
   }
@@ -511,7 +512,6 @@ namespace eval ::xo::db {
   ::xo::db::DB instproc dml {{-dbn ""} {-bind ""} -prepare qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
-    if {[info exists prepare]} {set sql [:prepare -dbn $dbn -argtypes $prepare $sql]}
     uplevel [list ::db_dml [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
     return [db_resultrows]
   }
@@ -546,8 +546,8 @@ namespace eval ::xo::db {
   #
   ::xo::db::DB-postgresql instproc 0or1row {{-dbn ""} {-bind ""} -prepare qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    if {[info exists prepare]} {set sql [:prepare -dbn $dbn -argtypes $prepare $sql]}
-    set answers [uplevel [list [self] exec_0or1row -bind $bind $sql]]
+    set prepOpt [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
+    set answers [uplevel [list [self] exec_0or1row {*}$prepOpt -bind $bind $sql]]
     if {$answers ne ""} {
       foreach {att val} [ns_set array $answers] { uplevel [list set $att $val] }
       ns_set free $answers
@@ -557,8 +557,8 @@ namespace eval ::xo::db {
   }
   ::xo::db::DB-postgresql instproc 1row {{-dbn ""} {-bind ""} -prepare qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    if {[info exists prepare]} {set sql [:prepare -dbn $dbn -argtypes $prepare $sql]}
-    set answers [uplevel [list [self] exec_0or1row -bind $bind $sql]]
+    set prepOpt [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
+    set answers [uplevel [list [self] exec_0or1row {*}$prepOpt -bind $bind $sql]]
     if {$answers ne ""} {
       foreach {att val} [ns_set array $answers] { uplevel [list set $att $val] }
       ns_set free $answers
@@ -568,8 +568,8 @@ namespace eval ::xo::db {
   }
   ::xo::db::DB-postgresql instproc get_value {{-dbn ""} {-bind ""} -prepare qn sql {default ""}} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    if {[info exists prepare]} {set sql [:prepare -dbn $dbn -argtypes $prepare $sql]}
-    set answers [uplevel [list [self] exec_0or1row -bind $bind $sql]]
+    set prepOpt [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
+    set answers [uplevel [list [self] exec_0or1row {*}$prepOpt -bind $bind $sql]]
     if {$answers ne ""} {
       set result [ns_set value $answers 0]
       ns_set free $answers
@@ -579,9 +579,9 @@ namespace eval ::xo::db {
   }
   ::xo::db::DB-postgresql instproc list_of_lists {{-dbn ""} {-bind ""} -prepare qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    if {[info exists prepare]} {set sql [:prepare -dbn $dbn -argtypes $prepare $sql]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     db_with_handle db {
+      if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
       set result [list]
       set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
       while { [db_getrow $db $answers] } {
@@ -595,9 +595,9 @@ namespace eval ::xo::db {
   }
   ::xo::db::DB-postgresql instproc list {{-dbn ""} {-bind ""} -prepare qn sql} {
     if {$sql eq ""} {set sql [my get_sql $qn]}
-    if {[info exists prepare]} {set sql [:prepare -dbn $dbn -argtypes $prepare $sql]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     db_with_handle db {
+      if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
       set result [list]
       set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
       while { [::db_getrow $db $answers] } {
@@ -607,13 +607,24 @@ namespace eval ::xo::db {
     }
     return $result
   }
+  ::xo::db::DB-postgresql instproc dml {{-dbn ""} {-bind ""} -prepare qn sql} {
+    if {$sql eq ""} {set sql [my get_sql $qn]}
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    set bind $bindOpt
+    db_with_handle -dbn $dbn db {
+      if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
+      ::db_exec dml $db [uplevel [list [self] qn $qn]] $sql 2
+    }
+    return [db_resultrows]
+  }
 
-  ::xo::db::DB-postgresql instproc prepare {{-dbn ""} {-argtypes ""} sql} {
+  ::xo::db::DB-postgresql instproc prepare {-handle:required {-argtypes ""} sql} {
     #
     # Define a md5 key for the prepared statement in nsv based on the
     # sql statement.
     #
     set key [ns_md5 $sql]
+
     if {[nsv_exists pepared_statement $key]} {
       #
       # The perepared statement exists already
@@ -648,29 +659,34 @@ namespace eval ::xo::db {
     }
 
     #
-    # Get the DB-handle.
-    #
-    db_with_handle -dbn $dbn db {set handle $db}
-
-    #
     # Cache the information, whether the prepared statement was
-    # defined per pg sesson in a namespaced per-thread variable, which
-    # survives multiple queries.
+    # defined per pg session. Depending on the version of the driver,
+    # we can obtain a session_id from the the db driver. If we can't,
+    # we fall back to a per request-cache (via toplevel variable).
     #
-    #set varName ::xo::prepared($handle,$key)
-    set varName __prepared($key)    
+    catch {set session_id [ns_db session_id $handle]}
+    if {[info exists session_id]} {
+      ns_log notice "=== $handle $session_id"
+      set varName ::xo::prepared($session_id,$key)
+    } else {
+      set session_id "-"
+      set varName __prepared($key)    
+    }
+
     if {![info exists $varName]} {
       #
-      # We have to check for the prepared statement and to create the
-      # prepared statement if necessary.
+      # We have to check for the prepared statement in the current
+      # session and we have to create it if necessary there.
       #
-      if {![::xo::dc 0or1row -dbn $dbn check_prepared {select 1 from pg_prepared_statements where name = :prepName}]} {
-        ns_log notice "do prepare $prepare"
-        ::xo::dc dml -dbn $dbn create_prepared $prepare
+      if {[ns_pg_bind 0or1row $handle {
+        select 1 from pg_prepared_statements where name = :prepName
+      }] eq ""} {
+        ns_log notice "=== do prepare handle $handle $prepare session_id $session_id"
+        ::db_exec dml $handle qn..create_preapared $prepare
         set $varName 1
       }
     }
-    #ns_log notice "execute $execute"
+    ns_log notice "=== pepare done, handle $handle execute $execute session_id $session_id"
     return $execute
   }
 
@@ -2259,12 +2275,6 @@ namespace eval ::xo::db {
       }
     }
 
-    #
-    # This should go into 01-sebug procs, but serializer does not
-    # export aliases for xotcl objects.
-    #
-    nsf::method::alias ::xotcl::Object lassign -frame object ::lassign
-
     set sets [uplevel [list ::xo::dc sets -dbn $dbn [self proc] $sql]]
     foreach selection $sets {
       if {$named_objects} {
@@ -2286,8 +2296,7 @@ namespace eval ::xo::db {
         lappend __result $o
       }
       #foreach {att val} [ns_set array $selection] {$o set $att $val}
-      set selection [ns_set array $selection]
-      $o lassign [dict values $selection] {*}[dict keys $selection]
+      $o mset [ns_set array $selection]
 
       if {[$o exists object_type]} {
         # set the object type if it looks like managed from XOTcl
