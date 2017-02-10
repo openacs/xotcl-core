@@ -17,6 +17,7 @@ namespace eval ::xo::db {
         {mime_type text/plain}
         {storage_type "text"}
         {folder_id -100}
+        {non_cached_instance_var_patterns {__*}}
       } -ad_doc {
         <p>The meta class CrClass serves for a class of applications that mostly 
         store information in the content repository and that use a few 
@@ -1632,29 +1633,45 @@ namespace eval ::xo::db {
 
   ::xotcl::Class create CrCache::Item
   CrCache::Item set name_pattern {^::[0-9]+$}
+  
   CrCache::Item instproc remove_non_persistent_vars {} {
-    # we do not want to save __db__artefacts in the cache
-    foreach x [my info vars __db_*] {my unset $x}
-    # remove as well vars and array starting with "__", assuming these
-    # are volatile variables created by initialize_loaded_object or
-    # similar mechanisms
+    #
+    # Do not save __db__artefacts in the cache.
+    #
+    foreach x [info vars :__db_*] {
+      unset :$x
+    }
+    #
+    # Remove vars and arrays matching the class-specific specified
+    # non_cached_instance_var_patterns and treat these as variables,
+    # which are not stored in the cache, but which are kept in the
+    # instance variables. These variables are removed before caching
+    # and restored afterwards.
+    #
     set arrays {}
     set scalars {}
-    foreach x [my info vars __*] {
-      if {[my array exists $x]} {
-        lappend arrays $x [my array get $x]
-        my array unset $x
+    set non_cached_vars {}
+    foreach pattern [[my info class] non_cached_instance_var_patterns] {
+      lappend non_cached_vars {*}[info vars :$pattern]
+    }
+    
+    #puts stderr "pattern [[my info class] non_cached_instance_var_patterns], non_cached_vars=$non_cached_vars"
+    foreach x $non_cached_vars {
+      if {[array exists :$x]} {
+        lappend arrays $x [array get :$x]
+        array unset :$x
       } {
-        lappend scalars $x [my set $x]
-        my unset $x
+        lappend scalars $x [set :$x]
+        unset :$x
       }
     }
     return [list $arrays $scalars]
   }
+  
   CrCache::Item instproc set_non_persistent_vars {vars} {
     lassign $vars arrays scalars
     foreach {var value} $arrays {my array set $var $value}
-    foreach {var value} $scalars {my set $var $value}
+    :mset $scalars
   }
   CrCache::Item instproc flush_from_cache_and_refresh {} {
     # cache only names with IDs
