@@ -268,7 +268,7 @@ namespace eval ::xo::db {
   ::xo::db::Driver abstract instproc sets           {{-dbn ""} {-bind ""} -prepare qn sql}
   ::xo::db::Driver abstract instproc 0or1row        {{-dbn ""} {-bind ""} -prepare qn sql}
   ::xo::db::Driver abstract instproc 1row           {{-dbn ""} {-bind ""} -prepare qn sql}
-  ::xo::db::Driver abstrace instproc get_value      {{-dbn ""} {-bind ""} -prepare qn sql {default ""}}
+  ::xo::db::Driver abstract instproc get_value      {{-dbn ""} {-bind ""} -prepare qn sql {default ""}}
   ::xo::db::Driver abstract instproc list_of_lists  {{-dbn ""} {-bind ""} -prepare qn sql}
   ::xo::db::Driver abstract instproc list           {{-dbn ""} {-bind ""} -prepare qn sql}
   ::xo::db::Driver abstract instproc dml            {{-dbn ""} {-bind ""} -prepare qn sql}
