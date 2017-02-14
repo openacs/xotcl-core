@@ -540,6 +540,17 @@ ad_library {
     }
     return [list -debug=$debug -deprecated=$deprecated]
   }
+  
+  :public object method get_returns_spec {returns} {
+    if {$::nsf::version < 2.1} {
+      set result ""
+    } elseif {$returns ne ""} {
+      set result [list -returns $returns]
+    } else {
+      set result ""
+    }
+    return $result
+  }
 }
 
 ::nx::Class public method init {} {
@@ -563,11 +574,13 @@ ad_library {
   {-debug:switch false} 
   proc_name 
   arguments:parameter,0..*
+  {-returns ""}
   doc 
   body
 } {
   set flags [::xo::api get_proc_definition_flags $debug $deprecated]
-  uplevel [list [self] proc {*}$flags $proc_name $arguments $body]
+  set returnSpec [::xo::api get_returns_spec $returns]
+  uplevel [list [self] proc {*}$flags $proc_name $arguments {*}$returnSpec $body]
   ::xo::api update_method_doc \
       -protection [expr {$private ? "private" : "public"}] \
       -deprecated=$deprecated \
@@ -580,14 +593,16 @@ ad_library {
   {-private:switch false}
   {-deprecated:switch false}
   {-warn:switch false}
-  {-debug:switch false} 
+  {-debug:switch false}
   proc_name 
   arguments:parameter,0..*
+  {-returns ""}
   doc 
   body
 } {
   set flags [::xo::api get_proc_definition_flags $debug $deprecated]
-  uplevel [list [self] instproc {*}$flags $proc_name $arguments $body]
+  set returnSpec [::xo::api get_returns_spec $returns]
+  uplevel [list [self] instproc {*}$flags $proc_name $arguments {*}$returnSpec $body]
   ::xo::api update_method_doc \
       -protection [expr {$private ? "private" : "public"}] \
       -deprecated=$deprecated \
@@ -600,8 +615,11 @@ ad_library {
   {-private:switch false}
   {-deprecated:switch false}
   {-warn:switch false}
-  {-debug:switch false} 
-  method_name doc args} {
+  {-debug:switch false}
+  method_name
+  doc
+  args
+} {
     set flags [::xo::api get_proc_definition_flags $debug $deprecated]
     uplevel [self] forward {*}$flags $method_name $args
     ::xo::api update_method_doc \
@@ -617,7 +635,10 @@ ad_library {
   {-deprecated:switch false}
   {-warn:switch false}
   {-debug:switch false} 
-  method_name doc args} {
+  method_name
+  doc
+  args
+} {
     set flags [::xo::api get_proc_definition_flags $debug $deprecated]
     uplevel [self] instforward {*}$flags $method_name $args
     ::xo::api update_method_doc \
