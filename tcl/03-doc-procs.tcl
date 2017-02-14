@@ -1,7 +1,7 @@
 ad_library {
-  XOTcl API for api browser, defines the methods 
-  ad_proc (for object specific methods), 
-  ad_instproc (for tradional methods) and 
+  XOTcl API for api browser, defines the methods
+  ad_proc (for object specific methods),
+  ad_instproc (for tradional methods) and
   ad_odc (for documenting classes). Syntax for the methods
   ad_proc and ad_instproc is like oacs ad_proc, ad_doc
   receives one argument, similar to ad_library.
@@ -34,7 +34,7 @@ ad_library {
     0-Class "Class"
     0-Object "Object"
   }
-  
+
   #
   # Support functions for the the OpenACS API browser
   #
@@ -106,7 +106,7 @@ ad_library {
     # Increment global form_id
     #
     set form_id "form-[incr ::__form_id]"
-    
+
     #
     # Add the JavaScript function only once, which will toggle the
     # debug state in the background (template::add_script would add
@@ -134,11 +134,11 @@ ad_library {
     }
 
     #
-    # Add the required js and CSS. We use here bootstrap + titatoggle. 
+    # Add the required js and CSS. We use here bootstrap + titatoggle.
     #
     template::head::add_css -href https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css
     template::head::add_javascript -src https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js -order 1
-    
+
     security::csp::require style-src maxcdn.bootstrapcdn.com
     security::csp::require script-src maxcdn.bootstrapcdn.com
     security::csp::require font-src maxcdn.bootstrapcdn.com
@@ -190,7 +190,7 @@ ad_library {
       $scope do {*}$args
     }
   }
-  
+
   :public object method isclass {scope obj} {
     :scope_eval $scope xo::getObjectProperty $obj isclass
   }
@@ -266,19 +266,19 @@ ad_library {
       while {[string length $l] > $width} {
         set pos [string last " \{" $l $width]
         if {$pos>10} {
-          lappend lines "[string range $l 0 $pos-1] \\" 
+          lappend lines "[string range $l 0 $pos-1] \\"
           set l "      [string range $l $pos end]"
         } else {
           # search for a match right of the target
           set pos [string first " \{" $l $width]
           if {$pos > 10} {
-            lappend lines "[string range $l 0 $pos-1] \\" 
+            lappend lines "[string range $l 0 $pos-1] \\"
             set l "      [string range $l $pos end]"
           } else {
-            # last resort try to split around spaces 
+            # last resort try to split around spaces
             set pos [string last " " $l $width]
             if {$pos > 10} {
-              lappend lines "[string range $l 0 $pos-1] \\" 
+              lappend lines "[string range $l 0 $pos-1] \\"
               set l "      [string range $l $pos end]"
             } else {
               break
@@ -417,7 +417,7 @@ ad_library {
         }
       }
     }
-    
+
   }
 
   :public object method update_method_doc {
@@ -443,7 +443,7 @@ ad_library {
                  flags "" \
                  switches "" \
                 ]
-    
+
     if {$docString ne ""} {
       ad_parse_documentation_string $docString doc_elements
       set doc [dict replace $doc {*}[array get doc_elements]]
@@ -459,7 +459,7 @@ ad_library {
           lappend defaults $a $d
         }
       }
-      
+
       foreach def [::xo::getObjectProperty $obj ${inst}methodparameter $proc_name] {
         lassign $def f default
         set pair [split [lindex $f 0 0] :]
@@ -485,7 +485,7 @@ ad_library {
       dict set doc default_values $defaults
       dict set doc positionals [::xo::getObjectProperty $obj ${inst}args $proc_name]
     }
-    
+
     # argument documentation finished
     set proc_index [::xo::api proc_index $scope $obj ${inst}proc $proc_name]
     if {![nsv_exists api_proc_doc $proc_index]} {
@@ -494,7 +494,7 @@ ad_library {
     #ns_log notice "SETTING api_proc_doc '$proc_index' <$doc>"
     nsv_set api_proc_doc $proc_index $doc
   }
-  
+
 
   :public object method get_init_block {scope obj} {
     #
@@ -540,7 +540,7 @@ ad_library {
     }
     return [list -debug=$debug -deprecated=$deprecated]
   }
-  
+
   :public object method get_returns_spec {returns} {
     if {$::nsf::version < 2.1} {
       set result ""
@@ -571,11 +571,11 @@ ad_library {
   {-private:switch false}
   {-deprecated:switch false}
   {-warn:switch false}
-  {-debug:switch false} 
-  proc_name 
+  {-debug:switch false}
+  proc_name
   arguments:parameter,0..*
   {-returns ""}
-  doc 
+  doc
   body
 } {
   set flags [::xo::api get_proc_definition_flags $debug $deprecated]
@@ -594,10 +594,10 @@ ad_library {
   {-deprecated:switch false}
   {-warn:switch false}
   {-debug:switch false}
-  proc_name 
+  proc_name
   arguments:parameter,0..*
   {-returns ""}
-  doc 
+  doc
   body
 } {
   set flags [::xo::api get_proc_definition_flags $debug $deprecated]
@@ -634,7 +634,7 @@ ad_library {
   {-private:switch false}
   {-deprecated:switch false}
   {-warn:switch false}
-  {-debug:switch false} 
+  {-debug:switch false}
   method_name
   doc
   args
@@ -654,9 +654,9 @@ ad_library {
 }
 
 # Class ::Test -ad_doc {
-#   Test Class for the documentation of 
-#   <code>Classes</code>, 
-#   <code>Objects</code>, 
+#   Test Class for the documentation of
+#   <code>Classes</code>,
+#   <code>Objects</code>,
 #   <code>instprocs</code>, and
 #   <code>procs</code>.
 #   @author Gustaf Neumann
