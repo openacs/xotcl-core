@@ -10,6 +10,9 @@
   <msg key="edit_type">Editar %type%</msg>
   <msg key="has_entered_the_room">ha entrado en la sala</msg>
   <msg key="live_revision">Revisión Viva</msg>
+  <msg key="No_Data">Sin datos</msg>
+  <msg key="nobody">Invitado</msg>
+  <msg key="permission_denied">Permiso denegado</msg>
   <msg key="policy-error-insufficient_permissions">&lt;blockquote&gt;
 Usted no tiene permisos suficientes para realizar método %method% en objeto %object%.
 &lt;/blockquote&gt;</msg>
