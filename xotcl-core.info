@@ -13,7 +13,7 @@
     <version name="0.156" url="http://media.wu-wien.ac.at/download/xotcl-core-0.156.apm">
         <owner url="mailto:neumann@wu-wien.ac.at">Gustaf Neumann</owner>
         <summary>XOTcl library functionality (e.g. thread handling, online documentation, Generic Form and List Classes)</summary>
-        <release-date>2016-09-10</release-date>
+        <release-date>2017-02-10</release-date>
         <vendor url="http://wu.ac.at">WU Vienna</vendor>
         <description format="text/html">&lt;pre&gt;
 This component contains some core functionality for OpenACS
@@ -44,11 +44,11 @@ Features:
         <maturity>2</maturity>
 
         <provides url="xotcl-core" version="0.156"/>
-	<requires url="acs-kernel" version="5.9.1d20"/>
-	<requires url="acs-templating" version="5.9.1d7"/>
-	<requires url="acs-api-browser" version="5.9.1d1"/>
-	<requires url="acs-content-repository" version="5.9.1d23"/>
-        <requires url="acs-tcl" version="5.9.1d7"/>
+	<requires url="acs-kernel" version="5.9.1b1"/>
+	<requires url="acs-templating" version="5.9.1b1"/>
+	<requires url="acs-api-browser" version="5.9.1b1"/>
+	<requires url="acs-content-repository" version="5.9.1b1"/>
+        <requires url="acs-tcl" version="5.9.1b1"/>
 
         <callbacks>
             <callback type="before-install"  proc="::xotcl-core::before-install"/>
