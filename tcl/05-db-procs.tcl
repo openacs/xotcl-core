@@ -666,7 +666,7 @@ namespace eval ::xo::db {
     #
     catch {set session_id [ns_db session_id $handle]}
     if {[info exists session_id]} {
-      ns_log notice "=== $handle $session_id"
+      #ns_log notice "=== $handle $session_id"
       set varName ::xo::prepared($session_id,$key)
     } else {
       set session_id "-"
@@ -686,7 +686,7 @@ namespace eval ::xo::db {
         set $varName 1
       }
     }
-    ns_log notice "=== pepare done, handle $handle execute $execute session_id $session_id"
+    #ns_log notice "=== pepare done, handle $handle execute $execute session_id $session_id"
     return $execute
   }
 
