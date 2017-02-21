@@ -82,6 +82,7 @@ namespace eval ::xo {
     if {![nsv_exists [self]-loaded $otherfile]} {
       my log "--sourcing $otherfile"
       apm_source $otherfile
+      nsv_set [self]-loaded $otherfile 1
     }
   }
 
