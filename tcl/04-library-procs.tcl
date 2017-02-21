@@ -104,9 +104,7 @@ namespace eval ::xo {
     #my log "--check nsv_exists $vn $dirname/$myfile [nsv_exists $vn $dirname/$myfile]"
     if {[nsv_exists $vn $dirname/$myfile]} {
       foreach file [nsv_get $vn $dirname/$myfile] {
-        #my log "--sourcing dependent $dirname/$file"
-        #apm_source $dirname/$file
-        #my log "--sourcing dependent $file"
+        my log "--sourcing dependent $file"
         apm_source $file
       }
     }
