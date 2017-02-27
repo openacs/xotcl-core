@@ -13,7 +13,7 @@
     <version name="0.156" url="http://media.wu-wien.ac.at/download/xotcl-core-0.156.apm">
         <owner url="mailto:neumann@wu-wien.ac.at">Gustaf Neumann</owner>
         <summary>XOTcl library functionality (e.g. thread handling, online documentation, Generic Form and List Classes)</summary>
-        <release-date>2017-02-10</release-date>
+        <release-date>2017-02-20</release-date>
         <vendor url="http://wu.ac.at">WU Vienna</vendor>
         <description format="text/html">&lt;pre&gt;
 This component contains some core functionality for OpenACS
