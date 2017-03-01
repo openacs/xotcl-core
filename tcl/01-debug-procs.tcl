@@ -180,7 +180,9 @@ if {[::package vcompare [package require xotcl::serializer] 2.0] < -1} {
   #
   # Import all attribute value pairs into the current XOTcl object.
   #
-  nsf::directdispatch [self] -frame object ::lassign [dict values $pairs] {*}[dict keys $pairs]
+  if {[llength $pairs] > 0} {
+    nsf::directdispatch [self] -frame object ::lassign [dict values $pairs] {*}[dict keys $pairs]
+  }
 }
 
 ::xotcl::Object instproc www-show-object {} {
