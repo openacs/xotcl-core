@@ -444,7 +444,7 @@ namespace eval ::xo {
     foreach column [[self]::__columns children] {
       if {[$column exists no_csv]} continue
       set label [$column label]
-      if {[regexp {^#(.*)#$} $label _ message_key]} {
+      if {[regexp {^#([a-zA-Z0-9_:-]+\.[a-zA-Z0-9_:-]+)#$} $label _ message_key]} {
         set label [_ $message_key]
       }
       set value [string map {\" \\\" \n \r)} $label]
