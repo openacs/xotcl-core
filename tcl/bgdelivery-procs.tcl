@@ -104,7 +104,7 @@ if {![string match "*contentsentlength*" $msg]} {
     unset -nocomplain ::runningBgJob([lindex $::running($key) 0])
     unset ::running($key)
     if {[info exists ::delete_file($key)]} {
-      file delete $filename
+      file delete -- $filename
       unset ::delete_file($key)
     }
   }
@@ -204,7 +204,7 @@ if {![string match "*contentsentlength*" $msg]} {
     unset ::running($key)
     unset ::bytes($key)
     if {[info exists ::delete_file($key)]} {
-      file delete $filename
+      file delete -- $filename
       unset ::delete_file($key)
     }
   }

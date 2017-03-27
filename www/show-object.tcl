@@ -439,8 +439,8 @@ if {!$as_img} {
     }
     set svg "<style>$css</style><div><div class='inner'>$svg</div></div>"
 
-    file delete $tmpfile
-    file delete $tmpnam.dot
+    file delete -- $tmpfile
+    file delete -- $tmpnam.dot
   }
 }
 

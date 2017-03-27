@@ -40,7 +40,7 @@ namespace eval ::xotcl-core {
       } {
         if {[file exists $dir/$file]} {
           ns_log notice "Deleting obsolete file $dir/$file"
-          file delete $dir/$file
+          file delete -- $dir/$file
         }
       }
     }
