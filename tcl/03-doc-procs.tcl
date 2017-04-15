@@ -464,7 +464,7 @@ ad_library {
         lassign $def f default
         set pair [split [lindex $f 0 0] :]
         lassign $pair flaggedName flags
-        if {[string range $flaggedName 0 0] eq "-"} {
+        if {[string index $flaggedName 0] eq "-"} {
           set isFlag 1
           set name [string range $flaggedName 1 end]
         } else {

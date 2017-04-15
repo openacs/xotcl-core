@@ -886,7 +886,7 @@ proc ::xo::getObjectProperty {o what args} {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instargs {*}$args]}
       set posargs {}
       foreach m [$o info method args {*}$args] p [$o info method parameters {*}$args] {
-        if {[string range [lindex $p 0] 0 0] eq "-"} continue
+        if {[string index [lindex $p 0] 0] eq "-"} continue
         lappend posargs $m
       }
       return $posargs
