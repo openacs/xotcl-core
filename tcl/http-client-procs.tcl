@@ -671,13 +671,13 @@ namespace eval ::xo {
       } -instproc success {payload obj} {
         my debug "[string length $payload] bytes payload"
         #if {[string length $payload]<600} {my log payload=$payload}
-        # this is called as after a succesful request
+        # this is called as after a successful request
         my finalize $obj "JOB_COMPLETED" $payload
 
       } -instproc failure {reason obj} {
         my log "[self proc] [self args]"
         my log "failed for '$reason'"
-        # this is called as after an unsuccesful request
+        # this is called as after an unsuccessful request
         my finalize $obj "JOB_FAILED" $reason
 
       } -instproc unknown {method args} {

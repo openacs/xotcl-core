@@ -546,7 +546,7 @@ namespace eval ::xo {
   
   proc ::xo::update_query_variable {old_query var value} {
     #
-    # Replace in a url-query old occurances of var with new value.
+    # Replace in a url-query old occurrences of var with new value.
     #
     # @return pairs in a form suitable for export_vars
     #
@@ -564,7 +564,7 @@ namespace eval ::xo {
 
   proc ::xo::update_query {old_query var value} {
     #
-    # Replace in a url-query old occurances of var with new value.
+    # Replace in a url-query old occurrences of var with new value.
     #
     # @return encoded HTTP query
     #

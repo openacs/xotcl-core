@@ -370,7 +370,7 @@ namespace eval ::xo {
       set p [glob -nocomplain $dir/tcllib*]
       if {$p ne ""} {
         append _ "$p"
-        # just show first occurances on path
+        # just show first occurrences on path
         break
       }
     }

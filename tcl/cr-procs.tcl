@@ -1342,7 +1342,7 @@ namespace eval ::xo::db {
   # 
   # We should provide either a minimal parameter page for this
   # purposes, or - more conservative - provide simply package
-  # parameters for this. The only thing we are loosing are "computed
+  # parameters for this. The only thing we are losing are "computed
   # parameters", what most probably no-one uses. The delegation based
   # parameters are most probably good replacement to manage such
   # parameters site-wide.

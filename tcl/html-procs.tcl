@@ -30,7 +30,7 @@ proc require_html_procs {} {
       dom setTextCheck false
 
       #
-      # Miscelaneous commands. Not part of html specs
+      # Miscellaneous commands. Not part of html specs
       # but needed for generation of special dom nodes.
       #
 

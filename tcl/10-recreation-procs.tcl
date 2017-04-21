@@ -15,7 +15,7 @@ ad_library {
 
 if {![::xotcl::Object isclass ::xotcl::RecreationClass]} {
   ::xotcl::Class create ::xotcl::RecreationClass -ad_doc {
-    <p>This meta-class controlls the behavior of classes (and optionally
+    <p>This meta-class controls the behavior of classes (and optionally
     their instances), when the classes (or their instances) are    
     overwritten by same named new objects; we call this situation
     a recreate of an object.</p>

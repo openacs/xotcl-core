@@ -18,7 +18,7 @@ ad_library {
 #
 # Load a required file:
 #
-#   Source a file, which is requred by the current file
+#   Source a file, which is required by the current file
 #   Filename is without path and .tcl
 #
 #     ::xo::library require filename

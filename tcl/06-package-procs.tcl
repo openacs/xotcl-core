@@ -255,7 +255,7 @@ namespace eval ::xo {
       #
       # The returned '$value' might be a value set for the actual
       # package instance, or the default for the package_parameter as
-      # defined by the package parameter defintion in the xml file. If
+      # defined by the package parameter definition in the xml file. If
       # the value was not specified explicitly, and the provided
       # default for this command is not empty, return the provided
       # default.
