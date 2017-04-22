@@ -196,7 +196,7 @@ namespace eval ::Generic {
     The method generate is used to actually generate the form template
     from the specifications and to set up page_title and context 
     when appropriate.
-    @param template is the name of the tcl variable to contain the filled in template
+    @param template is the name of the Tcl variable to contain the filled in template
     @param export list of attribue value pairs to be exported to the form (nested list)
   } {
     # set form name for adp file

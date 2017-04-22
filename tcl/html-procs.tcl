@@ -46,7 +46,7 @@ proc require_html_procs {} {
       #
       #    -option   name of HTML attribute
       #     value    attribute value
-      #     script   tcl script to run in command's context.
+      #     script   Tcl script to run in command's context.
       #
       # Example: table -border 1 {...}
       #

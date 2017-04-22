@@ -593,7 +593,7 @@ namespace eval ::xo {
   }
 
   #
-  # ::xo::Module is very similar to a plain tcl namespace: When it is
+  # ::xo::Module is very similar to a plain Tcl namespace: When it is
   # created/recreated, it does not perform a cleanup of its
   # contents. This means that preexisting procs, objects classes,
   # variables etc. will survive a recreation. As a consequence,

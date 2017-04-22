@@ -633,7 +633,7 @@ namespace eval ::xo::db {
     } else {
       #
       # Compute a PREPARE statement and an EXECUTE statement on the
-      # fly. Notice, that the incoming SQL statement must not have tcl
+      # fly. Notice, that the incoming SQL statement must not have Tcl
       # vars, but has to use bind vars.
       #
       set c 0; set l ""; set last 0;
@@ -1221,7 +1221,7 @@ namespace eval ::xo::db {
 
   ::xo::db::postgresql instproc get_all_package_functions {} {
     #
-    # Load defintions in one step from function args; only for
+    # Load definitions in one step from function args; only for
     # those definitions where we do not have function args, we parse
     # the function arg aliases.
     #
