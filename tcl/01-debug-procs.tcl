@@ -424,7 +424,7 @@ namespace eval ::xo {
   # Aolserver 4.5 supports a trace for freeconn. We can register
   # a callback to be executed before the connection is freed,
   # therefore, we have still information from ns_conn available.
-  # For aolserver 4.5 we use oncleanup, which is at least before
+  # For AOLserver 4.5 we use oncleanup, which is at least before
   # the cleanup of variables.
   #
   # In contrary, in 4.0.10, "on cleanup" is called after the global

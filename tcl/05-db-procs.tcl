@@ -2665,7 +2665,7 @@ namespace eval ::xo::db {
 
   ::xotcl::Class create ::xo::db::temp_table -parameter {name query vars}
   ::xo::db::temp_table instproc init {} {
-    # The cleanup order is - at least under aolserver 4.01 - hard to get right.
+    # The cleanup order is - at least under AOLserver 4.01 - hard to get right.
     # When destroy_on_cleanup is executed, there might be already some global
     # data for the database interaction gone.... So, destroy these objects
     # by hand for now.

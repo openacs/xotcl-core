@@ -7,8 +7,8 @@ ad_library {
   and destroy threads and to pass commands to these 
   threads. It is designed in a way to create threads
   lazyly such that thread definitions can be included
-  in the modules directory of the aolserver and 
-  therefore be part of the aolserver blueprints.
+  in the modules directory of the AOLserver and 
+  therefore be part of the AOLserver blueprints.
   When an instance of THREAD is created (e.g. t1), 
   an init-command is provided. e.g.:
   <pre>

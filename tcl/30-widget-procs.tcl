@@ -1,5 +1,5 @@
 ::xo::library doc {
-  XOTcl HTML Widget Classes based on tdom
+  XOTcl HTML Widget Classes based on tDOM
 
   @author Gustaf Neumann (neumann@wu-wien.ac.at)
   @author Neophytos Demetriou (k2pts@phigita.net)
@@ -109,7 +109,7 @@ namespace eval ::xo::tdom {
     #
     # autorendering means that after creating an ordered composite,
     # the topmost element is automatically rendered. This makes
-    # the ::xo::tdom classes behave more like plain tdom commands.
+    # the ::xo::tdom classes behave more like plain tDOM commands.
     #
     #my log "tdom AUTO $level [$me autorender]"
 
@@ -124,7 +124,7 @@ namespace eval ::xo::tdom {
   }
 
   #
-  # The tdom attribute manager makes it syntactically easier to
+  # The tDOM attribute manager makes it syntactically easier to
   # specify a list of attributes for rendering via tDOM.
   #
   ::xotcl::Class create ::xo::tdom::AttributeManager
@@ -179,7 +179,7 @@ namespace eval ::xo::tdom {
   
   #
   # ::xo::tdom::Object
-  # is the top of the class hierarchies for tdom objects
+  # is the top of the class hierarchies for tDOM objects
   #
   ::xotcl::Class create ::xo::tdom::Object \
       -superclass {::xo::tdom::AttributeManager ::xo::OrderedComposite} \
@@ -190,7 +190,7 @@ namespace eval ::xo::tdom {
   }
 
   #
-  # General of HTML markup CSRF tokens in tdom contexts
+  # General of HTML markup CSRF tokens in tDOM contexts
   #
   namespace eval ::html {}
   proc ::html::CSRFToken {} {

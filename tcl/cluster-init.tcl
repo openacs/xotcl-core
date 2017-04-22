@@ -28,7 +28,7 @@ if {[server_cluster_enabled_p]} {
   if {$node(url) ne "/"} {
     ns_log notice "***\n*** WARNING: there appears a package mounted on\
        $url\n***Cluster configuration will not work\
-       since there is a conflict with the aolserver filter with the same name!\n"
+       since there is a conflict with the AOLserver filter with the same name!\n"
   }
   
   #ns_register_filter trace GET $url ::xo::Cluster
