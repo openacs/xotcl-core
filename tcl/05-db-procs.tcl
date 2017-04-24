@@ -1302,11 +1302,11 @@ namespace eval ::xo::db {
       set function_args [list]
       foreach line [split $prosrc \n] {
         if {[regexp -nocase "alias +for +\\\$$n" $line]} {
-          regexp {^[^a-zA-Z]+([a-zA-Z0-9_]+)\s} $line _ fq_name
-          if {![info exists fq_name]} {
+          if {![regexp {^[^a-zA-Z]+([a-zA-Z0-9_]+)\s} $line _ fq_name]} {
+            #ns_log notice "proname $proname line <$line> fq_name <$fq_name>"
             ns_log notice "--***** Could not retrieve argument name for $proname\
-            argument $n from line '$line' in $prosrc'"
-            set fq_name arg$n
+                argument $n from line '$line' i    n $prosrc'"
+              set fq_name arg$n
           }
           set name $fq_name
           set default ""
