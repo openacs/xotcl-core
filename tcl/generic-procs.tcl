@@ -370,18 +370,18 @@ namespace eval ::Generic {
     from class's data-model. A list built in this way will be
     paginated automatically.
 
-    @parameter actions Behaves as in <a href="/api-doc/proc-view?proc=template::list::create">template::list::create</a>.
+    @parameter actions Behaves as in <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>.
     If missing, can be automatically generated acting on <code>create_url</code> and <code>no_create_p</code>
     parameters (see below).
 
-    @param bulk_action_method Behaves as in <a href="/api-doc/proc-view?proc=template::list::create">template::list::create</a>,
+    @param bulk_action_method Behaves as in <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>,
     but will default to POST method, as it is safer with respect to possible high number of query parameters.
 
-    @param elements Behaves as in <a href="/api-doc/proc-view?proc=template::list::create">template::list::create</a>.
+    @param elements Behaves as in <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>.
     It must be possible to build every element either through class's instance members, or programmatically
     (see <code>row_code</code> below).
 
-    @param rows_per_page Behaves as <a href="/api-doc/proc-view?proc=template::list::create">template::list::create</a>'s
+    @param rows_per_page Behaves as <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>'s
     <code>page_size</code> parameter. Pagination is automatical for this class. To turn it off, just
     set this parameter to "" .
 
