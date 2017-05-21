@@ -474,12 +474,19 @@ namespace eval ::xo::db {
     }
     if {$revision_id} {
       $object set revision_id $revision_id
-      $object db_1row [my qn fetch_from_view_revision_id] "\
-       select [join $atts ,], i.parent_id \
-       from   [my set table_name]i n, cr_items i,acs_objects o \
-       where  n.revision_id = :revision_id \
-       and    i.item_id = n.item_id \
-       and    o.object_id = n.revision_id"
+
+      db_with_handle db {
+        set sql [::xo::dc prepare -handle $db -argtypes integer "\
+               select [join $atts ,], i.parent_id \
+               from   [my set table_name]i n, cr_items i,acs_objects o \
+               where  n.revision_id = :revision_id \
+               and    i.item_id = n.item_id \
+               and    o.object_id = n.revision_id"]
+        
+        set selection [db_exec 1row $db dbqd..cr-procs-fetch_object-from-revision_id $sql]
+      }
+      $object mset [ns_set array $selection]
+
     } else {
       # We fetch the creation_user and the modifying_user by returning the 
       # creation_user of the automatic view as modifying_user. In case of
@@ -487,6 +494,7 @@ namespace eval ::xo::db {
       lappend atts "n.creation_user as modifying_user"
       
       $object set item_id $item_id
+     
       $object db_1row [my qn fetch_from_view_item_id] "\
        select [join $atts ,], i.parent_id \
        from   [my set table_name]i n, cr_items i, acs_objects o \
