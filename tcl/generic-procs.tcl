@@ -306,7 +306,7 @@ namespace eval ::Generic {
     Simple OO interface to template::list.
     This class has been built to allow quick creation of list UIs for generic acs_objects.<br/>
     <br/>
-    Many parameters are homonimous to those for <a href="/api-doc/proc-view?proc=template::list::create">template::list::create</a><br/>
+    Many parameters are homonimous to those for <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a><br/>
     and work in the same way, unless stated differently in this documentation.<br/>
     Despite the high number of object's members, most of them are there for backward compatibility with the procedural API
     and they seldom need to be specified.<br/>
@@ -416,13 +416,13 @@ namespace eval ::Generic {
     @param package_id Is the package for this instance. It has no use for now.
 
     @param html_class Behaves as <code>class</code> parameter in
-    <a href="/api-doc/proc-view?proc=template::list::create">template::list::create</a>.
+    <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>.
 
     @param html_main_class Behaves as <code>main_class</code> parameter in
-    <a href="/api-doc/proc-view?proc=template::list::create">template::list::create</a>.
+    <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>.
 
     @param html_sub_class Behaves as <code>sub_class</code> parameter in
-    <a href="/api-doc/proc-view?proc=template::list::create">template::list::create</a>.
+    <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>.
 
     @author Antonio Pisano (antonio@elettrotecnica.it)
 
