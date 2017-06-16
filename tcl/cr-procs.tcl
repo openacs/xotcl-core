@@ -36,7 +36,7 @@ namespace eval ::xo::db {
 
         <p>Each content item can be retrieved either through the 
         general method 
-        <a href='proc-view?proc=%3a%3axo::db%3a%3aCrClass+proc+get_instance_from_db'>
+        <a href='/api-doc/proc-view?proc=::xo::db::CrClass+proc+get_instance_from_db'>
         CrClass get_instance_from_db</a> or through the "get_instance_from_db" method of 
         every subclass of CrItem.
 
