@@ -421,7 +421,7 @@ namespace eval ::xo {
   #      be deleted already
   #   3) the traces are executed at a time when the connection
   #      is already closed
-  # Aolserver 4.5 supports a trace for freeconn. We can register
+  # AOLserver 4.5 supports a trace for freeconn. We can register
   # a callback to be executed before the connection is freed,
   # therefore, we have still information from ns_conn available.
   # For AOLserver 4.5 we use oncleanup, which is at least before
@@ -541,7 +541,7 @@ namespace eval ::xo {
     # deleted anyhow, but there exists a potential memory leak, when
     # e.g. a destroy method (or an exit handler) writes to ns_log.
     # ns_log requires the thread name, but it is cleared already
-    # earlier (after the interp deletion trace). Aolserver recreated
+    # earlier (after the interp deletion trace). AOLserver recreated
     # the name and the an entry in the thread list, but this elements
     # will not be freed. If we destroy the objects here, the mentioned
     # problem will not occur.
