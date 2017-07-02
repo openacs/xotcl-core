@@ -74,6 +74,13 @@ if {[info commands ::nx::Object] ne ""} {
   ::nx::Object method qn {query_name} {
     return "dbqd.[:uplevel [list current class]]-[:uplevel [list current method]].$query_name"
   }
+  # allow the use of naturalnum with ::xowiki::Package initialize
+  ::nx::Slot method type=naturalnum {name value} {
+    if {![string is integer -strict $value] || $value < 0 } {
+      return -code error "Value '$value' of parameter $name is not a natural number."
+    }
+  }
+
   ::xotcl::Object proc setExitHandler {code} {::nsf::exithandler set $code}
   ::xotcl::Object instproc set_instance_vars_defaults {} {:configure}
 
@@ -84,6 +91,7 @@ if {[info commands ::nx::Object] ne ""} {
     ::nx::Slot method istype
     ::nx::Slot method exists
     ::nx::Slot method set
+    ::nx::Slot method type=naturalnum
     ::nx::Object nsfproc ::nsf::debug::call
     ::nx::Object nsfproc ::nsf::debug::exit
   }
@@ -993,14 +1001,6 @@ proc ::xo::getObjectProperty {o what args} {
   my set db_slot($name) $newSlot
 }
 
-# allow the use of naturalnum with ::xowiki::Package initialize
-if {[info commands ::nx::methodParameterSlot] ne ""} {
-  ::nx::methodParameterSlot object method type=naturalnum {name value} {
-    if {![string is integer $value] || $value < 0 } {
-      return -code error "Value '$value' of parameter $name is not a natural number."
-    }
-  }
-}
 
 #ns_log notice "*** FREECONN? [ns_ictl gettraces freeconn]"
 #ns_ictl trace freeconn {ns_log notice "*** FREECONN  isconnected=[ns_conn isconnected]"}
