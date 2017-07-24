@@ -44,11 +44,11 @@ Features:
         <maturity>2</maturity>
 
         <provides url="xotcl-core" version="0.156"/>
-	<requires url="acs-kernel" version="5.9.1b1"/>
-	<requires url="acs-templating" version="5.9.1b1"/>
-	<requires url="acs-api-browser" version="5.9.1b1"/>
-	<requires url="acs-content-repository" version="5.9.1b1"/>
-        <requires url="acs-tcl" version="5.9.1b1"/>
+	<requires url="acs-kernel" version="5.9.1b9"/>
+	<requires url="acs-templating" version="5.9.1b9"/>
+	<requires url="acs-api-browser" version="5.9.1b9"/>
+	<requires url="acs-content-repository" version="5.9.1b9"/>
+        <requires url="acs-tcl" version="5.9.1b9"/>
 
         <callbacks>
             <callback type="before-install"  proc="::xotcl-core::before-install"/>
