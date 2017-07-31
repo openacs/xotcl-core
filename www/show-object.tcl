@@ -10,6 +10,7 @@ ad_page_contract {
   {show_variables:range(0|1),notnull 0}
   {as_img:boolean,notnull 0}
   {with_children:boolean,notnull 0}
+  {with_instances:boolean,notnull 0}
   {with_instance_relations:boolean,notnull 0}
   {above:naturalnum,notnull 1}
   {below:naturalnum,notnull 2}
@@ -384,7 +385,7 @@ if {$show_variables && !$isnx} {
   }
 }
 
-if {$isclass} {
+if {$isclass && $with_instances} {
   set instances ""
   foreach o [lsort [DO $object info instances]] {
     append instances [::xo::api object_link $scope $o] ", "
