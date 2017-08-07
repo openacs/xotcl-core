@@ -8,7 +8,7 @@ ad_library {
 
 namespace eval ::xo {
   
-  Class Policy
+  Class create Policy
 
   Policy instproc defined_methods {class} {
     set c [self]::$class
@@ -139,7 +139,8 @@ namespace eval ::xo {
       set ctx [::xo::Context new -destroy_on_cleanup -actual_query $query]
       $ctx process_query_parameter
     }
-
+    
+    set allowed 0
     set permission [my get_permission $object $method]
     #my log "--permission for o=$object, m=$method => $permission"
 
@@ -148,19 +149,18 @@ namespace eval ::xo {
       lassign [my get_privilege -query_context $ctx $permission $object $method] kind p
       #my msg "--privilege = $p kind = $kind"
       switch -- $kind {
-        primitive {return [my check_privilege -login false \
-                               -package_id $package_id -user_id $user_id \
-                               $p $object $method]}
+        primitive {set allowed [my check_privilege -login false \
+                                    -package_id $package_id -user_id $user_id \
+                                    $p $object $method]}
         complex {
           lassign $p attribute privilege
           set id [$object set $attribute]
-          #my msg "--p checking permission -object_id /$id/ -privilege $privilege -party_id $user_id\
-              #    ==> [::xo::cc permission -object_id $id -privilege $privilege -party_id $user_id]"
-          return [::xo::cc permission -object_id $id -privilege $privilege -party_id $user_id]
+          set allowed [::xo::cc permission -object_id $id -privilege $privilege -party_id $user_id]
         }
       }
     }
-    return 0
+    #my log "--p check_permissions {$object $method} : $permission ==> $allowed"
+    return $allowed
   }
 
   Policy ad_instproc enforce_permissions {-user_id -package_id object method} {

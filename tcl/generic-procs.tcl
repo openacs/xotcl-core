@@ -11,7 +11,7 @@ namespace eval ::Generic {
   #
   # Form template class
   #
-  Class Form -parameter {
+  Class create Form -parameter {
     fields 
     data
     {package_id ""}
@@ -25,29 +25,24 @@ namespace eval ::Generic {
     {submit_link "."}
     {action "[::xo::cc url]"}
   } -ad_doc {
-    <p>Class for the simplified generation of forms. This class was designed 
+    <p>This class was designed 
     together with the content repository class 
-    <a href='/xotcl/show-object?object=::xo::db::CrClass'>::xo::db::CrClass</a>,
-    but it can be used also with different classes. The only requirement is the 
-    presence of an 'item_id' form field. 
-    </p>
-    <p>
+    <a href='/xotcl/show-object?object=::xo::db::CrClass'>::xo::db::CrClass</a>
+    for the generation of HTML forms, but it can be used also with different classes.
+    The only hard requirement is the  presence of an 'item_id' form field. 
     For generic acs_objects, 'item_id' will correspond to 'object_id' column in 'acs_objects' 
     table. For content repository items, 'item_id' will be the column by the same name in 
     cr_revisions/cr_items.
-    <p/>
-    <ul>
-      <li><b>fields:</b> form elements as described in <a href='/api-doc/proc-view?proc=ad_form'>ad_form</a>.
-      <li><b>data:</b> data object (e.g. instance if CrItem) 
-      <li><b>package_id:</b> package_id of the object. Will default to data's 'package_id' variable
-      <li><b>folder_id:</b> associated folder id. Will default to data's 'parent_id' variable. 
-	If 'parent_id' is missing too, package's 'folder_id' will be used.
-      <li><b>name:</b> of this form, used for naming the template, 
-	defaults to the object name
-      <li><b>add_page_title:</b> page title when adding content items
-      <li><b>edit_page_title:</b> page title when editing content items
-      <li><b>with_categories:</b> display form with categories (default false)
-      <li><b>submit_link:</b> link for page after submit
+
+    @param add_page_title  page title when adding content items
+    @param edit_page_title page title when editing content items
+    @param data            data object (e.g. instance if CrItem)
+    @param folder_id       associated folder id. Will default to data's 'parent_id' variable. 
+                           If 'parent_id' is missing too, package's 'folder_id' will be used.
+    @param name            name of the form, used for naming the template, defaults to the object name
+    @param package_id      package_id of the object. Will default to data's 'package_id' variable
+    @param submit_link     link for page after submit
+    @param with_categories display form with categories (default false)
     </ul>
   }
   
@@ -72,14 +67,6 @@ namespace eval ::Generic {
       my set edit_page_title [_ xotcl-core.edit_type \
                                   [list type [$class pretty_name]]]
     }
-
-# It's a local variable that nobody uses... commented in doubt
-#     # check, if the specified fields are available from the data source
-#     # and ignore the unavailable entries
-#     set checked_fields [list]
-#     set available_atts [$class array names db_slot]
-#     #my log "-- available atts <$available_atts>"
-#     lappend available_atts [$class id_column] item_id
 
     if {![my exists fields]} {my mkFields}
     #my log --fields=[my fields]
@@ -110,12 +97,23 @@ namespace eval ::Generic {
     my instvar data
     $data save
     # Renaming is meant for cr_items and such
-    if {[$data info commands rename] ne ""} {
+    if {[$data istype ::xo::db::CrItem]} {
       set old_name [::xo::cc form_parameter __object_name ""]
       set new_name [$data set name]
       if {$old_name ne $new_name} {
-	#my msg "rename from $old_name to $new_name"
+        #
+        # The item was renamed.
+        #
+	#my log "--- rename from $old_name to $new_name"
 	$data rename -old_name $old_name -new_name $new_name
+        #
+        # Check, whether we have to change the redirect url due to
+        # renaming. When the method returns non-empty use this value.
+        #
+        set url [$data changed_redirect_url]
+        if {$url ne ""} {
+          my submit_link $url
+        }
       }
     }
     return [$data set [my get_id_field]]
@@ -198,7 +196,7 @@ namespace eval ::Generic {
     The method generate is used to actually generate the form template
     from the specifications and to set up page_title and context 
     when appropriate.
-    @param template is the name of the tcl variable to contain the filled in template
+    @param template is the name of the Tcl variable to contain the filled in template
     @param export list of attribue value pairs to be exported to the form (nested list)
   } {
     # set form name for adp file
@@ -262,11 +260,12 @@ namespace eval ::Generic {
         -on_submit $on_submit -new_request $new_request -edit_request $edit_request \
         -on_validation_error $on_validation_error -after_submit $after_submit
   }
+
   
   #
   # List template class
   #
-  Class List -parameter {
+  Class create List -parameter {
     {actions ""}
     {name {[namespace tail [self]]}}
     {bulk_actions ""}
@@ -284,7 +283,9 @@ namespace eval ::Generic {
     class
     {create_url ""}
     {edit_url   ""}
+    {edit_template {<img src="/resources/acs-subsite/Edit16.gif" width="16" height="16" border="0">}}
     {delete_url ""}
+    {delete_template {<img src="/resources/acs-subsite/Delete16.gif" width="16" height="16" border="0">}}
     {no_create_p f}
     {no_edit_p   f}
     {no_delete_p f}
@@ -293,220 +294,241 @@ namespace eval ::Generic {
     {pass_properties ""}
     {checkbox_name ""}
     {orderby_name ""}
-    {row_pretty_plural ""}
-    {no_data ""} 
+    {no_data ""}
     {html_main_class ""}
     {html_sub_class ""}
     {html_class ""}
-    {html ""} 
+    {html ""}
     {caption ""}
     {bulk_action_click_function ""}
   } -ad_doc {
-      
-      Simple OO interface to template::list.
-      This class has been built to allow quick creation of list UIs for generic acs_objects.<br/>
-      <br/>
-      Many parameters are homonimous to those for <a href="/api-doc/proc-view?proc=template::list::create">template::list::create</a><br/>
-      and work in the same way, unless stated differently in this documentation.<br/>
-      Despite the high number of object's members, most of them are there for backward compatibility with the procedural API
-      and they seldom need to be specified.<br/>
-      <br/>
-      An example of instantiation could just look as this:<br/>
-      <pre>
-      # Must be an existing acs_object class on the system.
-      set class "::dev::Location"
-      
-      # As we are talking about acs_objects, our 'delete'
-      # page could of course be the same for every object
-      # in the system.
-      ::Generic::List create list1 \
-	  -class $class \
-	  -package_id $package_id \
-	  -rows_per_page $rows_per_page \
-	  -delete_url "../delete" \
-	  -elements {
-	      name {
-		  label "Name"
-	      }
-	      street {
-		  label "Street"
-	      }
-	      number {
-		  label "Number"
-	      }
-	      city {
-		  label "City"
-	      }
-	      region {
-		  label "Region"
-	      }
-	      country {
-		  label "Country"
-	      }
-	      coords {
-		  label "Coordinates"
-	      }
-	  } -orderby {
-	      default_value name
-	      name {
-		  label "Name"
-		  orderby_desc "name desc"
-		  orderby_asc "name asc"
-	      }
-	  } -row_code {
-	      set coords "$latitude $longitude"
-	  }
-	  
-      list1 generate
-      </pre>
-      ...while the ADP template would include this:
-      
-      <pre>
-	&lt;listtemplate name="list1"&gt;&lt;/listtemplate&gt;
-      </pre>
-      
-      Notice that in this case we didn't have to specify queries, nor populate any multirow by hand:
-      They have come directly from class's data-model. A list built in this way will be paginated automatically.
-      
-      @parameter actions behaves as in <a href="/api-doc/proc-view?proc=template::list::create">template::list::create</a>. If missing,
-      can be automatically generated acting on <code>create_url</code> and <code>no_create_p</code> parameters (see below).
-      
-      @param bulk_action_method behaves as in <a href="/api-doc/proc-view?proc=template::list::create">template::list::create</a>, but will
-      default to POST method, as it is safer with respect to possible high number of query parameters.
-      
-      @param elements behaves as in <a href="/api-doc/proc-view?proc=template::list::create">template::list::create</a>. It must be possible
-      to build every element either through class's instance members, or programmatically (see <code>row_code</code> below).
-            
-      @rows_per_page behaves as <a href="/api-doc/proc-view?proc=template::list::create">template::list::create</a>'s <code>page_size</code>
-      parameter. Pagination is automatical for this class. To turn it off, just set this parameter to ""
-      
-      @param row_code is a script that will be executed for every row in list's multirow. As multirows are not manually specified for this
-      class, this is the way to build columns outside class's data-model programmatically.
-      
-      @param class is the class (descendant of acs_object) for which this list will be built.
-      
-      @param no_create_p tells to the list we don't want instance creation action button to be built automatically.
-      
-      @param create_url when instance creation url is automatically built, tells the list to which url make it point.
-      
-      @param no_edit_p tells to the list we don't want instance edit action button to be built automatically.
-      
-      @param edit_url when instance edit url is automatically built, tells the list to which url make it point. Page pointed must accept
-      an <code>item_id</code> parameter, that will be the primary key of edited instance.
-      
-      @param no_delete_p tells to the list we don't want instance delete action button to be built automatically.
-      
-      @param delete_url when instance delete url is automatically built, tells the list to which url make it point. Page pointed must accept
-      an <code>item_id</code> parameter, that will be the primary key of deleted instance.
-      
-      @param package_id is the package for this instance. It has no use for now.
-      
-      @param html_class behaves as <code>class</code> parameter in <a href="/api-doc/proc-view?proc=template::list::create">template::list::create</a>.
-      
-      @param html_main_class behaves as <code>main_class</code> parameter in <a href="/api-doc/proc-view?proc=template::list::create">template::list::create</a>.
-      
-      @param html_sub_class behaves as <code>sub_class</code> parameter in <a href="/api-doc/proc-view?proc=template::list::create">template::list::create</a>.
-      
-      @author Antonio Pisano (antonio@elettrotecnica.it)
-      
+
+    Simple OO interface to template::list.
+    This class has been built to allow quick creation of list UIs for generic acs_objects.<br/>
+    <br/>
+    Many parameters are homonimous to those for <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a><br/>
+    and work in the same way, unless stated differently in this documentation.<br/>
+    Despite the high number of object's members, most of them are there for backward compatibility with the procedural API
+    and they seldom need to be specified.<br/>
+    <br/>
+    An example of instantiation could just look as this:<br/>
+    <pre>
+    # Must be an existing acs_object class on the system.
+    set class "::dev::Location"
+
+    # As we are talking about acs_objects, our 'delete'
+    # page could of course be the same for every object
+    # in the system.
+    ::Generic::List create list1 \
+        -class $class \
+        -package_id $package_id \
+        -rows_per_page $rows_per_page \
+        -delete_url "../delete" \
+        -elements {
+          name {
+            label "Name"
+          }
+          street {
+            label "Street"
+          }
+          number {
+            label "Number"
+          }
+          city {
+            label "City"
+          }
+          region {
+            label "Region"
+          }
+          country {
+            label "Country"
+          }
+          coords {
+            label "Coordinates"
+          }
+        } -orderby {
+          default_value name
+          name {
+            label "Name"
+            orderby_desc "name desc"
+            orderby_asc "name asc"
+          }
+        } -row_code {
+          set coords "$latitude $longitude"
+        }
+
+    list1 generate
+    </pre>
+    ...while the ADP template would include this:
+
+    <pre>
+    &lt;listtemplate name="list1"&gt;&lt;/listtemplate&gt;
+    </pre>
+
+    Notice that in this case we didn't have to specify queries,
+    nor populate any multirow by hand: they have come directly
+    from class's data-model. A list built in this way will be
+    paginated automatically.
+
+    @parameter actions Behaves as in <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>.
+    If missing, can be automatically generated acting on <code>create_url</code> and <code>no_create_p</code>
+    parameters (see below).
+
+    @param bulk_action_method Behaves as in <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>,
+    but will default to POST method, as it is safer with respect to possible high number of query parameters.
+
+    @param elements Behaves as in <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>.
+    It must be possible to build every element either through class's instance members, or programmatically
+    (see <code>row_code</code> below).
+
+    @param rows_per_page Behaves as <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>'s
+    <code>page_size</code> parameter. Pagination is automatical for this class. To turn it off, just
+    set this parameter to "" .
+
+    @param row_code This snippet will be executed for every instance/row in the list, so is similar in spirit to
+    <code>code_block</code> argument for <code>db_multirow</code>. This will allow the user to
+    build programmatically other elements outside object's data model, override edit and delete
+    url and so on. Code will have access to every variable in the caller scope and to each instance's
+    variable.
+
+    @param class Is the class (descendant of acs_object) for which this list will be built.
+
+    @param no_create_p Tells to the list we don't want instance creation action button to be built automatically.
+
+    @param create_url When instance creation url is automatically built, tells the list to which url make it point.
+
+    @param no_edit_p Tells to the list we don't want instance edit action button to be built automatically.
+
+    @param edit_url When instance edit element is automatically built, tells the list to which url make it point.
+    Page pointed must accept an <code>item_id</code> parameter, that will be the primary key of
+    edited instance.
+
+    @param edit_template When instance edit element is automatically built, use this template to build the element.
+
+    @param no_delete_p Tells to the list we don't want instance delete action button to be built automatically.
+
+    @param delete_url When instance delete url is automatically built, tells the list to which url make it point.
+    Page pointed must accept an <code>item_id</code> parameter, that will be the primary key of
+    deleted instance.
+
+    @param delete_template When instance delete element is automatically built, use this template to build the element.
+
+    @param package_id Is the package for this instance. It has no use for now.
+
+    @param html_class Behaves as <code>class</code> parameter in
+    <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>.
+
+    @param html_main_class Behaves as <code>main_class</code> parameter in
+    <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>.
+
+    @param html_sub_class Behaves as <code>sub_class</code> parameter in
+    <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>.
+
+    @author Antonio Pisano (antonio@elettrotecnica.it)
+
   }
   
   List instproc init {} {
     my instvar class name
     my set id_column     [$class id_column]
     my set pretty_name   [$class pretty_name]
-       set pretty_plural [$class pretty_plural]
+    set pretty_plural [$class pretty_plural]
     my set pretty_plural $pretty_plural
     my set list_name     $name
   }
-  
+
   List instproc get_actions {} {
     my instvar actions no_create_p create_url
     if {[string is false $no_create_p]} {
       set type [my set pretty_name]
       if {$create_url eq ""} {set create_url add-edit}
       set create_action [list \
-	[_ xotcl-core.create_new_type] $create_url [_ xotcl-core.create_new_type]]
+                             [_ xotcl-core.create_new_type] $create_url [_ xotcl-core.create_new_type]]
       set actions [concat $create_action $actions]
     }
     return $actions
   }
-  
+
   List instproc get_elements {} {
-    my instvar no_edit_p no_delete_p
+    my instvar no_edit_p no_delete_p edit_template delete_template
     set elements {}
+    # build the edit button
     if {!$no_edit_p} {
       set type [my set pretty_name]
       set title [_ xotcl-core.edit_type]
       lappend elements \
-	edit [list \
-	    link_url_col edit_url \
-	    display_template [list <img src="/resources/acs-subsite/Edit16.gif" width="16" height="16" border="0">] \
-	    link_html [list title $title] \
-	    sub_class narrow]
+          edit [list \
+                    link_url_col edit_url \
+                    display_template $edit_template \
+                    link_html [list title $title] \
+                    sub_class narrow]
     }
+    # edit button will be the first list element,
+    # in between there will be user's elements,
+    # delete button will be last
     set elements [concat $elements [my set elements]]
+    # build delete button
     if {!$no_delete_p} {
       set title [_ xotcl-core.delete_item]
-      set confirm "[_ acs-subsite.Delete]?"
       lappend elements \
-	delete [list \
-	    link_url_col delete_url \
-            link_html [list title $title onClick "return(confirm('${confirm}'));"] \
-	    display_template [list <img src="/resources/acs-subsite/Delete16.gif" width="16" height="16" border="0">] \
-	    sub_class narrow]
+          delete [list \
+                      link_url_col delete_url \
+                      link_html [list title $title class acs-confirm] \
+                      display_template $delete_template \
+                      sub_class narrow]
     }
     return $elements
   }
-  
+
   List instproc page_query {} {
     my instvar class id_column list_name orderby
     if {$orderby ne ""} {
       return [$class instance_select_query \
-	-select_attributes [list $id_column] \
-	-where_clause "\[template::list::filter_where_clauses -name $list_name -and\]" \
-	-orderby "\[lrange \[template::list::orderby_clause -name $list_name -orderby\] 2 end\]"]
+                  -select_attributes [list $id_column] \
+                  -where_clause "\[template::list::filter_where_clauses -name $list_name -and\]" \
+                  -orderby "\[lrange \[template::list::orderby_clause -name $list_name -orderby\] 2 end\]"]
     } else {
       return [$class instance_select_query \
-	-select_attributes [list $id_column] \
-	-where_clause "\[template::list::filter_where_clauses -name $list_name -and\]"]
+                  -select_attributes [list $id_column] \
+                  -where_clause "\[template::list::filter_where_clauses -name $list_name -and\]"]
     }
   }
-  
+
   List instproc get_filters {} {
     my instvar filters rows_per_page
-    if {$rows_per_page ne "" && 
-	"rows_per_page" ni $filters} {
+    if {$rows_per_page ne "" &&
+        "rows_per_page" ni $filters} {
       set opts {}
       set opt [expr {int($rows_per_page / 2)}]
       for {set i 0} {$i < 3} {incr i} {
-	lappend opts [list $opt $opt]
-	set opt [expr {$opt*($i+2)}]
+        lappend opts [list $opt $opt]
+        set opt [expr {$opt*($i+2)}]
       }
-      append filters "
-	rows_per_page {
-	  label \"[_ acs-templating.Page_Size]\"
-	  values {$opts}
-	  where_clause {1 = 1}
-	  default_value $rows_per_page
-	}"
+            append filters "
+        rows_per_page {
+          label \"[_ acs-templating.Page_Size]\"
+          values {$opts}
+          default_value $rows_per_page
+        }"
     }
+    set ulevel [expr {[my set ulevel] + 1}]
+    my set filters [uplevel $ulevel [list subst $filters]]
     return $filters
   }
-  
+
   List instproc extend_cols {} {
     set cols {}
     set specs {}
     foreach {el spec} [my get_elements] {
       lappend cols $el
       foreach {prop val} $spec {
-	if {$prop in 
-	  {display_col 
-	   link_url_col}} {
-	   lappend cols $val}
-    }}; return $cols
+        if {$prop in
+            {display_col
+              link_url_col}} {
+          lappend cols $val}
+      }}; return $cols
   }
-  
+
   List instproc get_ids {} {
     my instvar list_name rows_per_page
     if {$rows_per_page ne ""} {
@@ -515,9 +537,10 @@ namespace eval ::Generic {
     # If we are not paginating, just get all ids in table
     return [::xo::dc list query [subst [my page_query]]]
   }
-    
+
   List instproc multirow {} {
     my instvar list_name id_column no_edit_p {edit_url base_edit_url} no_delete_p {delete_url base_delete_url} row_code
+    set ulevel [expr {[my set ulevel] + 1}]
     if {$base_edit_url   eq ""} {set base_edit_url "add-edit"}
     if {$base_delete_url eq ""} {set base_delete_url "delete"}
     set this_url [::xo::cc url]
@@ -530,62 +553,69 @@ namespace eval ::Generic {
     foreach item_id [my get_ids] {
       # ...get the object
       set o [::xo::db::Class get_instance_from_db -id $item_id]
-      {*}"$o instvar [$o info vars]"
-      foreach col $extend_cols {if {![info exists $col]} {set $col ""}}
+      set obj_vars [$o info vars]
+      {*}"$o instvar $obj_vars"
       set item_id [set $id_column]
       if {!$no_edit_p} {
-	set edit_url [export_vars -base $base_edit_url {item_id}]
+        set edit_url [export_vars -base $base_edit_url {item_id}]
       }
       if {!$no_delete_p} {
-	set delete_url [export_vars -base $base_delete_url {item_id {return_url $this_url}}]
+        set delete_url [export_vars -base $base_delete_url {item_id {return_url $this_url}}]
+      }
+      # ensure object variables exist and
+      # bring them to the caller scope
+      set upvars [lsort -unique [concat $extend_cols $obj_vars]]
+      foreach col $upvars {
+        if {![info exists $col]} {set $col ""}
+        uplevel $ulevel [list set $col [set $col]]
       }
       if {$row_code ne ""} {
-	# This will often be multiline, with comments etc...
-	# need to use the full eval command
-	eval $row_code
+        uplevel $ulevel $row_code
       }
-      {*}[subst $multirow_append]
-      # Need to clear the area...
-      {*}"unset $extend_cols"
+      {*}[uplevel $ulevel [list subst $multirow_append]]
+      # Need to clear the area or code block could suffer
+      # variable pollution from leftovers
+      {*}"unset $upvars"
     }
   }
-  
+
   List instproc generate {} {
     my instvar list_name id_column rows_per_page bulk_actions formats ulevel
     set cmd [list \
-      template::list::create \
-	-ulevel [expr {$ulevel+1}] \
-	-name $list_name \
-	-multirow $list_name \
-	-actions [my get_actions] \
-	-elements [my get_elements] \
-	-filters [my get_filters] \
-	-orderby [my set orderby]]
+                 template::list::create \
+                 -ulevel [expr {$ulevel+1}] \
+                 -name $list_name \
+                 -multirow $list_name \
+                 -actions [my get_actions] \
+                 -elements [my get_elements] \
+                 -filters [my get_filters] \
+                 -orderby [my set orderby]]
     if {$bulk_actions ne ""} {
       lappend cmd \
-	-bulk_actions $bulk_actions \
-	-bulk_action_method [my set bulk_action_method] \
-	-bulk_action_export_vars [my set bulk_action_export_vars] \
-	-key $id_column
+          -bulk_actions $bulk_actions \
+          -bulk_action_method [my set bulk_action_method] \
+          -bulk_action_export_vars [my set bulk_action_export_vars] \
+          -key $id_column
     }
     if {$formats ne ""} {
       lappend cmd \
-	-formats $formats \
-	-selected_format [my set selected_format]
+          -formats $formats \
+          -selected_format [my set selected_format]
     }
     if {$rows_per_page ne ""} {
       lappend cmd \
-	-page_flush_p t \
-	-page_size $rows_per_page \
-	-page_groupsize [my set page_groupsize] \
-	-page_query [my page_query]
+          -page_flush_p t \
+          -page_size $rows_per_page \
+          -page_groupsize [my set page_groupsize] \
+          -page_query [my page_query]
     }
+    lappend cmd \
+        -row_pretty_plural [my set pretty_plural]
     # This properties will be passed as they are
     foreach prop {
       pass_properties
       checkbox_name
       orderby_name
-      row_pretty_plural
       no_data
       caption
       bulk_action_click_function
@@ -593,7 +623,7 @@ namespace eval ::Generic {
     } {
       set val [my set $prop]
       if {$val ne ""} {
-	lappend cmd -${prop} $val
+        lappend cmd -${prop} $val
       }
     }
     foreach prop {
@@ -604,17 +634,20 @@ namespace eval ::Generic {
       set val [my set $prop]
       set prop [string range $prop 5 end]
       if {$val ne ""} {
-	lappend cmd -${prop} $val
+        lappend cmd -${prop} $val
       }
     }
     {*}$cmd
     my multirow
+
+    # Don't put handlers directly on the HTML, but rather define them in javascript afterwards
+    template::add_confirm_handler -CSSclass acs-confirm -message [_ acs-subsite.Delete]?
   }
-  
+
   List instproc to_csv {} {
     template::list::write_csv -name [my set list_name]
   }
-}
+} 
 namespace import -force ::Generic::*
 #
 # Local variables:

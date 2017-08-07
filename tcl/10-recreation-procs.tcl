@@ -15,7 +15,7 @@ ad_library {
 
 if {![::xotcl::Object isclass ::xotcl::RecreationClass]} {
   ::xotcl::Class create ::xotcl::RecreationClass -ad_doc {
-    <p>This meta-class controlls the behavior of classes (and optionally
+    <p>This meta-class controls the behavior of classes (and optionally
     their instances), when the classes (or their instances) are    
     overwritten by same named new objects; we call this situation
     a recreate of an object.</p>
@@ -28,13 +28,13 @@ if {![::xotcl::Object isclass ::xotcl::RecreationClass]} {
     instances of class ::xotcl::Object. </p>
 
     <p>This can be a problem when the class instances are not 
-    reloaded and when they should survife the redefintion with the
+    reloaded and when they should survife the redefinition with the
     same class relationships. Therefore we define a 
     meta class RecreationClass, which can be used to parameterize 
     the behavior on redefinitions. Alternatively, Classes or objects
     could provide their own recreate methods.</p>
 
-    <p>Per default, this meta-class handles only the class redefintion
+    <p>Per default, this meta-class handles only the class redefinition
     case and does only a reconfigure on the class object (in order
     to get e.g. ad_doc updated).</p>
     The following parameters are defined:
@@ -167,7 +167,7 @@ if {[string match "1.3.*" $version]} {
   ns_log notice "-- softrecreate"
   ::xotcl::configure softrecreate true
 
-  Class RR -instproc recreate args { 
+  Class create RR -instproc recreate args { 
     my log "-- [self args]"; next
   } -instproc create args { 
     my log "-- [self args]"; next

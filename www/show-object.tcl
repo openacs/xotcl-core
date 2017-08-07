@@ -4,15 +4,16 @@ ad_page_contract {
   @author Gustaf Neumann
   @cvs-id $Id$
 } -query {
-  {object:token,optional ::xotcl::Object}
-  {show_methods:naturalnum,optional 1}
-  {show_source:naturalnum,optional 0}
-  {show_variables:naturalnum,optional 0}
-  {as_img:boolean 0}
-  {with_children:boolean 0}
-  {with_instance_relations:boolean 0}
-  {above:naturalnum 1}
-  {below:naturalnum 2}
+  {object:nohtml,trim ::xotcl::Object}
+  {show_methods:range(0|2),notnull 1}
+  {show_source:range(0|1),notnull 0}
+  {show_variables:range(0|1),notnull 0}
+  {as_img:boolean,notnull 0}
+  {with_children:boolean,notnull 0}
+  {with_instances:boolean,notnull 0}
+  {with_instance_relations:boolean,notnull 0}
+  {above:naturalnum,notnull 1}
+  {below:naturalnum,notnull 2}
 } -properties {
   title:onevalue
   context:onevalue
@@ -22,33 +23,37 @@ ad_page_contract {
 set context [list "XOTcl Object"]
 set output ""
 
-::xotcl::api scope_from_object_reference scope object
-#
-# scope must be an object, otherwise something is wrong.
-#
-if {$scope ne "" && ![xo::getObjectProperty $scope isobject]} {
-  set isobject 0
+::xo::api scope_from_object_reference scope object
+
+if {$scope ne ""} {
+  #
+  # "scope" must be an object, otherwise something is wrong.
+  #
+  set isobject [expr {[::xo::api isobject "" $scope]
+                      && [::xo::api isobject $scope $object]}]
 } else {
-  set isobject [::xotcl::api isobject $scope $object]
+  set isobject [::xo::api isobject "" $object]
+}
+
+if {!$isobject} {
+  ad_return_complaint 1 "Unable to access object '$object'. 
+    Might this be a temporary object?"
+  ad_script_abort
 }
 
 if {$scope ne ""} {
   auth::require_login
 }
 
-if {!$isobject} {
-  ad_return_complaint 1 "Unable to access object $object. 
-    Might this be a temporary object?"
-  ad_script_abort
-}
+interp alias {} DO {} ::xo::api scope_eval $scope 
 
-interp alias {} DO {} ::xotcl::api inscope $scope 
+# get object fully qualified
+set object [DO namespace origin $object]
 
-set my_class [DO $object info class]
-set title "[::xotcl::api object_link $scope $my_class] $object"
-set isclass [::xotcl::api isclass $scope $object]
-set isnx [xo::getObjectProperty $object isnxobject]
-
+set my_class [DO xo::getObjectProperty $object class]
+set title "$my_class $object"
+set isclass [::xo::api isclass $scope $object]
+set isnx [DO xo::getObjectProperty $object isnxobject]
 set s [DO Serializer new]
 
 set dimensional_slider [ad_dimensional {
@@ -74,18 +79,20 @@ set dimensional_slider [ad_dimensional {
 }]
 
 
-proc api_documentation {scope object kind method} {
-  upvar show_methods show_methods 
-  set proc_index [::xotcl::api proc_index $scope $object $kind $method]
+nsf::proc local_api_documentation {{-proc_type scripted} show_methods scope object kind method} {
+  set proc_index [::xo::api proc_index $scope $object $kind $method]
+  set kind_label [::xo::api method_label -kind $proc_index]
   if {[nsv_exists api_proc_doc $proc_index]} {
     set documentation [api_proc_documentation \
                            -first_line_tag "<h4>" \
-                           -label "$kind <em>$method</em>" \
+                           -proc_type $proc_type \
+                           -label "<em>$method</em>" \
                            $proc_index]
     set result $documentation
   } else {
-    if {$show_methods == 2} {
-      set result "<h4>$kind <em>$method</em></h4>"
+    if {$show_methods > 1} {
+      set result "<h4><em>$method</em> ($proc_type)</h4>\n"
+      append result [::xo::api debug_widget [list {*}$scope $object $kind $method]]
     } else {
       set result ""
     }
@@ -93,7 +100,7 @@ proc api_documentation {scope object kind method} {
   return $result
 }
 
-proc info_option {scope object kind {dosort 0}} {
+proc class_relation {scope object kind {dosort 0}} {
   upvar class_references class_references
 
   set isnx [DO xo::getObjectProperty $object isnxobject]
@@ -103,7 +110,7 @@ proc info_option {scope object kind {dosort 0}} {
 
   set refs [list]
   foreach e $list {
-    lappend refs [::xotcl::api object_link $scope $e]
+    lappend refs [::xo::api object_link $scope $e]
   }
   if {[llength $refs] > 0 && $list ne ""} {
     append class_references "<li>$kind: [join $refs {, }]</li>\n"
@@ -114,103 +121,90 @@ proc info_option {scope object kind {dosort 0}} {
   return ""
 }
 
-proc draw_as_tree {nodes} {
-  if {$nodes eq ""} return ""
-  set tail [draw_as_tree [lrange $nodes 1 end]]
-  if {$tail eq ""} {
-    set style "style = 'border: 1px solid; padding: 5px; background-color: #fbfbfb;'"
-  } else {
-    set style "style = 'border: 1px solid; margin: 3px; padding: 5px; background-color: #fefefe; color: #555555;'"
-  }
-  append output <ul> "<li $style>" [lindex $nodes 0]</li> $tail </ul>
-}
 
 proc class_summary {c scope} {
   set result ""
-  set parameters [lsort [DO xo::getObjectProperty $c parameter]]
-  append result "<dt><em>Meta-class:</em></dt> <dd>[::xotcl::api object_link $scope [DO xo::getObjectProperty $c class]]</dd>\n"
-  if {$parameters ne ""} { 
+  if {0} {
+    set methods [lsort [DO xo::getObjectProperty $c instcommand]]
     set pretty [list]
-    foreach p $parameters {
-      if {[llength $p]>1} {
-        lassign $p p default
-        lappend pretty "$p (default <span style='color: green; font-style: italic'>\"$default\"</span>)"
-      } else {
-        lappend pretty "$p"
+    foreach m $methods {
+      if {[info exists param($m)]} continue
+      set entry [::xo::api method_link $c instproc $m]
+      lappend pretty $entry
+    }
+    if {[llength $pretty]>0} {
+      append result "<dt><em>Methods for instances:</em></dt> <dd>[join $pretty {, }]</dd>"
+    }
+    set methods [lsort [DO xo::getObjectProperty $c command -callprotection all]]
+    set pretty [list]
+    foreach m $methods {
+      if {![DO xo::getObjectProperty ${c}::$m isobject]} {
+        lappend pretty [::xo::api method_link $c proc $m]
       }
-      set param($p) 1
     }
-    append result "<dt><em>Parameter for instances:</em></dt> <dd>[join $pretty {, }]</dd>\n" 
-  }
-  set methods [lsort [DO xo::getObjectProperty $c instcommand]]
-  set pretty [list]
-  foreach m $methods {
-    if {[info exists param($m)]} continue
-    set entry [::xotcl::api method_link $c instproc $m]
-    lappend pretty $entry
-  }
-  if {[llength $pretty]>0} {
-    append result "<dt><em>Methods for instances:</em></dt> <dd>[join $pretty {, }]</dd>"
-  }
-  set methods [lsort [DO xo::getObjectProperty $c command]]
-  set pretty [list]
-  foreach m $methods {
-    if {![DO ::xotcl::Object isobject ${c}::$m]} {
-      lappend pretty [::xotcl::api method_link $c proc $m]
+    if {[llength $pretty]>0} {
+      append result "<dt><em>Methods to be applied on the class object (in addition to the methods provided by the meta-class):</em></dt> <dd>[join $pretty {, }]</dd>"
+    } else {
+      #append result "<dt><em>Methods to be applied on the class:</em></dt><dd>Methods provided by the meta-class</dd>"
     }
   }
-  if {[llength $pretty]>0} {
-    append result "<dt><em>Methods to be applied on the class (in addition to the methods provided by the meta-class):</em></dt> <dd>[join $pretty {, }]</dd>"
-  } else {
-    append result "<dt><em>Methods to be applied on the class:</em></dt><dd>Methods provided by the meta-class</dd>"
-  }
-
   if {$result ne ""} {
     set result <dl>$result</dl>
   }
-  return "<strong> [::xotcl::api object_link $scope $c] </strong> $result"
-}
 
-proc superclass_hierarchy {cl scope} {
-  set l [list]
-  foreach c [lreverse [concat $cl [DO $cl info heritage]]] {
-    lappend s [class_summary $c $scope]
+  set pretty_parameter ""
+  set line "[::xo::api object_link $scope $c] create ..."
+  set parameters [lsort [DO xo::getObjectProperty $c parameter]]
+  if {[llength $parameters] > 0} {
+    #
+    # Initial line length is length of class name + "create" + "..." +
+    # white space
+    #
+    set llength [expr {8 + [string length $c]}]
+    set pstart "&nbsp;\\<br>[string repeat {&nbsp;} 10]"
+    
+    foreach p $parameters {
+      if {[llength $p]>1} {
+        lassign $p p default
+        append line $pstart " \[ -$p (default <span style='color: green; font-style: italic'>\"$default\"</span>) \]"
+      } else {
+        append line $pstart " \[ -$p <i>$p</i> \]"
+      }
+      #set param($p) 1
+    }
   }
-  return $s
+  append line "<p>\n"
+  
+  return "<pre>$line</pre>"
 }
 
 #
 # document the class or the object"
 #
-set index [::xotcl::api object_index $scope $object]
-append output "<blockquote>\n"
+set index [::xo::api object_index $scope $object]
 
 set class_hierarchy [list]
 
 if {$isclass} {
-  set hierarchy 0
-  if {$hierarchy} {
-    append output "<h4>Class Hierarchy of $object</h4>"
-    append output [draw_as_tree [superclass_hierarchy $object $scope]]
-  } else {
-    append output "</blockquote>\n"
-    append output "<h4>Class $object</h4>"
-    append output "<blockquote>\n"
-    append output [class_summary $object $scope]
-  }
+
+  append output "<h4>Class $object</h4>"
+  append output "<blockquote>\n"
+  append output [class_summary $object $scope]
 
   #
   # compute list of classes with siblings
   foreach c [DO xo::getObjectProperty $object superclass] {
-    if {$c eq "::xotcl::Object"} {continue}
+    if {[DO xo::getObjectProperty $object isbaseclass]} continue
     lappend class_hierarchy {*}[DO xo::getObjectProperty $c subclass]
   }
-  if {[llength $class_hierarchy]>5} {set class_hierarchy {}}
+  if {[llength $class_hierarchy]>5} {
+    set class_hierarchy {}
+  }
 
   # Display just up to two extra two levels of heritage to keep the
   # class in quesiton in focus.
-  set heritage [DO $object info heritage]
-  set subclasses [DO $object info subclass]
+  set heritage [DO xo::getObjectProperty $object heritage]
+  set subclasses [DO xo::getObjectProperty $object subclass]
   
   if {[llength $heritage] > $above} {
     # In case we have nothing to show from the subclasses,
@@ -224,13 +218,14 @@ if {$isclass} {
   } 
   lappend class_hierarchy {*}$heritage
   
-  if {$object ni $class_hierarchy} {lappend class_hierarchy $object}
+  if {$object ni $class_hierarchy} {
+    lappend class_hierarchy $object
+  }
 
   if {$below > 0} {
-
     for {set level 1} {$level < $below} {incr level} {
       foreach sc $subclasses {
-        foreach c [DO $sc info subclass] {
+        foreach c [DO xo::getObjectProperty $sc subclass] {
           if {$c ni $subclasses} {
             lappend subclasses $c
           }
@@ -246,11 +241,12 @@ if {[nsv_exists api_library_doc $index]} {
   array set doc_elements [nsv_get api_library_doc $index]
   append output [lindex $doc_elements(main) 0]
   append output "<dl>\n"
-  if { [info exists doc_elements(param)] } {
-    append output "<dt><b>Documented Parameters:</b>\n"
+  if { [info exists doc_elements(param)] && [llength $doc_elements(param)] > 0} {
+    append output "<dt><b>Documented Parameters:</b></dt><dd><dl>\n"
     foreach par $doc_elements(param) {
-      append output "<dd><em>-[lindex $par 0]</em> [lrange $par 1 end]\n"
+      append output "<dt><em>-[lindex $par 0]</em></dt><dd>[lrange $par 1 end]</dd>\n"
     }
+    append output "</dl></dd>"
   }
   if { [info exists doc_elements(see)] } {
     append output "<dt><b>See Also:</b>\n"
@@ -282,23 +278,27 @@ if {[nsv_exists api_library_doc $index]} {
 set obj_create_source "$my_class create $object"
 
 set class_references ""
+class_relation $scope $object class
 
 if {$isclass} {
   append obj_create_source \
-      [info_option $scope $object superclass] \
-      [info_option $scope $object instmixin] \
-      [info_option $scope $object subclass 1]
+      [class_relation $scope $object superclass] \
+      [class_relation $scope $object instmixin]
+
+  class_relation $scope $object subclass
+  class_relation $scope $object instmixinof
+  class_relation $scope $object mixinof
 }
 
 append obj_create_source \
-    [info_option $scope $object mixin]
+    [class_relation $scope $object mixin]
 
 if {$class_references ne ""} {
   append output "<h4>Class Relations</h4><ul>\n$class_references</ul>\n"
 }
 
 if {$show_source} {
-  append output [::xotcl::api source_to_html $obj_create_source] \n
+  append output [::xo::api source_to_html $obj_create_source] \n
 }
 
 proc api_src_doc {out show_source scope object proc m} {
@@ -306,48 +306,73 @@ proc api_src_doc {out show_source scope object proc m} {
   if { $show_source } { 
     append output \
         "<pre class='code'>" \
-        [::apidoc::tcl_to_html [::xotcl::api proc_index $scope $object $proc $m]] \
+        [::apidoc::tcl_to_html [::xo::api proc_index $scope $object $proc $m]] \
         </pre>
   }
   return $output
 }
 
 if {$show_methods} {
-  append output "<h3>Methods</h3>\n" <ul> \n
-  foreach m [lsort [DO ::xo::getObjectProperty $object proc]] {
-    set out [api_documentation $scope $object proc $m]
-    if {$out ne ""} {
-      append output [api_src_doc $out $show_source $scope $object proc $m]
+  #
+  # per-object methods
+  #
+  set methods [lsort [DO ::xo::getObjectProperty $object command]]
+  if {[llength $methods] > 0} {
+    set method_output ""
+    foreach m $methods {
+      set type [DO ::xo::getObjectProperty $object methodtype $m]
+      if {$type eq "object"} {
+        #
+        # filter (sub)objects, which are callable via the method interface
+        #
+        continue
+      }
+      set out [local_api_documentation -proc_type $type $show_methods $scope $object proc $m]
+      if {$out ne ""} {
+        #ns_log notice "CALL [list api_src_doc $out $show_source $scope $object proc $m]"
+        append method_output [api_src_doc $out $show_source $scope $object proc $m]
+        #ns_log notice "CALL [list api_src_doc $out $show_source $scope $object proc $m] DONE"
+      }
     }
-  }
-  foreach m [lsort [DO ::xo::getObjectProperty $object forward]] {
-    set out [api_documentation $scope $object forward $m]
-    if {$out ne ""} {
-      append output [api_src_doc $out $show_source $scope $object forward $m]
+    if {$method_output ne ""} {
+      append output \
+          "<h3>Methods (to be applied on the object)</h3>\n" \
+          <ul> \n $method_output </ul> \n
     }
   }
 
   if {$isclass} {
-    set cls [lsort [DO ::xo::getObjectProperty $object instproc]]
-    foreach m $cls {
-      set out [api_documentation $scope $object instproc $m]
-      if {$out ne ""} {
-        append output "<a name='instproc-$m'></a><li>$out"
-        if { $show_source } { 
-          append output \
-              "<pre class='code'>" \
-              [::apidoc::tcl_to_html [::xotcl::api proc_index $scope $object instproc $m]] \
-              </pre>
+    #
+    # instance methods
+    #
+    set methods [lsort [DO ::xo::getObjectProperty $object instcommand]]
+    if {[llength $methods] > 0} {
+      set method_output ""
+      foreach m $methods {
+        set type [DO ::xo::getObjectProperty $object instmethodtype $m]
+        set out [local_api_documentation -proc_type $type $show_methods $scope $object instproc $m]
+        if {$out ne ""} {
+          append method_output "<a name='instproc-$m'></a><li>$out"
+          if { $show_source } { 
+            append method_output \
+                "<pre class='code'>" \
+                [::apidoc::tcl_to_html [::xo::api proc_index $scope $object instproc $m]] \
+                </pre>
+          }
         }
+      }
+      if {$method_output ne ""} {
+        append output \
+            "<h3>Methods (to be applied on instances)</h3>\n" \
+            <ul> \n $method_output </ul> \n
       }
     }
   }
-  append output </ul> \n
 }
 
 if {$show_variables && !$isnx} {
   set vars ""
-  foreach v [lsort [DO $object info vars]] {
+  foreach v [lsort [DO ::xo::getObjectProperty $object vars]] {
     if {[DO ::xo::getObjectProperty $object array-exists $v]} {
       append vars "$object array set $v [list [DO ::xo::getObjectProperty $object array-get $v]]\n"
     } else {
@@ -356,14 +381,14 @@ if {$show_variables && !$isnx} {
   }
   if {$vars ne ""} {
     append output "<h3>Variables</h3>\n" \
-        [::xotcl::api source_to_html $vars] \n
+        [::xo::api source_to_html $vars] \n
   }
 }
 
-if {$isclass} {
+if {$isclass && $with_instances} {
   set instances ""
   foreach o [lsort [DO $object info instances]] {
-    append instances [::xotcl::api object_link $scope $o] ", "
+    append instances [::xo::api object_link $scope $o] ", "
   }
   set instances [string trimright $instances ", "]
   if {$instances ne ""} {
@@ -379,7 +404,7 @@ if {!$as_img} {
   # Construct the dot code from the provided classes.
   #
   # TODO: it would be nice to pass the selected options from the
-  # dimensional slide to dotcode, since with svg, the dot code
+  # dimensional slider to dotcode, since with svg, the dot code
   # constructs URLS for navigation in the class tree.
   #
   set dot_code [::xo::dotcode -dpi 72 \
@@ -389,34 +414,40 @@ if {!$as_img} {
                     -current_object $object \
                     -documented_methods $documented_only \
                     $class_hierarchy]
-
   set dot ""
   catch {set dot [::util::which dot]}
   # final ressort for cases, where ::util::which is not available
   if {$dot eq "" && [file executable /usr/bin/dot]} {set dot /usr/bin/dot}
-  if {$dot eq ""} {ns_return 404 plain/text "dot not found"; ad_script_abort}
+  if {$dot eq ""} {
+    #ns_return 404 plain/text "dot not found"
+    ns_log warning "program 'dot' is not available"
+    #ad_script_abort
+  } else {
  
-  set tmpnam [ad_tmpnam]
-  set tmpfile $tmpnam.svg
-  set f [open $tmpnam.dot w]; puts $f $dot_code; close $f
+    set tmpnam [ad_tmpnam]
+    set tmpfile $tmpnam.svg
+    set f [open $tmpnam.dot w]; puts $f $dot_code; close $f
 
-  #ns_log notice "svg $tmpnam dot $tmpnam.dot"
-  set f [open "|$dot  -Tsvg -o $tmpfile" w]; puts $f $dot_code; close $f
-  set f [open  $tmpfile]; set svg [read $f]; close $f
+    #ns_log notice "svg $tmpnam dot $tmpnam.dot"
+    set f [open "|$dot  -Tsvg -o $tmpfile" w]; puts $f $dot_code; close $f
+    set f [open  $tmpfile]; set svg [read $f]; close $f
 
-  # delete the first three lines generated from dot
-  regsub {^[^\n]+\n[^\n]+\n[^\n]+\n} $svg "" svg
-  set css {
-    svg g a:link {text-decoration: none;}
-    div.inner {width: 100%; margin: 0 auto;}
+    # delete the first three lines generated from dot
+    regsub {^[^\n]+\n[^\n]+\n[^\n]+\n} $svg "" svg
+    set css {
+      svg g a:link {text-decoration: none;}
+      div.inner svg {width: 100%; margin: 0 auto;}
+    }
+    set svg "<style>$css</style><div><div class='inner'>$svg</div></div>"
+
+    file delete -- $tmpfile
+    file delete -- $tmpnam.dot
   }
-  set svg "<style>$css</style><div><div class='inner'>$svg</div></div>"
-
-  file delete $tmpfile
-  file delete $tmpnam.dot
 }
 
-append output "</blockquote>\n"
+if {$isclass} {
+  append output "</blockquote>\n"
+}
 
 
 DO $s destroy

@@ -10,7 +10,7 @@ ad_library {
 }
 
 namespace eval ::xo {
-  Class OrderedComposite 
+  Class create OrderedComposite 
 
   OrderedComposite instproc show {} {
     next
@@ -105,7 +105,8 @@ namespace eval ::xo {
     }
     if {$errorOccurred} {error $errorMsg}
   }
-  Class OrderedComposite::ChildManager -instproc init args {
+
+  Class create OrderedComposite::ChildManager -instproc init args {
     set r [next]
     #set parent [self callingobject] ;# not a true calling object (ns-eval), but XOTcl 1 honors it
     #set parent [my info parent] ;# is ok in XOTcl 2, since the namespace is honored correctly
@@ -121,9 +122,9 @@ namespace eval ::xo {
     return $r
   }
 
-  Class OrderedComposite::Child -instproc __after_insert {} {;}
+  Class create OrderedComposite::Child -instproc __after_insert {} {;}
 
-  Class OrderedComposite::IndexCompare
+  Class create OrderedComposite::IndexCompare
   OrderedComposite::IndexCompare instproc __compare {a b} {
     set by [my set __orderby]
     set x [$a set $by]
@@ -165,7 +166,7 @@ namespace eval ::xo {
     }
   }
 
-  Class OrderedComposite::MethodCompare
+  Class create OrderedComposite::MethodCompare
   OrderedComposite::MethodCompare instproc __compare {a b} {
     set by [my set __orderby]
     set x [$a $by]

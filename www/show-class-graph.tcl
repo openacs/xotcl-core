@@ -28,10 +28,10 @@ set f [open $tmpnam.$format w]; puts $f $dot_code; close $f
 #ns_log notice "png $tmpnam dot $tmpnam.dot"
 set f [open "|$dot  -T$format -o $tmpfile" w]; puts $f $dot_code; close $f
 ns_returnfile 200 [ns_guesstype $tmpfile] $tmpfile
-file delete $tmpfile
+file delete -- $tmpfile
 
 #set f [open $tmpnam.dot w]; puts $f $dot_code; close $f
-#file delete $tmpnam.dot
+#file delete -- $tmpnam.dot
 
 
 #

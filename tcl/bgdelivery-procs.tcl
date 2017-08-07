@@ -104,7 +104,7 @@ if {![string match "*contentsentlength*" $msg]} {
     unset -nocomplain ::runningBgJob([lindex $::running($key) 0])
     unset ::running($key)
     if {[info exists ::delete_file($key)]} {
-      file delete $filename
+      file delete -- $filename
       unset ::delete_file($key)
     }
   }
@@ -124,7 +124,7 @@ if {![string match "*contentsentlength*" $msg]} {
     }
   }
   fileSpooler proc tick {} {
-    if {[catch {my cleanup} errorMsg]} {ns_log notice "Error during filespooler cleanup: $errorMsg"}
+    if {[catch {my cleanup} errorMsg]} {ns_log error "Error during filespooler cleanup: $errorMsg"}
     my set to [after [my set tick_interval] [list [self] tick]]
   }
   fileSpooler tick
@@ -204,7 +204,7 @@ if {![string match "*contentsentlength*" $msg]} {
     unset ::running($key)
     unset ::bytes($key)
     if {[info exists ::delete_file($key)]} {
-      file delete $filename
+      file delete -- $filename
       unset ::delete_file($key)
     }
   }
@@ -273,7 +273,7 @@ if {![string match "*contentsentlength*" $msg]} {
   set ::subscription_count 0
   set ::message_count 0
 
-  ::xotcl::Class Subscriber -parameter {key channel user_id mode}
+  ::xotcl::Class create Subscriber -parameter {key channel user_id mode}
   Subscriber proc current {-key } {
     my instvar subscriptions
     set result [list]
@@ -323,9 +323,12 @@ if {![string match "*contentsentlength*" $msg]} {
   }
 
   Subscriber instproc send {msg} {
+    #ns_log notice "SEND <$msg> [my mode]"
     my log ""
     if {[my mode] eq "scripted"} {
-      set smsg "<script type='text/javascript'>\nvar data = $msg;\n\
+      set emsg [encoding convertto utf-8 $msg]
+      #ns_log notice "SEND data <$msg> encoded <$emsg>"
+      set smsg "<script type='text/javascript' nonce='$::__csp_nonce'>\nvar data = $emsg;\n\
             parent.getData(data);</script>\n"
       set smsg [format %x [string length $smsg]]\r\n$smsg\r\n
     } else {
@@ -344,7 +347,7 @@ if {![string match "*contentsentlength*" $msg]} {
       set subs1 [list]
       foreach s $subscriptions($key) {
         if {[catch {$s $method $argument} errMsg]} {
-          ns_log notice "error in $method to subscriber $s (key=$key): $errMsg"
+          ns_log error "error in $method to subscriber $s (key=$key): $errMsg"
           $s destroy
         } else {
           lappend subs1 $s
@@ -376,17 +379,17 @@ if {![string match "*contentsentlength*" $msg]} {
     fconfigure [my channel] -translation binary
 
     if {[my mode] eq "scripted"} {
-      set content_type text/html
+      set content_type "text/html;chartype=utf-8"
       set encoding "Cache-Control: no-cache\r\nTransfer-Encoding: chunked\r\n"
       set body "<html><body>[string repeat { } 1024]\r\n"
       set body [format %x [string length $body]]\r\n$body\r\n
     } else {
-      #set content_type text/plain 
       # Chrome refuses to expose partial response to ajax unless we
-      # set content_type to octet stream.  Drawback is we now need to
-      # treat special characters on the client side.
+      # set content_type to octet stream.  Drawback is we have to
+      # force the translation on the channel.
       set content_type "application/octet-stream"
       set encoding ""
+      fconfigure [my channel] -encoding utf-8
       set body ""
     }
 
@@ -399,7 +402,7 @@ if {![string match "*contentsentlength*" $msg]} {
   # HttpSpooler
   ###############
 
-  Class ::HttpSpooler -parameter {channel {timeout 10000} {counter 0}}
+  Class create ::HttpSpooler -parameter {channel {timeout 10000} {counter 0}}
   ::HttpSpooler instproc init {} {
     my set running 0
     my set release 0
@@ -522,7 +525,7 @@ bgdelivery ad_proc returnfile {
     set query [::xo::cc actual_query]
     set use_h264 [expr {[string match "video/mp4*" $mime_type] && $query ne "" 
                         && ([string match {*start=[1-9]*} $query] || [string match {*end=[1-9]*} $query])
-                        && [info command h264open] ne ""}]
+                        && [info commands h264open] ne ""}]
 
     if {[info commands ns_driversection] ne ""} {
       set use_writerThread [ns_config [ns_driversection] writerthreads 0]
@@ -630,7 +633,7 @@ bgdelivery ad_proc returnfile {
     if {$bytes == 0} {
       # Tcl behaves different, when one tries to send 0 bytes via
       # file_copy. So, we handle this special case here...
-      # There is actualy nothing to deliver....
+      # There is actually nothing to deliver....
       ns_set put [ns_conn outputheaders] "Content-Length" 0
       ns_return 200 $mime_type {}
       return

@@ -13,3 +13,9 @@ if {$::xotcl::version < 1.5} {
   ns_log notice "Please updgrade to a new version (see http://openacs.org/xowiki/xotcl-core)"
   ns_log notice "**********************************************************"
 }
+
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

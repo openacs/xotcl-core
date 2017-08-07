@@ -4,11 +4,17 @@ ad_page_contract {
   @author Gustaf Neumann
   @cvs-id $Id$
 } -query {
-  {all_classes:optional 0}
+  {all_classes:notnull 0}
 } -properties {
   title:onevalue
   context:onevalue
   output:onevalue
+} -validate {
+  check_enum -requires all_classes {
+    if {$all_classes ni {0 1}} {
+      ad_complain "value not in enumeration domain"
+    }
+  }
 }
 
 set title "XOTcl Classes Defined in Connection Threads"
@@ -26,7 +32,7 @@ set dimensional_slider [ad_dimensional {
 
 proc local_link cl {
   upvar all_classes all_classes
-  if {$all_classes || ![string match "::xotcl::*" $cl]} {
+  if {$all_classes || (![string match "::xotcl::*" $cl] && ![string match "::nx::*" $cl])} {
     return "<a href='#$cl'>$cl</a>"
   } else {
     return $cl
@@ -57,10 +63,11 @@ if {[info commands ::nx::Class] ne ""} {
     lappend classes {*}[nx::Class info instances -closure]
 }
 foreach cl [lsort $classes] {
-  if {!$all_classes && [string match "::xotcl::*" $cl]} \
-      continue
+  if {!$all_classes && ([string match "::xotcl::*" $cl] || [string match "::nx::*" $cl])} {
+    continue
+  }
   
-  append output "<li><b><a name='$cl'>[::xotcl::api object_link {} $cl]</b> <ul>"
+  append output "<li><b><a name='$cl'>[::xo::api object_link {} $cl]</b> <ul>"
 
   append output [info_classes $cl superclass]
   append output [info_classes $cl subclass 1]
@@ -69,7 +76,7 @@ foreach cl [lsort $classes] {
 
   foreach key {proc instproc} {
     set infos ""
-    foreach i [lsort [::xo::getObjectProperty $cl $key]] {append infos [::xotcl::api method_link $cl $key $i] ", "}
+    foreach i [lsort [::xo::getObjectProperty $cl $key]] {append infos [::xo::api method_link $cl $key $i] ", "}
     set infos [string trimright $infos ", "]
     if {$infos ne ""} {
       append output "<li><em>$key:</em> $infos</li>\n"
@@ -78,7 +85,7 @@ foreach cl [lsort $classes] {
   }
 
   set infos ""
-  foreach o [lsort [$cl info instances]] {append infos [::xotcl::api object_link {} $o] ", "}
+  foreach o [lsort [$cl info instances]] {append infos [::xo::api object_link {} $o] ", "}
   set infos [string trimright $infos ", "]
   if {$infos ne ""} {
     append output "<li><em>instances:</em> $infos</li>\n"
@@ -89,3 +96,9 @@ foreach cl [lsort $classes] {
 }
 append output </ul>
 
+
+# Local variables:
+#    mode: tcl
+#    tcl-indent-level: 2
+#    indent-tabs-mode: nil
+# End:

@@ -1,5 +1,5 @@
 ::xo::library doc {
-  XOTcl HTML Widget Classes based on tdom
+  XOTcl HTML Widget Classes based on tDOM
 
   @author Gustaf Neumann (neumann@wu-wien.ac.at)
   @author Neophytos Demetriou (k2pts@phigita.net)
@@ -56,7 +56,6 @@ namespace eval ::xo::tdom {
     }
   }
 
-  #Object create ::xo::tmp
   ::xo::tdom::Class instproc unknown args {
     set configurecmds [lrange $args 0 end-1]
     set createcmd [lindex $args end]
@@ -110,7 +109,7 @@ namespace eval ::xo::tdom {
     #
     # autorendering means that after creating an ordered composite,
     # the topmost element is automatically rendered. This makes
-    # the ::xo::tdom classes behave more like plain tdom commands.
+    # the ::xo::tdom classes behave more like plain tDOM commands.
     #
     #my log "tdom AUTO $level [$me autorender]"
 
@@ -125,7 +124,7 @@ namespace eval ::xo::tdom {
   }
 
   #
-  # The tdom attribute manager makes it syntactically easier to
+  # The tDOM attribute manager makes it syntactically easier to
   # specify a list of attributes for rendering via tDOM.
   #
   ::xotcl::Class create ::xo::tdom::AttributeManager
@@ -180,7 +179,7 @@ namespace eval ::xo::tdom {
   
   #
   # ::xo::tdom::Object
-  # is the top of the class hierarchies for tdom objects
+  # is the top of the class hierarchies for tDOM objects
   #
   ::xotcl::Class create ::xo::tdom::Object \
       -superclass {::xo::tdom::AttributeManager ::xo::OrderedComposite} \
@@ -188,6 +187,16 @@ namespace eval ::xo::tdom {
 
   ::xo::tdom::Object instproc render {} {
     foreach o [my children] { $o render }
+  }
+
+  #
+  # General of HTML markup CSRF tokens in tDOM contexts
+  #
+  namespace eval ::html {}
+  proc ::html::CSRFToken {} {
+    ::if {[::info exists ::__csrf_token]} {
+      ::html::input -type hidden -name __csrf_token -value [::security::csrf::token] {}
+    }
   }
 
 }
@@ -207,6 +216,29 @@ namespace eval ::xo {
   # Localization
   #
 
+  #
+  # The following pair of functions implement a crude method for
+  # avoiding i16n substitutions. These are necessary, since xowiki
+  # provides all its markup finally as "content" that is currently
+  # internationalized without distinctions. However, sometimes
+  # (e.g. values in forms) should be presented without i18n
+  # processing. In such cases, the two functions below can be used to
+  # prevent such substitutions.
+  #
+  proc remove_escapes {text} {
+    regsub -all \x01# $text "#" text
+    return $text
+  }
+  
+  proc escape_message_keys {text} {
+    regsub -all {(\#[a-zA-Z0-9_:-]+\.[a-zA-Z0-9_:-]+)\#} $text "\\1\x01#" text
+    return $text
+  }
+
+  #
+  # xo::localize function
+  #
+
   set ::xo::acs_lang_url [apm_package_url_from_key acs-lang]admin
 
   proc localize {text {inline 0}} {
@@ -215,21 +247,21 @@ namespace eval ::xo {
     if {![$obj exists __localizer]} {
       $obj set __localizer [list]
     }
-    if {[string first \x002 $text] == -1} {
+    if {[string first \x02 $text] == -1} {
       return $text
     } else {
       set return_text ""
       if {$inline} {
         # Attempt to move all message keys outside of tags
-        while { [regsub -all {(<[^>]*)(\x002\(\x001[^\x001]*\x001\)\x002)([^>]*>)} $text {\2\1\3} text] } {}
+        while { [regsub -all {(<[^>]*)(\x02\(\x01[^\x01]*\x01\)\x02)([^>]*>)} $text {\2\1\3} text] } {}
         
         # Attempt to move all message keys outside of <select>...</select> statements
-        regsub -all -nocase {(<option\s[^>]*>[^<]*)(\x002\(\x001[^\x001]*\x001\)\x002)([^<]*</option[^>]*>)} $text {\2\1\3} text
+        regsub -all -nocase {(<option\s[^>]*>[^<]*)(\x02\(\x01[^\x01]*\x01\)\x02)([^<]*</option[^>]*>)} $text {\2\1\3} text
         
-        while { [regsub -all -nocase {(<select[^>]*>[^<]*)(\x002\(\x001[^\x001]*\x001\)\x002)} $text {\2\1} text] } {}
+        while { [regsub -all -nocase {(<select[^>]*>[^<]*)(\x02\(\x01[^\x01]*\x01\)\x02)} $text {\2\1} text] } {}
       }
 
-      while {[regexp {^([^\x002]*)\x002\(\x001([^\x001]*)\x001\)\x002(.*)$} $text _ \
+      while {[regexp {^([^\x02]*)\x02\(\x01([^\x01]*)\x01\)\x02(.*)$} $text _ \
                   before key text]} {
         append return_text $before
         lassign [split $key .] package_key message_key
@@ -271,7 +303,7 @@ namespace eval ::xo {
     }
   }
 
-  Class Localizer -parameter {type key url}
+  Class create Localizer -parameter {type key url}
 
   Localizer instproc render {} {
     html::a -title [my key] -href [my url] {
@@ -297,7 +329,7 @@ namespace eval ::xo {
 
   ## todo : make these checks only in trn mode (additional mixin)
   
-  Class Drawable \
+  Class create Drawable \
       -superclass ::xo::tdom::AttributeManager \
       -instproc _ {attr} {
         my set $attr
@@ -305,7 +337,7 @@ namespace eval ::xo {
       -instproc render_localizer {} {
       }
 
-  Class TRN-Mode \
+  Class create TRN-Mode \
       -instproc _ {attr} {
         return [::xo::localize [my set $attr]]
       } \
@@ -327,7 +359,7 @@ namespace eval ::xo {
         next
         my render_localizer
       }
-  
+   
   #
   # for the time being, just a proc
   #
@@ -347,7 +379,7 @@ namespace eval ::xo {
   #
   # define an abstract table
   #
-  Class Table -superclass OrderedComposite \
+  Class create Table -superclass OrderedComposite \
       -parameter [expr {[apm_version_names_compare [ad_acs_version] 5.3.0] == 1 ? 
                         {{no_data  "#xotcl-core.No_Data#"} {renderer TABLE3} name} :
                         {{no_data  "#xotcl-core.No_Data#"} {renderer TABLE2} name} 
@@ -412,7 +444,7 @@ namespace eval ::xo {
     foreach column [[self]::__columns children] {
       if {[$column exists no_csv]} continue
       set label [$column label]
-      if {[regexp {^#(.*)#$} $label _ message_key]} {
+      if {[regexp {^#([a-zA-Z0-9_:-]+\.[a-zA-Z0-9_:-]+)#$} $label _ message_key]} {
         set label [_ $message_key]
       }
       set value [string map {\" \\\" \n \r)} $label]
@@ -455,7 +487,7 @@ Class create Table::Line \
 # Define elements of a Table
 #
 namespace eval ::xo::Table {
-  Class Action \
+  Class create Action \
       -superclass ::xo::OrderedComposite::Child \
       -parameter {label url {tooltip {}}} 
   #-proc destroy {} {
@@ -464,7 +496,7 @@ namespace eval ::xo::Table {
   #      next
   #    }
 
-  Class Field \
+  Class create Field \
       -superclass ::xo::OrderedComposite::Child \
       -parameter {label {html {}} {orderby ""} name {richtext false} no_csv {CSSclass ""} {hide 0}} \
       -instproc init {} {
@@ -478,7 +510,7 @@ namespace eval ::xo::Table {
         return $slots
       }
 
-  Class BulkAction \
+  Class create BulkAction \
       -superclass ::xo::OrderedComposite::Child \
       -parameter {name id {html {}} {hide 0}} \
       -instproc actions {cmd} {
@@ -496,7 +528,7 @@ namespace eval ::xo::Table {
         ;
       }
 
-  Class AnchorField \
+  Class create AnchorField \
       -superclass ::xo::Table::Field \
       -instproc get-slots {} {
         set slots [list -[my name]]
@@ -506,13 +538,13 @@ namespace eval ::xo::Table {
         return $slots
       }
 
-  Class HiddenField \
+  Class create HiddenField \
       -superclass ::xo::Table::Field \
       -instproc get-slots {} {
         return [list -[my name]]
       }
 
-  Class ImageField \
+  Class create ImageField \
       -parameter {src width height border title alt} \
       -superclass ::xo::Table::Field \
       -instproc get-slots {} {
@@ -529,30 +561,30 @@ namespace eval ::xo::Table {
         return $slots
       }
 
-  Class ImageAnchorField \
+  Class create ImageAnchorField \
       -superclass ::xo::Table::ImageField \
       -instproc get-slots {} {
         return [concat [next]  -[my name].href ""]
       }
 
-  Class ImageField_EditIcon \
+  Class create ImageField_EditIcon \
       -superclass ImageAnchorField -parameter {
         {src /resources/acs-subsite/Edit16.gif} {width 16} {height 16} {border 0} 
         {title "[_ xotcl-core.edit_item]"} {alt "edit"}
       }
   
-  Class ImageField_AddIcon \
+  Class create ImageField_AddIcon \
       -superclass ImageAnchorField -parameter {
         {src /resources/acs-subsite/Add16.gif} {width 16} {height 16} {border 0} 
         {title "[_ xotcl-core.add_item]"} {alt "add"}
       }
 
-  Class ImageField_ViewIcon \
+  Class create ImageField_ViewIcon \
       -superclass ImageAnchorField -parameter {
         {src /resources/acs-subsite/Zoom16.gif} {width 16} {height 16} {border 0} 
         {title "[_ xotcl-core.view_item]"} {alt "view"}
       }
-  Class ImageField_DeleteIcon \
+  Class create ImageField_DeleteIcon \
       -superclass ImageAnchorField -parameter {
         {src /resources/acs-subsite/Delete16.gif} {width 16} {height 16} {border 0} 
         {title "[_ xotcl-core.delete_item]"} {alt "delete"}
@@ -571,7 +603,7 @@ namespace eval ::xo::Table {
   #
   # Class for rendering ::xo::Table as the html TABLE
   #
-  Class TABLE \
+  Class create TABLE \
       -superclass ::xo::Drawable \
       -instproc init_renderer {} {
         #my log "--"
@@ -606,13 +638,17 @@ namespace eval ::xo::Table {
 
       html::ul -class compact {
         foreach ba $bulkactions {
+          set id [::xowiki::Includelet html_id $ba]
           html::li {
-            html::a -title [$ba tooltip] -class button -href # \
-                -onclick "acs_ListBulkActionClick('$name','[$ba url]'); return false;" \
+            html::a -title [$ba tooltip] -id $id -class button -href # \
                 {
                   html::t [$ba label]
                 }
           }
+          template::add_event_listener \
+              -id $id \
+              -preventdefault=false \
+              -script [subst {acs_ListBulkActionClick('$name','[$ba url]');}]
         }
       }
     }
@@ -795,11 +831,17 @@ namespace eval ::xo::Table {
     set name [my name]
     #my msg [my serialize]
     html::th -class list { 
-      html::input -type checkbox -name __bulkaction \
-          -onclick "acs_ListCheckAll('$name', this.checked)" \
+      html::input -type checkbox -name __bulkaction -id __bulkaction \
           -title "Mark/Unmark all rows"
+      ::html::CSRFToken
     }
+    template::add_body_script -script [subst {
+      document.getElementById('__bulkaction').addEventListener('click', function (event) {
+        acs_ListCheckAll('$name', this.checked);
+      }, false);
+    }]
   }
+  
   TABLE::BulkAction instproc render-data {line} {
     #my msg [my serialize]
     set name [my name]
@@ -809,7 +851,7 @@ namespace eval ::xo::Table {
         -title "Mark/Unmark this row"
   }
 
-  Class TABLE2 \
+  Class create TABLE2 \
       -superclass TABLE \
       -instproc render-actions {} {
         set actions [[self]::__actions children]
@@ -852,7 +894,7 @@ namespace eval ::xo::Table {
   Class create TABLE2::ImageAnchorField -superclass TABLE::ImageAnchorField
   Class create TABLE2::BulkAction -superclass TABLE::BulkAction
 
-  Class TABLE3 \
+  Class create TABLE3 \
       -superclass TABLE2 \
       -instproc init_renderer {} {
         next 
@@ -870,7 +912,7 @@ namespace eval ::xo::Table {
   Class create TABLE3::BulkAction -superclass TABLE::BulkAction
 }
 
-Class TableWidget \
+Class create TableWidget \
     -superclass ::xo::Table \
     -instproc init {} {
       set trn_mixin [expr {[lang::util::translator_mode_p] ?"::xo::TRN-Mode" : ""}]
@@ -884,7 +926,7 @@ Class TableWidget \
 # Pure List widget
 #
 
-Class ListWidget -superclass ::xo::OrderedComposite -instproc render {} {
+Class create ListWidget -superclass ::xo::OrderedComposite -instproc render {} {
   html::ul -class plainlist {
     foreach o [my children] {
       html::li {
@@ -899,14 +941,14 @@ Class ListWidget -superclass ::xo::OrderedComposite -instproc render {} {
 # Define two Master templates, an empty one and one page master
 #
 
-Object defaultMaster -proc decorate {node} {
+Object create defaultMaster -proc decorate {node} {
   $node appendFromScript {
     set slave [tmpl::div]
   }
   return $slave
 }
 
-Object pageMaster -proc decorate {node} {
+Object create pageMaster -proc decorate {node} {
   $node appendFromScript {
     html::div -class defaultMasterClass {
       html::t "hello header"
@@ -922,8 +964,6 @@ namespace eval ::xo {
   #
   # templating and CSS
   #
-  set use_template_head 1
-
   Class create Page
   Page proc requireCSS {{-order 1} name} {
     set ::_xo_need_css($name) [expr {[array size ::_xo_need_css]+1000*$order}]
@@ -936,12 +976,7 @@ namespace eval ::xo {
     set ::_xo_need_js($name)  1
   }
   Page proc requireLink {-rel -type -title -href} {
-    if {$::xo::use_template_head} {
-      template::head::add_link -rel $rel -href $href -type $type -title $title
-    } else {
-      set key "rel='[ns_quotehtml $rel]' type='[ns_quotehtml $type]' title='[ns_quotehtml $title]' href='[ns_quotehtml $href]'"
-      set ::_xo_need_link($key) 1
-    }
+    template::head::add_link -rel $rel -href $href -type $type -title $title
   }
   Page proc set_property {name element value} {
     set ::xo_property_${name}($element) $value
@@ -965,58 +1000,31 @@ namespace eval ::xo {
   }
 
   Page proc header_stuff {} {
-    set result ""
-    if {$::xo::use_template_head} {
-      foreach style [my sort_keys_by_value [array get ::_xo_need_style]] {
-        template::head::add_style -style $style
-      }
-      set count 10
-      foreach file [my sort_keys_by_value [array get ::_xo_need_css]] {
-        template::head::add_css -href $file -media all -order [incr count]
-      }
-      if {[info exists ::_xo_js_order]} {
-        set statements ""
-        set order 10
-        foreach file $::_xo_js_order {
-          if {[string match "*;*" $file]} {
-            # it is not a file, but some javascipt statements
-            append statements $file \n
-          } else {
-            template::head::add_script -src $file -type text/javascript -order [incr order]
-          }
-        }
-        if {$statements ne ""} {
-          template::head::add_script -script $statements -type text/javascript -order [incr order]
-        }
-      }
 
-      
-    } else {
-      foreach link [array names ::_xo_need_link] {
-        append result "<link $link>\n"
-      }
-      foreach style [my sort_keys_by_value [array get ::_xo_need_style]] {
-        append result "<style type='text/css'>$style</style>\n"
-      }
-      foreach file [my sort_keys_by_value [array get ::_xo_need_css]] {
-        append result "<link type='text/css' rel='stylesheet' href='$file' media='all' >\n"
-      }
-      if {[info exists ::_xo_js_order]} {
-        set statements ""
-        foreach file $::_xo_js_order {
-          if {[string match "*;*" $file]} {
-            # it is not a file, but some javascipt statements
-            append statements $file \n
-          } else {
-            append result "<script src='$file' type='text/javascript'></script>\n"
-          }
+    foreach style [my sort_keys_by_value [array get ::_xo_need_style]] {
+      template::head::add_style -style $style
+    }
+    set count 10
+    foreach file [my sort_keys_by_value [array get ::_xo_need_css]] {
+      template::head::add_css -href $file -media all -order [incr count]
+    }
+    if {[info exists ::_xo_js_order]} {
+      set statements ""
+      set order 10
+      foreach file $::_xo_js_order {
+        if {[string match "*;*" $file]} {
+          # it is not a file, but some javascipt statements
+          #append statements [string map {< "&lt;" > "&gt;"} $file] \n
+          append statements $file \n
+        } else {
+          template::head::add_script -src $file -type text/javascript -order [incr order]
         }
-        if {$statements ne ""} {
-          append result \n "<script type='text/javascript' >$statements</script>\n"
-        }
+      }
+      if {$statements ne ""} {
+        template::head::add_script -script $statements -type text/javascript -order [incr order]
       }
     }
-    return $result
+    return ""
   }
 }
 ::xo::library source_dependent

@@ -112,7 +112,7 @@ namespace eval ::xo {
   }
 
   ProtocolHandler ad_instproc register { } {
-    Register the the aolserver filter and traces.
+    Register the the AOLserver filter and traces.
     This method is typically called via *-init.tcl.
 
     Note, that the specified url must not have an entry

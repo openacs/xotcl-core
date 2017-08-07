@@ -21,7 +21,7 @@ namespace eval ::xo {
     foreach n [ns_cache names $cache $pattern] {ns_cache flush $cache $n}
   }
 
-  Class Cluster -parameter {host {port 80}}
+  Class create Cluster -parameter {host {port 80}}
   Cluster set allowed_host_patterns [list]
   Cluster set url /xotcl-cluster-do 
   Cluster array set allowed_host {

@@ -10,10 +10,10 @@
     <inherit-templates-p>t</inherit-templates-p>
     <auto-mount>xotcl</auto-mount>
 
-    <version name="0.138" url="http://media.wu-wien.ac.at/download/xotcl-core-0.138.apm">
+    <version name="5.10.0d1" url="http://media.wu-wien.ac.at/download/xotcl-core-5.10.0d1.apm">
         <owner url="mailto:neumann@wu-wien.ac.at">Gustaf Neumann</owner>
         <summary>XOTcl library functionality (e.g. thread handling, online documentation, Generic Form and List Classes)</summary>
-        <release-date>2015-02-11</release-date>
+        <release-date>2017-08-06</release-date>
         <vendor url="http://wu.ac.at">WU Vienna</vendor>
         <description format="text/html">&lt;pre&gt;
 This component contains some core functionality for OpenACS
@@ -23,34 +23,32 @@ volatile threads) and a definitions for
 documenting XOTcl object, classes and methods 
 integrated with the api-browser of OpenACS. Documented
 procs and instproc an be created using the methods ad_proc
-and ad_instproc. This component  provides as 
+and ad_instproc. This component provides as 
 well an XOTcl Object and Class browser, as well as
 means to control the recreation of objects and classes
 when components are reloaded. 
-0.23: contains a major overhaul of the Generic classes. Object preliminary 
-      object layer for content repository, oo templating
-0.36: caching support for cr-items
-0.38: important change: uses cr_items.name instead of cr_revision.title 
-      to label content items. This effects as well the api (lookup uses -name instead of -title). 
-0.40: updating package_id in acs_objects, requires now OpenACS 5.2.*
-0.41: supporting storage_type file, on_submit method and html for forms
-0.43: context and connection context
-0.44: use connection_context, sch regression test works
-0.45: xo:db require operations
-0.48: policies
-0.49: stored procedures object proxies (postgres and Oracle)
-0.51: require package
-0.52: distinguish between ImageField and ImageAnchorField, start using slots, 
-      multivalued form entries, bulk-actions, improved localization, improved sql layer (:.xo::db::sql)
-0.70: oo interface to acs-object, acs-object-types and cr-items/revisions based on XOTcl slots 
+Features:
+- oo-abstraction with caching (acs-objects and cr-items/revisions)
+- single and multi instantiations (turn all tuples into objects)
+- object life-time support (automatic cleanup when needed after request)
+- proxy objects for stored procedures/functions (PostgreSQL and
+  Oracle)
+- db-abstraction for PostgreSQL and Oracle (e.g. queries composition)
+- context-management: context objects for (connections and db-queries)
+- security policies
+- GUI and DOM support (via tdom)
+- support for XOTcl and NX
 &lt;/pre&gt;
 </description>
         <license>BSD-Style</license>
         <maturity>2</maturity>
 
-        <provides url="xotcl-core" version="0.138"/>
-	<requires url="acs-kernel" version="5.8.1"/>
-        
+        <provides url="xotcl-core" version="5.10.0d1"/>
+	<requires url="acs-kernel" version="5.9.1"/>
+	<requires url="acs-templating" version="5.9.1"/>
+	<requires url="acs-api-browser" version="5.9.1"/>
+	<requires url="acs-content-repository" version="5.9.1"/>
+        <requires url="acs-tcl" version="5.9.1"/>
 
         <callbacks>
             <callback type="before-install"  proc="::xotcl-core::before-install"/>

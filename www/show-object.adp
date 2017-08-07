@@ -1,6 +1,7 @@
 <master>
 <property name="doc(title)">@title;literal@</property>
 <property name="context">@context;literal@</property>
+<property name="head">
 <style>
 pre.code {
         font-size: 80%;
@@ -25,6 +26,7 @@ pre it {
         font-style: italic;
         color: green;
 }
+dd {margin-left: 2em;}
 </style>
 </property>
 
@@ -33,7 +35,6 @@ pre it {
 </div>
 <hr>
 
-<h1 class="page-title">@title;noquote@</h1>
 <if @class_hierarchy@ not nil>
 <if @svg@ not nil>
 @svg;literal@
@@ -42,7 +43,8 @@ pre it {
 <img style='float: right; max-width: 800px;' src='./show-class-graph?classes=@class_hierarchy@&amp;documented_only=@documented_only@'>
 </else>
 </if>
-@output;noquote@
+
+@output;literal@
 
 <hr>
 <div style='font-size: 70%'>

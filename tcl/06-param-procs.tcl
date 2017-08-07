@@ -162,10 +162,11 @@ namespace eval ::xo {
   parameter proc get_package_key_from_id {
                                           -package_id:required
                                         } {
-    return [ns_cache eval xotcl_object_type_cache package_key-$package_id {
-      ::xo::dc get_value get_package_key \
-          "select package_key from apm_packages where package_id = :package_id"
-    }]
+    return [apm_package_key_from_id $package_id]
+    #return [ns_cache eval xotcl_object_type_cache package_key-$package_id {
+    #  ::xo::dc get_value get_package_key \
+    #      "select package_key from apm_packages where package_id = :package_id"
+    #}]
   }
   parameter proc get_package_id_from_package_key {
                                                   -package_key:required
@@ -276,8 +277,11 @@ namespace eval ::xo {
     }
     set package_id [my get_package_id_from_package_key -package_key $package_key]
     set value [$parameter_obj get -package_id $package_id]
-    if {$value eq "" && [$parameter_obj set __success] == 0} {return $default}
-    return $value
+    if {$value eq "" && [$parameter_obj set __success] == 0 && [info exists default]} {
+      return $default
+    } else {
+      return $value
+    }
   }
 
   parameter proc get {

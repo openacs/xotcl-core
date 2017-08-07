@@ -1,5 +1,3 @@
-## tell serializer to export methods, although these are methods of 
-# ::xotcl::Object
 
 if {$::tcl_version < 8.5
     || ([regexp {8[.]5[.]([0-9]+)$} $::tcl_patchLevel _ minor] && $minor < 4)
@@ -7,72 +5,51 @@ if {$::tcl_version < 8.5
   ns_log error "We require for this version of xotcl-core at least Tcl 8.5.4 (avail: Tcl $::tcl_patchLevel)"
   return
 }
+if {[info exists ::xotcl_version] || ([info exists ::xotcl::version] && $::xotcl::version < 2.0)} {
+  ns_log error "We require for this version of xotcl-core at least XOTcl 2.0"
+  return
+}
 
 package require xotcl::serializer
 
+#
+# Keep the initcmds of classes for documentaiton purposes.
+#
+::nsf::configure keepcmds 1
+
+#
+# Tell serializer to export methods, although these are methods of the
+# base classes.
+#
 ::Serializer exportMethods {
-  ::xotcl::Object instproc log 
+  ::xotcl::Object instproc log
   ::xotcl::Object instproc ds
   ::xotcl::Object instproc msg
   ::xotcl::Object instproc __timediff
   ::xotcl::Object instproc debug
   ::xotcl::Object instproc qn
   ::xotcl::Object instproc serialize
-  ::xotcl::Object instproc show-object
+  ::xotcl::Object instproc www-show-object
   ::xotcl::Object instproc destroy_on_cleanup
   ::xotcl::Object instproc set_instance_vars_defaults
-  ::xotcl::Class instproc extend_slot 
-  ::xotcl::nonposArgs proc integer
-  ::xotcl::nonposArgs proc optional
+  ::xotcl::Object instproc mset
+  ::xotcl::Class instproc extend_slot
 }
 
-if {$::xotcl::version < 1.5} {
-  # XOTcl 1.5 comes already with a predefined, more powerful
-  # implementation of contains.
-
-  ::Serializer exportMethods {
-    ::xotcl::Object instproc contains
-  }
-  ::xotcl::Object instproc contains cmds {
-    my requireNamespace
-    namespace eval [self] $cmds
-  }
-  # XOTcl 1.5 or newer supports slots. Here we have to 
-  # emulate slots up to a certain point
-  namespace eval ::xo {
-    ::xotcl::MetaSlot create ::xo::Attribute \
-        -parameter {
-          {name "[namespace tail [::xotcl::self]]"}
-          {domain "[lindex [regexp -inline {^(.*)::slot::[^:]+$} [::xotcl::self]] 1]"}
-          {multivalued false}
-          {required false}
-          default
-          type
-          spec
-          pretty_name 
-          {pretty_plural ""}
-          {datatype "text"} 
-          constraint_values
-          help_text 
-          validator
-        }
-  }
-} else {
-  namespace eval ::xo {
-    # create xo::Attribute as a subclass of the slot ::xotcl::Attribute
-    ::xotcl::MetaSlot create ::xo::Attribute \
-        -superclass ::xotcl::Attribute \
-        -parameter {
-          spec
-          {required false}
-          pretty_name 
-          {pretty_plural ""}
-          {datatype "text"}
-          constraint_values
-          help_text 
-          validator
-        }
-  }
+namespace eval ::xo {
+  # create xo::Attribute as a subclass of the slot ::xotcl::Attribute
+  ::xotcl::MetaSlot create ::xo::Attribute \
+      -superclass ::xotcl::Attribute \
+      -parameter {
+        spec
+        {required false}
+        pretty_name
+        {pretty_plural ""}
+        {datatype "text"}
+        constraint_values
+        help_text
+        validator
+      }
 }
 
 set ::xo::naviserver [expr {[ns_info name] eq "NaviServer"}]
@@ -93,33 +70,41 @@ if {[info commands ::nx::Object] ne ""} {
   ::nx::Slot public alias set -frame object ::set
   ::nx::Slot public method exists {var}   {::nsf::var::exists [self] $var}
   ::nx::Object public method serialize {} {::Serializer deepSerialize [self]}
-  ::nx::Object method set_instance_vars_defaults {} {:configure}
   ::nx::Object public method destroy_on_cleanup {} {set ::xo::cleanup([self]) [list [self] destroy]}
   ::nx::Object method qn {query_name} {
     return "dbqd.[:uplevel [list current class]]-[:uplevel [list current method]].$query_name"
   }
-  ::xotcl::Object instproc set_instance_vars_defaults {} {:configure}
+  # allow the use of naturalnum with ::xowiki::Package initialize
+  ::nx::Slot method type=naturalnum {name value} {
+    if {![string is integer -strict $value] || $value < 0 } {
+      return -code error "Value '$value' of parameter $name is not a natural number."
+    }
+  }
+
   ::xotcl::Object proc setExitHandler {code} {::nsf::exithandler set $code}
+  ::xotcl::Object instproc set_instance_vars_defaults {} {:configure}
 
   ::Serializer exportMethods {
     ::nx::Object method serialize
-    ::nx::Object method show-object
-    ::nx::Object method set_instance_vars_defaults
     ::nx::Object method destroy_on_cleanup
     ::nx::Object method qn
     ::nx::Slot method istype
     ::nx::Slot method exists
     ::nx::Slot method set
+    ::nx::Slot method type=naturalnum
+    ::nx::Object nsfproc ::nsf::debug::call
+    ::nx::Object nsfproc ::nsf::debug::exit
   }
 
   if {[nx::Class  info methods -path "info superclasses"] eq ""} {
-    # map method names to improve robustness for earlier versions
-    # (should be transitional code).
+    # There is no "info superclasses" defined, it must be a beta
+    # release of nsf.  Map method names to improve robustness for
+    # earlier versions (should be transitional code).
     array set ::xo::mapMethodNames {
       superclasses superclass
       subclasses subclass
       mixins "mixin classes"
-    } 
+    }
   } else {
     array set ::xo::mapMethodNames {
       superclasses superclasses
@@ -128,36 +113,19 @@ if {[info commands ::nx::Object] ne ""} {
     }
   }
 
-} else {
-  ::xotcl::Object instproc set_instance_vars_defaults {} {
-    set pcl [[my info class] info parameterclass]
-    $pcl searchDefaults [self]
-  }
+  #
+  # Make sure, the ::nsf::debug namespace exists (might not be
+  # available in older versions of nsf)
+  #
+  namespace eval ::nsf::debug {}
 
-  #
-  # The XOTcl1_ParameterHandler is for forward compatibility in XOTcl1
-  # to allow to load programs with xotcl2/nx value checkers in
-  # parameter declarations. The handler simply strips (ignores)
-  # xotcl2's parameter declarations.
-  #
-  namespace eval ::xo {}
-  ::xotcl::Class create ::xo::XOTcl1_ParameterHandler
-  ::xo::XOTcl1_ParameterHandler instproc __stripped_parameter {element} {
-    regexp {^([^:]+):} $element _ element
-    return $element
+  proc ::nsf::debug::call {level objectInfo methodInfo arglist} {
+    ns_log Warning "DEBUG call($level) - {$objectInfo} {$methodInfo} $arglist"
   }
-  ::xo::XOTcl1_ParameterHandler instproc parameter {list} {
-    set result {}
-    foreach element $list {
-      if {[llength $element] == 1} {
-        lappend result [my __stripped_parameter $element]
-      } else {
-        lappend result [concat [my __stripped_parameter $element] [lrange $element 1 end]]
-      }
-    }
-    next $result
+  proc ::nsf::debug::exit {level objectInfo methodInfo result usec} {
+    #ns_log Warning "DEBUG exit($level) - {$objectInfo} {$methodInfo} $usec usec -> $result"
+    ns_log Warning "DEBUG exit($level) - {$objectInfo} {$methodInfo} $usec usec"
   }
-  ::xotcl::Class instmixin ::xo::XOTcl1_ParameterHandler
 }
 
 
@@ -167,7 +135,7 @@ namespace eval ::xo {
     next
     # provide a default pretty name for the attribute based on message keys
     if {![info exists pretty_name]} {
-      set object_type [my domain] 
+      set object_type [my domain]
       if {[regexp {^::([^:]+)::} $object_type _ head]} {
         set tail [namespace tail $object_type]
         set pretty_name "#$head.$tail-$name#"
@@ -206,11 +174,26 @@ if {[info exists ::acs::preferdbi]} {
   }
 }
 
-::xotcl::Object instproc serialize {} {
-  ::Serializer deepSerialize [self]
+if {[::package vcompare [package require xotcl::serializer] 2.0] < -1} {
+  #
+  # The serializer of xotcl/2.0 registers already a method "serialize"
+  # on ::xotcl::Object. Don't mess with that.
+  #
+  ::xotcl::Object instproc serialize {} {
+    ::Serializer deepSerialize [self]
+  }
 }
 
-::xotcl::Object instproc show-object {} {
+::xotcl::Object instproc mset {pairs} {
+  #
+  # Import all attribute value pairs into the current XOTcl object.
+  #
+  if {[llength $pairs] > 0} {
+    nsf::directdispatch [self] -frame object ::lassign [dict values $pairs] {*}[dict keys $pairs]
+  }
+}
+
+::xotcl::Object instproc www-show-object {} {
   #
   # Allow to show an arbitrary object via API-browser.  Per-default,
   # e.g. site-wide can use e.g. /xowiki/index?m=show-object
@@ -323,11 +306,16 @@ if {[info commands ::xotcl::nonposArgs] ne ""} {
 
 ::xotcl::Object instproc qn query_name {
   #set qn "dbqd.[my uplevel [list self class]]-[my uplevel [list self proc]].$query_name"
-  set qn "dbqd.[my uplevel {info level 0}].$query_name"
-  return $qn
+  set l [info level]
+  if {$l < 2} {
+    set prefix topLevel
+  } else {
+    set prefix [my uplevel {info level 0}]
+  }
+  return "dbqd.$prefix.$query_name"
 }
 namespace eval ::xo {
-  Class Timestamp
+  Class create Timestamp
   Timestamp instproc init {} {my set time [clock clicks -milliseconds]}
   Timestamp instproc diffs {} {
     set now [clock clicks -milliseconds]
@@ -355,7 +343,7 @@ namespace eval ::xo {
       append msg "flags=[ad_conn flags] status=[ad_conn status] req=[ad_conn request]"
     }
     ::xotcl::Object log $msg
-    set max [info level]  
+    set max [info level]
     if {$m<$max} {set max $m}
     ::xotcl::Object  log "### Call Stack (level: command)"
     for {set i 0} {$i < $max} {incr i} {
@@ -369,8 +357,8 @@ namespace eval ::xo {
 }
 
 namespace eval ::xo {
-  # 
-  # Make reporting back of the version numbers of the most important 
+  #
+  # Make reporting back of the version numbers of the most important
   # involved components easier.
   #
   proc report_version_numbers {{pkg_list {acs-kernel xotcl-core xotcl-request-monitor xowiki s5 xoportal xowf}}} {
@@ -390,7 +378,7 @@ namespace eval ::xo {
       set p [glob -nocomplain $dir/tcllib*]
       if {$p ne ""} {
         append _ "$p"
-        # just show first occurances on path
+        # just show first occurrences on path
         break
       }
     }
@@ -439,41 +427,33 @@ namespace eval ::xo {
   #   1) there was no way to control the order of the deletions
   #   2) the global variables used for managing db handles might
   #      be deleted already
-  #   3) the traces are executed at a time when the connection 
+  #   3) the traces are executed at a time when the connection
   #      is already closed
-  # Aolserver 4.5 supports a trace for freeconn. We can register
+  # AOLserver 4.5 supports a trace for freeconn. We can register
   # a callback to be executed before the connection is freed,
   # therefore, we have still information from ns_conn available.
-  # For aolserver 4.5 we use oncleanup, which is at least before
+  # For AOLserver 4.5 we use oncleanup, which is at least before
   # the cleanup of variables.
   #
-  # In contrary, in 4.0.10, on cleanup is called after the global
+  # In contrary, in 4.0.10, "on cleanup" is called after the global
   # variables of a connection thread are deleted. Therefore
   # the triggered calls should not use database handles,
   # since these are as well managed via global variables,
-  # the will be deleted as well at this time,.
-  # 
-  # To come up with an approach working for 4.5 and 4.0.10, we
-  # distinguish between a at_cleanup and at_close, so connection
-  # related info can still be obtained. 
+  # the will be deleted as well at this time.
+  #
+  # To come up with an approach working for AOLserver 4.5 and 4.0.10,
+  # we distinguish between a at_cleanup and at_close, so connection
+  # related info can still be obtained.
   #
   if {[catch {set registered [ns_ictl gettraces freeconn]}]} {
-    ns_log notice "*** you should really upgrade to Aolserver 4.5"
+    ns_log notice "*** you should really upgrade to AOLserver 4.5 or better NaviServer"
     # "ns_ictl oncleanup" is called after variables are deleted
     if {[ns_ictl epoch] == 0} {
       ns_ictl oncleanup ::xo::at_cleanup
       ns_ictl oninit [list ns_atclose ::xo::at_close]
       ns_ictl ondelete ::xo::at_delete
     }
-    
-    #     proc trace_cleanup {args} {
-    #       set name [lindex $args 1]
-    #       #ns_log notice "*** cleanup <$args> '$name'"
-    #       if {[::xotcl::Object isobject $name]} {
-    #     ns_log notice "*** cleanup $name destroy"
-    #     $name destroy
-    #       }
-    #     }
+
   } else {
 
     # register only once
@@ -483,10 +463,10 @@ namespace eval ::xo {
       }
     }
     if {"::xo::at_delete" ni [ns_ictl gettraces delete]} {
-      if {[catch {ns_ictl ondelete ::xo::at_delete} errorMsg]} {
-        ns_log Warning "ns_ictl ondelete returned: $errorMsg"
+      if {[catch {ns_ictl trace delete ::xo::at_delete} errorMsg]} {
+        ns_log Warning "rhe command 'ns_ictl trace delete' returned: $errorMsg"
       }
-    }    
+    }
 
     proc ::xo::freeconn {} {
       catch {::xo::at_close}
@@ -569,18 +549,27 @@ namespace eval ::xo {
     # deleted anyhow, but there exists a potential memory leak, when
     # e.g. a destroy method (or an exit handler) writes to ns_log.
     # ns_log requires the thread name, but it is cleared already
-    # earlier (after the interp deletion trace). Aolserver recreated
+    # earlier (after the interp deletion trace). AOLserver recreated
     # the name and the an entry in the thread list, but this elements
     # will not be freed. If we destroy the objects here, the mentioned
     # problem will not occur.
     #
     ns_log notice "ON DELETE $args"
     ::xo::broadcast clear
+
+    #
+    # Make sure, no handles are allocated any more. Otherwise, when
+    # the thread is reused, there would be a conflict, when the thread
+    # has already a handle associated but tries to obtain an
+    # additional handle.
+    #
+    db_release_unused_handles
+
     set t0 [clock clicks -milliseconds]
     ::xo::system_stats recordtimes
     #
     # Check, if we have a new XOTcl implementation with ::xotcl::finalize
-    # 
+    #
     if {[info commands ::xotcl::finalize] ne ""} {
       ::xotcl::finalize
     } else {
@@ -601,9 +590,18 @@ namespace eval ::xo {
     set t1 [clock clicks -milliseconds]
     ns_log notice "ON DELETE done ([expr {$t1-$t0}]ms)"
   }
-  
+
+  proc ::xo::stats {{msg ""}} {
+    set xobjs   [llength [::xotcl::Object info instances -closure]]
+    set nobjs   [llength [::nx::Object info instances  -closure]]
+    set tmpObjs [llength [info commands ::nsf::__#*]]
+    set tdoms   [llength [concat [info commands domNode0*] [info commands domDoc0x*]]]
+    set nssets  [llength [ns_set list]]
+    ns_log notice "xo::stats $msg: current objects xotcl $xobjs nx $nobjs tmp $tmpObjs tDOM $tdoms ns_set $nssets"
+  }
+
   #
-  # ::xo::Module is very similar to a plain tcl namespace: When it is
+  # ::xo::Module is very similar to a plain Tcl namespace: When it is
   # created/recreated, it does not perform a cleanup of its
   # contents. This means that preexisting procs, objects classes,
   # variables etc. will survive a recreation. As a consequence,
@@ -613,7 +611,7 @@ namespace eval ::xo {
   # arguments directly in it. It is as well possible to use mixins
   # etc.
   #
-  Class create Module 
+  Class create Module
   Module instproc init    args {my requireNamespace}
   Module instproc cleanup args {ns_log notice "create/recreate [self] without cleanup"}
 }
@@ -631,13 +629,16 @@ namespace eval ::xo {
     -value:required
   } {
     Implementation of subsite::parameter_changed for xotcl-core parameters
-    
+
     @param package_id the package_id of the package the parameter was changed for
     @param parameter  the parameter name
     @param value      the new value
   } {
     set package_key [apm_package_key_from_id $package_id]
-    if {$package_key eq "xotcl-core" && $parameter eq "NslogRedirector"} {
+    if {$package_key eq "xotcl-core"
+        && $parameter eq "NslogRedirector"
+        && [info commands ::xo::ns_log_redirector_manager] ne ""
+      } {
       ::xo::ns_log_redirector_manager set_level $value
       #
       # Update the blueprint to reflect the parameter change
@@ -658,7 +659,7 @@ namespace eval ::xo {
 
 namespace eval ::xo {
 
-  ::xotcl::Object create ::xo::system_stats 
+  ::xotcl::Object create ::xo::system_stats
 
   if {$::tcl_platform(os) eq "Linux"} {
     ::xo::system_stats proc thread_info {pid tid} {
@@ -801,16 +802,21 @@ namespace eval ::xo {
 proc ::xo::getObjectProperty {o what args} {
   switch $what {
     "mixin" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info mixin]}
-      return [$o info object {*}$::xo::mapMethodNames(mixins)]
+      return [$o ::nsf::methods::object::info::mixins]
     }
     "instmixin" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info instmixin]}
-      return [$o info {*}$::xo::mapMethodNames(mixins)]
+      return [$o ::nsf::methods::class::info::mixins]
     }
+    "mixinof" {
+      return [$o ::nsf::methods::class::info::mixinof -scope object]
+    }
+    "instmixinof" {
+      return [$o ::nsf::methods::class::info::mixinof -scope class]
+    }
+
     "instproc" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instprocs {*}$args]}
-      return [$o info methods -type scripted {*}$args]
+      return [$o info methods -type scripted -callprotection all {*}$args]
     }
     "instcommand" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instcommands {*}$args]}
@@ -820,13 +826,18 @@ proc ::xo::getObjectProperty {o what args} {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instforward {*}$args]}
       return [$o info methods -type forwarder {*}$args]
     }
+    "instmethodtype" {
+      return [$o ::nsf::methods::class::info::method type {*}$args]
+    }
+    "methodtype" {
+      return [$o ::nsf::methods::object::info::method type {*}$args]
+    }
     "proc" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}$args]}
       return [$o info object methods -type scripted {*}$args]
     }
     "command" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}$args]}
-      return [$o info object methods {*}$args]
+      return [$o ::nsf::methods::object::info::methods {*}$args]
     }
     "forward" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info forward {*}$args]}
@@ -838,7 +849,7 @@ proc ::xo::getObjectProperty {o what args} {
     }
     "class" {
       #if {"::xotcl::Object" in [$o info precedence]} {return [$o info class]}
-      return [$o info class]
+      return [$o ::nsf::methods::object::info::class]
     }
     "superclass" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info superclass]}
@@ -863,24 +874,39 @@ proc ::xo::getObjectProperty {o what args} {
       return $result
     }
     "isclass" {
-      if {[info commands $o] eq ""} {return 0}
-      if {[catch {set p [$o info precedence]}]} {return 0}
-      if {"::xotcl::Object" in $p} {return [expr {"::xotcl::Class" in $p}]}
       return [nsf::is class $o]
     }
     "isobject" {
+      return [nsf::is object $o]
+    }
+    "isbaseclass" {
       if {[info commands $o] eq ""} {return 0}
       if {[catch {set p [$o info precedence]}]} {return 0}
-      if {"::xotcl::Object" in $p} {return 1}
-      return [nsf::is object $o]
+      return [expr {[lindex $p end] eq $o}]
+    }
+    "instmethodparameter" {
+      return [$o ::nsf::methods::class::info::method parameter {*}$args]
+    }
+    "methodparameter" {
+      return [$o ::nsf::methods::object::info::method parameter {*}$args]
     }
     "instargs" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instargs {*}$args]}
-      return [$o info method args {*}$args]
+      set posargs {}
+      foreach m [$o info method args {*}$args] p [$o info method parameters {*}$args] {
+        if {[string index [lindex $p 0] 0] eq "-"} continue
+        lappend posargs $m
+      }
+      return $posargs
     }
     "args" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info args {*}$args]}
-      return [$o info object method args {*}$args]
+      set posargs {}
+      foreach m [$o info object method args {*}$args] p [$o info object method parameters {*}$args] {
+        if {[lindex [string index $p 0] 0] eq "-"} continue
+        lappend posargs $m
+      }
+      return $posargs
     }
     "instargdefault" {
       if {"::xotcl::Object" in [$o info precedence]} {
@@ -901,7 +927,7 @@ proc ::xo::getObjectProperty {o what args} {
         return [uplevel [list $o info default {*}$args]]
       }
       lassign $args method arg varName
-      foreach p [$o info object method parameter $method] {
+      foreach p [$o info object method parameters $method] {
         lassign $p name default
         if {$name eq $arg} {
           uplevel [list set $varName $default]
@@ -910,7 +936,7 @@ proc ::xo::getObjectProperty {o what args} {
       }
       return 0
     }
-    
+
     "array-exists" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o array exists {*}$args]}
       return [$o eval [list array exists :{*}$args]]
@@ -927,6 +953,10 @@ proc ::xo::getObjectProperty {o what args} {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o set {*}$args]}
       return [$o eval [list set :[lindex $args 0]]]
     }
+    "vars" {
+      return [$o ::nsf::methods::object::info::vars]
+    }
+
     "isnxobject" {
       if {[info commands ::nsf::dispatch] ne "" && [info commands $o] ne ""} {
         return [::nsf::dispatch $o ::nsf::methods::object::info::hastype ::nx::Object]
@@ -945,7 +975,7 @@ proc ::xo::getObjectProperty {o what args} {
 #
 ::xotcl::Class instproc extend_slot {arg} {
 
-  # The argument list is e.g. "foo -name x -title y" 
+  # The argument list is e.g. "foo -name x -title y"
   #
   # It is placed into one argument to avoid interference with the "-"
   # argument parsing since it will always start with a non-dashed
@@ -953,22 +983,22 @@ proc ::xo::getObjectProperty {o what args} {
   #
   set name [lindex $arg 0]
   set config [lrange $arg 1 end]
-  
+
   # search for slot
   foreach c [my info heritage] {
-    if {[info command ${c}::slot::$name] ne ""} {
+    if {[info commands ${c}::slot::$name] ne ""} {
       set slot ${c}::slot::$name
       break
     }
   }
   if {![info exists slot]} {error "can't find slot $name"}
-  
+
   # copy slot and configure it
   set newSlot [self]::slot::$name
 
   $slot copy $newSlot
   $newSlot configure -domain [self] -manager $newSlot -create_acs_attribute false -create_table_attribute false {*}$config
-  my set db_slot($name) $newSlot 
+  my set db_slot($name) $newSlot
 }
 
 

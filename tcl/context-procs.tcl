@@ -12,7 +12,7 @@ ad_library {
 
 namespace eval ::xo {
 
-  Class create Context -ad_doc {
+  ::xotcl::Class create Context -ad_doc {
     This class provides a context for evaluation, somewhat similar to an 
     activation record in programming languages. It combines the parameter
     declaration (e.g. of a page, an includelet) with the actual parameters
@@ -22,10 +22,12 @@ namespace eval ::xo {
     {parameter_declaration ""} 
     {actual_query " "}
     {package_id 0}
+    {invoke_object}
     locale
   }
 
-  # syntactic sugar for includelets, to allow the same syntax as 
+  #
+  # Syntactic sugar for includelets, to allow the same syntax as 
   # for "Package initialize ...."; however, we do not allow currently
   # do switch user or package id etc., just the parameter declaration
   Context instproc initialize {{-parameter ""}} {
@@ -106,7 +108,10 @@ namespace eval ::xo {
     }
     
     #my log "--cc calling parser eval [self] __parse $parse_args"
-    [self] __parse {*}$parse_args
+    if {[catch {[self] __parse {*}$parse_args} errorMsg]} {
+      ad_return_complaint 1 [ns_quotehtml $errorMsg]
+      ad_script_abort
+    }
     #my msg "--cc qp [array get queryparm] // $actual_query"
   }
 
@@ -180,7 +185,7 @@ namespace eval ::xo {
   # ConnectionContext, a context with user and url-specific information
   #
 
-  Class ConnectionContext -superclass Context -parameter {
+  Class create ConnectionContext -superclass Context -parameter {
     user_id
     requestor
     user
@@ -346,12 +351,7 @@ namespace eval ::xo {
       # for requests bypassing the ordinary connection setup (resources in oacs 5.2+)
       # we have to get the user_id by ourselves
       if { [catch {
-        if {[info commands ad_cookie] ne ""} {
-          # we have the xotcl-based cookie code
-          set cookie_list [ad_cookie get_signed_with_expr "ad_session_id"]
-        } else {
-          set cookie_list [ad_get_signed_cookie_with_expr "ad_session_id"]
-        }
+        set cookie_list [ad_get_signed_cookie_with_expr "ad_session_id"]
         set cookie_data [split [lindex $cookie_list 0] {,}]
         set untrusted_user_id [lindex $cookie_data 1]
         set requestor $untrusted_user_id
@@ -365,7 +365,8 @@ namespace eval ::xo {
       set requestor $pa
       set user "client from $pa"
     } else {
-      set user "<a href='/acs-admin/users/one?user_id=$requestor'>$requestor</a>"
+      set user_url [acs_community_member_admin_url -user_id $requestor]
+      set user "<a href='$user_url'>$requestor</a>"
     }
     #my log "--i requestor = $requestor"
     
@@ -545,7 +546,7 @@ namespace eval ::xo {
   
   proc ::xo::update_query_variable {old_query var value} {
     #
-    # Replace in a url-query old occurances of var with new value.
+    # Replace in a url-query old occurrences of var with new value.
     #
     # @return pairs in a form suitable for export_vars
     #
@@ -563,7 +564,7 @@ namespace eval ::xo {
 
   proc ::xo::update_query {old_query var value} {
     #
-    # Replace in a url-query old occurances of var with new value.
+    # Replace in a url-query old occurrences of var with new value.
     #
     # @return encoded HTTP query
     #

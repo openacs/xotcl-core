@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<message_catalog package_key="xotcl-core" locale="it_IT" charset="ISO-8859-1">
+
+  <msg key="add">Aggiungi %type%</msg>
+  <msg key="add_item">Aggiungi Elemento</msg>
+  <msg key="add_long">Aggiungi nuovo elemento di tipo %type%</msg>
+  <msg key="create_new_type">Crea Nuovo %type%</msg>
+  <msg key="delete_item">Elimina Elemento</msg>
+  <msg key="edit_item">Edita Elemento</msg>
+  <msg key="edit_type">Edita %type%</msg>
+  <msg key="has_entered_the_room">è entrato nella stanza</msg>
+  <msg key="live_revision">Revisione Corrente</msg>
+  <msg key="No_Data">Nessun Dato</msg>
+  <msg key="nobody">Ospite</msg>
+  <msg key="permission_denied">Permesso Negato</msg>
+  <msg key="policy-error-insufficient_permissions">&lt;blockquote&gt; Non hai permessi sufficienti ad eseguire il metodo %method% sull&#39;oggetto %object%. &lt;/blockquote&gt;</msg>
+  <msg key="revision_title">Revisioni della Voce</msg>
+  <msg key="revisions">Revisioni</msg>
+  <msg key="view_item">Vedi Elemento</msg>
+</message_catalog>

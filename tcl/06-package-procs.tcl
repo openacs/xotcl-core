@@ -23,13 +23,11 @@ namespace eval ::xo {
     my instvar package_key
     if {[info exists privilege]} {
       set sql [::xo::dc select -vars package_id \
-                   -from "apm_packages, acs_object_party_privilege_map ppm, site_nodes s" \
+                   -from "apm_packages, site_nodes s" \
                    -where {
                      package_key = :package_key 
-                     and s.object_id = package_id 
-                     and ppm.object_id = package_id 
-                     and ppm.party_id = :party_id
-                     and ppm.privilege = :privilege
+                     and s.object_id = package_id
+                     and acs_permission__permission_p(package_id, :party_id, :privilege)
                    } -limit 1]
       ::xo::dc get_value get_package_id $sql
     } else {
@@ -194,7 +192,7 @@ namespace eval ::xo {
         # compatibility, but complain in ns_log. 
         #
         # (E.g. hypermail2xowiki uses this)
-        ns_log notice "Could not find ::xo::Package with key $package_key ($package_id)"
+        ns_log warning "Could not find ::xo::Package with key $package_key ($package_id)"
         set package_class [self]
       }
 
@@ -249,9 +247,24 @@ namespace eval ::xo {
                            -package_id $package_id \
                            -retry false]
     set success 0
-    if {$parameter_obj ne ""} {
+
+    if {$parameter_obj ne "" && [$parameter_obj set scope] ne "global"} {
       set value [$parameter_obj get -package_id $package_id]
-      if {[$parameter_obj set __success]} {return $value}
+      #ns_log notice "core: get_param for $attribute after GET: [$parameter_obj serialize] -> '$value'"
+      #if {$value ne "" || [$parameter_obj set __success]} {return $value}
+      #
+      # The returned '$value' might be a value set for the actual
+      # package instance, or the default for the package_parameter as
+      # defined by the package parameter definition in the xml file. If
+      # the value was not specified explicitly, and the provided
+      # default for this command is not empty, return the provided
+      # default.
+      #
+      if {![$parameter_obj set __success] && $value eq "" && $default ne ""} {
+        return $default
+      } else {
+        return $value
+      }
     }
     return [parameter::get_global_value \
                    -package_key [my set package_key] \
@@ -393,8 +406,15 @@ namespace eval ::xo {
     set __vars [list]
     foreach _var $variables {
       if {[llength $_var] == 2} {
+        #
+        # The variable specification is a pair of name and value
+        #
         lappend __vars [lindex $_var 0] [uplevel subst [lindex $_var 1]]
       } else {
+        #
+        # We have just a variable name, provide an linked variable to
+        # access the value.
+        #
         set localvar local.$_var
         upvar $_var $localvar
         if {[array exists $localvar]} {
@@ -413,16 +433,21 @@ namespace eval ::xo {
         upvar #$level $f $f
       }
     }
-    #my log "--before adp"   ; # $__vars
+    #
+    # Substitute the template with the themed template
+    #
+    set adp [template::themed_template $adp]
+    
     set text [template::adp_include $adp $__vars]
-    #my log "--after adp"
     if { [lang::util::translator_mode_p] } {
       set text [::xo::localize $text 1]
     }
-    #my log "--after adp"
-    return $text
+    #my log "--after adp $text"
+
+    return [::xo::remove_escapes $text]
   }
-  
+
+        
   #ns_log notice [::xo::Package serialize]
 
 }
