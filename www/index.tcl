@@ -67,7 +67,7 @@ foreach cl [lsort $classes] {
     continue
   }
   
-  append output "<li><b><a name='$cl'>[::xo::api object_link {} $cl]</b> <ul>"
+  append output "<li><b><a name='$cl'></a>[::xo::api object_link {} $cl]</b> <ul>"
 
   append output [info_classes $cl superclass]
   append output [info_classes $cl subclass 1]
