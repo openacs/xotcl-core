@@ -40,6 +40,7 @@ namespace eval ::xo {
     nsv_incr ""
     bgdelivery ""
     ns_cache "^ns_cache\s+eval"
+    ns_cache_flush ""
     xo::cache_flush_all ""
   }
   #
