@@ -202,7 +202,7 @@ namespace eval ::xo {
                                        -package_key
                                        {-retry true}
                                      } {
-    ::xo::PackageMgr instvar package_class
+    #::xo::PackageMgr instvar package_class
     if {![info exists package_key]} {
       set package_key [my get_package_key_from_id -package_id $package_id]
     }

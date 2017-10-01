@@ -14,18 +14,18 @@ namespace eval ::xo {
 
   OrderedComposite instproc show {} {
     next
-    foreach child [my children] {
+    foreach child [:children] {
       $child show
     }
   }
 
   OrderedComposite instproc orderby {{-order "increasing"} variable} {
-    my set __order $order
-    my set __orderby $variable
+    set :__order $order
+    set :__orderby $variable
   }
 
   OrderedComposite instproc __compare {a b} {
-    set by [my set __orderby]
+    set by ${:__orderby}
     set x [$a set $by]
     set y [$b set $by]
     if {$x < $y} {
@@ -38,47 +38,46 @@ namespace eval ::xo {
   }
 
   OrderedComposite instproc children {} {
-    set children [expr {[my exists __children] ? [my set __children] : ""}]
-    if {[my exists __orderby]} {
-      set order [expr {[my exists __order] ? [my set __order] : "increasing"}]
+    set children [expr {[info exists :__children] ? ${:__children} : ""}]
+    if {[info exists :__orderby]} {
+      set order [expr {[info exists :__order] ? ${:__order} : "increasing"}]
       return [lsort -command [list my __compare] -$order $children]
     } else {
       return $children
     }
   }
   OrderedComposite instproc add obj {
-    my lappend __children $obj
+    lappend :__children $obj
     $obj set __parent [self]
     #my log "-- adding __parent [self] to $obj -- calling after_insert"
     #$obj __after_insert
   }
   OrderedComposite instproc delete obj {
-    my instvar __children
-    set p [lsearch -exact $__children $obj]
-    if {$p == -1} {error "can't delete '$obj' from $__children"}
-    set __children [lreplace $__children $p $p]
+    set p [lsearch -exact ${:__children} $obj]
+    if {$p == -1} {error "can't delete '$obj' from ${:__children}"}
+    set :__children [lreplace ${:__children} $p $p]
     $obj destroy
   }
   
   OrderedComposite instproc last_child {} {
-    lindex [my set __children] end
+    lindex ${:__children} end
   }
 
   OrderedComposite instproc destroy {} {
     # destroy all children of the ordered composite
-    if {[my exists __children]} {
-      #my log "--W destroying children [my set __children]"
-      foreach c [my set __children] { 
-        if {[my isobject $c]} {$c destroy}
+    if {[info exists :__children]} {
+      #my log "--W destroying children ${:__children}"
+      foreach c ${:__children} { 
+        if {[:isobject $c]} {$c destroy}
       }
     }
-    #show_stack;my log "--W children murdered, now next, chlds=[my info children]"
+    #show_stack;my log "--W children murdered, now next, chlds=[:info children]"
     #namespace eval [self] {namespace forget *}  ;# for pre 1.4.0 versions
     next
   }
 
   OrderedComposite instproc contains cmds {
-    my requireNamespace ;# legacy for older xotcl versions
+    :requireNamespace ;# legacy for older xotcl versions
     set m [Object info instmixin]
     if {"[self class]::ChildManager" ni $m} {
       set insert 1
@@ -109,14 +108,14 @@ namespace eval ::xo {
   Class create OrderedComposite::ChildManager -instproc init args {
     set r [next]
     #set parent [self callingobject] ;# not a true calling object (ns-eval), but XOTcl 1 honors it
-    #set parent [my info parent] ;# is ok in XOTcl 2, since the namespace is honored correctly
+    #set parent [:info parent] ;# is ok in XOTcl 2, since the namespace is honored correctly
     #set parent [uplevel 2 self] ;# should work everywhere
     #puts stderr "-- CONTAINS p=$parent, co=[self callingobject] n=[uplevel 2 self]"
     #
     # get the top-most composite context as parent
     set parent [lindex [[self class] set composite] end]
     $parent lappend __children [self]
-    my set __parent $parent
+    set :__parent $parent
     #my __after_insert
     #my log "-- adding __parent  $parent to [self]"
     return $r
@@ -126,11 +125,11 @@ namespace eval ::xo {
 
   Class create OrderedComposite::IndexCompare
   OrderedComposite::IndexCompare instproc __compare {a b} {
-    set by [my set __orderby]
+    set by ${:__orderby}
     set x [$a set $by]
     set y [$b set $by]
-    #my log "--value compare  $x $y] => [my __value_compare $x $y 0]"
-    return [my __value_compare $x $y 0]
+    #my log "--value compare  $x $y] => [:__value_compare $x $y 0]"
+    return [:__value_compare $x $y 0]
   }
   OrderedComposite::IndexCompare instproc __value_compare {x y def} {
     set xp [string first . $x]
@@ -145,10 +144,10 @@ namespace eval ::xo {
       }
     } elseif {$xp == -1} {
       set yh [string range $y 0 $yp-1]
-      return [my __value_compare $x $yh -1]
+      return [:__value_compare $x $yh -1]
     } elseif {$yp == -1} {
       set xh [string range $x 0 $xp-1]
-      return [my __value_compare $xh $y 1]
+      return [:__value_compare $xh $y 1]
     } else {
       set xh [string range $x 0 $xp]
       set yh [string range $y 0 $yp]
@@ -161,14 +160,14 @@ namespace eval ::xo {
         incr xp 
         incr yp
         #puts "rest [string range $x $xp end] [string range $y $yp end]"
-        return [my __value_compare [string range $x $xp end] [string range $y $yp end] $def]
+        return [:__value_compare [string range $x $xp end] [string range $y $yp end] $def]
       }
     }
   }
 
   Class create OrderedComposite::MethodCompare
   OrderedComposite::MethodCompare instproc __compare {a b} {
-    set by [my set __orderby]
+    set by ${:__orderby}
     set x [$a $by]
     set y [$b $by]
     if {$x < $y} {
