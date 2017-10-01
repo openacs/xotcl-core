@@ -800,7 +800,7 @@ namespace eval ::xo {
 }
 
 proc ::xo::getObjectProperty {o what args} {
-  switch $what {
+  switch -- $what {
     "mixin" {
       return [$o ::nsf::methods::object::info::mixins]
     }

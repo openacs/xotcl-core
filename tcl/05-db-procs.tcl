@@ -1957,7 +1957,7 @@ namespace eval ::xo::db {
         foreach constr $db_constraints($col) {
           set type  [lindex $constr 0]
           set value [join [lrange $constr 1 end]]
-          switch $type {
+          switch -- $type {
             "unique" {
               ::xo::db::require unique \
                   -table $table_name -col $col
