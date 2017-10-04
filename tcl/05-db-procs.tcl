@@ -264,7 +264,7 @@ namespace eval ::xo::db {
   # issue SQL commands and to perform profiling.
   #
 
-  ::xotcl::Class create ::xo::db::Driver
+  ::xotcl::Class create ::xo::db::Driver -parameter dialect
   ::xo::db::Driver abstract instproc sets           {{-dbn ""} {-bind ""} -prepare qn sql}
   ::xo::db::Driver abstract instproc 0or1row        {{-dbn ""} {-bind ""} -prepare qn sql}
   ::xo::db::Driver abstract instproc 1row           {{-dbn ""} {-bind ""} -prepare qn sql}
@@ -280,7 +280,7 @@ namespace eval ::xo::db {
   #
   # Driver specific and Driver/Dialect specific hooks
   #
-  ::xotcl::Class create ::xo::db::DB             -superclass ::xo::db::Driver
+  ::xotcl::Class create ::xo::db::DB             -superclass ::xo::db::Driver 
   ::xotcl::Class create ::xo::db::DB-postgresql  -superclass {::xo::db::DB ::xo::db::postgresql}
   ::xotcl::Class create ::xo::db::DB-oracle      -superclass {::xo::db::DB ::xo::db::oracle}
 
@@ -711,7 +711,7 @@ namespace eval ::xo::db {
         set driver DBI
       }
     }
-    ::xo::db::$driver-$sqlDialect create ::xo::dc
+    ::xo::db::$driver-$sqlDialect create ::xo::dc -dialect $sqlDialect
   }
 
   ::xo::db::select_driver
@@ -1345,7 +1345,8 @@ namespace eval ::xo::db {
     set function_args [my fix_function_args $function_args $package_name $object_name]
     set sql_info [my sql_arg_info $function_args $package_name $object_name]
     #ns_log notice "-- select ${package_name}__${object_name}($psql_args)"
-    dict set sql_info sql [subst { select ${package_name}__${object_name}([dict get $sql_info psql_args]) }]
+    set sql_suffix [:psql_statement_suffix ${package_name} ${object_name}]
+    dict set sql_info sql [subst { select ${package_name}__${object_name}([dict get $sql_info psql_args]) $sql_suffix}]
     dict set sql_info sql_cmd [subst {dbi_1row -autonull {[dict get $sql_info sql] as result}}]
     dict set sql_info body [subst {
       #function_args: $function_args
@@ -1374,16 +1375,28 @@ namespace eval ::xo::db {
   }
 
   #
+  # In some cases, we need locks on SQL select statements, when the
+  # select updates tuples, e.g via a function. This is required at
+  # least in PostgreSQL.
+  #
+  set ::xo::db::sql_suffix(postgresql,content_item,set_live_revision) "FOR NO KEY UPDATE"
+  
+  ::xo::db::DB instproc psql_statement_suffix {package_name object_name} {
+    set key ::xo::db::sql_suffix(${:dialect},$package_name,$object_name)
+    return [expr {[info exists $key] ? [set $key] : ""}]
+  }
+
+  #
   #  DB and Postgres interface method generation (no autonull):
   #
-
   ::xo::db::DB-postgresql instproc generate_psql {package_name object_name} {
     set function_args [my get_function_args $package_name $object_name]
     set function_args [my fix_function_args $function_args $package_name $object_name]
     set sql_info [my sql_arg_info $function_args $package_name $object_name]
     #ns_log notice "-- select ${package_name}__${object_name} ($psql_args)"
+    set sql_suffix [:psql_statement_suffix ${package_name} ${object_name}]
     set sql [subst {
-      select ${package_name}__${object_name}([dict get $sql_info psql_args])
+      select ${package_name}__${object_name}([dict get $sql_info psql_args]) $sql_suffix
     }]
     set sql_cmd {ns_set value [ns_pg_bind 0or1row $db $sql] 0}
     dict set sql_info body [subst {
