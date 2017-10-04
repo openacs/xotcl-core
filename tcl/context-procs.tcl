@@ -358,10 +358,10 @@ namespace eval ::xo {
     # if user not authorized, use peer address as requestor key
     if {${:requestor} == 0} {
       set :requestor $pa
-      set user "client from $pa"
+      set :user "client from $pa"
     } else {
       set user_url [acs_community_member_admin_url -user_id ${:requestor}]
-      set user "<a href='$user_url'>${:requestor}</a>"
+      set :user "<a href='$user_url'>${:requestor}</a>"
     }
     #my log "--i requestor = ${:requestor}"
     
