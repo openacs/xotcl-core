@@ -1380,6 +1380,8 @@ namespace eval ::xo::db {
   # least in PostgreSQL.
   #
   set ::xo::db::sql_suffix(postgresql,content_item,set_live_revision) "FOR NO KEY UPDATE"
+  set ::xo::db::sql_suffix(postgresql,content_item,del) "FOR UPDATE"
+  set ::xo::db::sql_suffix(postgresql,content_item,new) "FOR UPDATE"
   
   ::xo::db::DB instproc psql_statement_suffix {package_name object_name} {
     set key ::xo::db::sql_suffix(${:dialect},$package_name,$object_name)
