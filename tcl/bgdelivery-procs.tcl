@@ -22,7 +22,7 @@ if {![string match "*contentsentlength*" $msg]} {
   ad_proc -public ad_returnfile_background {-client_data status_code mime_type filename} {
     Deliver the given file to the requestor in the background. This proc uses the
     background delivery thread to send the file in an event-driven manner without
-    blocking a request thread. This is especially important when large files are 
+    blocking a request thread. This is especially important when large files are
     requested over slow (e.g. dial-ip) connections.
   } {
     ns_returnfile $status_code $mime_type $filename
@@ -32,9 +32,9 @@ if {![string match "*contentsentlength*" $msg]} {
 
 ::xotcl::THREAD create bgdelivery {
   ###############
-  # FileSpooler 
-  ###############  
-  # Class FileSpooler makes it easier to overload the 
+  # FileSpooler
+  ###############
+  # Class FileSpooler makes it easier to overload the
   # per-object methods of the concrete file spoolers
   # (such has fileSpooler or h264Spooler)
 
@@ -59,7 +59,7 @@ if {![string match "*contentsentlength*" $msg]} {
       #
       # For handling multiple ranges, HTTP/1.1 requires multipart
       # messages (multipart media type: multipart/byteranges);
-      # currenty these are not implemented (missing test cases). The
+      # currently these are not implemented (missing test cases). The
       # code handling the range tag switches currently to full
       # delivery, when multiple ranges are requested.
       #
@@ -79,7 +79,7 @@ if {![string match "*contentsentlength*" $msg]} {
       set value [set $k]
       ns_log notice "resubmit: canceling currently running request $context  // closing $value"
       lassign $value fd0 channel0 client_data0 filename0
-      my end-delivery -client_data $client_data0 $filename0 $fd0 $channel0 -1 
+      my end-delivery -client_data $client_data0 $filename0 $fd0 $channel0 -1
     }
     set $k [list $fd $channel $client_data $filename]
 
@@ -108,7 +108,7 @@ if {![string match "*contentsentlength*" $msg]} {
       unset ::delete_file($key)
     }
   }
-  
+
   fileSpooler proc cleanup {} {
     # This method should not be necessary. However, under unclear conditions,
     # some fcopies seem to go into a stasis. After 2000 seconds, we will kill it.
@@ -133,7 +133,7 @@ if {![string match "*contentsentlength*" $msg]} {
   ###############
   # h264Spooler
   ###############
-  # 
+  #
   # A first draft of a h264 pseudo streaming spooler.
   # Like for the fileSpooler, we create a single spooler object
   # that handles spooling for all active streams. The per-stream context
@@ -167,7 +167,7 @@ if {![string match "*contentsentlength*" $msg]} {
     # the fileSpooler above).
     #
     if {[catch {
-      set length [h264length $handle] 
+      set length [h264length $handle]
       puts $channel "HTTP/1.0 200 OK\nContent-Type: video/mp4\nContent-Length: $length\n"
       flush $channel
     } errorMsg]} {
@@ -213,7 +213,7 @@ if {![string match "*contentsentlength*" $msg]} {
   # AsyncDiskWriter
   #################
   ::xotcl::Class create ::AsyncDiskWriter -parameter {
-    {blocksize 4096} 
+    {blocksize 4096}
     {autoflush false}
     {verbose false}
   }
@@ -265,7 +265,7 @@ if {![string match "*contentsentlength*" $msg]} {
       my log "write [string length $chunk] bytes ([string length $content] buffered)"
     }
   }
-  
+
 
   ###############
   # Subscriptions
@@ -311,7 +311,7 @@ if {![string match "*contentsentlength*" $msg]} {
     if {$eof} {
       error "connection $channel closed by peer"
     }
-    # make an io-attempt to trigger EOF
+    # make an IO attempt to trigger EOF
     if {[catch {
       set blocking [fconfigure $channel -blocking]
       fconfigure $channel -blocking false
@@ -363,7 +363,7 @@ if {![string match "*contentsentlength*" $msg]} {
   }
 
   Subscriber proc sweep {key} {
-    my foreachSubscriber $key sweep 
+    my foreachSubscriber $key sweep
   }
 
   Subscriber instproc destroy {} {
@@ -396,7 +396,7 @@ if {![string match "*contentsentlength*" $msg]} {
     puts -nonewline [my channel] "HTTP/1.1 200 OK\r\nContent-type: $content_type\r\n$encoding\r\n$body"
     flush [my channel]
   }
-  
+
 
   ###############
   # HttpSpooler
@@ -427,7 +427,7 @@ if {![string match "*contentsentlength*" $msg]} {
     if {$running == 0 && $release} {my all_done}
   }
   ::HttpSpooler instproc deliver {data request {encoding binary}} {
-    my instvar spooling 
+    my instvar spooling
     my log "-- spooling $spooling"
     if {$spooling} {
       my log "--enqueue"
@@ -505,14 +505,14 @@ if {$::xo::naviserver} {
 }
 
 bgdelivery ad_proc returnfile {
-  {-client_data ""} 
-  {-delete false} 
-  {-content_disposition} 
+  {-client_data ""}
+  {-delete false}
+  {-content_disposition}
   status_code mime_type filename} {
-    
+
     Deliver the given file to the requestor in the background. This proc uses the
     background delivery thread to send the file in an event-driven manner without
-    blocking a request thread. This is especially important when large files are 
+    blocking a request thread. This is especially important when large files are
     requested over slow connections.
 
     With NaviServer, this function is mostly obsolete, at least, when
@@ -522,7 +522,7 @@ bgdelivery ad_proc returnfile {
 
     One remaining purpose of this function is h264 streaming delivery
     (when the module is in use).
-    
+
   } {
 
     #ns_setexpires 1000000
@@ -534,7 +534,7 @@ bgdelivery ad_proc returnfile {
     }
     set query [::xo::cc actual_query]
     set secure_conn_p [security::secure_conn_p]
-    set use_h264 [expr {[string match "video/mp4*" $mime_type] && $query ne "" 
+    set use_h264 [expr {[string match "video/mp4*" $mime_type] && $query ne ""
                         && ([string match {*start=[1-9]*} $query] || [string match {*end=[1-9]*} $query])
                         && [info commands h264open] ne ""
                         && !$secure_conn_p }]
@@ -579,7 +579,7 @@ bgdelivery ad_proc returnfile {
       set size [file size $filename]
     }
 
-    # Make sure to set "connection close" for the reqests (in other
+    # Make sure to set "connection close" for the requests (in other
     # words, don't allow keep-alive, which is does not make sense, when
     # we close the connections manually in the bgdelivery thread).
     #
@@ -675,13 +675,13 @@ bgdelivery ad_proc returnfile {
     # Get the thread id and make sure the bgdelivery thread is already
     # running.
     set tid [my get_tid]
-    
+
     # my log "+++ lock [my set bgmutex]"
     ::thread::mutex lock [my set mutex]
 
     #
     # Transfer the channel to the bgdelivery thread and report errors
-    # in detail. 
+    # in detail.
     #
     # Notice, that Tcl versions up to 8.5.4 have a bug in this area.
     # If one uses an earlier version of Tcl, please apply:
@@ -697,15 +697,15 @@ bgdelivery ad_proc returnfile {
         error $innerError
       }
     } errorMsg
-    
+
     ::thread::mutex unlock [my set mutex]
     #ns_mutex unlock [my set bgmutex]
     # my log "+++ unlock [my set bgmutex]"
-    
+
     if {$errorMsg ne ""} {
       error ERROR=$errorMsg
     }
-    
+
     if {$use_h264} {
       #my log "MP4 q=[::xo::cc actual_query], h=[ns_set array [ns_conn outputheaders]]"
       my do -async ::h264Spooler spool -delete $delete -channel $ch -filename $filename \
@@ -727,7 +727,7 @@ bgdelivery ad_proc returnfile {
 ad_proc -public ad_returnfile_background {{-client_data ""} status_code mime_type filename} {
   Deliver the given file to the requestor in the background. This proc uses the
   background delivery thread to send the file in an event-driven manner without
-  blocking a request thread. This is especially important when large files are 
+  blocking a request thread. This is especially important when large files are
   requested over slow (e.g. dial-ip) connections.
 } {
   #ns_log notice "driver=[ns_conn driver]"
