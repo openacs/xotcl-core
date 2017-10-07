@@ -509,10 +509,20 @@ bgdelivery ad_proc returnfile {
   {-delete false} 
   {-content_disposition} 
   status_code mime_type filename} {
+    
     Deliver the given file to the requestor in the background. This proc uses the
     background delivery thread to send the file in an event-driven manner without
     blocking a request thread. This is especially important when large files are 
-    requested over slow (e.g. dial-ip) connections.
+    requested over slow connections.
+
+    With NaviServer, this function is mostly obsolete, at least, when
+    writer threads are configured. The writer threads have as well the
+    advantage, that these can be used with https, while the bgdelivery
+    thread works directly on the socket.
+
+    One remaining purpose of this function is h264 streaming delivery
+    (when the module is in use).
+    
   } {
 
     #ns_setexpires 1000000
@@ -523,9 +533,11 @@ bgdelivery ad_proc returnfile {
       ::xo::ConnectionContext require
     }
     set query [::xo::cc actual_query]
+    set secure_conn_p [security::secure_conn_p]
     set use_h264 [expr {[string match "video/mp4*" $mime_type] && $query ne "" 
                         && ([string match {*start=[1-9]*} $query] || [string match {*end=[1-9]*} $query])
-                        && [info commands h264open] ne ""}]
+                        && [info commands h264open] ne ""
+                        && !$secure_conn_p }]
 
     if {[info commands ns_driversection] ne ""} {
       set use_writerThread [ns_config [ns_driversection] writerthreads 0]
@@ -536,6 +548,15 @@ bgdelivery ad_proc returnfile {
     if {[info exists content_disposition]} {
       set fn [xo::backslash_escape \" $content_disposition]
       ns_set put [ns_conn outputheaders] Content-Disposition "attachment;filename=\"$fn\""
+    }
+
+    if {$secure_conn_p && !$use_writerThread} {
+      #
+      # The bgdelivery thread does not work over https, so fall back
+      # to ns_returnfile. The writer thread works fine with https.
+      #
+      ns_returnfile $status_code $mime_type $filename
+      return
     }
 
     if {$use_h264} {
