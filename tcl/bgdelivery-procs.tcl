@@ -9,6 +9,22 @@ ad_library {
 
 if {[info commands ::thread::mutex] eq ""} {
   ns_log notice "libthread does not appear to be available, NOT loading bgdelivery"
+
+  ad_proc -public ad_returnfile_background {{-client_data ""} status_code mime_type filename} {
+
+    This function is a stub-function to be used, when no libthread is
+    available.  When used with NaviServer, ns_returnfile uses the
+    writer threads, which will be even better than the solution via
+    the bgdelivery thread, since it works as well via https and uses
+    less resources.
+
+    One reason for still using the bgdelivery thread is h264 streaming
+    (when the module is in use).
+
+  } {
+    ns_returnfile $status_code $mime_type $filename
+  }
+
   return
 }
 #return ;# DONT COMMIT
