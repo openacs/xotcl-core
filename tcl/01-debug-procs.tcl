@@ -131,15 +131,14 @@ if {[info commands ::nx::Object] ne ""} {
 
 namespace eval ::xo {
   ::xo::Attribute instproc init {} {
-    my instvar name pretty_name
     next
     # provide a default pretty name for the attribute based on message keys
-    if {![info exists pretty_name]} {
-      set object_type [my domain]
+    if {![info exists :pretty_name]} {
+      set object_type ${:domain}
       if {[regexp {^::([^:]+)::} $object_type _ head]} {
         set tail [namespace tail $object_type]
-        set pretty_name "#$head.$tail-$name#"
-        #my log "--created pretty_name = $pretty_name"
+        set :pretty_name "#$head.$tail-${:name}#"
+        #:log "--created pretty_name = ${:pretty_name}"
       } else {
         error "Cannot determine automatically message key for pretty name. \
         Use namespaces for classes"
@@ -157,8 +156,8 @@ namespace eval ::xo {
 if {[info exists ::acs::preferdbi]} {
   ::xotcl::Object instforward dbi_1row    -objscope ::dbi_1row
   ::xotcl::Object instforward dbi_0or1row -objscope ::dbi_0or1row
-  ::xotcl::Object instproc    db_1row    {. sql} {my dbi_1row $sql}
-  ::xotcl::Object instproc    db_0or1row {. sql} {my dbi_0or1row $sql}
+  ::xotcl::Object instproc    db_1row    {. sql} {:dbi_1row $sql}
+  ::xotcl::Object instproc    db_0or1row {. sql} {:dbi_0or1row $sql}
   ::Serializer exportMethods {
     ::xotcl::Object instforward dbi_1row
     ::xotcl::Object instforward dbi_0or1row
@@ -276,10 +275,10 @@ if {[info commands ::xotcl::nonposArgs] ne ""} {
 }
 
 ::xotcl::Object instproc log msg {
-  ns_log notice "$msg, [self] [self callingclass]->[self callingproc] ([my __timediff])"
+  ns_log notice "$msg, [self] [self callingclass]->[self callingproc] ([:__timediff])"
 }
 ::xotcl::Object instproc ds msg {
-  ds_comment "[self]: $msg, ([self callingclass]->[self callingproc] [my __timediff])"
+  ds_comment "[self]: $msg, ([self callingclass]->[self callingproc] [:__timediff])"
 }
 ::xotcl::Object instproc debug msg {
   ns_log debug "[self] [self callingclass]->[self callingproc]: $msg"
@@ -305,31 +304,31 @@ if {[info commands ::xotcl::nonposArgs] ne ""} {
 # }
 
 ::xotcl::Object instproc qn query_name {
-  #set qn "dbqd.[my uplevel [list self class]]-[my uplevel [list self proc]].$query_name"
+  #set qn "dbqd.[:uplevel [list self class]]-[:uplevel [list self proc]].$query_name"
   set l [info level]
   if {$l < 2} {
     set prefix topLevel
   } else {
-    set prefix [my uplevel {info level 0}]
+    set prefix [:uplevel {info level 0}]
   }
   return "dbqd.$prefix.$query_name"
 }
 namespace eval ::xo {
   Class create Timestamp
-  Timestamp instproc init {} {my set time [clock clicks -milliseconds]}
+  Timestamp instproc init {} {set :time [clock clicks -milliseconds]}
   Timestamp instproc diffs {} {
     set now [clock clicks -milliseconds]
-    set ldiff [expr {[my exists ltime] ? [expr {$now-[my set ltime]}] : 0}]
-    my set ltime $now
-    return [list [expr {$now-[my set time]}] $ldiff]
+    set ldiff [expr {[info exists :ltime] ? [expr {$now-${:ltime}}] : 0}]
+    set :ltime $now
+    return [list [expr {$now-${:time}}] $ldiff]
   }
   Timestamp instproc diff {{-start:switch}} {
-    lindex [my diffs] [expr {$start ? 0 : 1}]
+    lindex [:diffs] [expr {$start ? 0 : 1}]
   }
 
   Timestamp instproc report {{string ""}} {
-    lassign [my diffs] start_diff last_diff
-    my log "--$string (${start_diff}ms, diff ${last_diff}ms)"
+    lassign [:diffs] start_diff last_diff
+    :log "--$string (${start_diff}ms, diff ${last_diff}ms)"
   }
 
   proc show_stack {{m 100}} {
@@ -485,7 +484,7 @@ namespace eval ::xo {
   #}
 
   ::xotcl::Object instproc destroy_on_cleanup {} {
-    #my log "--cleanup adding ::xo::cleanup([self]) [list [self] destroy]"
+    #:log "--cleanup adding ::xo::cleanup([self]) [list [self] destroy]"
     set ::xo::cleanup([self]) [list [self] destroy]
   }
 
@@ -612,7 +611,7 @@ namespace eval ::xo {
   # etc.
   #
   Class create Module
-  Module instproc init    args {my requireNamespace}
+  Module instproc init    args {:requireNamespace}
   Module instproc cleanup args {ns_log notice "create/recreate [self] without cleanup"}
 }
 
@@ -711,12 +710,12 @@ namespace eval ::xo {
   }
 
   ::xo::system_stats proc recordtimes {} {
-    set threadInfo [my gettid]
+    set threadInfo [:gettid]
     if {$threadInfo ne ""} {
       array set i $threadInfo
-      array set i [my thread_info [pid] $i(tid)]
+      array set i [:thread_info [pid] $i(tid)]
       if {[info exists i(stime)]} {
-        set group [my thread_classify $i(name)]
+        set group [:thread_classify $i(name)]
         nsv_incr [self] $group,stime $i(stime)
         nsv_incr [self] $group,utime $i(utime)
       }
@@ -735,22 +734,22 @@ namespace eval ::xo {
     array set varnames {utime utimes stime stimes}
     foreach index [nsv_array names [self]] {
       lassign [split $index ,] group kind
-      my aggregate $group $varnames($kind) [nsv_get [self] $index]
+      :aggregate $group $varnames($kind) [nsv_get [self] $index]
     }
     set threadInfo [ns_info threads]
     if {[file readable /proc/$pid/statm] && [llength [lindex $threadInfo 0]] > 7} {
       foreach t $threadInfo {
         array unset s
-        array set s [my thread_info $pid [lindex $t 7]]
+        array set s [:thread_info $pid [lindex $t 7]]
         if {[info exists s(stime)]} {
-          set group [my thread_classify [lindex $t 0]]
-          my aggregate $group $varnames(utime) $s(utime)
-          my aggregate $group $varnames(stime) $s(stime)
+          set group [:thread_classify [lindex $t 0]]
+          :aggregate $group $varnames(utime) $s(utime)
+          :aggregate $group $varnames(stime) $s(stime)
         }
       }
     }
     foreach group [array names utimes] {
-      my aggregate $group ttimes [expr {$utimes($group) + $stimes($group)}]
+      :aggregate $group ttimes [expr {$utimes($group) + $stimes($group)}]
     }
   }
 }
@@ -794,7 +793,7 @@ namespace eval ::xo {
           ns_log notice "broadcast receive error: $errorMsg for cmd $cmd"
         }
       }
-      my clear
+      :clear
     }
   }
 }
@@ -985,7 +984,7 @@ proc ::xo::getObjectProperty {o what args} {
   set config [lrange $arg 1 end]
 
   # search for slot
-  foreach c [my info heritage] {
+  foreach c [:info heritage] {
     if {[info commands ${c}::slot::$name] ne ""} {
       set slot ${c}::slot::$name
       break
@@ -998,7 +997,7 @@ proc ::xo::getObjectProperty {o what args} {
 
   $slot copy $newSlot
   $newSlot configure -domain [self] -manager $newSlot -create_acs_attribute false -create_table_attribute false {*}$config
-  my set db_slot($name) $newSlot
+  set :db_slot($name) $newSlot
 }
 
 
