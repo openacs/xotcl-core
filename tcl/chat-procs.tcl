@@ -174,9 +174,17 @@ namespace eval ::xo {
     }
     my instvar array
     
-    ::xo::clusterwide nsv_unset -nocomplain $array-login $user_id
-    ::xo::clusterwide nsv_unset -nocomplain $array-color $user_id
-    ::xo::clusterwide nsv_unset -nocomplain $array-last-activity $user_id
+    # This values could already not be here. Just ignore when we don't
+    # find them
+    catch {
+      ::xo::clusterwide nsv_unset -nocomplain $array-login $user_id
+    }
+    catch {
+      ::xo::clusterwide nsv_unset -nocomplain $array-color $user_id
+    }
+    catch {
+      ::xo::clusterwide nsv_unset -nocomplain $array-last-activity $user_id
+    }
   }
 
   Chat instproc init_user_color {} {
