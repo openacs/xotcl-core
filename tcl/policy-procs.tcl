@@ -1,5 +1,5 @@
 ad_library {
-  XOTcl API for policies 
+  XOTcl API for policies
 
   @author Gustaf Neumann
   @creation-date 2007-03-09
@@ -7,18 +7,18 @@ ad_library {
 }
 
 namespace eval ::xo {
-  
+
   Class create Policy
 
   Policy instproc defined_methods {class} {
     set c [self]::$class
     expr {[:isclass $c] ? [$c array names require_permission] : [list]}
   }
-  
+
   Policy instproc check_privilege {
-    {-login true} 
-    -user_id:required 
-    -package_id 
+    {-login true}
+    -user_id:required
+    -package_id
     privilege object method
   } {
     #my log "--p [self proc] [self args]"
@@ -59,7 +59,7 @@ namespace eval ::xo {
 
     set allowed -1   ;# undecided
     # try object specific privileges. These have the signature:
-    # 
+    #
     # <class> instproc privilege=<name> {{-login true} user_id package_id method}
     #
     if {[$object info methods privilege=$privilege] ne ""} {
@@ -117,7 +117,7 @@ namespace eval ::xo {
     }
     return $permission
   }
-  
+
   Policy ad_instproc check_permissions {-user_id -package_id {-link ""} object method} {
 
     This method checks whether the current user is allowed
@@ -128,7 +128,7 @@ namespace eval ::xo {
 
     @see enforce_permissions
     @return 0 or 1
-    
+
   } {
     if {![info exists user_id]} {set user_id [::xo::cc user_id]}
     if {![info exists package_id]} {set package_id [::xo::cc package_id]}
@@ -139,7 +139,7 @@ namespace eval ::xo {
       set ctx [::xo::Context new -destroy_on_cleanup -actual_query $query]
       $ctx process_query_parameter
     }
-    
+
     set allowed 0
     set permission [:get_permission $object $method]
     #my log "--permission for o=$object, m=$method => $permission"
@@ -171,7 +171,7 @@ namespace eval ::xo {
 
     @see check_permissions
     @return 0 or 1
-    
+
   } {
     if {![info exists user_id]} {set user_id [::xo::cc user_id]}
     if {![info exists package_id]} {set package_id [::xo::cc package_id]}
@@ -212,7 +212,7 @@ namespace eval ::xo {
       ad_return_forbidden  "[_ xotcl-core.permission_denied]" [_ xotcl-core.policy-error-insufficient_permissions]
       ad_script_abort
     }
-    
+
     return $allowed
   }
 

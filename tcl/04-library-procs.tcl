@@ -13,7 +13,7 @@ ad_library {
 # Top of file:
 #
 #     ::xo::library doc {
-#         .....your comment goes here .... 
+#         .....your comment goes here ....
 #     }
 #
 # Load a required file:
@@ -23,7 +23,7 @@ ad_library {
 #
 #     ::xo::library require filename
 #
-#   The library to be loaded must be defined with a 
+#   The library to be loaded must be defined with a
 #   ::xo::library doc {...}
 #
 # Source files extending classes of the current file.

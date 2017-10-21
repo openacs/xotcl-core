@@ -1,5 +1,5 @@
 ad_library {
-  A simple OO interface for ad_form for 
+  A simple OO interface for ad_form for
   acs_objects and content repository items.
 
   @author Gustaf Neumann
@@ -12,7 +12,7 @@ namespace eval ::Generic {
   # Form template class
   #
   Class create Form -parameter {
-    fields 
+    fields
     data
     {package_id ""}
     {folder_id -100}
@@ -25,19 +25,19 @@ namespace eval ::Generic {
     {submit_link "."}
     {action "[::xo::cc url]"}
   } -ad_doc {
-    <p>This class was designed 
-    together with the content repository class 
+    <p>This class was designed
+    together with the content repository class
     <a href='/xotcl/show-object?object=::xo::db::CrClass'>::xo::db::CrClass</a>
     for the generation of HTML forms, but it can be used also with different classes.
-    The only hard requirement is the  presence of an 'item_id' form field. 
-    For generic acs_objects, 'item_id' will correspond to 'object_id' column in 'acs_objects' 
-    table. For content repository items, 'item_id' will be the column by the same name in 
+    The only hard requirement is the  presence of an 'item_id' form field.
+    For generic acs_objects, 'item_id' will correspond to 'object_id' column in 'acs_objects'
+    table. For content repository items, 'item_id' will be the column by the same name in
     cr_revisions/cr_items.
 
     @param add_page_title  page title when adding content items
     @param edit_page_title page title when editing content items
     @param data            data object (e.g. instance if CrItem)
-    @param folder_id       associated folder id. Will default to data's 'parent_id' variable. 
+    @param folder_id       associated folder id. Will default to data's 'parent_id' variable.
                            If 'parent_id' is missing too, package's 'folder_id' will be used.
     @param name            name of the form, used for naming the template, defaults to the object name
     @param package_id      package_id of the object. Will default to data's 'package_id' variable
@@ -45,16 +45,16 @@ namespace eval ::Generic {
     @param with_categories display form with categories (default false)
     </ul>
   }
-  
+
   Form instproc init {} {
     set level [template::adp_level]
-    :forward var uplevel #$level set 
+    :forward var uplevel #$level set
 
     if {${:package_id} eq ""} {set :package_id [${:data} package_id]}
     if {${:folder_id} < 0} {
       set :folder_id [expr {[${:data} exists parent_id] ? [${:data} parent_id] : [${:package_id} folder_id]}]
     }
-    
+
     set class [${:data} info class]
     set :data_id [$class id_column]
 
@@ -70,7 +70,7 @@ namespace eval ::Generic {
     if {![info exists :fields]} {my mkFields}
     #my log --fields=[:fields]
   }
-  
+
   Form instproc form_vars {} {
     set vars [list]
     foreach varspec [:fields] {
@@ -100,8 +100,8 @@ namespace eval ::Generic {
         #
         # The item was renamed.
         #
-	#my log "--- rename from $old_name to $new_name"
-	${:data} rename -old_name $old_name -new_name $new_name
+        #my log "--- rename from $old_name to $new_name"
+        ${:data} rename -old_name $old_name -new_name $new_name
         #
         # Check, whether we have to change the redirect url due to
         # renaming. When the method returns non-empty use this value.
@@ -128,7 +128,7 @@ namespace eval ::Generic {
 
     set :context [list ${:edit_form_page_title}]
   }
-  
+
   Form instproc set_form_data {} {
     foreach var [${:data} info vars] {
       if {![${:data} array exists $var]} {
@@ -153,7 +153,7 @@ namespace eval ::Generic {
   }
 
   Form instproc on_submit {item_id} {
-    # On redirects after a submit to the same page, ensure 
+    # On redirects after a submit to the same page, ensure
     # the setting of edit_form_page_title and context
     :request write
     # Put form content into data object
@@ -177,14 +177,14 @@ namespace eval ::Generic {
     ad_returnredirect $link
     #ad_script_abort
   }
-  
+
   Form ad_instproc generate {
     {-template "formTemplate"}
     {-mode "edit"}
     {-export}
   } {
     The method generate is used to actually generate the form template
-    from the specifications and to set up page_title and context 
+    from the specifications and to set up page_title and context
     when appropriate.
     @param template is the name of the Tcl variable to contain the filled in template
     @param export list of attribue value pairs to be exported to the form (nested list)
@@ -195,12 +195,12 @@ namespace eval ::Generic {
     set object_type [[${:data} info class] object_type]
     set object_name [expr {[${:data} exists name] ? [${:data} set name] : ""}]
     #my log "-- ${:data}, cl=[${:data} info class] [[${:data} info class] object_type]"
-    
+
     #my log "--e [:name] final fields [:fields]"
     set exports [list \
       [list object_type $object_type] \
                      [list folder_id ${:folder_id}] \
-                     [list __object_name $object_name]] 
+                     [list __object_name $object_name]]
     if {[info exists export]} {
       foreach pair $export {lappend exports $pair}
     }
@@ -221,11 +221,11 @@ namespace eval ::Generic {
       category::ad_form::add_widgets -form_name [:name] \
           -container_object_id ${:package_id} \
           -categorized_object_id $coid
-          
-      # When editing, fill category form widgets 
+
+      # When editing, fill category form widgets
       # with current mappings for this object
       append edit_request {
-	category::ad_form::fill_widgets \
+        category::ad_form::fill_widgets \
             -container_object_id ${:package_id} \
             -categorized_object_id $item_id
       }
@@ -252,7 +252,7 @@ namespace eval ::Generic {
         -on_validation_error $on_validation_error -after_submit $after_submit
   }
 
-  
+
   #
   # List template class
   #
@@ -418,7 +418,7 @@ namespace eval ::Generic {
     @author Antonio Pisano (antonio@elettrotecnica.it)
 
   }
-  
+
   List instproc init {} {
     set :id_column     [${:class} id_column]
     set :pretty_name   [${:class} pretty_name]
@@ -631,7 +631,7 @@ namespace eval ::Generic {
   List instproc to_csv {} {
     template::list::write_csv -name ${:list_name}
   }
-} 
+}
 namespace import -force ::Generic::*
 #
 # Local variables:
@@ -639,6 +639,3 @@ namespace import -force ::Generic::*
 #    tcl-indent-level: 2
 #    indent-tabs-mode: nil
 # End:
-
-
-
