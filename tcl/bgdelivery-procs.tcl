@@ -103,7 +103,7 @@ if {![string match "*contentsentlength*" $msg]} {
       ns_log notice "no Range spool for $filename"
       fcopy $fd $channel -command [list [self] end-delivery -client_data $client_data $filename $fd $channel]
     } else {
-      my deliver_ranges $ranges $client_data $filename $fd $channel
+      :deliver_ranges $ranges $client_data $filename $fd $channel
     }
     #ns_log notice "--- start of delivery of $filename (running:[array size ::running])"
     set key $channel,$fd,$filename
@@ -141,7 +141,7 @@ if {![string match "*contentsentlength*" $msg]} {
   }
   fileSpooler proc tick {} {
     if {[catch {my cleanup} errorMsg]} {ns_log error "Error during filespooler cleanup: $errorMsg"}
-    my set to [after [my set tick_interval] [list [self] tick]]
+    set :to [after ${:tick_interval} [list [self] tick]]
   }
   fileSpooler tick
 
@@ -234,51 +234,49 @@ if {![string match "*contentsentlength*" $msg]} {
     {verbose false}
   }
   ::AsyncDiskWriter instproc log {msg} {
-    if {[my verbose]} {ns_log notice "[self] --- $msg"}
+    if {[:verbose]} {ns_log notice "[self] --- $msg"}
   }
   ::AsyncDiskWriter instproc open {-filename {-mode w}} {
-    my set channel [open $filename $mode]
-    my set content ""
-    my set filename $filename
-    fconfigure [my set channel] -translation binary -blocking false
-    my log "open [my set filename]"
+    set :channel [open $filename $mode]
+    set :content ""
+    set :filename $filename
+    fconfigure ${:channel} -translation binary -blocking false
+    :log "open ${:filename}"
   }
 
   ::AsyncDiskWriter instproc close {{-sync false}} {
-    my instvar content channel
-    if {$sync || $content eq ""} {
-      my log "close sync"
-      if {$content ne ""} {
-        fconfigure $channel -translation binary -blocking true
-        puts -nonewline $channel $content
+    if {$sync || ${:content} eq ""} {
+      :log "close sync"
+      if {${:content} ne ""} {
+        fconfigure ${:channel} -translation binary -blocking true
+        puts -nonewline ${:channel} ${:content}
       }
-      close $channel
-      my destroy
+      close ${:channel}
+      :destroy
     } else {
-      my log "close async"
-      my set finishWhenDone 1
+      :log "close async"
+      set :finishWhenDone 1
     }
   }
   ::AsyncDiskWriter instproc async_write {block} {
-    my append content $block
-    fileevent [my set channel] writable [list [self] writeBlock]
+    append :content $block
+    fileevent ${:channel} writable [list [self] writeBlock]
   }
   ::AsyncDiskWriter instproc writeBlock {} {
-    my instvar content blocksize channel
-    if {[string length $content] < $blocksize} {
-      puts -nonewline $channel $content
-      my log "write [string length $content] bytes"
-      fileevent [my set channel] writable ""
-      set content ""
-      if {[my autoflush]} {flush $channel}
-      if {[my exists finishWhenDone]} {
-        my close -sync true
+    if {[string length ${:content}] < ${:blocksize}} {
+      puts -nonewline ${:channel} ${:content}
+      :log "write [string length ${:content}] bytes"
+      fileevent ${:channel} writable ""
+      set :content ""
+      if {[:autoflush]} {flush ${:channel}}
+      if {[info exists :finishWhenDone]} {
+        :close -sync true
       }
     } else {
-      set chunk [string range $content 0 $blocksize-1]
-      set content [string range $content $blocksize end]
-      puts -nonewline $channel $chunk
-      my log "write [string length $chunk] bytes ([string length $content] buffered)"
+      set chunk [string range ${:content} 0 ${:blocksize}-1]
+      set :content [string range ${:content} ${:blocksize} end]
+      puts -nonewline ${:channel} $chunk
+      :log "write [string length $chunk] bytes ([string length ${:content}] buffered)"
     }
   }
 
@@ -291,21 +289,20 @@ if {![string match "*contentsentlength*" $msg]} {
 
   ::xotcl::Class create Subscriber -parameter {key channel user_id mode}
   Subscriber proc current {-key } {
-    my instvar subscriptions
     set result [list]
     if {[info exists key]} {
-      if {[info exists subscriptions($key)]} {
-        return [list $key $subscriptions($key)]
+      if {[info exists :subscriptions($key)]} {
+        return [list $key [set :subscriptions($key)]]
       }
-    } elseif {[info exists subscriptions]} {
-      foreach key [array names subscriptions] {
-        lappend result $key $subscriptions($key)
+    } elseif {[info exists :subscriptions]} {
+      foreach key [array names :subscriptions] {
+        lappend result $key [set :subscriptions($key)]
       }
     }
   }
 
   Subscriber instproc close {} {
-    set channel [my channel]
+    set channel [:channel]
     #
     # It is important to make the channel non-blocking for the close,
     # since otherwise the close operation might block and bring all of
@@ -321,9 +318,9 @@ if {![string match "*contentsentlength*" $msg]} {
     # destroys the instance. In this step the peer connection is close
     # as well.
     #
-    set channel [my channel]
+    set channel [:channel]
     if {[catch {set eof [eof $channel]}]} {set eof 1}
-    my log "sweep [my channel] EOF $eof"
+    :log "sweep [:channel] EOF $eof"
     if {$eof} {
       error "connection $channel closed by peer"
     }
@@ -339,9 +336,9 @@ if {![string match "*contentsentlength*" $msg]} {
   }
 
   Subscriber instproc send {msg} {
-    #ns_log notice "SEND <$msg> [my mode]"
-    my log ""
-    if {[my mode] eq "scripted"} {
+    #ns_log notice "SEND <$msg> [:mode]"
+    :log ""
+    if {[:mode] eq "scripted"} {
       set emsg [encoding convertto utf-8 $msg]
       #ns_log notice "SEND data <$msg> encoded <$emsg>"
       set smsg "<script type='text/javascript' nonce='$::__csp_nonce'>\nvar data = $emsg;\n\
@@ -350,18 +347,17 @@ if {![string match "*contentsentlength*" $msg]} {
     } else {
       set smsg $msg
     }
-    #my log "-- sending to subscriber for [my key] $smsg ch=[my channel] \
-        #        mode=[my mode], user_id [my user_id]"
-    puts -nonewline [my channel] $smsg
-    flush [my channel]
+    #my log "-- sending to subscriber for [:key] $smsg ch=[:channel] \
+        #        mode=[:mode], user_id [:user_id]"
+    puts -nonewline [:channel] $smsg
+    flush [:channel]
   }
 
   Subscriber proc foreachSubscriber {key method {argument ""}} {
-    my msg "$key $method '$argument'"
-    my instvar subscriptions
-    if {[info exists subscriptions($key)]} {
+    :msg "$key $method '$argument'"
+    if {[info exists :subscriptions($key)]} {
       set subs1 [list]
-      foreach s $subscriptions($key) {
+      foreach s [set :subscriptions($key)] {
         if {[catch {$s $method $argument} errMsg]} {
           ns_log error "error in $method to subscriber $s (key=$key): $errMsg"
           $s destroy
@@ -369,32 +365,32 @@ if {![string match "*contentsentlength*" $msg]} {
           lappend subs1 $s
         }
       }
-      set subscriptions($key) $subs1
+      set :subscriptions($key) $subs1
     }
   }
 
   Subscriber proc broadcast {key msg} {
-    my foreachSubscriber $key send $msg
+    :foreachSubscriber $key send $msg
     incr ::message_count
   }
 
   Subscriber proc sweep {key} {
-    my foreachSubscriber $key sweep
+    :foreachSubscriber $key sweep
   }
 
   Subscriber instproc destroy {} {
-    my close
+    :close
     next
   }
 
   Subscriber instproc init {} {
-    [my info class] instvar subscriptions
-    lappend subscriptions([my key]) [self]
+    [:info class] instvar subscriptions
+    lappend subscriptions([:key]) [self]
     incr ::subscription_count
-    #my log "-- cl=[my info class], subscriptions([my key]) = $subscriptions([my key])"
-    fconfigure [my channel] -translation binary
+    #my log "-- cl=[:info class], subscriptions([:key]) = $subscriptions([:key])"
+    fconfigure [:channel] -translation binary
 
-    if {[my mode] eq "scripted"} {
+    if {[:mode] eq "scripted"} {
       set content_type "text/html;chartype=utf-8"
       set encoding "Cache-Control: no-cache\r\nTransfer-Encoding: chunked\r\n"
       set body "<html><body>[string repeat { } 1024]\r\n"
@@ -405,12 +401,12 @@ if {![string match "*contentsentlength*" $msg]} {
       # force the translation on the channel.
       set content_type "application/octet-stream"
       set encoding ""
-      fconfigure [my channel] -encoding utf-8
+      fconfigure [:channel] -encoding utf-8
       set body ""
     }
 
-    puts -nonewline [my channel] "HTTP/1.1 200 OK\r\nContent-type: $content_type\r\n$encoding\r\n$body"
-    flush [my channel]
+    puts -nonewline [:channel] "HTTP/1.1 200 OK\r\nContent-type: $content_type\r\n$encoding\r\n$body"
+    flush [:channel]
   }
 
 
@@ -420,39 +416,37 @@ if {![string match "*contentsentlength*" $msg]} {
 
   Class create ::HttpSpooler -parameter {channel {timeout 10000} {counter 0}}
   ::HttpSpooler instproc init {} {
-    my set running 0
-    my set release 0
-    my set spooling 0
-    my set queue [list]
+    set :running 0
+    set :release 0
+    set :spooling 0
+    set :queue [list]
   }
   ::HttpSpooler instproc all_done {} {
-    catch {close [my channel]}
-    my log ""
-    my destroy
+    catch {close [:channel]}
+    :log ""
+    :destroy
   }
   ::HttpSpooler instproc release {} {
     # release indicates the when running becomes 0, the spooler is finished
-    my set release 1
-    if {[my set running] == 0} {my all_done}
+    set :release 1
+    if {${:running} == 0} {my all_done}
   }
   ::HttpSpooler instproc done {reason request} {
-    my instvar running release
-    incr running -1
-    my log "--running $running"
+    incr :running -1
+    :log "--running ${:running}"
     $request destroy
-    if {$running == 0 && $release} {my all_done}
+    if {${:running} == 0 && ${:release}} {my all_done}
   }
   ::HttpSpooler instproc deliver {data request {encoding binary}} {
-    my instvar spooling
-    my log "-- spooling $spooling"
-    if {$spooling} {
-      my log "--enqueue"
-      my lappend queue $data $request $encoding
+    :log "-- spooling ${:spooling}"
+    if {${:spooling}} {
+      :log "--enqueue"
+      lappend :queue $data $request $encoding
     } else {
       #my log "--send"
-      set spooling 1
-      # puts -nonewline [my channel] $data
-      # my done
+      set :spooling 1
+      # puts -nonewline [:channel] $data
+      # :done
       set filename [ad_tmpnam]
       set fd [open $filename w]
       fconfigure $fd -translation binary -encoding $encoding
@@ -460,32 +454,31 @@ if {![string match "*contentsentlength*" $msg]} {
       close $fd
       set fd [open $filename]
       fconfigure $fd -translation binary -encoding $encoding
-      fconfigure [my channel] -translation binary  -encoding $encoding
-      fcopy $fd [my channel] -command \
-          [list [self] end-delivery $filename $fd [my channel] $request]
+      fconfigure [:channel] -translation binary  -encoding $encoding
+      fcopy $fd [:channel] -command \
+          [list [self] end-delivery $filename $fd [:channel] $request]
     }
   }
   ::HttpSpooler instproc end-delivery {filename fd ch request bytes args} {
-    my instvar queue
-    my log "--- end of delivery of $filename, $bytes bytes written $args"
+    :log "--- end of delivery of $filename, $bytes bytes written $args"
     if {[catch {close $fd} e]} {ns_log notice "httpspool, closing file $filename, error: $e"}
-    my set spooling 0
-    if {[llength $queue]>0} {
-      my log "--dequeue"
-      lassign $queue data req enc
-      set queue [lreplace $queue 0 2]
-      my deliver $data $req $enc
+    set :spooling 0
+    if {[llength ${:queue}]>0} {
+      :log "--dequeue"
+      lassign ${:queue} data req enc
+      set :queue [lreplace ${:queue} 0 2]
+      :deliver $data $req $enc
     }
-    my done delivered $request
+    :done delivered $request
   }
   ::HttpSpooler instproc add {-request {-post_data ""}} {
     if {[regexp {http://([^/]*)(/.*)} $request _ host path]} {
       set port 80
       regexp {^([^:]+):(.*)$} $host _ host port
-      my incr running
-      xo::AsyncHttpRequest [self]::[my incr counter] \
+      incr :running
+      xo::AsyncHttpRequest [self]::[incr :counter] \
           -host $host -port $port -path $path \
-          -timeout [my timeout] -post_data $post_data -request_manager [self]
+          -timeout [:timeout] -post_data $post_data -request_manager [self]
     }
   }
 
@@ -545,7 +538,7 @@ bgdelivery ad_proc returnfile {
     #ns_log notice "expires-set $filename"
     #ns_log notice "status_code = $status_code, filename=$filename"
 
-    if {![my isobject ::xo::cc]} {
+    if {![:isobject ::xo::cc]} {
       ::xo::ConnectionContext require
     }
     set query [::xo::cc actual_query]
@@ -661,9 +654,9 @@ bgdelivery ad_proc returnfile {
         ns_log warning "Multiple ranges are currently not supported, ignoring range request"
       }
       if {$::xo::naviserver && ![string match text/* $mime_type]} {
-        my write_headers -binary -- $status_code $mime_type $bytes
+        :write_headers -binary -- $status_code $mime_type $bytes
       } else {
-        my write_headers $status_code $mime_type $bytes
+        :write_headers $status_code $mime_type $bytes
       }
     }
 
@@ -690,10 +683,10 @@ bgdelivery ad_proc returnfile {
     set errorMsg ""
     # Get the thread id and make sure the bgdelivery thread is already
     # running.
-    set tid [my get_tid]
+    set tid [:get_tid]
 
-    # my log "+++ lock [my set bgmutex]"
-    ::thread::mutex lock [my set mutex]
+    # :log "+++ lock ${:bgmutex}"
+    ::thread::mutex lock ${:mutex}
 
     #
     # Transfer the channel to the bgdelivery thread and report errors
@@ -714,9 +707,9 @@ bgdelivery ad_proc returnfile {
       }
     } errorMsg
 
-    ::thread::mutex unlock [my set mutex]
-    #ns_mutex unlock [my set bgmutex]
-    # my log "+++ unlock [my set bgmutex]"
+    ::thread::mutex unlock ${:mutex}
+    #ns_mutex unlock ${:bgmutex}
+    # :log "+++ unlock ${:bgmutex}"
 
     if {$errorMsg ne ""} {
       error ERROR=$errorMsg
@@ -724,13 +717,13 @@ bgdelivery ad_proc returnfile {
 
     if {$use_h264} {
       #my log "MP4 q=[::xo::cc actual_query], h=[ns_set array [ns_conn outputheaders]]"
-      my do -async ::h264Spooler spool -delete $delete -channel $ch -filename $filename \
+      :do -async ::h264Spooler spool -delete $delete -channel $ch -filename $filename \
           -context [list [::xo::cc requestor],[::xo::cc url],$query [ns_conn start]] \
           -query $query \
           -client_data $client_data
     } else {
       #my log "FILE SPOOL $filename"
-      my do -async ::fileSpooler spool -ranges $ranges -delete $delete -channel $ch -filename $filename \
+      :do -async ::fileSpooler spool -ranges $ranges -delete $delete -channel $ch -filename $filename \
           -context [list [::xo::cc requestor],[::xo::cc url],$query [ns_conn start]] \
           -client_data $client_data
     }
@@ -757,28 +750,28 @@ ad_proc -public ad_returnfile_background {{-client_data ""} status_code mime_typ
 #####################################
 bgdelivery proc subscribe {key {initmsg ""} {mode default} } {
   set ch [ns_conn channel]
-  thread::transfer [my get_tid] $ch
+  thread::transfer [:get_tid] $ch
   #my do ::Subscriber sweep $key
-  my do ::Subscriber new -channel $ch -key $key -user_id [ad_conn user_id] -mode $mode
+  :do ::Subscriber new -channel $ch -key $key -user_id [ad_conn user_id] -mode $mode
 }
 
 bgdelivery proc send_to_subscriber {key msg} {
-  my do -async ::Subscriber broadcast $key $msg
+  :do -async ::Subscriber broadcast $key $msg
 }
 #####################################
 bgdelivery proc create_spooler {{-content_type text/plain} {-timeout 10000}} {
   ns_write "HTTP/1.0 200 OK\r\nContent-type: $content_type\r\n\r\n"
   set ch [ns_conn channel]
-  thread::transfer [my get_tid] $ch
-  my do ::HttpSpooler new -channel $ch -timeout $timeout
+  thread::transfer [:get_tid] $ch
+  :do ::HttpSpooler new -channel $ch -timeout $timeout
 }
 
 bgdelivery proc spooler_add_request {spooler request {post_data ""}} {
-  my log "-- do -async $spooler add -request $request"
-  my do -async $spooler add -request $request -post_data $post_data
+  :log "-- do -async $spooler add -request $request"
+  :do -async $spooler add -request $request -post_data $post_data
 }
 bgdelivery proc spooler_release {spooler} {
-  my do -async $spooler release
+  :do -async $spooler release
 }
 
 #

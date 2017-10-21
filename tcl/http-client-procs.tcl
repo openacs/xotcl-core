@@ -101,7 +101,7 @@ namespace eval ::xo {
   #  ::bgdelivery do ::xo::AsyncHttpRequest new \
                          #     -url "https://oacs-dotlrn-conf2007.wu-wien.ac.at/conf2007/" \
                          #     -mixin ::xo::AsyncHttpRequest::SimpleListener
-  #     -proc finalize {obj status value} { my destroy }
+  #     -proc finalize {obj status value} { :destroy }
   #
   ######################
   #
@@ -136,18 +136,18 @@ namespace eval ::xo {
 
   HttpCore instproc set_default_port {protocol} {
     switch -- $protocol {
-      http  {my set port 80}
-      https {my set port 443}
+      http  {set :port 80}
+      https {set :port 443}
     }
   }
 
   HttpCore instproc parse_url {} {
-    my instvar protocol url host port path
+    :instvar protocol url host port path
     if {[regexp {^(http|https)://([^/]+)(/.*)?$} $url _ protocol host path]} {
       # Be friendly and allow strictly speaking invalid urls 
       # like "http://www.openacs.org"  (no trailing slash)
       if {$path eq ""} {set path /}
-      my set_default_port $protocol
+      :set_default_port $protocol
       regexp {^([^:]+):(.*)$} $host _ host port
     } else {
       error "unsupported or invalid url '$url'"
@@ -155,7 +155,7 @@ namespace eval ::xo {
   }
 
   HttpCore instproc open_connection {} {
-    my instvar host port S
+    :instvar host port S
     set S [socket -async $host $port]
   }
 
@@ -275,16 +275,16 @@ namespace eval ::xo {
 
 
   HttpCore instproc init {} {
-    my instvar S post_data host port protocol
-    my destroy_on_cleanup
+    :instvar S post_data host port protocol
+    :destroy_on_cleanup
 
-    my set meta [list]
-    my set data ""
-    if {![my exists method]} {
-      my set method [expr {$post_data eq "" ? "GET" : "POST"}]
+    set :meta [list]
+    set :data ""
+    if {![info exists :method]} {
+      set :method [expr {$post_data eq "" ? "GET" : "POST"}]
     }
-    if {[my exists url]} {
-      my parse_url
+    if {[info exists :url]} {
+      :parse_url
     } else {
       if {![info exists port]} {my set_default_port $protocol}
       if {![info exists host]} {
@@ -300,109 +300,109 @@ namespace eval ::xo {
       # 
       # Add HTTPs handling
       #
-      my mixin add ::xo::Tls
+      :mixin add ::xo::Tls
     }
     if {[catch {my open_connection} err]} {
-      my cancel "error during open connection via $protocol to $host $port: $err"
+      :cancel "error during open connection via $protocol to $host $port: $err"
     }
   }
 
   HttpCore instproc send_request {} {
-    my instvar S post_data host method
+    :instvar S post_data host method
     if {[catch {
-      puts $S "$method [my path] HTTP/1.0"
+      puts $S "$method [:path] HTTP/1.0"
       puts $S "Host: $host"
-      puts $S "User-Agent: [my user_agent]"
-      foreach {tag value} [my request_header_fields] {
+      puts $S "User-Agent: [:user_agent]"
+      foreach {tag value} [:request_header_fields] {
         #regsub -all \[\n\r\] $value {} value
         #set tag [string trim $tag]
         puts $S "$tag: $value"
       }
       my $method
     } err]} {
-      my cancel "error send $host [my port]: $err"
+      :cancel "error send $host [:port]: $err"
       return
     }
   }
 
   HttpCore instproc GET {} {
-    my instvar S
+    :instvar S
     puts $S ""
-    my request_done
+    :request_done
   }
 
   HttpCore instproc POST {} {
-    my instvar S post_data
-    array set "" [my get_channel_settings [my content_type]]
+    :instvar S post_data
+    array set "" [:get_channel_settings [:content_type]]
     if {$(encoding) ne "binary"} {
       set post_data [encoding convertto $(encoding) $post_data]
     }
     puts $S "Content-Length: [string length $post_data]"
-    puts $S "Content-Type: [my content_type]"
+    puts $S "Content-Type: [:content_type]"
     puts $S ""
     fconfigure $S -translation $(translation) -encoding binary
-    my send_POST_data
+    :send_POST_data
   }
   HttpCore instproc send_POST_data {} {
-    my instvar S post_data
+    :instvar S post_data
     puts -nonewline $S $post_data
-    my request_done
+    :request_done
   }
   HttpCore instproc request_done {} {
-    my instvar S
+    :instvar S
     flush $S
-    my reply_first_line
+    :reply_first_line
   }
 
   HttpCore instproc close {} {
-    catch {close [my set S]} errMsg
-    my debug "--- closing socket socket?[my exists S] => $errMsg"
+    catch {close ${:S}} errMsg
+    :debug "--- closing socket socket?[info exists :S] => $errMsg"
   }
 
   HttpCore instproc cancel {reason} {
-    my set status canceled
-    my set cancel_message $reason
-    my debug "--- canceled for $reason"
-    my close
+    set :status canceled
+    set :cancel_message $reason
+    :debug "--- canceled for $reason"
+    :close
   }
 
   HttpCore instproc finish {} {
-    my set status finished
-    my close
-    my debug "--- [my host] [my port] [my path] has finished"
+    set :status finished
+    :close
+    :debug "--- [:host] [:port] [:path] has finished"
   }
   HttpCore instproc getLine {var} {
-    my upvar $var response
-    my instvar S
+    :upvar $var response
+    :instvar S
     set n [gets $S response]
     if {[eof $S]} {
-      my debug "--premature eof"
+      :debug "--premature eof"
       return -2
     }
     if {$n == -1} {my debug "--input pending, no full line"; return -1}
     return $n
   }
   HttpCore instproc reply_first_line {} {
-    my instvar S status_code
+    :instvar S status_code
     fconfigure $S -translation crlf
-    set n [my getLine response]
+    set n [:getLine response]
     switch -exact -- $n {
       -2 {my cancel premature-eof; return}
       -1 {my finish; return}
     }
     if {[regexp {^HTTP/([0-9.]+) +([0-9]+) *} $response _ \
              responseHttpVersion status_code]} {
-      my reply_first_line_done
+      :reply_first_line_done
     } else {
-      my cancel "unexpected-response '$response'"
+      :cancel "unexpected-response '$response'"
     }
   }
   HttpCore instproc reply_first_line_done {} {
-    my header
+    :header
   }
   HttpCore instproc header {} {
     while {1} {
-      set n [my getLine response]
+      set n [:getLine response]
       switch -exact -- $n {
         -2 {my cancel premature-eof; return}
         -1 {continue}
@@ -410,30 +410,30 @@ namespace eval ::xo {
         default {
           #my debug "--header $response"
           if {[regexp -nocase {^content-length:(.+)$} $response _ length]} {
-            my set content_length [string trim $length]
+            set :content_length [string trim $length]
           } elseif {[regexp -nocase {^content-type:(.+)$} $response _ type]} {
-            my set content_type [string trim $type]
+            set :content_type [string trim $type]
           }
           if {[regexp -nocase {^([^:]+): *(.+)$} $response _ key value]} {
-            my lappend meta [string tolower $key] $value
+            lappend :meta [string tolower $key] $value
           }
         }
       }
     }
-    my reply_header_done
+    :reply_header_done
   }
   HttpCore instproc reply_header_done {} {
-    my instvar S
+    :instvar S
     # we have received the header, including potentially the 
     # content_type of the returned data
-    array set "" [my get_channel_settings [my content_type]]
+    array set "" [:get_channel_settings [:content_type]]
     fconfigure $S -translation $(translation) -encoding $(encoding)
-    if {[my exists content_length]} {
-      my set data [read [my set S] [my set content_length]]
+    if {[info exists :content_length]} {
+      set :data [read ${:S} ${:content_length}]
     } else {
-      my set data [read [my set S]]
+      set :data [read ${:S}]
     }
-    my finish
+    :finish
   }
 
   HttpCore instproc set_status {key newStatus {value ""}} {
@@ -467,8 +467,8 @@ namespace eval ::xo {
   }
 
   HttpRequest instproc init {} {
-    # my log "[my exists timeout]"
-    if {[my exists timeout] && [my timeout] > 0} {
+    # :log "[info exists :timeout]"
+    if {[info exists :timeout] && [:timeout] > 0} {
       # create a cond and mutex
       set cond  [thread::cond create]
       set mutex [thread::mutex create]
@@ -476,32 +476,32 @@ namespace eval ::xo {
       thread::mutex lock $mutex
       
       # start the asynchronous request
-      my debug "--a create new  ::xo::AsyncHttpRequest"
+      :debug "--a create new  ::xo::AsyncHttpRequest"
       set req [bgdelivery do -async ::xo::AsyncHttpRequest new \
                    -mixin ::xo::AsyncHttpRequest::RequestManager \
-                   -url [my url] \
-                   -timeout [my timeout] \
-                   -post_data [my post_data] \
-                   -request_header_fields [my request_header_fields] \
-                   -content_type [my content_type] \
-                   -user_agent [my user_agent] \
+                   -url [:url] \
+                   -timeout [:timeout] \
+                   -post_data [:post_data] \
+                   -request_header_fields [:request_header_fields] \
+                   -content_type [:content_type] \
+                   -user_agent [:user_agent] \
                    -condition $cond]
 
       while {1} {
-        my set_status $cond COND_WAIT_TIMEOUT
-        thread::cond wait $cond $mutex [my timeout]
+        :set_status $cond COND_WAIT_TIMEOUT
+        thread::cond wait $cond $mutex [:timeout]
 
-        set status [my get_status $cond]
-        my debug "status after cond-wait $status"
+        set status [:get_status $cond]
+        :debug "status after cond-wait $status"
 
         if {$status ne "COND_WAIT_REFRESH"} break
       }
       if {$status eq "COND_WAIT_TIMEOUT"} {
-        my set_status $cond "COND_WAIT_CANCELED"
+        :set_status $cond "COND_WAIT_CANCELED"
       }
-      set status_value [my get_value_for_status $cond]
+      set status_value [:get_value_for_status $cond]
       if {$status eq "JOB_COMPLETED"} {
-        my set data $status_value
+        set :data $status_value
       } else {
         set msg "Timeout-constraint, blocking HTTP request failed. Reason: '$status'" 
         if {$status_value ne ""} {
@@ -512,16 +512,16 @@ namespace eval ::xo {
       thread::cond destroy $cond
       thread::mutex unlock $mutex
       thread::mutex destroy $mutex
-      my unset_status $cond
+      :unset_status $cond
     } else {
       next    ;# HttpCore->init
       #
       # test whether open_connection yielded
       # a socket ...
       #
-      # my log "after core init, S?[my exists S]"
-      if {[my exists S]} {
-        my send_request
+      # :log "after core init, S?[info exists :S]"
+      if {[info exists :S]} {
+        :send_request
       }
     }
   }
@@ -535,105 +535,105 @@ namespace eval ::xo {
     Attribute create request_manager
   }
   AsyncHttpRequest instproc set_timeout {} {
-    my cancel_timeout
-    my debug "--- setting socket timeout: [my set timeout]"
-    my set timeout_handle [after [my set timeout] [self] cancel timeout]
+    :cancel_timeout
+    :debug "--- setting socket timeout: ${:timeout}"
+    set :timeout_handle [after ${:timeout} [self] cancel timeout]
   }
   AsyncHttpRequest instproc cancel_timeout {} {
-    if {[my exists timeout_handle]} {
-      after cancel [my set timeout_handle]
+    if {[info exists :timeout_handle]} {
+      after cancel ${:timeout_handle}
     }
   }
   AsyncHttpRequest instproc send_request {} {
     # remove fileevent handler explicitly
-    fileevent [my set S] writable {}
+    fileevent ${:S} writable {}
     next
   }
   AsyncHttpRequest instproc init {} {
-    my notify start_request
-    my set_timeout
+    :notify start_request
+    :set_timeout
     next
     #
     # test whether open_connection yielded
     # a socket ...
     #
-    if {[my exists S]} {
-      fileevent [my set S] writable [list [self] send_request]
+    if {[info exists :S]} {
+      fileevent ${:S} writable [list [self] send_request]
     }
   }
   AsyncHttpRequest instproc notify {method {arg ""}} {
-    if {[my exists request_manager]} {
-      [my request_manager] $method $arg [self]
+    if {[info exists :request_manager]} {
+      [:request_manager] $method $arg [self]
     }
   }
   AsyncHttpRequest instproc POST {} {
-    if {[my exists S]} {fconfigure [my set S] -blocking false}
-    fileevent [my set S] writable [list [self] send_POST_data]
-    my set bytes_sent 0
+    if {[info exists :S]} {fconfigure ${:S} -blocking false}
+    fileevent ${:S} writable [list [self] send_POST_data]
+    set :bytes_sent 0
     next
   }
   AsyncHttpRequest instproc send_POST_data {} {
-    my instvar S post_data bytes_sent
-    my set_timeout
+    :instvar S post_data bytes_sent
+    :set_timeout
     set total_bytes [string length $post_data]
     if {$bytes_sent < $total_bytes} {
       set to_send [expr {$total_bytes - $bytes_sent}]
       set block_size [expr {$to_send < 4096 ? $to_send : 4096}]
       set next_block_size [expr {$bytes_sent + $block_size}]
       set block [string range $post_data $bytes_sent $next_block_size-1]
-      my notify request_data $block
+      :notify request_data $block
       puts -nonewline $S $block
       set bytes_sent $next_block_size
     } else {
       fileevent $S writable ""
-      my request_done
+      :request_done
     }
   }
   AsyncHttpRequest instproc cancel {reason} {
     if {$reason ne "timeout"} {
-      my cancel_timeout
+      :cancel_timeout
     }
     next
-    my notify failure $reason
+    :notify failure $reason
   }
   AsyncHttpRequest instproc finish {} {
-    my cancel_timeout
+    :cancel_timeout
     next
-    my debug "--- finished data [my set data]"
-    my notify success [my set data]
+    :debug "--- finished data ${:data}"
+    :notify success ${:data}
   }
   AsyncHttpRequest instproc request_done {} {
-    my notify start_reply
-    my set_timeout
-    my instvar S
+    :notify start_reply
+    :set_timeout
+    :instvar S
     flush $S
     fconfigure $S -blocking false
     fileevent $S readable [list [self] reply_first_line]
   }
   AsyncHttpRequest instproc reply_first_line_done {} {
-    my set_timeout
-    my instvar S
+    :set_timeout
+    :instvar S
     fileevent $S readable [list [self] header]      
   }
   AsyncHttpRequest instproc reply_header_done {} {
-    my instvar S
-    my set_timeout
+    :instvar S
+    :set_timeout
     # we have received the header, including potentially the 
     # content_type of the returned data
-    array set "" [my get_channel_settings [my content_type]]
+    array set "" [:get_channel_settings [:content_type]]
     fconfigure $S -translation $(translation) -encoding $(encoding)
-    fileevent [my set S] readable [list [self] receive_reply_data]
+    fileevent ${:S} readable [list [self] receive_reply_data]
   }
   AsyncHttpRequest instproc receive_reply_data {} {
-    my instvar S
-    my debug "JOB receive_reply_data eof=[eof $S]"
+    :instvar S
+    :debug "JOB receive_reply_data eof=[eof $S]"
     if {[eof $S]} {
-      my finish
+      :finish
     } else {
-      my set_timeout
+      :set_timeout
       set block [read $S]
-      my notify reply_data $block
-      my append data $block
+      :notify reply_data $block
+      append :data $block
       #my debug "reveived [string length $block] bytes"
     }
   }
@@ -646,43 +646,43 @@ namespace eval ::xo {
 
   Class create AsyncHttpRequest::SimpleListener \
       -instproc init {} {
-        my debug "INIT- NEXT=[self next]"
+        :debug "INIT- NEXT=[self next]"
         # register request object as its own request_manager
-        my request_manager [self]
+        :request_manager [self]
         next
 
       } -instproc start_request {payload obj} {
-        my debug "request $obj started"
+        :debug "request $obj started"
 
       } -instproc request_data {payload obj} {
-        my debug "partial or complete post"
+        :debug "partial or complete post"
 
       } -instproc start_reply {payload obj} {
-        my debug "reply $obj started"
+        :debug "reply $obj started"
 
       } -instproc reply_data {payload obj} {
-        my debug "partial or complete delivery"
+        :debug "partial or complete delivery"
 
       } -instproc finalize {obj status value} {
-        my debug "finalize $obj $status"
+        :debug "finalize $obj $status"
         # this is called as a single method after success or failure
         next
 
       } -instproc success {payload obj} {
-        my debug "[string length $payload] bytes payload"
+        :debug "[string length $payload] bytes payload"
         #if {[string length $payload]<600} {my log payload=$payload}
         # this is called as after a successful request
-        my finalize $obj "JOB_COMPLETED" $payload
+        :finalize $obj "JOB_COMPLETED" $payload
 
       } -instproc failure {reason obj} {
-        my log "[self proc] [self args]"
-        my log "failed for '$reason'"
+        :log "[self proc] [self args]"
+        :log "failed for '$reason'"
         # this is called as after an unsuccessful request
-        my finalize $obj "JOB_FAILED" $reason
+        :finalize $obj "JOB_FAILED" $reason
 
       } -instproc unknown {method args} {
-        my log "[self proc] [self args]"
-        my log "UNKNOWN $method"
+        :log "[self proc] [self args]"
+        :log "UNKNOWN $method"
       }
   
   # Mixin class, used to turn instances of
@@ -697,48 +697,48 @@ namespace eval ::xo {
         Attribute create condition
       } -instproc finalize {obj status value} {
         # set the result and do the notify
-        my instvar condition
+        :instvar condition
         # If a job was canceled, the status variable might not exist
         # anymore, the condition might be already gone as well.  In
         # this case, we do not have to perform the cond-notify.
-        if {[my exists_status $condition] && 
-            [my get_status $condition] eq "COND_WAIT_REFRESH"} {
+        if {[:exists_status $condition] && 
+            [:get_status $condition] eq "COND_WAIT_REFRESH"} {
         }
-        if {[my exists_status $condition] &&
-            (  [my get_status $condition] eq "COND_WAIT_REFRESH"
-               || [my get_status $condition] eq "COND_WAIT_TIMEOUT")
+        if {[:exists_status $condition] &&
+            (  [:get_status $condition] eq "COND_WAIT_REFRESH"
+               || [:get_status $condition] eq "COND_WAIT_TIMEOUT")
           } {
           # Before, we had here one COND_WAIT_TIMEOUT, and once
           # COND_WAIT_REFRESH
-          my set_status $condition $status $value
+          :set_status $condition $status $value
           catch {thread::cond notify $condition}
           $obj debug "--- destroying after finish"
           $obj destroy
         }
 
       } -instproc set_cond_timeout {} {
-        my instvar condition
-        if {[my exists_status $condition] && 
-            [my get_status $condition] eq "COND_WAIT_TIMEOUT"} {
-          my set_status $condition COND_WAIT_REFRESH
+        :instvar condition
+        if {[:exists_status $condition] && 
+            [:get_status $condition] eq "COND_WAIT_TIMEOUT"} {
+          :set_status $condition COND_WAIT_REFRESH
           catch {thread::cond notify $condition}
         }
         
       } -instproc start_request {payload obj} {
-        my debug "JOB start request $obj"
-        my set_cond_timeout
+        :debug "JOB start request $obj"
+        :set_cond_timeout
 
       } -instproc request_data {payload obj} {
-        my debug "JOB request data $obj [string length $payload]"
-        my set_cond_timeout
+        :debug "JOB request data $obj [string length $payload]"
+        :set_cond_timeout
 
       } -instproc start_reply {payload obj} {
-        my debug "JOB start reply $obj"
-        my set_cond_timeout
+        :debug "JOB start reply $obj"
+        :set_cond_timeout
 
       } -instproc reply_data {payload obj} {
-        my debug "JOB reply data $obj [string length $payload]"
-        my set_cond_timeout
+        :debug "JOB reply data $obj [string length $payload]"
+        :set_cond_timeout
 
       }
   
@@ -754,7 +754,7 @@ namespace eval ::xo {
   
   Class create Tls
   Tls instproc open_connection {} {
-    my instvar S
+    :instvar S
     #
     # first perform regular initialization of the socket
     #
@@ -774,23 +774,23 @@ namespace eval ::xo {
   nsv_set HttpRequestTrace count 0
 
   HttpRequestTrace instproc init {} {
-    my instvar F post_data
-    my set meta [list]
-    my set requestCount [nsv_incr HttpRequestTrace count]  ;# make it an instvar to find it in the log file
-    set F [open /tmp/req-[format %.4d [my set requestCount]] w]
+    :instvar F post_data
+    set :meta [list]
+    set :requestCount [nsv_incr HttpRequestTrace count]  ;# make it an instvar to find it in the log file
+    set F [open /tmp/req-[format %.4d ${:requestCount}] w]
     
     set method [expr {$post_data eq "" ? "GET" : "POST"}]
-    puts $F "$method [my path] HTTP/1.0"
-    puts $F "Host: [my host]"
-    puts $F "User-Agent: [my user_agent]"
-    foreach {tag value} [my request_header_fields] { puts $F "$tag: $value" }
+    puts $F "$method [:path] HTTP/1.0"
+    puts $F "Host: [:host]"
+    puts $F "User-Agent: [:user_agent]"
+    foreach {tag value} [:request_header_fields] { puts $F "$tag: $value" }
     next 
   }
 
   HttpRequestTrace instproc POST {} {
-    my instvar F post_data
+    :instvar F post_data
     puts $F "Content-Length: [string length $post_data]"
-    puts $F "Content-Type: [my content_type]"
+    puts $F "Content-Type: [:content_type]"
     puts $F ""
     fconfigure $F -translation {auto binary}
     puts -nonewline $F $post_data
@@ -798,11 +798,11 @@ namespace eval ::xo {
   }
 
   HttpRequestTrace instproc cancel {reason} {
-    catch {close [my set F]}
+    catch {close ${:F}}
     next
   }
   HttpRequestTrace instproc finish {} {
-    catch {close [my set F]}
+    catch {close ${:F}}
     next
   }
   

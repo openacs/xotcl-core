@@ -54,16 +54,16 @@ namespace eval ::xo {
   # handling the ns_filter methods
   #
   Cluster proc trace args {
-    my log ""
+    :log ""
     return filter_return
   }
   Cluster proc preauth args {
-    my log ""
-    my incoming_request
+    :log ""
+    :incoming_request
     return filter_return
   }
   Cluster proc postauth args {
-    my log ""
+    :log ""
     return filter_return
   }
   #
@@ -84,9 +84,9 @@ namespace eval ::xo {
   }
 
   Cluster proc execute {host cmd} {
-    if {![my exists allowed_host($host)]} {
+    if {![info exists :allowed_host($host)]} {
       set ok 0
-      foreach g [my set allowed_host_patterns] {
+      foreach g ${:allowed_host_patterns} {
         if {[string match $g $host]} {
           set ok 1
           break
@@ -98,9 +98,9 @@ namespace eval ::xo {
     }
     set cmd_name [lindex $cmd 0]
     set key allowed_command($cmd_name)
-    #ns_log notice "--cluster $key exists ? [my exists $key]"
-    if {[my exists $key]} {
-      set except_RE [my set $key]
+    #ns_log notice "--cluster $key exists ? [info exists :$key]"
+    if {[info exists :$key]} {
+      set except_RE [set :$key]
       #ns_log notice "--cluster [list regexp $except_RE $cmd] -> [regexp $except_RE $cmd]"
       if {$except_RE eq "" || ![regexp $except_RE $cmd]} {
         ns_log notice "--cluster executes command '$cmd' from host $host"
@@ -113,26 +113,26 @@ namespace eval ::xo {
   # handline outgoing request issues
   #
   Cluster proc broadcast args {
-    foreach server [my info instances] {
+    foreach server [:info instances] {
       $server message {*}$args
     }
   }
   Cluster instproc message args {
-    my log "--cluster outgoing request to [my host]:[my port] // $args" 
+    :log "--cluster outgoing request to [:host]:[:port] // $args" 
     #     set r [::xo::HttpRequest new -volatile \
-    #                -host [my host] -port [my port] \
+    #                -host [:host] -port [:port] \
     #                -path [Cluster set url]?cmd=[ns_urlencode $args]]
     #     return [$r set data]
 
     set r [::xo::AsyncHttpRequest new -volatile \
-               -host [my host] -port [my port] \
+               -host [:host] -port [:port] \
                -path [Cluster set url]?cmd=[ns_urlencode $args]]
     
     #     ::bgdelivery do ::xo::AsyncHttpRequest new \
-    #         -host [my host] -port [my port] \
+    #         -host [:host] -port [:port] \
     #         -path [Cluster set url]?cmd=[ns_urlencode $args] \
     #         -mixin ::xo::AsyncHttpRequest::SimpleListener \
-    #         -proc finalize {obj status value} { my destroy }
+    #         -proc finalize {obj status value} { :destroy }
 
   }
 }

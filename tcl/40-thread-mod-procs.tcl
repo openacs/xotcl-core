@@ -14,7 +14,7 @@ ad_library {
   <pre>
   ::xotcl::THREAD create t1 {
     Class create Counter -parameter {{value 1}}
-    Counter instproc ++ {} {my incr value}
+    Counter instproc ++ {} {incr :value}
     Counter create c1
     Counter create c2
   }
@@ -115,7 +115,6 @@ Class create ::xotcl::THREAD \
 
 ::xotcl::THREAD instproc init cmd {
   if {$cmd eq "-noinit"} {return}
-  my instvar initcmd 
   #ns_log notice "+++ THREAD cmd='$cmd', epoch=[ns_ictl epoch]"
   if {![ns_ictl epoch]} {
     #ns_log notice "--THREAD init [self] no epoch"
@@ -124,24 +123,24 @@ Class create ::xotcl::THREAD \
     # is not available in newly created threads, so we have to care for it.
     # We need only a partial initialization, to allow the exit handler 
     # to be defined.
-    set initcmd {
+    set :initcmd {
       package req XOTcl
       namespace import -force ::xotcl::*
     }
   }
-  append initcmd {
+  append :initcmd {
     ns_thread name SELF
   }
-  append initcmd [subst {
-    ::xotcl::Object setExitHandler [list [my exithandler]]
+  append :initcmd [subst {
+    ::xotcl::Object setExitHandler [list [:exithandler]]
   }]
-  regsub -all SELF $initcmd [self] initcmd
-  append initcmd \n\
+  regsub -all SELF ${:initcmd} [self] :initcmd
+  append :initcmd \n\
       [list set ::xotcl::currentScript [info script]] \n\
       [list set ::xotcl::currentThread [self]] \n\
       $cmd 
-  my set mutex [thread::mutex create]
-  ns_log notice "mutex [my set mutex] created"
+  set :mutex [thread::mutex create]
+  ns_log notice "mutex ${:mutex} created"
   next
 }
 
@@ -149,7 +148,7 @@ Class create ::xotcl::THREAD \
   this method catches recreation of THREADs in worker threads 
   it reinitializes the thread according to the new definition.
 } {
-  my log "recreating [self] $obj, tid [$obj exists tid]"
+  :log "recreating [self] $obj, tid [$obj exists tid]"
   if {![string match "::*" $obj]} { set obj ::$obj }
   $obj set recreate 1
   next
@@ -158,22 +157,22 @@ Class create ::xotcl::THREAD \
     set tid [nsv_get [self] $obj]
     ::thread::send $tid [$obj set initcmd]
     $obj set tid $tid
-    my log "+++ content of thread $obj ($tid) redefined"
+    :log "+++ content of thread $obj ($tid) redefined"
   }
 }
 
 ::xotcl::THREAD instproc destroy {} {
-  my log "destroy called"
-  if {![my persistent] && 
+  :log "destroy called"
+  if {![:persistent] && 
       [nsv_exists [self class] [self]]} {
     set tid [nsv_get [self class] [self]]
     set refcount [::thread::release $tid]
-    my log "destroying thread object tid=$tid cnt=$refcount"
+    :log "destroying thread object tid=$tid cnt=$refcount"
     if {$refcount == 0} {
-      my log "thread terminated"
+      :log "thread terminated"
       nsv_unset [self class] [self]
-      thread::mutex destroy [my set mutex]
-      my log "+++ mutex [my set mutex] destroyed"
+      thread::mutex destroy ${:mutex}
+      :log "+++ mutex ${:mutex} destroyed"
     }
   }
   next
@@ -185,33 +184,33 @@ Class create ::xotcl::THREAD \
     return [nsv_get [self class] [self]]
   }
   # start a small command in the thread
-  my do info exists x
+  :do info exists x
   # now we have the thread and can return the tid
-  return [my set tid]
+  return ${:tid}
 }
 
 ::xotcl::THREAD instproc do {-async:switch args} {
   if {![nsv_exists [self class] [self]]} {
     # lazy creation of a new slave thread
 
-    thread::mutex lock [my set mutex]
+    thread::mutex lock ${:mutex}
     #my check_blueprint
     #my log "after lock"
     if {![nsv_exists [self class] [self]]} {
-      if {[my lightweight]} {
-        my log "CREATE lightweight thread"
+      if {[:lightweight]} {
+        :log "CREATE lightweight thread"
         set tid [::thread::create -thin]
       } else {
         set tid [::thread::create]
       }
       nsv_set [self class] [self] $tid
-      if {[my persistent]} {
-        my log "--created new persistent [self class] as $tid pid=[pid]"
+      if {[:persistent]} {
+        :log "--created new persistent [self class] as $tid pid=[pid]"
       } else {
-        my log "--created new [self class] as $tid pid=[pid]"
+        :log "--created new [self class] as $tid pid=[pid]"
       }
       #my log "--THREAD DO send [self] epoch = [ns_ictl epoch]"
-      if {[my lightweight]} {
+      if {[:lightweight]} {
       } elseif {![ns_ictl epoch]} {
         #ns_log notice "--THREAD send [self] no epoch"
         # We are during initialization. For some unknown reasons, XOTcl 
@@ -220,27 +219,27 @@ Class create ::xotcl::THREAD \
         _ns_savenamespaces
         set initcmd [ns_ictl get]
       }
-      append initcmd [my set initcmd]
+      append initcmd ${:initcmd}
       #ns_log notice "INIT $initcmd"
       ::thread::send $tid $initcmd
     } else {
       set tid [nsv_get [self class] [self]]
     }
     #my log "doing unlock"
-    thread::mutex unlock [my set mutex]
+    thread::mutex unlock ${:mutex}
   } else {
     # target thread is already up and running
     set tid [nsv_get [self class] [self]]
   }
-  if {![my exists tid]} {
+  if {![info exists :tid]} {
     # this is the first call 
-    if {![my persistent] && ![my exists recreate]} {
+    if {![:persistent] && ![info exists :recreate]} {
       # for a shared thread, we do ref-counting through preserve
       set tid [nsv_get [self class] [self]]
-      my log "THREAD::PRESERVE must preserve for sharing request-thread [pid] tid $tid"
+      :log "THREAD::PRESERVE must preserve for sharing request-thread [pid] tid $tid"
       ::thread::preserve $tid
     }
-    my set tid $tid
+    set :tid $tid
   }
   #my log "calling [self class] ($tid, [pid]) $args"
   if {$async} {
@@ -254,7 +253,7 @@ Class create ::xotcl::THREAD \
 # via request threads
 #::xotcl::THREAD create t0 {
 #  Class create Counter -parameter {{value 1}}
-#  Counter instproc ++ {} {my incr value}
+#  Counter instproc ++ {} {incr :value}
 #  
 #  Counter create c1
 #  Counter create c2
@@ -271,17 +270,17 @@ Class create ::xotcl::THREAD \
 #        || $cp eq "detachAll"} {
 #     next
 #       } elseif {$cp eq "destroy"} {
-#     eval [my attach] do [self] $cp $args
-#     my log "destroy"
+#     eval [:attach] do [self] $cp $args
+#     :log "destroy"
 #     next
 #       } else {
-#     my log "forwarding [my attach] do [self] $cp $args"
-#     eval [my attach] do [self] $cp $args
+#     :log "forwarding [:attach] do [self] $cp $args"
+#     eval [:attach] do [self] $cp $args
 #       }
 #     } -instproc init args {
-#       my filter forward
+#       :filter forward
 #     } -proc detachAll {} {
-#       foreach i [my info instances] {$i filter ""}
+#       foreach i [:info instances] {$i filter ""}
 #     }
 
 
@@ -291,7 +290,7 @@ Class create ::xotcl::THREAD \
 
 Class create ::xotcl::THREAD::Client -parameter {server {serverobj [self]}}
 ::xotcl::THREAD::Client instproc do args {
-  [my server] do [my serverobj] {*}$args
+  [:server] do [:serverobj] {*}$args
 }
 
 #

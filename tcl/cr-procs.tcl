@@ -243,7 +243,7 @@ namespace eval ::xo::db {
 
   CrClass instproc edit_atts {} {
     # TODO remove, when name and text are slots (only for generic)
-    :array names db_slot
+    array names :db_slot
   }
 
   CrClass ad_instproc folder_type_unregister_all {
