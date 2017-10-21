@@ -80,7 +80,7 @@ namespace eval ::xo {
     #my log "--loaded = [lsort [nsv_array names [self]-loaded]]"
 
     if {![nsv_exists [self]-loaded $otherfile]} {
-      my log "--sourcing $otherfile"
+      :log "--sourcing $otherfile"
       apm_source $otherfile
       nsv_set [self]-loaded $otherfile 1
     }
@@ -104,7 +104,7 @@ namespace eval ::xo {
     #my log "--check nsv_exists $vn $dirname/$myfile [nsv_exists $vn $dirname/$myfile]"
     if {[nsv_exists $vn $dirname/$myfile]} {
       foreach file [nsv_get $vn $dirname/$myfile] {
-        my log "--sourcing dependent $file"
+        :log "--sourcing dependent $file"
         apm_source $file
       }
     }

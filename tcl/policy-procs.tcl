@@ -12,7 +12,7 @@ namespace eval ::xo {
 
   Policy instproc defined_methods {class} {
     set c [self]::$class
-    expr {[my isclass $c] ? [$c array names require_permission] : [list]}
+    expr {[:isclass $c] ? [$c array names require_permission] : [list]}
   }
   
   Policy instproc check_privilege {
@@ -82,7 +82,7 @@ namespace eval ::xo {
         # we have a condition
         lassign $condition cond value
         if {[$object condition=$cond $query_context $value]} {
-          return [my get_privilege [list [lrange $p 1 end]] $object $method]
+          return [:get_privilege [list [lrange $p 1 end]] $object $method]
         }
       } else {
         # we have no condition
@@ -100,9 +100,9 @@ namespace eval ::xo {
     set permission ""
     set o [self]::[namespace tail $object]
     set key require_permission($method)
-    if {[my isobject $o] && [$o exists $key]} {
+    if {[:isobject $o] && [$o exists $key]} {
       set permission [$o set $key]
-    } elseif {[my isobject $o] && [$o exists default_permission]} {
+    } elseif {[:isobject $o] && [$o exists default_permission]} {
       set permission [$o set default_permission]
     } elseif {$check_classes} {
       # we have no object specific policy information, check the classes
@@ -110,8 +110,8 @@ namespace eval ::xo {
       set c [$object info class]
       foreach class [concat $c [$c info heritage]] {
         set c [self]::[namespace tail $class]
-        if {![my isclass $c]} continue
-        set permission [my get_permission -check_classes false $class $method]
+        if {![:isclass $c]} continue
+        set permission [:get_permission -check_classes false $class $method]
         if {$permission ne ""} break
       }
     }
@@ -132,7 +132,7 @@ namespace eval ::xo {
   } {
     if {![info exists user_id]} {set user_id [::xo::cc user_id]}
     if {![info exists package_id]} {set package_id [::xo::cc package_id]}
-    #my msg [info exists package_id]=>$package_id-[my exists logical_package_id]
+    #my msg [info exists package_id]=>$package_id-[info exists :logical_package_id]
     set ctx "::xo::cc"
     if {$link ne ""} {
       set query [lindex [split $link ?] 1]
@@ -141,15 +141,15 @@ namespace eval ::xo {
     }
     
     set allowed 0
-    set permission [my get_permission $object $method]
+    set permission [:get_permission $object $method]
     #my log "--permission for o=$object, m=$method => $permission"
 
     #my log "--     user_id=$user_id uid=[::xo::cc user_id] untrusted=[::xo::cc set untrusted_user_id]"
     if {$permission ne ""} {
-      lassign [my get_privilege -query_context $ctx $permission $object $method] kind p
+      lassign [:get_privilege -query_context $ctx $permission $object $method] kind p
       #my msg "--privilege = $p kind = $kind"
       switch -- $kind {
-        primitive {set allowed [my check_privilege -login false \
+        primitive {set allowed [:check_privilege -login false \
                                     -package_id $package_id -user_id $user_id \
                                     $p $object $method]}
         complex {
@@ -177,12 +177,12 @@ namespace eval ::xo {
     if {![info exists package_id]} {set package_id [::xo::cc package_id]}
 
     set allowed 0
-    set permission [my get_permission $object $method]
+    set permission [:get_permission $object $method]
     if {$permission ne ""} {
-      lassign [my get_privilege $permission $object $method] kind p
+      lassign [:get_privilege $permission $object $method] kind p
       switch -- $kind {
         primitive {
-          set allowed [my check_privilege \
+          set allowed [:check_privilege \
                            -user_id $user_id -package_id $package_id \
                            $p $object $method]
           set privilege $p
