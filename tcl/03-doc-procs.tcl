@@ -175,7 +175,7 @@ ad_library {
     if {[nsv_exists api_proc_doc $proc_index]} {
       return "<a href='/api-doc/proc-view?proc=[ns_urlencode $proc_index]'>$method</a>"
     } else {
-      if {[::xo::getObjectProperty $obj ${kind} $method] eq ""} {
+      if {[::xo::getObjectProperty $obj $kind $method] eq ""} {
         return $method<SUP>C</SUP>
       } else {
         return $method
