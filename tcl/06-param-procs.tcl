@@ -163,10 +163,6 @@ namespace eval ::xo {
                                           -package_id:required
                                         } {
     return [apm_package_key_from_id $package_id]
-    #return [ns_cache eval xotcl_object_type_cache package_key-$package_id {
-    #  ::xo::dc get_value get_package_key \
-    #      "select package_key from apm_packages where package_id = :package_id"
-    #}]
   }
   parameter proc get_package_id_from_package_key {
                                                   -package_key:required
