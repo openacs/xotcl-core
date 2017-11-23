@@ -636,7 +636,7 @@ bgdelivery ad_proc returnfile {
         lassign [lindex $ranges 0] from to
         if {$from <= $to && $size > $to} {
           ns_set put [ns_conn outputheaders] Content-Range "bytes $from-$to/$size"
-          ns_log notice "given range <$range>, added header-field Content-Range: bytes $from-$to/$size // $ranges"
+          #ns_log notice "given range <$range>, added header-field Content-Range: bytes $from-$to/$size // $ranges"
           set status_code 206
         } else {
           # A byte-content-range-spec with a byte-range-resp-spec whose
