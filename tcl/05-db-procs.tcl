@@ -1080,7 +1080,7 @@ namespace eval ::xo::db {
       error "no class $class defined"
     }
     set r [$class create ::$id]
-    $r db_1row get_instance [$class fetch_query $id]
+    $r db_1row dbqd..get_instance [$class fetch_query $id]
     $r set object_id $id
     $r destroy_on_cleanup
     $r initialize_loaded_object
