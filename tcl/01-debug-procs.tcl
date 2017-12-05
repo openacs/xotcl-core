@@ -663,26 +663,44 @@ namespace eval ::xo {
   if {$::tcl_platform(os) eq "Linux"} {
 
     ::xo::system_stats proc thread_info {pid tid} {
+      set s ""
       set fn /proc/$pid/task/$tid/stat
       if {[file readable $fn]} {
-        set s [try {open $fn} on ok f {read $f} finally {close $f}]
-        ns_log notice fn=$fn
+        try {
+          set f [open $fn]
+          set s [read $f]
+        } on error err {
+          set errorMsg "IO error $err reading file $fn"
+          if {[info exists f]} { append errorMsg " (fh $f)" }
+          ns_log error $errorMsg
+        } finally {
+          close $f
+        }
       } elseif {[file readable /proc/$pid/task/$pid/stat]} {
         set fn /proc/$pid/task/$pid/stat
-        set s [try {open $fn} on ok f {read $f} finally {close $f}]
-        ns_log notice fn=$fn
-      } else {
-        return ""
+        try {
+          set f [open $fn]
+          set s [read $f]
+        } on error err {
+          set errorMsg "IO error $err reading file $fn"
+          if {[info exists f]} { append errorMsg " (fh $f)" }
+          ns_log error $errorMsg
+        } finally {
+          close $f
+        }
       }
-      lassign $s tid comm state ppid pgrp session tty_nr tpgid flags minflt \
-          cminflt majflt cmajflt utime stime cutime cstime priority nice \
-          numthreads itrealval starttime vsize rss rsslim startcode endcode \
-          startstack kstkesp kstkeip signal blocked sigignore sigcatch wchan \
-          nswap cnswap ext_signal processor ...
-      # utime and stimes are jiffies. Since Linux has HZ 100, we can
-      # multiply the jiffies by 10 to obtain ms
-      return [list utime [expr {$utime*10}] stime [expr {$stime*10}]]
+      if {$s ne ""} {
+        lassign $s tid comm state ppid pgrp session tty_nr tpgid flags minflt \
+            cminflt majflt cmajflt utime stime cutime cstime priority nice \
+            numthreads itrealval starttime vsize rss rsslim startcode endcode \
+            startstack kstkesp kstkeip signal blocked sigignore sigcatch wchan \
+            nswap cnswap ext_signal processor ...
+        # utime and stimes are jiffies. Since Linux has HZ 100, we can
+        # multiply the jiffies by 10 to obtain ms
+        return [list utime [expr {$utime*10}] stime [expr {$stime*10}]]
+      }
     }
+ 
   } else {
     ::xo::system_stats proc thread_info {pid tid} {
       return ""
