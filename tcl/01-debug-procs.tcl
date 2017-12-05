@@ -661,12 +661,16 @@ namespace eval ::xo {
   ::xotcl::Object create ::xo::system_stats
 
   if {$::tcl_platform(os) eq "Linux"} {
+
     ::xo::system_stats proc thread_info {pid tid} {
       set fn /proc/$pid/task/$tid/stat
       if {[file readable $fn]} {
-        set f [open $fn]; set s [read $f]; close $f
+        set s [try {open $fn} on ok f {read $f} finally {close $f}]
+        ns_log notice fn=$fn
       } elseif {[file readable /proc/$pid/task/$pid/stat]} {
-        set f [open /proc/$pid/task/$pid/stat]; set s [read $f]; close $f
+        set fn /proc/$pid/task/$pid/stat
+        set s [try {open $fn} on ok f {read $f} finally {close $f}]
+        ns_log notice fn=$fn
       } else {
         return ""
       }
