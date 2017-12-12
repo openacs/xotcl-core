@@ -387,14 +387,14 @@ namespace eval ::xo {
 
     :handle_http_caching
 
-    #my log "REPLY [::xo::cc exists __continuation]"
+    #:log "REPLY [::xo::cc exists __continuation]"
     if {[::xo::cc exists __continuation]} {
-      #my log "REPLY [::xo::cc set __continuation]"
+      #:log "REPLY [::xo::cc set __continuation]"
       eval [::xo::cc set __continuation]
     } else {
       if {[string length $text] > 1} {
         set status_code [expr {[::xo::cc exists status_code] ? [::xo::cc set status_code] : 200}]
-        #my log "REPLY ${:delivery} 200 ${:mime_type}"
+        #:log "REPLY ${:delivery} 200 ${:mime_type}"
         ${:delivery} $status_code ${:mime_type} $text
       }
     }
