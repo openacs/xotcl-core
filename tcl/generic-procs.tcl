@@ -85,12 +85,12 @@ namespace eval ::Generic {
     return object_id
   }
   Form instproc new_data {} {
-    #my log "--- new_data ---"
+    #:log "--- new_data ---"
     ${:data} save_new
     return [${:data} set [:get_id_field]]
   }
   Form instproc edit_data {} {
-    #my log "--- edit_data --- setting form vars=[:form_vars]"
+    #:log "--- edit_data --- setting form vars=[:form_vars]"
     ${:data} save
     # Renaming is meant for cr_items and such
     if {[${:data} istype ::xo::db::CrItem]} {
@@ -142,12 +142,12 @@ namespace eval ::Generic {
   }
 
   Form instproc new_request {} {
-    #my log "--- new_request ---"
+    #:log "--- new_request ---"
     :request create
     :set_form_data
   }
   Form instproc edit_request {item_id} {
-    #my log "--- edit_request ---"
+    #:log "--- edit_request ---"
     :request write
     :set_form_data
   }
@@ -168,14 +168,28 @@ namespace eval ::Generic {
     set :edit_form_page_title [:edit_page_title]
     set :context [list ${:edit_form_page_title}]
   }
+  
   Form instproc after_submit {item_id} {
     set link [:submit_link]
     if {$link eq "view"} {
       set link [export_vars -base $link {item_id}]
     }
-    #ns_log notice "-- redirect to $link // [string match "*\?*" $link]"
+    #:log "-- redirect to $link // [string match "*\?*" $link]"
+    #
+    # We we use here the classical idiom
+    #      ad_returnredirect
+    #      ad_script_abort
+    #
+    # For the old-style wiki-forms we should use
+    #      $package_id returnredirect $return_url
+    #
+    # maybe via proving a Form->redirect method to be able to overload
+    # it for wiki forms, but I am not sure, we should touch this
+    # rather outdated code (FormPages are the preferred method in
+    # xowiki).
+    #
     ad_returnredirect $link
-    #ad_script_abort
+    ad_script_abort
   }
 
   Form ad_instproc generate {
