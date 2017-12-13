@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
     Utility functions for ical data 
     
     @author neumann@wu-wien.ac.at
@@ -275,6 +275,8 @@ namespace eval ::xo {
   }
 
 }
+
+::xo::library source_dependent
 
 #
 # Local variables:
