@@ -71,8 +71,8 @@ namespace eval ::xo {
     (see rfc 2445)
   } {
     if {$remove_tags} {regsub -all {<[^>]+>} $text "" text}
-    regsub -all \n $text \\n text
     regsub -all {(\\|\;|\,)} $text {\\\1} text
+    regsub -all \n $text {\\n} text
     return $text
   }
   ical ad_proc ical_to_text {text} {
