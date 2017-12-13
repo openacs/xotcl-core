@@ -1,5 +1,5 @@
-ad_library {
-    generic doc procs
+xo::library doc {
+    Generic doc procs
 
     @creation-date 2015-04-30
     @author Gustaf Neumann
@@ -192,6 +192,8 @@ namespace eval ::xo {
 
 }
 
+::xo::library source_dependent
+#
 # Local variables:
 #    mode: tcl
 #    tcl-indent-level: 4

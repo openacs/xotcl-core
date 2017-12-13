@@ -1,4 +1,4 @@
-ad_library {
+xo::library doc {
   
   XOTcl implementation for synchronous and asynchronous 
   HTTP and HTTPS requests
@@ -813,6 +813,7 @@ namespace eval ::xo {
   # HttpCore instmixin add ::xo::HttpRequestTrace
 }
 
+::xo::library source_dependent
 #
 # Local variables:
 #    mode: tcl

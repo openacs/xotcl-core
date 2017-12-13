@@ -1,4 +1,4 @@
-ad_library {
+xo::library doc {
   A simple OO interface for ad_form for
   acs_objects and content repository items.
 
@@ -647,6 +647,8 @@ namespace eval ::Generic {
   }
 }
 namespace import -force ::Generic::*
+::xo::library source_dependent
+
 #
 # Local variables:
 #    mode: tcl

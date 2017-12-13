@@ -1,5 +1,5 @@
-ad_library {
-  generic chat - chat procs
+xo::library doc {
+  Generic chat procs
 
   @creation-date 2006-02-02
   @author Gustaf Neumann
@@ -358,6 +358,7 @@ namespace eval ::xo {
   }
 }
 
+::xo::library source_dependent
 #
 # Local variables:
 #    mode: tcl

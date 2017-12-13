@@ -1,4 +1,6 @@
-ad_library {
+xo::library doc  {
+  Context handling interface
+  
   Definition of a connection context, containing user info, urls, parameters.
   this is used via "Package initialize"... similar as page_contracts and
   for included content (includelets), and used for per-connection caching as well.
@@ -574,6 +576,8 @@ namespace eval ::xo {
   }
 
 }
+
+::xo::library source_dependent
 
 #
 # Local variables:

@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
   XOTcl cluster support
 
   @author Gustaf Neumann
@@ -136,6 +136,7 @@ namespace eval ::xo {
 
   }
 }
+::xo::library source_dependent
 
 #
 # Local variables:

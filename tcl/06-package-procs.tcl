@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
   Definition of a package manager for creating XOTcl package objects
   
   @author Gustaf Neumann (neumann@wu-wien.ac.at)
@@ -450,7 +450,7 @@ namespace eval ::xo {
   #ns_log notice [::xo::Package serialize]
 
 }
-
+::xo::library source_dependent
 #
 # Local variables:
 #    mode: tcl

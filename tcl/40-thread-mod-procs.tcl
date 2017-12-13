@@ -1,6 +1,9 @@
-ad_library {
+::xo::library doc {
+  
   Tcl API for Thread management provides some support for threads
-  under the AOL-server and XOTcl. It contains
+  under NaviServer and/or AOLserver.
+
+  This package contains
   essentially two classes THREAD and Proxy.
   <p>
   The class THREAD is used to create, initialize
@@ -293,6 +296,7 @@ Class create ::xotcl::THREAD::Client -parameter {server {serverobj [self]}}
   [:server] do [:serverobj] {*}$args
 }
 
+::xo::library source_dependent
 #
 # Local variables:
 #    mode: tcl

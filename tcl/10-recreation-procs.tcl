@@ -1,4 +1,7 @@
-ad_library {
+::xo::library doc {
+
+  XOTcl functionality for handling recreation of objects
+  
   Support for the recreation of classes objects without
   destroying foreign references. Normally, when a class
   definition is reloaded, the class is destroyed and created
@@ -175,6 +178,7 @@ if {[string match "1.3.*" $version]} {
   #::xotcl::Class instmixin RR
 }
 
+::xo::library source_dependent
 #
 # Local variables:
 #    mode: tcl

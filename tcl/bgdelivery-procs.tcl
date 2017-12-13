@@ -1,4 +1,4 @@
-ad_library {
+::xo::library doc {
 
   Routines for background delivery of files
 
@@ -774,6 +774,7 @@ bgdelivery proc spooler_release {spooler} {
   :do -async $spooler release
 }
 
+::xo::library source_dependent
 #
 # Local variables:
 #    mode: tcl

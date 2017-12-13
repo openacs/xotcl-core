@@ -1,4 +1,7 @@
-ad_library {
+::xo::library doc {
+
+  Handling ordered Composites
+  
   ::xo::OrderedComposite to create tree structures with aggregated
   objects. This is similar to object aggregations, but
   preserves the order. The OrderedComposite supports
@@ -180,6 +183,7 @@ namespace eval ::xo {
   }
 }
 
+::xo::library source_dependent
 #
 # Local variables:
 #    mode: tcl

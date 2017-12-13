@@ -1,4 +1,4 @@
-ad_library {
+xo::library doc {
   XOTcl API for policies
 
   @author Gustaf Neumann
@@ -218,6 +218,7 @@ namespace eval ::xo {
 
 }
 
+::xo::library source_dependent
 #
 # Local variables:
 #    mode: tcl

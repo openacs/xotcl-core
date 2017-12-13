@@ -1,4 +1,5 @@
-ad_library {
+::xo::library doc {
+  
   XOTcl API for low level db abstraction
 
   @author Gustaf Neumann
@@ -2707,6 +2708,7 @@ namespace eval ::xo::db {
   }
 }
 
+::xo::library source_dependent
 
 #
 # Local variables:
