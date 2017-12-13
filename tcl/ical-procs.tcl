@@ -187,7 +187,7 @@ namespace eval ::xo {
     [:tag priority] \
     [:tag sequence] \
     [:tag CLASS] \
-    [:tag location] \
+    [:tag -conv text_to_ical location] \
     [:tag status] \
     [:tag -conv text_to_ical description] \
     [:tag -conv text_to_ical summary] \
