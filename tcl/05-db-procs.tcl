@@ -2070,7 +2070,7 @@ namespace eval ::xo::db {
         Please specify a shorter sql_package_name in the class definition."
     }
     if {${:sql_package_name} eq ""} {
-      error "Cannot determine SQL package_name. Please specify it explicitely!"
+      error "Cannot determine SQL package_name. Please specify it explicitly!"
     }
 
     if {![info exists :table_name]} {
