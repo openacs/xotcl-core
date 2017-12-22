@@ -45,7 +45,7 @@ namespace eval ::xo::tdom {
   ::xo::tdom::Class instproc incr_level {{amount 1}} {
     #
     # Keep the nesting level of TdomClass instances during creation.
-    # Use a global variable to assure cleanup in case of execptions.
+    # Use a global variable to assure cleanup in case of exceptions.
     #
     set var __tdom_level
     global $var

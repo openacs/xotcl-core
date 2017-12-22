@@ -13,7 +13,7 @@ if {[info exists ::xotcl_version] || ([info exists ::xotcl::version] && $::xotcl
 package require xotcl::serializer
 
 #
-# Keep the initcmds of classes for documentaiton purposes.
+# Keep the initcmds of classes for documentation purposes.
 #
 ::nsf::configure keepcmds 1
 

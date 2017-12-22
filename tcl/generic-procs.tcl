@@ -201,7 +201,7 @@ namespace eval ::Generic {
     from the specifications and to set up page_title and context
     when appropriate.
     @param template is the name of the Tcl variable to contain the filled in template
-    @param export list of attribue value pairs to be exported to the form (nested list)
+    @param export list of attribute value pairs to be exported to the form (nested list)
   } {
     # set form name for adp file
     set :$template [:name]

@@ -1129,7 +1129,7 @@ namespace eval ::xo::db {
   }
 
   CrItem ad_instproc delete {} {
-    Delete the item from the content repositiory with the item_id taken from the 
+    Delete the item from the content repository with the item_id taken from the 
     instance variable.
   } {
     # delegate deletion to the class

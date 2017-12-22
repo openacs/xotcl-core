@@ -1,7 +1,7 @@
 # $Id$
 if {![info exists ::xotcl::version]} {
   ns_log notice "**********************************************************"
-  ns_log notice "OOPS, apparenty you have no XOTcl installed on your aolserver."
+  ns_log notice "OOPS, apparently you have no XOTcl installed on your aolserver."
   ns_log notice "Please install XOTcl on your system(see http://openacs.org/xowiki/xotcl-core)"
   ns_log notice "**********************************************************"
   return

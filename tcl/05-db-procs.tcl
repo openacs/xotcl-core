@@ -442,7 +442,7 @@ namespace eval ::xo::db {
 
   # The following should not be necessary, but there seems to be a bad
   # interaction when "ns_cache eval" calls 1row with a mixin, doing a
-  # :uplevel (the mixin should be transparant). Without "ns_cache eval"
+  # :uplevel (the mixin should be transparent). Without "ns_cache eval"
   # things look fine.
   ::xo::db::DBI::Profile instproc 1row {{-dbn ""} {-bind ""} -prepare qn sql} {
     set start_time [expr {[clock clicks -microseconds]/1000.0}]
@@ -1664,7 +1664,7 @@ namespace eval ::xo::db {
       }
       if {![$name istype ::xo::db::Object]} {
         # The specified class is not subclass of ::xo::db::Object.
-        # return acs_object in your desparation.
+        # return acs_object in your desperation.
         return acs_object
       }
     }
