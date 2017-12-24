@@ -74,10 +74,12 @@ namespace eval ::xo {
     set addr [lindex [ns_set iget [ns_conn headers] x-forwarded-for] end]
     if {$addr eq ""} {set addr [ns_conn peeraddr]}
     #ns_log notice "--cluster got cmd='$cmd' from $addr"
-    if {[catch {set result [::xo::Cluster execute [ns_conn peeraddr] $cmd]} errorMsg]} {
+    ad_try {
+      set result [::xo::Cluster execute [ns_conn peeraddr] $cmd]
+    } on error {errorMsg} {
       ns_log notice "--cluster error: $errorMsg"
       ns_return 417 text/plain $errorMsg
-    } else {
+    } on ok {r} {
       #ns_log notice "--cluster success $result"
       ns_return 200 text/plain $result
     }

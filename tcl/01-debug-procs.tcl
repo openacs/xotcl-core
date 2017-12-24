@@ -346,7 +346,9 @@ namespace eval ::xo {
     if {$m<$max} {set max $m}
     ::xotcl::Object  log "### Call Stack (level: command)"
     for {set i 0} {$i < $max} {incr i} {
-      if {[catch {set s [uplevel $i self]} msg]} {
+      try {
+        set s [uplevel $i self]
+      } on error {errorMsg} {
         set s ""
       }
       ::xotcl::Object  log "### [format %5d -$i]:\t$s [info level [expr {-$i}]]"
@@ -507,10 +509,12 @@ namespace eval ::xo {
         continue
       }
       #ns_log notice "*** cleanup $cmd"
-      if {[catch {eval $cmd} errorMsg]} {
+      try {
+        {*}$cmd
+      } on error {errorMsg} {
         set obj [lindex $cmd 0]
         ns_log error "Error during ::xo::cleanup: $errorMsg $::errorInfo"
-        catch {
+        try {
           ns_log notice "... analyze: cmd = $cmd"
           ns_log notice "... analyze: $obj is_object? [::xotcl::Object isobject $obj]"
           ns_log notice "... analyze: class [$obj info class]"
@@ -534,7 +538,9 @@ namespace eval ::xo {
       }
     }
     #ns_log notice "*** at_end $at_end"
-    if {[catch {eval $at_end} errorMsg]} {
+    try {
+      {*}$at_end
+    } on error {errorMsg} {
       ns_log notice "Error during ::xo::cleanup: $errorMsg $::errorInfo"
     }
     array unset ::xo::cleanup
@@ -811,7 +817,9 @@ namespace eval ::xo {
     if {[nsv_exists broadcast $tid]} {
       foreach cmd [nsv_get broadcast $tid] {
         ns_log notice "broadcast received {$cmd}"
-        if {[catch $cmd errorMsg]} {
+        try {
+          {*}$cmd
+        } on error {errorMsg} {
           ns_log notice "broadcast receive error: $errorMsg for cmd $cmd"
         }
       }

@@ -152,7 +152,7 @@ namespace eval ::xo {
       # was 1200
       if {$ago > 300} {
         :logout -user_id $user -msg "auto logout"
-        catch {::bgdelivery do ::Subscriber sweep chat-[:chat_id]}
+        try {::bgdelivery do ::Subscriber sweep chat-[:chat_id]}
       }
     }
     :log "-- ending"
@@ -168,13 +168,13 @@ namespace eval ::xo {
     
     # This values could already not be here. Just ignore when we don't
     # find them
-    catch {
+    try {
       ::xo::clusterwide nsv_unset -nocomplain ${:array}-login $user_id
     }
-    catch {
+    try {
       ::xo::clusterwide nsv_unset -nocomplain ${:array}-color $user_id
     }
-    catch {
+    try {
       ::xo::clusterwide nsv_unset -nocomplain ${:array}-last-activity $user_id
     }
   }

@@ -365,15 +365,19 @@ namespace eval ::xo {
   #
   proc get_user_name {uid} {
     if {$uid ne "" && $uid != 0} {
-      if {[catch {acs_user::get -user_id $uid -array user}]} {
+      ad_try {
+        acs_user::get -user_id $uid -array user
+      } on error {errorMsg} {
         # we saw some strange cases, where after a regression,
         # a user_id was present, which was already deleted...
-        return [_ xotcl-core.nobody]
+        set result [_ xotcl-core.nobody]
+      } on ok {r} {
+        set result "$user(first_names) $user(last_name)"
       }
-      return "$user(first_names) $user(last_name)"
     } else {
-      return [_ xotcl-core.nobody]
+      set result [_ xotcl-core.nobody]
     }
+    return $result
   }
 
   #

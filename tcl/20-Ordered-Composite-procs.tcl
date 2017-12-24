@@ -92,18 +92,24 @@ namespace eval ::xo {
     [self class]::ChildManager instvar composite
     # push the active composite
     lappend composite [self]
-    # check, if we have Tcl's apply available
-    if {$::tcl_version >= 8.5 && [info procs ::apply] eq ""} {
-      set errorOccurred [catch {::apply [list {} $cmds [self]]} errorMsg]
+    set errorOccurred 0
+    # check, if we have Tcl's apply available    
+    if {[info procs ::apply] eq ""} {
+      set applyCmd [list ::apply [list {} $cmds [self]]]
     } else {
-      set errorOccurred [catch {namespace eval [self] $cmds} errorMsg]
+      set applyCmd [list namespace eval [self] $cmds]
     }
+    try {
+      {*}$applyCmd
+    } on error {errorMsg} {
+      set errorOccurred 1
+    } finally {
+      # pop the last active composite
+      set composite [lrange $composite 0 end-1]
 
-    # pop the last active composite
-    set composite [lrange $composite 0 end-1]
-
-    if {$insert} {
-      Object instmixin delete [self class]::ChildManager
+      if {$insert} {
+        Object instmixin delete [self class]::ChildManager
+      }
     }
     if {$errorOccurred} {error $errorMsg}
   }

@@ -248,8 +248,10 @@ namespace eval ::xo {
     if {[ns_conn isconnected]} {
       # This can be called, before ad_conn is initialized. 
       # Since it is not possible to pass the user_id and ad_conn barfs
-      # when it tries to detect it, we use the catch and reset it later
-      if {[catch {set locale [lang::conn::locale -package_id $package_id]}]} {
+      # when it tries to detect it, we try to get it and reset it later
+      ad_try {
+        set locale [lang::conn::locale -package_id $package_id]
+      } on error {errorMsg} {
         set locale en_US
       }
     } else {
@@ -273,9 +275,7 @@ namespace eval ::xo {
           -actual_query $actual_query \
           -locale $locale \
           [list -parameter_declaration $parameter]
-      #if {$package_id ne ""} {
-      #  ::xo::cc package_id $package_id 
-      #}
+
       ::xo::cc package_id $package_id 
       ::xo::cc set_user_id $user_id
       ::xo::cc process_query_parameter
@@ -301,8 +301,10 @@ namespace eval ::xo {
     if {$user_id == -1} {  ;# not specified
       if {[info exists ::ad_conn(user_id)]} {
         set :user_id [ad_conn user_id]
-        if {[catch {set :untrusted_user_id [ad_conn untrusted_user_id]}]} {
-          set :untrusted_user_id [:user_id]
+        ad_try {
+          set :untrusted_user_id [ad_conn untrusted_user_id]
+        } on error {errorMsg} {
+          set :untrusted_user_id ${:user_id}
         }
       } else {
         set :user_id 0
@@ -347,12 +349,12 @@ namespace eval ::xo {
     } else {
       # for requests bypassing the ordinary connection setup (resources in oacs 5.2+)
       # we have to get the user_id by ourselves
-      if { [catch {
+      ad_try {
         set cookie_list [ad_get_signed_cookie_with_expr "ad_session_id"]
         set cookie_data [split [lindex $cookie_list 0] {,}]
         set untrusted_user_id [lindex $cookie_data 1]
         set :requestor $untrusted_user_id
-      } errmsg] } {
+      } on error {errorMsg } {
         set :requestor 0
       }
     }

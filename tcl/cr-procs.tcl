@@ -546,8 +546,10 @@ namespace eval ::xo::db {
   } {
     :get_context package_id creation_user creation_ip
     #my log "ID [self] create $args"
-    if {[catch {set p [:create ::0 {*}$args]} errorMsg]} {
-      ad_log error $errorMsg
+    ad_try {
+      :create ::0 {*}$args
+    } on error {errorMsg} {
+      ad_log error "CrClass create raises: $errorMsg"
     }
     #my log "ID [::0 serialize]"
     set item_id [::0 save_new \

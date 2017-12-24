@@ -57,9 +57,11 @@ if {[info exists method]} {
 }
 set cmd [list {*}$scope ::nsf::method::property $obj {*}$modifier $method debug [expr {!$debug_p}]]
 ns_log notice "setting debug flag with cmd\n$cmd"
-if {[catch {ns_eval {*}$cmd} errorMsg] } {
+ad_try {
+    ns_eval {*}$cmd
+} on error {errorMsg} {
     ns_log notice "toggle-debug raised error: $errorMsg"
 }
-ns_log notice "calling return redirect to $return_url"
 
+ns_log notice "calling return redirect to $return_url"
 ad_returnredirect $return_url

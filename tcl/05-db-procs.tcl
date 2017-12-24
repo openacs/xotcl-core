@@ -367,10 +367,12 @@ namespace eval ::xo::db {
     if {$args ne ""} {
       lassign $args op on_error_code
       set result ""
-      if {$op ne "on_error"} {error "only 'on_error' as argument after script allowed"}
-      if {[catch {
+      if {$op ne "on_error"} {
+        error "only 'on_error' as argument after script allowed"
+      }
+      try {
         set result [:uplevel [list ::dbi_eval -transaction committed $script]]
-      }]} {
+      } on error {$errorMsg} {
         :uplevel $on_error_code
       }
       return $result
@@ -665,11 +667,12 @@ namespace eval ::xo::db {
     # we can obtain a session_id from the the db driver. If we can't,
     # we fall back to a per request-cache (via toplevel variable).
     #
-    catch {set session_id [ns_db session_id $handle]}
-    if {[info exists session_id]} {
+    try {
+      set session_id [ns_db session_id $handle]
+    } on ok {r} {
       #ns_log notice "=== $handle $session_id"
       set varName ::xo::prepared($session_id,$key)
-    } else {
+    } on error {errorMsg} {
       set session_id "-"
       set varName __prepared($key)    
     }
@@ -735,7 +738,9 @@ namespace eval ::xo::db {
   # Unfortunately, ns_cache has no command to check, whether
   # a cache exists, so we use the little catch below to check.
   #
-  if {[catch {ns_cache flush xotcl_object_cache NOTHING}]} {
+  try {
+    ns_cache flush xotcl_object_cache NOTHING
+  } on error {errorMsg} {
     ns_log notice "xotcl-core: creating xotcl-object caches"
 
     if {[info commands ns_cache_create] ne ""} {
@@ -1208,7 +1213,9 @@ namespace eval ::xo::db {
       }
       append slots $cmd \n
     }
-    if {[catch {$classname slots $slots} errorMsg]} {
+    ad_try {
+      $classname slots $slots
+    } on error {errorMsg} {
       error "Error during slots: $errorMsg"
     }
 
@@ -2211,8 +2218,10 @@ namespace eval ::xo::db {
                   -creation_ip $creation_ip \
                   ""]
       #[self class] set during_fetch 1
-      if {[catch {:create ::$id {*}$args} errorMsg]} {
-        ad_log error $errorMsg
+      ad_try {
+        :create ::$id {*}$args
+      } on error {errorMsg} {
+        ad_log error "create fails: $errorMsg"
       }
       #[self class] unset during_fetch
       :initialize_acs_object ::$id $id
@@ -2258,7 +2267,7 @@ namespace eval ::xo::db {
     Otherwise, objects are created with the XOTcl "new" method to avoid object name clashes.
 
     @param destroy_on_cleanup If this flag is true, the objects (and ordered composite)
-      will be automatically destroyed on cleaup (typically                                                                                      after the request was processed).
+    will be automatically destroyed on cleaup (typically after the request was processed).
 
     @param initialize can be used to avoid full initialization, when
     a large series of of objects is loaded. Per default, these objects
@@ -2317,7 +2326,9 @@ namespace eval ::xo::db {
             ns_log warning "[namespace tail [$o info class]] $o has no package_id and no object_package_id"
           }
         }
-        if {[catch {$o initialize_loaded_object} errorMsg]} {
+        ad_try {
+          $o initialize_loaded_object
+        } on error {errorMsg} {
           ns_log error "$o initialize_loaded_object => [$o info vars] -> $errorMsg"
         }
       }
