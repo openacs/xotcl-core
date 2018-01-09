@@ -391,7 +391,7 @@ if {![string match "*contentsentlength*" $msg]} {
     fconfigure [:channel] -translation binary
 
     if {[:mode] eq "scripted"} {
-      set content_type "text/html;chartype=utf-8"
+      set content_type "text/html;charset=utf-8"
       set encoding "Cache-Control: no-cache\r\nTransfer-Encoding: chunked\r\n"
       set body "<html><body>[string repeat { } 1024]\r\n"
       set body [format %x [string length $body]]\r\n$body\r\n
