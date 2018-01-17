@@ -63,7 +63,7 @@ namespace eval ::xo {
     # developer support will add all its output to a single var, which
     # can lead easily to running out of resources in busy sites. When
     # unset, the developer support will create its own id.
-    catch {unset ::ad_conn(request)}
+    unset -nocomplain ::ad_conn(request)
     set :uri [ns_urldecode [ns_conn url]]
     if {[string length ${:uri}] < [string length ${:url}]} {append :uri /}
     set url_regexp "^${:url}"
