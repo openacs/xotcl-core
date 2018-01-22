@@ -57,6 +57,7 @@ set ::xo::naviserver [expr {[ns_info name] eq "NaviServer"}]
 if {[info commands ::nx::Object] ne ""} {
   ns_log notice "Defining minimal XOTcl 1 compatibility"
   ::nsf::method::alias ::xo::Attribute instvar ::nsf::methods::object::instvar
+
   # provide compatibility with nsf 2.0b6, which has "-noinit" removed
   ::nx::ObjectParameterSlot create ::xo::Attribute::slot::noinit \
       -methodname ::nsf::methods::object::noinit -noarg true
@@ -75,9 +76,16 @@ if {[info commands ::nx::Object] ne ""} {
     return "dbqd.[:uplevel [list current class]]-[:uplevel [list current method]].$query_name"
   }
   # allow the use of naturalnum with ::xowiki::Package initialize
-  ::nx::Slot method type=naturalnum {name value} {
-    if {![string is integer -strict $value] || $value < 0 } {
-      return -code error "Value '$value' of parameter $name is not a natural number."
+  ::nx::Slot eval {
+    :method type=naturalnum {name value} {
+      if {![string is integer -strict $value] || $value < 0 } {
+        return -code error "Value '$value' of parameter $name is not a natural number."
+      }
+    }
+    :method type=token {name value} {
+      if {![regexp {^[\w.,: -]+$} $value]} {
+        return -code error "Value '$value' of parameter $name is not a valid token."
+      }
     }
   }
 
@@ -92,6 +100,7 @@ if {[info commands ::nx::Object] ne ""} {
     ::nx::Slot method exists
     ::nx::Slot method set
     ::nx::Slot method type=naturalnum
+    ::nx::Slot method type=token
     ::nx::Object nsfproc ::nsf::debug::call
     ::nx::Object nsfproc ::nsf::debug::exit
   }
