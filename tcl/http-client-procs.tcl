@@ -8,6 +8,19 @@ xo::library doc {
   @cvs-id $Id$
 }
 
+
+#
+# The xotcl HTTP client procs are deprecated.
+# Use util::http::get/post/... etc. instead
+#
+
+if {![ad_with_deprecated_code_p]} {
+    ns_log notice "http-client-procs: skip deprecated code"
+    return
+}
+ns_log notice "http-client-procs include depreacted code"
+
+
 namespace eval ::xo {
   #
   # Defined classes
