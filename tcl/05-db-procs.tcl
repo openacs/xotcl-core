@@ -355,7 +355,7 @@ namespace eval ::xo::db {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     set flat [:uplevel [list ::dbi_rows -columns __columns {*}$bindOpt -- $sql]]
-    if {[:uplevel {llength $__columns}] > 1} {error "query is returing more than one column"}
+    if {[:uplevel {llength $__columns}] > 1} {error "query is returning more than one column"}
     return $flat
   }
   ::xo::db::DBI instproc dml {{-dbn ""} {-bind ""} -prepare qn sql} {

@@ -205,7 +205,7 @@ namespace eval ::xo {
     #my log "--handle_request method=${:method} uri=$uri\
         #     userid=${:user_id} -ns_conn query '[ns_conn query]'"
     if {[info exists :package] && ${:uri} ne "/"} {
-      # We don't call package-initialze for ${:uri} = "/"
+      # We don't call package-initialize for ${:uri} = "/"
       set :package_id [:get_package_id]
     }
     if {[:procsearch ${:method}] ne ""} {
