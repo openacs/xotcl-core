@@ -2,7 +2,7 @@ ad_library {
   XOTcl API for api browser, defines the methods
   ad_proc (for object specific methods),
   ad_instproc (for tradional methods) and
-  ad_odc (for documenting classes). Syntax for the methods
+  ad_doc (for documenting classes). Syntax for the methods
   ad_proc and ad_instproc is like oacs ad_proc, ad_doc
   receives one argument, similar to ad_library.
 
