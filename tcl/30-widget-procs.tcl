@@ -442,7 +442,9 @@ namespace eval ::xo {
     :init_renderer
   }
 
-  Table instproc write_csv {} {
+  Table instproc write_csv {
+    {-delimiter ","}
+  } {
     set output ""
     set line [list]
     foreach column [[self]::__columns children] {
@@ -454,7 +456,7 @@ namespace eval ::xo {
       set value [string map {\" \\\" \n \r)} $label]
     lappend line \"$value\"
   }
-  append output [join $line ,] \n
+  append output [join $line $delimiter] \n
   foreach row [:children] {
     set line [list]
     foreach column [[self]::__columns children] {
@@ -462,7 +464,7 @@ namespace eval ::xo {
       set value [string map {\" \\\" \n \r} [$row set [$column set name]]]
       lappend line \"$value\"
     }
-    append output [join $line ,] \n
+    append output [join $line $delimiter] \n
   }
   #ns_return 200 text/plain $output
   if {![info exists :name]} {set :name "table"}
