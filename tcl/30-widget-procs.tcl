@@ -471,6 +471,7 @@ namespace eval ::xo {
   set fn [xo::backslash_escape \" ${:name}.csv]
   ns_set put [ns_conn outputheaders] Content-Disposition "attachment;filename=\"$fn\""
   ns_return 200 text/csv $output
+  ad_script_abort
 }
 
 Class create Table::Line \
