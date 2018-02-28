@@ -45,14 +45,13 @@ namespace eval ::xo {
       }
       :debug "auth_check user_id='$auth(user_id)'"
       ad_conn -set user_id $auth(user_id)
-      
+
     } else {
       # no authenticate header, anonymous visitor
       ad_conn -set user_id 0
       ad_conn -set untrusted_user_id 0
     }
     set :user_id [ad_conn user_id]
-    return 1
   }
 
   ProtocolHandler ad_instproc initialize {} {
@@ -89,7 +88,7 @@ namespace eval ::xo {
     Handle authorization. This method is called via ns_filter.
   } {
     #my log "--preauth args=<$args>"
-    
+
     # Restrict to SSL if required
     if { [security::RestrictLoginToSSLP]  && ![security::secure_conn_p] } {
       ns_returnunauthorized
@@ -114,9 +113,9 @@ namespace eval ::xo {
       ns_returnunauthorized
       return filter_return
     }
-    
+
     #my log "--preauth filter_ok"
-    return filter_ok    
+    return filter_ok
   }
 
   ProtocolHandler ad_instproc register { } {
@@ -124,7 +123,7 @@ namespace eval ::xo {
     This method is typically called via *-init.tcl.
 
     Note, that the specified url must not have an entry
-    in the site-nodes, otherwise the OpenACS request 
+    in the site-nodes, otherwise the OpenACS request
     processor performs always the cockie-based authorization.
 
     To change that, it would be necessary to register the
@@ -149,7 +148,7 @@ namespace eval ::xo {
     #
     # Methods defined by RFC 3253 (versioning extensions):
     #
-    #    VERSION-CONTROL REPORT CHECKOUT CHECKIN UNCHECKOUT 
+    #    VERSION-CONTROL REPORT CHECKOUT CHECKIN UNCHECKOUT
     #    MKWORKSPACE UPDATE LABEL MERGE BASELINE-CONTROL
     #    MKACTIVITY
     #
@@ -164,7 +163,7 @@ namespace eval ::xo {
     # Methods defined by RFC 4437 (redirect reference resources):
     #
     #    MKREDIRECTREF UPDATEREDIRECTREF
-    #    
+    #
     # Methods defined by RFC $791 (CalDAV):
     #
     #    MKCALENDAR
@@ -172,7 +171,7 @@ namespace eval ::xo {
     # Methods defined by RFC 4918 (HTTP Extensions):
     #
     #    COPY LOCK MKCOL MOVE PROPFIND PROPPATCH UNLOCK
-    #  
+    #
     # Methods defined by RFC 5323 (WebDAV SEARCH):
     #
     #    SEARCH
@@ -200,7 +199,7 @@ namespace eval ::xo {
 
   ProtocolHandler ad_instproc get_package_id {} {
     Initialize the given package and return the package_id
-    @return package_id 
+    @return package_id
   } {
     ${:package} initialize -url ${:uri}
     #my log "-- ${:package} initialize -url ${:uri}"
@@ -211,9 +210,9 @@ namespace eval ::xo {
     Process the incoming HTTP request. This method
     could be overloaded by the application and
     dispatches the HTTP requests.
-  } {    
+  } {
     #my log "--handle_request method=${:method} uri=$uri\
-        #     userid=${:user_id} -ns_conn query '[ns_conn query]'"
+         #     userid=${:user_id} -ns_conn query '[ns_conn query]'"
     if {[info exists :package] && ${:uri} ne "/"} {
       # We don't call package-initialize for ${:uri} = "/"
       set :package_id [:get_package_id]
@@ -252,8 +251,8 @@ namespace eval ::xo {
   }
 
   ProtocolHandler instproc multiStatusResonse {
-    -href:required 
-    -propstats:required 
+    -href:required
+    -propstats:required
     {-propstatus true}
   } {
     #my log "multiStatusResonse href $href propstats $propstats"
@@ -271,7 +270,7 @@ namespace eval ::xo {
         if {[llength $props] > 0} {
           append reply <D:prop>\n
           foreach {name value} $props {
-            if {$value ne ""} { 
+            if {$value ne ""} {
               append reply <$name>$value</$name>\n
             } else {
               append reply <$name/>\n
@@ -296,8 +295,8 @@ namespace eval ::xo {
         D:creationdate "" \
         D:resourcetype ""
     set r [:multiStatus [:multiStatusResonse \
-                               -href [ns_urldecode [ns_conn url]] \
-                               -propstats [list $davprops $status]]]
+                             -href [ns_urldecode [ns_conn url]] \
+                             -propstats [list $davprops $status]]]
     :log multiStatusError=$r
     ns_return 207 text/xml $r
   }
@@ -318,7 +317,7 @@ namespace eval ::xo {
     ns_set put [ns_conn outputheaders] Allow OPTIONS
     ns_return 200 text/plain {}
   }
-  
+
   ProtocolHandler instproc PROPFIND {} {
     #my log "--ProtocolHandler PROPFIND [ns_conn content]"
     # when GET is not supported on this resource, the get* properties are not be sent
@@ -328,7 +327,7 @@ namespace eval ::xo {
         lp1:creationdate    [:tcl_time_to_iso8601 "2013-06-30 01:21:22.648325+02"] \
         D:supportedlock     {} \
         D:lockdiscovery     {}
-    
+
     ns_return 207 text/xml [:multiStatus \
                                 [:multiStatusResonse \
                                      -href ${:uri} \
