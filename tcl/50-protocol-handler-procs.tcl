@@ -39,9 +39,8 @@ namespace eval ::xo {
                             -password $password]
         if {$auth(auth_status) ne "ok"} {
           :debug "auth status $auth(auth_status)"
-          ns_returnunauthorized
           set :user_id 0
-          return 0
+          throw {AUTH UNAUTHORIZED {unauthorized}} $auth(auth_status)
         }
       }
       :debug "auth_check user_id='$auth(user_id)'"
@@ -53,6 +52,7 @@ namespace eval ::xo {
       ad_conn -set untrusted_user_id 0
     }
     set :user_id [ad_conn user_id]
+    return 1
   }
 
   ProtocolHandler ad_instproc initialize {} {
@@ -95,9 +95,19 @@ namespace eval ::xo {
       ns_returnunauthorized
       return filter_return
     }
-    
-    # set common data for all kind of requests 
-    :initialize
+
+    #
+    # Set common data for all kind of requests. A possible outcome is
+    # that we we cannot proceed (authentication failure), so we have
+    # to trap such cases.
+    try {
+      :initialize
+    } trap {AUTH UNAUTHORIZED} {errorMsg} {
+      ns_returnunauthorized
+    } on error {errorMsg} {
+      ns_log error "ProtocolHandler: exception during initialization: $errorMsg"
+      return filter_return
+    }
 
     # for now, require for every user authentification
     if {${:user_id} == 0} {
