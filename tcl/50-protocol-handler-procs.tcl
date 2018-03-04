@@ -9,7 +9,10 @@ namespace eval ::xo {
   } {
     :log "--[self class] unknown called with '$method' <$args>"
     switch -- [llength $args] {
-      0 {if {[info exists :$method]} {return ${:method}}
+      0 {
+        if {[info exists :$method]} {
+          return ${:method}
+        }
         return [ad_conn $method]
       }
       1 {set :method $args}
