@@ -114,6 +114,42 @@ namespace eval ::xo {
     if {$errorOccurred} {error $errorMsg}
   }
 
+  if {$::tcl_version < 8.6} {
+    #
+    # It seems that the scripted emulation of "try" in Tcl 8.5 is not
+    # fully compatible with 8.6, so we fall back to the prior
+    # implementation of the method contains, that does NOT use try.
+    #
+    OrderedComposite instproc contains cmds {
+      my requireNamespace ;# legacy for older xotcl versions
+      set m [Object info instmixin]
+      if {"[self class]::ChildManager" ni $m} {
+        set insert 1
+        Object instmixin add [self class]::ChildManager
+      } else {
+        set insert 0
+      }
+      #
+      [self class]::ChildManager instvar composite
+      # push the active composite
+      lappend composite [self]
+      # Check, if we have Tcl's apply cmd available (not the old OpenACS apply proc)
+      if {[info commands ::apply] ne "" && [info procs ::apply] eq ""} {
+        set errorOccurred [catch {::apply [list {} $cmds [self]]} errorMsg]
+      } else {
+        set errorOccurred [catch {namespace eval [self] $cmds} errorMsg]
+      }
+
+      # pop the last active composite
+      set composite [lrange $composite 0 end-1]
+
+      if {$insert} {
+        Object instmixin delete [self class]::ChildManager
+      }
+      if {$errorOccurred} {error $errorMsg}
+    }
+  } 
+
   Class create OrderedComposite::ChildManager -instproc init args {
     set r [next]
     #set parent [self callingobject] ;# not a true calling object (ns-eval), but XOTcl 1 honors it
