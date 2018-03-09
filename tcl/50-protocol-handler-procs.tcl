@@ -106,6 +106,7 @@ namespace eval ::xo {
       :initialize
     } trap {AUTH UNAUTHORIZED} {errorMsg} {
       ns_returnunauthorized
+      return filter_return
     } on error {errorMsg} {
       ns_log error "ProtocolHandler: exception during initialization: $errorMsg"
       return filter_return
