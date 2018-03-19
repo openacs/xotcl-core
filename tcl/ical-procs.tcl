@@ -1,6 +1,6 @@
 ::xo::library doc {
-    Utility functions for ical data 
-    
+    Utility functions for ical data
+
     @author neumann@wu-wien.ac.at
     @creation-date July 20, 2005
 
@@ -9,12 +9,12 @@
 
 namespace eval ::xo {
   ::xotcl::Object ::xo::ical -ad_doc {
-    The Object ::calendar::ical provides the methods for 
+    The Object ::calendar::ical provides the methods for
     importing and exporting single or multiple calendar items
     in the ical format (see rfc 2445). Currently only the part
     of ical is implemented, which is used by the mozilla
     calendar (Sunbird, or Lightning for Thunderbird).
-    
+
     @author Gustaf Neumann
   }
 
@@ -51,9 +51,9 @@ namespace eval ::xo {
     clock format $seconds -format "%Y%m%d"
   }
   ical proc clock_to_oacstime {seconds} {
-    clock format $seconds -format "%Y-%m-%d %H:%M" 
+    clock format $seconds -format "%Y-%m-%d %H:%M"
   }
-  
+
   ical ad_proc dates_valid_p {
     -start_date:required
     -end_date:required
@@ -67,7 +67,7 @@ namespace eval ::xo {
   }
 
   ical ad_proc text_to_ical {{-remove_tags false} text} {
-    Transform arbitrary text to the escaped ical text format 
+    Transform arbitrary text to the escaped ical text format
     (see rfc 2445)
   } {
     if {$remove_tags} {regsub -all {<[^>]+>} $text "" text}
@@ -82,7 +82,7 @@ namespace eval ::xo {
     regsub -all {\\(\\|\;|\,)} $text {\1} text
     return $text
   }
-  
+
 }
 
 namespace eval ::xo {
@@ -176,18 +176,18 @@ namespace eval ::xo {
     # as lists.
     #
     #
-    # All date/time stamps are provided either by 
+    # All date/time stamps are provided either by
     # the ANSI date (from postgres) or by a date
     # which can be processed via clock scan
     #
     if {![info exists :dtstamp]}       {set :dtstamp ${:creation_date}}
     if {![info exists :last_modified]} {set :last_modified ${:dtstamp}}
-    
+
     set tcl_stamp         [::xo::db::tcl_date ${:dtstamp} tz]
     set tcl_creation_date [::xo::db::tcl_date ${:creation_date} tz]
     set tcl_last_modified [::xo::db::tcl_date ${:last_modified} tz]
 
-    # status values: 
+    # status values:
     #    VEVENT:   TENTATIVE, CONFIRMED, CANCELLED
     #    VTODO:    NEEDS-ACTION, COMPLETED, IN-PROCESS, CANCELLED
     #    VJOURNAL: DRAFT, FINAL, CANCELLED
@@ -212,7 +212,7 @@ namespace eval ::xo {
         [:tag -conv text_to_ical description] \
         [:tag -conv text_to_ical summary] \
         [:tag -conv tcl_time_to_utc due]
-    
+
     if {[info exists :formatted_recurrences]} {
       append t ${:formatted_recurrences}
     }
