@@ -16,7 +16,7 @@ namespace eval ::xo {
         return [ad_conn $method]
       }
       1 {set :method $args}
-      default {my log "--[self class] ignoring <$method> <$args>"}
+      default {:log "--[self class] ignoring <$method> <$args>"}
     }
   }
 
@@ -61,21 +61,23 @@ namespace eval ::xo {
     Setup connection object and authenticate user
   } {
     ad_conn -reset
+    #
     # Make sure, there is no ::ad_conn(request); otherwise the
     # developer support will add all its output to a single var, which
     # can lead easily to running out of resources in busy sites. When
     # unset, the developer support will create its own id.
     unset -nocomplain ::ad_conn(request)
+    
     set :uri [ns_urldecode [ns_conn url]]
     if {[string length ${:uri}] < [string length ${:url}]} {append :uri /}
     set url_regexp "^${:url}"
     regsub $url_regexp ${:uri} {} :uri
     if {![regexp {^[./]} ${:uri}]} {set :uri /${:uri}}
-    #my log "--conn_setup: uri '${:uri}' my url='${:url}' con='[ns_conn url]'"
+    #:log "--conn_setup: uri '${:uri}' url='${:url}' con='[ns_conn url]'"
     :set_user_id
 
     set :method [string toupper [ns_conn method]]
-    #my log "--conn_setup: uri '${:uri}' method ${:method}"
+    #:log "--conn_setup: uri '${:uri}' method ${:method}"
     set :urlv [split [string trimright ${:uri} "/"] "/"]
     set :user_agent [ns_set iget [ns_conn headers] user-agent]
     set :destination [ns_urldecode [ns_set iget [ns_conn headers] Destination]]
@@ -84,13 +86,13 @@ namespace eval ::xo {
       regsub $url_regexp $dest {} :destination
       if {![regexp {^[./]} ${:destination}]} {set :destination /${:destination}}
     }
-    #my log "--conn_setup: method ${:method} destination '${:destination}' uri '${:uri}'"
+    :log "--conn_setup: method ${:method} destination '${:destination}' uri '${:uri}' peer [ns_conn peeraddr]"
   }
 
   ProtocolHandler ad_instproc preauth { args } {
     Handle authorization. This method is called via ns_filter.
   } {
-    #my log "--preauth args=<$args>"
+    #:log "--preauth args=<$args>"
 
     # Restrict to SSL if required
     if { [security::RestrictLoginToSSLP]  && ![security::secure_conn_p] } {
@@ -112,13 +114,30 @@ namespace eval ::xo {
       return filter_return
     }
 
-    # for now, require for every user authentification
     if {${:user_id} == 0} {
-      ns_returnunauthorized
-      return filter_return
+      #
+      # Check, if we are running under the regression test. For this,
+      # the nsv must exist and the peeraddr must be the regression
+      # test. If this is all true, accept the user_id iif provided.
+      #
+      if {[nsv_array exists aa_test]
+          && [nsv_get aa_test logindata logindata]
+          && [ns_conn peeraddr] eq [dict get $logindata peeraddr]
+        } {
+        ns_log notice logindata=$logindata
+        if {[dict exists $logindata user_id]} {
+          ad_conn -set user_id [dict get $logindata user_id]
+          ad_conn -set untrusted_user_id [dict get $logindata user_id]
+          set :user_id [ad_conn user_id]
+        }
+      } else {
+        # for now, require for every user authentification
+        ns_returnunauthorized
+        return filter_return
+      }
     }
 
-    #my log "--preauth filter_ok"
+    #:log "--preauth filter_ok"
     return filter_ok
   }
 
@@ -131,8 +150,8 @@ namespace eval ::xo {
     processor performs always the cockie-based authorization.
 
     To change that, it would be necessary to register the
-    filter before the request processor (currently, there
-                                         are no hooks for that).
+    filter before the request processor
+    (currently, there are no hooks for that).
   } {
     set filter_url [:url]*
     set url [:url]/*
@@ -194,8 +213,10 @@ namespace eval ::xo {
        ns_register_proc $method $url  [self] handle_request
        ns_register_proc $method $root [self] handle_request
 
-       #my log "--ns_register_filter preauth $method $filter_url  [self]"
-       #my log "--ns_register_proc $method $url [self] handle_request"
+       :log "--ns_register_filter preauth $method $filter_url  [self]"
+       :log "--ns_register_filter preauth $method $root  [self]"       
+       :log "--ns_register_proc $method $url [self] handle_request"
+       :log "--ns_register_proc $method $root [self] handle_request"       
      }
     ns_register_proc OPTIONS  / ::xo::minimalProctocolHandler OPTIONS
     ns_register_proc PROPFIND / ::xo::minimalProctocolHandler PROPFIND
@@ -206,7 +227,7 @@ namespace eval ::xo {
     @return package_id
   } {
     ${:package} initialize -url ${:uri}
-    #my log "-- ${:package} initialize -url ${:uri}"
+    #:log "-- ${:package} initialize -url ${:uri}"
     return $package_id
   }
 
@@ -215,14 +236,14 @@ namespace eval ::xo {
     could be overloaded by the application and
     dispatches the HTTP requests.
   } {
-    #my log "--handle_request method=${:method} uri=$uri\
+    #:log "--handle_request method=${:method} uri=$uri\
          #     userid=${:user_id} -ns_conn query '[ns_conn query]'"
     if {[info exists :package] && ${:uri} ne "/"} {
       # We don't call package-initialize for ${:uri} = "/"
       set :package_id [:get_package_id]
     }
     if {[:procsearch ${:method}] ne ""} {
-      my ${:method}
+      :${:method}
     } else {
       ns_return 404 text/plain "not implemented"
     }
@@ -259,7 +280,7 @@ namespace eval ::xo {
     -propstats:required
     {-propstatus true}
   } {
-    #my log "multiStatusResonse href $href propstats $propstats"
+    #:log "multiStatusResonse href $href propstats $propstats"
     append reply \n \
         {<D:response xmlns:lp1="DAV:" xmlns:lp2="http://apache.org/dav/props/" xmlns:g0="DAV:">} \
         "\n<D:href>$href</D:href>\n"
@@ -323,7 +344,7 @@ namespace eval ::xo {
   }
 
   ProtocolHandler instproc PROPFIND {} {
-    #my log "--ProtocolHandler PROPFIND [ns_conn content]"
+    #:log "--ProtocolHandler PROPFIND [ns_conn content]"
     # when GET is not supported on this resource, the get* properties are not be sent
     # see http://www.webdav.org/specs/rfc4918.html, 9.1.5
     lappend davprops \
