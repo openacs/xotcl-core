@@ -107,41 +107,61 @@ namespace eval ::xo {
   }
 
   ::xo::ical::VCALITEM instproc tag {-tag -conv -value slot} {
+    ns_log notice "::xo::ical::VCALITEM tag [self args]"
     if {![info exists tag]} {
       set tag [string toupper $slot]
     }
     if {![info exists value]} {
       if {[info exists :$slot]} {
-    set value [my $slot]
+        set value [set :$slot]
       } else {
-    return ""
+        return ""
       }
     }
     if {[info exists conv]} {
-      return "$tag:[::xo::ical $conv $value]\r\n"
-    } else {
-      return "$tag:$value\r\n"
+      set value [::xo::ical $conv $value]
     }
-    return ""
+    if {$value ne ""} {
+      set result "$tag:$value"
+      #
+      # Perform line folding: According to RFC 5545 section 3.1,
+      # SHOULD NOT be longer than 75 octets, excluding the line break.
+      # https://www.ietf.org/rfc/rfc5545.txt
+      #
+      if {[string length $result] > 73} {
+        set lines ""
+        while {[string length $result] > 73} {
+          append lines [string range $result 0 73] \r\n " "
+          set result [string range $result 74 end]
+        }
+        append lines $result
+        set result $lines
+      }
+      append result \r\n
+      #ns_log notice "::xo::ical::VCALITEM tag [self args] -> len: [string length $result]"
+    } else {
+      set result ""
+    }
+    return $result
   }
 
   ::xo::ical::VCALITEM instproc start_end {} {
     if {[:is_day_item]} {
       append result \
-      [:tag -conv tcl_time_to_local_day dtstart] \
-      [:tag -conv tcl_time_to_local_day dtend]
+          [:tag -conv tcl_time_to_local_day dtstart] \
+          [:tag -conv tcl_time_to_local_day dtend]
     } else {
       append result \
-      [:tag -conv tcl_time_to_utc dtstart] \
-      [:tag -conv tcl_time_to_utc dtend]
+          [:tag -conv tcl_time_to_utc dtstart] \
+          [:tag -conv tcl_time_to_utc dtend]
     }
   }
 
   ::xo::ical::VCALITEM instproc as_ical {} {
     set item_type [namespace tail [:info class]]
     append t "BEGIN:$item_type\r\n" \
-    [:ical_body] \
-    "END:$item_type\r\n"
+        [:ical_body] \
+        "END:$item_type\r\n"
     return $t
   }
 
@@ -173,25 +193,25 @@ namespace eval ::xo {
     #    VJOURNAL: DRAFT, FINAL, CANCELLED
 
     append t  \
-    [:tag -conv tcl_time_to_utc -value $tcl_creation_date created] \
-    [:tag -conv tcl_time_to_utc -value $tcl_last_modified last-modified] \
-    [:tag -conv tcl_time_to_utc -value $tcl_stamp dtstamp] \
-    [:tag -conv tcl_time_to_utc dtstart] \
-    [:tag -conv tcl_time_to_utc dtend] \
-    [:tag -conv tcl_time_to_utc completed] \
-    [:tag -conv tcl_time_to_utc percent-complete] \
-    [:tag transp] \
-    [:tag uid] \
-    [:tag url] \
-    [:tag geo] \
-    [:tag priority] \
-    [:tag sequence] \
-    [:tag CLASS] \
-    [:tag -conv text_to_ical location] \
-    [:tag status] \
-    [:tag -conv text_to_ical description] \
-    [:tag -conv text_to_ical summary] \
-    [:tag -conv tcl_time_to_utc due]
+        [:tag -conv tcl_time_to_utc -value $tcl_creation_date created] \
+        [:tag -conv tcl_time_to_utc -value $tcl_last_modified last-modified] \
+        [:tag -conv tcl_time_to_utc -value $tcl_stamp dtstamp] \
+        [:tag -conv tcl_time_to_utc dtstart] \
+        [:tag -conv tcl_time_to_utc dtend] \
+        [:tag -conv tcl_time_to_utc completed] \
+        [:tag -conv tcl_time_to_utc percent-complete] \
+        [:tag transp] \
+        [:tag uid] \
+        [:tag url] \
+        [:tag geo] \
+        [:tag priority] \
+        [:tag sequence] \
+        [:tag CLASS] \
+        [:tag -conv text_to_ical location] \
+        [:tag status] \
+        [:tag -conv text_to_ical description] \
+        [:tag -conv text_to_ical summary] \
+        [:tag -conv tcl_time_to_utc due]
     
     if {[info exists :formatted_recurrences]} {
       append t ${:formatted_recurrences}
