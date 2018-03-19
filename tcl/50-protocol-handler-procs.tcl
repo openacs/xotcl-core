@@ -67,7 +67,7 @@ namespace eval ::xo {
     # can lead easily to running out of resources in busy sites. When
     # unset, the developer support will create its own id.
     unset -nocomplain ::ad_conn(request)
-    
+
     set :uri [ns_urldecode [ns_conn url]]
     if {[string length ${:uri}] < [string length ${:url}]} {append :uri /}
     set url_regexp "^${:url}"
@@ -214,9 +214,9 @@ namespace eval ::xo {
        ns_register_proc $method $root [self] handle_request
 
        :log "--ns_register_filter preauth $method $filter_url  [self]"
-       :log "--ns_register_filter preauth $method $root  [self]"       
+       :log "--ns_register_filter preauth $method $root  [self]"
        :log "--ns_register_proc $method $url [self] handle_request"
-       :log "--ns_register_proc $method $root [self] handle_request"       
+       :log "--ns_register_proc $method $root [self] handle_request"
      }
     ns_register_proc OPTIONS  / ::xo::minimalProctocolHandler OPTIONS
     ns_register_proc PROPFIND / ::xo::minimalProctocolHandler PROPFIND
