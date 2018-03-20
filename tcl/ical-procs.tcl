@@ -36,7 +36,8 @@ namespace eval ::xo {
     clock format [clock scan $time] -format "%Y%m%dT%H%M%SZ" -gmt 1
   }
   ical proc tcl_time_to_local_day {time} {
-    VALUE=DATE:[:clock_to_local_day [clock scan $time]]
+    # https://tools.ietf.org/html/rfc5545#section-3.3.4
+    return "VALUE=DATE:[:clock_to_local_day [clock scan $time]]"
   }
   ical proc utc_to_clock {utc_time} {
     clock scan $utc_time -format "%Y%m%dT%H%M%SZ" -gmt 1
@@ -107,7 +108,7 @@ namespace eval ::xo {
   }
 
   ::xo::ical::VCALITEM instproc tag {-tag -conv -value slot} {
-    ns_log notice "::xo::ical::VCALITEM tag [self args]"
+    #ns_log notice "::xo::ical::VCALITEM tag [self args]"
     if {![info exists tag]} {
       set tag [string toupper $slot]
     }
@@ -146,10 +147,9 @@ namespace eval ::xo {
   }
 
   ::xo::ical::VCALITEM instproc start_end {} {
-    if {[:is_day_item]} {
+    if {${:is_day_item}} {
       append result \
-          [:tag -conv tcl_time_to_local_day dtstart] \
-          [:tag -conv tcl_time_to_local_day dtend]
+          "DTSTART;" [::xo::ical tcl_time_to_local_day ${:dtstart}] \r\n
     } else {
       append result \
           [:tag -conv tcl_time_to_utc dtstart] \
@@ -196,8 +196,7 @@ namespace eval ::xo {
         [:tag -conv tcl_time_to_utc -value $tcl_creation_date created] \
         [:tag -conv tcl_time_to_utc -value $tcl_last_modified last-modified] \
         [:tag -conv tcl_time_to_utc -value $tcl_stamp dtstamp] \
-        [:tag -conv tcl_time_to_utc dtstart] \
-        [:tag -conv tcl_time_to_utc dtend] \
+        [:start_end] \
         [:tag -conv tcl_time_to_utc completed] \
         [:tag -conv tcl_time_to_utc percent-complete] \
         [:tag transp] \
