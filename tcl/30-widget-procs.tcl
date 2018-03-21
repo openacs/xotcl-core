@@ -16,7 +16,7 @@ Object instproc asHTML {{-master defaultMaster} -page:switch} {
   dom createDocument html doc
   set root [$doc documentElement]
   if {!$page} {
-    $root appendFromScript {my render}
+    $root appendFromScript {:render}
     set n [$root childNode]
     if {$n eq ""} {
       return ""
@@ -24,7 +24,7 @@ Object instproc asHTML {{-master defaultMaster} -page:switch} {
     return [$n asHTML]
   } else {
     set slave [$master decorate $root]
-    $slave appendFromScript {my render}
+    $slave appendFromScript {:render}
     ns_return 200 text/html [$root asHTML]
   }
 }
@@ -70,9 +70,9 @@ namespace eval ::xo::tdom {
     #
     # Create a new instance of the current class and configure it.
     #
-    #my log "tdom START $level [self], cmd='$configurecmds'"
+    #:log "tdom START $level [self], cmd='$configurecmds'"
     set me [:new -destroy_on_cleanup {*}$configurecmds]
-    #my log "tdom CREATED $level $me ([$me info class])"
+    #:log "tdom CREATED $level $me ([$me info class])"
 
     #
     # If we are not on the topmost level, add the created object
@@ -81,7 +81,7 @@ namespace eval ::xo::tdom {
     set stack($level) $me
     if {$level > 1} {
       set parent $stack([expr {$level - 1}])
-      #my log "tdom ADD  $level $me to $parent ([$parent info class])"
+      #:log "tdom ADD  $level $me to $parent ([$parent info class])"
       $parent add $me
     }
 
@@ -96,7 +96,7 @@ namespace eval ::xo::tdom {
     #         namespace eval ::xo::tmp [list namespace import -force [$cl autoimport]]
     #       }
     #     }
-    #    #my log "tdom CMDS $level [lsort [info commands ::xo::tmp::*]]"
+    #    #:log "tdom CMDS $level [lsort [info commands ::xo::tmp::*]]"
 
     if {$createcmd ne ""} {
       #
@@ -111,14 +111,14 @@ namespace eval ::xo::tdom {
     # the topmost element is automatically rendered. This makes
     # the ::xo::tdom classes behave more like plain tDOM commands.
     #
-    #my log "tdom AUTO $level [$me autorender]"
+    #:log "tdom AUTO $level [$me autorender]"
 
     if {$level == 1 && [$me autorender]} {
-      #my log "tdom RNDR $level $me render"
+      #:log "tdom RNDR $level $me render"
       $me render
     }
 
-    #my log "tdom END  $level [self] me=$me"
+    #:log "tdom END  $level [self] me=$me"
     set level [:incr_level -1]
     return $me
   }
@@ -145,7 +145,7 @@ namespace eval ::xo::tdom {
       } else {
         set HTMLattribute $attribute
       }
-      #my msg "[:name] check for $attribute => [info exists :$attribute]"
+      #:msg "[:name] check for $attribute => [info exists :$attribute]"
       if {[info exists :$attribute]} {
         lappend pairs $HTMLattribute [set :$attribute]
       }
@@ -169,7 +169,7 @@ namespace eval ::xo::tdom {
       } else {
         set HTMLattribute $attribute
       }
-      #my msg "[:name] check for $attribute => [info exists :$attribute]"
+      #:msg "[:name] check for $attribute => [info exists :$attribute]"
       if {[:uplevel [list info exists $attribute]]} {
         lappend pairs $HTMLattribute [:uplevel [list set $attribute]]
       }
@@ -342,7 +342,7 @@ namespace eval ::xo {
         return [::xo::localize [set :$attr]]
       } \
       -instproc render_localizer {} {
-        #my log "-- "
+        #:log "-- "
         if {[info exists :__localizer]} {
           foreach l ${:__localizer} {
             $l render
@@ -390,9 +390,9 @@ namespace eval ::xo {
                       }]
   
   Table instproc destroy {} {
-    #my log "-- "
+    #:log "-- "
     foreach c {__bulkactions __actions __columns} {
-      #my log "-- namespace eval [self]::$c {namespace forget *}"
+      #:log "-- namespace eval [self]::$c {namespace forget *}"
       namespace eval [self]::$c {namespace forget *}
     }
     next
@@ -423,19 +423,19 @@ namespace eval ::xo {
   }
 
   Table instproc render_with {renderer trn_mixin} {
-    #my log "-- renderer=$renderer"
+    #:log "-- renderer=$renderer"
     set cl [self class]
     :mixin ${cl}::$renderer 
     foreach child [$cl info classchildren] {
-      #my log "-- $child class [$child info class] "
+      #:log "-- $child class [$child info class] "
       set mixinname ${cl}::${renderer}::[namespace tail $child]
       if {[::xotcl::Object isclass $mixinname]} {
         #if {![$child istype ::xo::OrderedComposite::Child]} continue
         $child instmixin $mixinname
         if {$trn_mixin ne ""} {$child instmixin add $trn_mixin}
-        #my log "-- $child using instmixin <[$child info instmixin]>"
+        #:log "-- $child using instmixin <[$child info instmixin]>"
       } else {
-        #my log "-- no mixin $mixinname"
+        #:log "-- no mixin $mixinname"
       }
     }
     Table::Line instmixin $trn_mixin
@@ -520,7 +520,7 @@ namespace eval ::xo::Table {
       -superclass ::xo::OrderedComposite::Child \
       -parameter {name id {html {}} {hide 0}} \
       -instproc actions {cmd} {
-        #my init
+        #:init
         set grandParent [[:info parent] info parent]
         if {![info exists :name]} {set :name [namespace tail [self]]}
         #set M [::xo::OrderedComposite create ${grandParent}::__bulkactions]
@@ -559,7 +559,7 @@ namespace eval ::xo::Table {
         lappend slots [list -[:name].CSSclass [:CSSclass]]
         foreach att {width height border title alt} {
           if {[info exists :$att]} {
-            lappend slots [list -[:name].$att [my $att]]
+            lappend slots [list -[:name].$att [:$att]]
           } else {
             lappend slots [list -[:name].$att]
           }
@@ -612,7 +612,7 @@ namespace eval ::xo::Table {
   Class create TABLE \
       -superclass ::xo::Drawable \
       -instproc init_renderer {} {
-        #my log "--"
+        #:log "--"
         set :__rowcount 0
         set :css.table-class list
         set :css.tr.even-class list-even
@@ -671,37 +671,35 @@ namespace eval ::xo::Table {
       html::tr {html::td { html::t ${:no_data}}}
     } else {
       foreach line [:children] {
-        #my log "--LINE vars=[:info vars] cL: [[self class] info vars] r=[:renderer]"
-        html::tr -class [expr {[incr :__rowcount]%2 ? 
-                               [:set css.tr.odd-class] : 
-                               [:set css.tr.even-class] }] {
-                                 foreach field [[self]::__columns children] {
-                                   html::td  [concat [list class list] [$field html]] { 
-                                     $field render-data $line
-                                   }
-                                 }
-                               }
+        #:log "--LINE vars=[:info vars] cL: [[self class] info vars] r=[:renderer]"
+        html::tr -class [expr {[incr :__rowcount]%2 ? ${:css.tr.odd-class} : ${:css.tr.even-class}}] {
+          foreach field [[self]::__columns children] {
+            html::td  [concat [list class list] [$field html]] { 
+              $field render-data $line
+            }
+          }
+        }
       }
     }
   }
   
   TABLE instproc render {} {
-    if {![:isobject [self]::__actions]} {my actions {}}
-    if {![:isobject [self]::__bulkactions]} {my bulkactions {}}
+    if {![:isobject [self]::__actions]} {:actions {}}
+    if {![:isobject [self]::__bulkactions]} {:bulkactions {}}
     set bulkactions [[self]::__bulkactions children]
     if {$bulkactions eq ""} {
-      html::table -class [:set css.table-class] {
-        my render-actions
-        my render-body
+      html::table -class ${:css.table-class} {
+        :render-actions
+        :render-body
       }
     } else {
       set name [[self]::__bulkactions set __identifier]
       html::form -name $name -method POST { 
-        html::table -class [:set css.table-class] {
-          my render-actions
-          my render-body
+        html::table -class ${:css.table-class} {
+          :render-actions
+          :render-body
         }
-        my render-bulkactions
+        :render-bulkactions
       }
     }
   }
@@ -718,7 +716,7 @@ namespace eval ::xo::Table {
         html::a -class button -title [:_ tooltip] -href [:url] { 
           html::t [:_ label]
         }
-        #my log "-- "
+        #:log "-- "
       }
   #-proc destroy {} {
   #  :log "-- DESTROY"
@@ -835,7 +833,7 @@ namespace eval ::xo::Table {
   Class create TABLE::BulkAction -superclass ::xo::Drawable 
   TABLE::BulkAction instproc render {} {
     set name [:name]
-    #my msg [:serialize]
+    #:msg [:serialize]
     html::th -class list { 
       html::input -type checkbox -name __bulkaction -id __bulkaction \
           -title "Mark/Unmark all rows"
@@ -849,7 +847,7 @@ namespace eval ::xo::Table {
   }
   
   TABLE::BulkAction instproc render-data {line} {
-    #my msg [:serialize]
+    #:msg [:serialize]
     set name [:name]
     set value [$line set [:id]]
     html::input -type checkbox -name $name -value $value \
@@ -870,21 +868,21 @@ namespace eval ::xo::Table {
         }
       } \
       -instproc render {} {
-        if {![:isobject [self]::__actions]} {my actions {}}
-        if {![:isobject [self]::__bulkactions]} {my __bulkactions {}}
+        if {![:isobject [self]::__actions]} {:actions {}}
+        if {![:isobject [self]::__bulkactions]} {:__bulkactions {}}
         set bulkactions [[self]::__bulkactions children]
         html::div  {
-          my render-actions
+          :render-actions
           if {$bulkactions eq ""} {
             html::div -class table {
-              html::table -class [:set css.table-class] {my render-body}
+              html::table -class ${:css.table-class} {:render-body}
             }
           } else {
             set name [[self]::__bulkactions set __identifier]
             html::form -name $name -action "" {
               html::div -class table {
-                html::table -class [:set css.table-class] {my render-body}
-                my render-bulkactions
+                html::table -class ${:css.table-class} {:render-body}
+                :render-bulkactions
               }
             }
           }
