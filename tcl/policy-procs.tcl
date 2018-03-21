@@ -130,12 +130,24 @@ namespace eval ::xo {
     @return 0 or 1
 
   } {
-    if {![info exists user_id]} {set user_id [::xo::cc user_id]}
-    if {![info exists package_id]} {set package_id [::xo::cc package_id]}
+    if {![info exists user_id]} {
+      set user_id [::xo::cc user_id]
+    }
+    if {![info exists package_id]} {
+      set package_id [::xo::cc package_id]
+    }
     #my msg [info exists package_id]=>$package_id-[info exists :logical_package_id]
     set ctx "::xo::cc"
     if {$link ne ""} {
-      set query [lindex [split $link ?] 1]
+      #
+      # Extract the query parameter from the link
+      #
+      set questionMarkPos [string first ? $link]
+      if {$questionMarkPos > -1} {
+        set query [string range $link $questionMarkPos+1 end]
+      } else {
+        set query ""
+      }
       set ctx [::xo::Context new -destroy_on_cleanup -actual_query $query]
       $ctx process_query_parameter
     }
