@@ -153,13 +153,12 @@ namespace eval ::xo {
     foreach p [::xo::PackageMgr allinstances] {
       # Sanity check for old apps, having not set the package key.
       # TODO: remove this in future versions, when package_keys are enforced
-      if {![$p exists package_key]} {
-        ns_log notice "!!! You should provide a package_key for $p [$p info class] !!!"
-        continue
-      }
+      #if {![$p exists package_key]} {
+      #  ns_log notice "!!! You should provide a package_key for $p [$p info class] !!!"
+      #  continue
+      #}
       if {[$p package_key] eq $package_key} {
-        set $key $p
-        return $p
+        return [set $key $p]
       }
     }
 

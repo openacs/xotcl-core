@@ -164,32 +164,12 @@ namespace eval ::xo {
                                         } {
     return [apm_package_key_from_id $package_id]
   }
-  parameter proc get_package_id_from_package_key {
-                                                  -package_key:required
-                                                } {
+  parameter proc get_package_id_from_package_key {-package_key:required} {
     return [ns_cache eval xotcl_object_type_cache package_id-$package_key {
       ::xo::dc get_value get_package_id \
           [::xo::dc select -vars package_id -from apm_packages \
                -where "package_key = :package_key" -limit 1]
     }]
-  }
-
-  parameter proc get_package_class_from_package_key {-package_key:required} {
-    # Look up the parameter class from a package_key.
-    # TODO: should be done from object_type of package_id, 
-    # but first, we have to store it there).  
-    # We simply iterate here of the classes of packages (only a few exist).
-    set r ""
-    while {1} {
-      set r [ns_cache eval xotcl_object_type_cache package_class-$package_key {
-        foreach p [::xo::PackageMgr info instances] {
-          if {[$p set package_key] eq $package_key} { return $p }
-        }
-        break; # don't cache
-      }]
-      break
-    }
-    return $r
   }
 
   parameter proc get_parameter_object {
@@ -216,7 +196,7 @@ namespace eval ::xo {
       # 
       #my log "--p looking for $parameter_name in superclass of package_key=$package_key"
       set success 0
-      set pkg_class [:get_package_class_from_package_key -package_key $package_key]
+      set pkg_class [::xo::PackageMgr get_package_class_from_package_key $package_key]
       if {$pkg_class ne ""} {
         set sc [$pkg_class info superclass]
         if {[$sc exists package_key]} {
