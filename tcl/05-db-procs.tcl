@@ -1195,7 +1195,7 @@ namespace eval ::xo::db {
           default_value min_n_values max_n_values
 
       # ignore some erroneous definitions in the acs meta model
-      if {[:exists exclude_attribute($table_name,$attribute_name)]} {
+      if {[info exists :exclude_attribute($table_name,$attribute_name)]} {
         continue
       }
 

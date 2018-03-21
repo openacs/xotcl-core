@@ -134,7 +134,7 @@ namespace eval ::xo {
   }
   
   Context instproc exists_query_parameter {name} {
-    #my log "--qp :exists $name => [info exists :queryparm($name)]"
+    #my log "--qp exists $name => [info exists :queryparm($name)]"
     info exists :queryparm($name)
   }
   Context instproc get_all_query_parameter {} {
