@@ -392,10 +392,13 @@ namespace eval ::xo {
       eval [::xo::cc set __continuation]
     } else {
       if {[string length $text] > 1} {
-        set status_code [expr {[::xo::cc exists status_code] ? [::xo::cc set status_code] : 200}]
-        #:log "REPLY ${:delivery} 200 ${:mime_type}"
-        ${:delivery} $status_code ${:mime_type} $text
+        set default_status_code 200
+      } else {
+        set default_status_code 204
       }
+      set status_code [expr {[::xo::cc exists status_code] ? [::xo::cc set status_code] : $default_status_code}]
+      #:log "REPLY ${:delivery} $status_code ${:mime_type} - length: [string length $text] - [ad_conn peeraddr]"
+      ${:delivery} $status_code ${:mime_type} $text
     }
   }
 
