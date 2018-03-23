@@ -59,7 +59,7 @@
   set x [c1 ++]
   </pre>
   The Proxy forwards all commands to the 
-  attached thread except the methods attatch, filter, 
+  attached thread except the methods attach, filter, 
   detachAll and destroy. The attach method can be used 
   to reattach a proxy instance to a different thread, such as 
   <pre>  
