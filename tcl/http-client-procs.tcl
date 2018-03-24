@@ -18,7 +18,7 @@ if {![ad_with_deprecated_code_p]} {
     ns_log notice "http-client-procs: skip deprecated code"
     return
 }
-ns_log notice "http-client-procs include depreacted code"
+ns_log notice "http-client-procs include deprecated code"
 
 
 namespace eval ::xo {
