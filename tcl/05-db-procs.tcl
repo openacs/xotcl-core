@@ -2717,6 +2717,14 @@ namespace eval ::xo::db {
     }
     return $timestamp
   }
+
+  ad_proc list_to_values {list {type text}} {
+    set result {}
+    foreach e $list {
+      lappend result "([ns_dbquotevalue $e $type])"
+    }
+    return "(values [join $result ,])"
+  }  
 }
 
 ::xo::library source_dependent
