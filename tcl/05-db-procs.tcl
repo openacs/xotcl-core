@@ -496,7 +496,7 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::DB instproc exec_0or1row {-prepare {-bind ""} sql} {
-    # Helper, used from several postgres-spefic one-tuple queries
+    # Helper, used from several postgres-specific one-tuple queries
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     ::db_with_handle h {
       if {[info exists prepare]} {set sql [:prepare -handle $h -argtypes $prepare $sql]}
@@ -824,7 +824,7 @@ namespace eval ::xo::db {
         ::xo::dc dml populate-table-$name $populate
       }
     } else {
-      # The table exists already. Check the colums, whether we have to
+      # The table exists already. Check the columns, whether we have to
       # add columns. We do not alter attribute types, and we do not
       # delete columns.
       foreach col [dict keys $definition] {
@@ -1339,7 +1339,7 @@ namespace eval ::xo::db {
   }
 
   #
-  # The generation of the code interface code is driver specifc, since
+  # The generation of the code interface code is driver specific, since
   # e.q. dbi supports option "-autonull", which simplified the
   # interface code significantly
   #
@@ -1889,7 +1889,7 @@ namespace eval ::xo::db {
 
   ::xo::db::Class ad_instproc drop_object_type {{-cascade true}} {
     Drop an acs object_type; cascde true means that the attributes
-    are droped as well.
+    are dropped as well.
   } {
     ::xo::db::sql::acs_object_type drop_type \
         -object_type ${:object_type} \

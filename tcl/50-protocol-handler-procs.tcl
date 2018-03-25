@@ -118,7 +118,7 @@ namespace eval ::xo {
       #
       # Check, if we are running under the regression test. For this,
       # the nsv must exist and the peeraddr must be the regression
-      # test. If this is all true, accept the user_id iif provided.
+      # test. If this is all true, accept the user_id if provided.
       #
       if {[nsv_array exists aa_test]
           && [nsv_get aa_test logindata logindata]

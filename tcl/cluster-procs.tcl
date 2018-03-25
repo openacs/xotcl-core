@@ -9,7 +9,7 @@
 namespace eval ::xo {
 
   proc clusterwide args {
-    # first, excute the command on the local server
+    # first, execute the command on the local server
     eval $args
     # then, distribute the command in the cluster
     ::xo::Cluster broadcast {*}$args

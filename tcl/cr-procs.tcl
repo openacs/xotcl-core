@@ -518,7 +518,7 @@ namespace eval ::xo::db {
   } { 
     Retrieve either the live revision or a specified revision
     of a content item with all attributes into a newly created object.
-    The retrieved attributes are strored in the instance variables in
+    The retrieved attributes are stored in the instance variables in
     class representing the object_type. The XOTcl object is
     destroyed automatically on cleanup (end of a connection request)
 
