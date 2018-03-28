@@ -131,7 +131,7 @@ namespace eval ::xo {
           set :user_id [ad_conn user_id]
         }
       } else {
-        # for now, require for every user authentification
+        # for now, require for every user authentication
         ns_returnunauthorized
         return filter_return
       }
