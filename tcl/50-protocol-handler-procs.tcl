@@ -31,23 +31,23 @@ namespace eval ::xo {
       set up [lindex [split $ah " "] 1]
       # after decoding, it should be user:password; get the username
       lassign [split [ns_uudecode $up] ":"] user password
-      array set auth [auth::authenticate \
-                          -username $user \
-                          -authority_id [::auth::get_register_authority] \
-                          -password $password]
-      :debug "auth $user $password returned [array get auth]"
-      if {$auth(auth_status) ne "ok"} {
-        array set auth [auth::authenticate \
-                            -email $user \
-                            -password $password]
-        if {$auth(auth_status) ne "ok"} {
-          :debug "auth status $auth(auth_status)"
+      set auth [auth::authenticate \
+                    -username $user \
+                    -authority_id [::auth::get_register_authority] \
+                    -password $password]
+      :debug "auth $user $password returned $auth"
+      if {[dict get $auth auth_status] ne "ok"} {
+        set auth [auth::authenticate \
+                      -email $user \
+                      -password $password]
+        if {[dict get $auth auth_status] ne "ok"} {
+          :debug "auth status [dict get $auth auth_status]"
           set :user_id 0
           throw {AUTH UNAUTHORIZED {unauthorized}} $auth(auth_status)
         }
       }
-      :debug "auth_check user_id='$auth(user_id)'"
-      ad_conn -set user_id $auth(user_id)
+      :debug "auth_check user_id='[dict get $auth user_id]'"
+      ad_conn -set user_id [dict get $auth user_id]
 
     } else {
       # no authenticate header, anonymous visitor
@@ -78,7 +78,7 @@ namespace eval ::xo {
 
     set :method [string toupper [ns_conn method]]
     #:log "--conn_setup: uri '${:uri}' method ${:method}"
-    set :urlv [split [string trimright ${:uri} "/"] "/"]
+    set :urlv [split [string trim ${:uri} "/"] "/"]
     set :user_agent [ns_set iget [ns_conn headers] user-agent]
     set :destination [ns_urldecode [ns_set iget [ns_conn headers] Destination]]
     if {${:destination} ne ""} {
@@ -124,7 +124,7 @@ namespace eval ::xo {
           && [nsv_get aa_test logindata logindata]
           && [ns_conn peeraddr] eq [dict get $logindata peeraddr]
         } {
-        ns_log notice logindata=$logindata
+        #ns_log notice logindata=$logindata
         if {[dict exists $logindata user_id]} {
           ad_conn -set user_id [dict get $logindata user_id]
           ad_conn -set untrusted_user_id [dict get $logindata user_id]
@@ -142,7 +142,7 @@ namespace eval ::xo {
   }
 
   ProtocolHandler ad_instproc register { } {
-    Register the the AOLserver filter and traces.
+    Register the the NaviServer/AOLserver filter and traces.
     This method is typically called via *-init.tcl.
 
     Note, that the specified url must not have an entry
@@ -153,9 +153,9 @@ namespace eval ::xo {
     filter before the request processor
     (currently, there are no hooks for that).
   } {
-    set filter_url [:url]*
-    set url [:url]/*
-    set root [string trimright [:url] /]
+    set filter_url ${:url}*
+    set url ${:url}/*
+    set root [string trimright ${:url} /]
     #
     # Methods defined by RFC 2086 (19.6.1 Additional Request Methods):
     #
