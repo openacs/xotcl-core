@@ -241,7 +241,7 @@ namespace eval ::xo::db {
   }
   ::xo::db::oracle instproc mk_sql_constraint_name {table att suffix} {
     #
-    # Constaint names are limited in oracle to 30 characters;
+    # Constraint names are limited in oracle to 30 characters;
     # Postgres has no such limits. Therefore, we use different
     # rules depending on whether we are running under Oracle or not.
     #
