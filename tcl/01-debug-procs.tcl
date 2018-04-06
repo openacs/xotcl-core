@@ -218,7 +218,7 @@ namespace eval ::xo {
   proc slotobjects cl {
     set so [list]
     array set names ""
-    foreach c [concat $cl [$cl info heritage]] {
+    foreach c [list $cl {*}[$cl info heritage]] {
       foreach s [$c info slots] {
         set n [namespace tail $s]
         if {![info exists names($n)]} {
