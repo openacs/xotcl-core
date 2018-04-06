@@ -639,13 +639,13 @@ namespace eval ::xo::db {
       # fly. Notice, that the incoming SQL statement must not have Tcl
       # vars, but has to use bind vars.
       #
-      set c 0; set l ""; set last 0;
+      set c 0; set l ""; set last 0
       set execArgs {}; set prepArgs {}
-      foreach pair [regexp -all -inline -indices {:[a-zA-Z0_9_]+\M} $sql ] {
+      foreach pair [regexp -all -inline -indices {[^:]:[a-zA-Z0_9_]+\M} $sql ] {
         lassign $pair from to
-        lappend execArgs [string range $sql $from $to]
+        lappend execArgs [string range $sql $from+1 $to]
         lappend prepArgs unknown
-        append l [string range $sql $last $from-1] \$[incr c]
+        append l [string range $sql $last $from] \$[incr c]
         set last [incr to]
       }
       append l [string range $sql $last end]
@@ -2343,7 +2343,7 @@ namespace eval ::xo::db {
     set attributes [list]
     set id_column [:id_column]
     set join_expressions [list "[:table_name].$id_column = $id"]
-    foreach cl [concat [self] [:info heritage]] {
+    foreach cl [list [self] {*}[:info heritage]] {
       #if {$cl eq "::xo::db::Object"} break
       if {$cl eq "::xotcl::Object"} break
       set tn [$cl table_name]
@@ -2395,7 +2395,7 @@ namespace eval ::xo::db {
 
     set all_attributes [expr {$select_attributes eq ""}]
     set join_expressions [list]
-    foreach cl [concat [self] [:info heritage]] {
+    foreach cl [list [self] {*}[:info heritage]] {
       #if {$cl eq "::xo::db::Object"} break
       if {$cl eq "::xotcl::Object"} break
       set tn [$cl table_name]
