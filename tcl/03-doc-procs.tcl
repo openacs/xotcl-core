@@ -296,7 +296,7 @@ ad_library {
 
   :public object method get_doc_block {text {restVar ""}} {
     #
-    # Get the (first) documentatiion block of the provided text (which
+    # Get the (first) documentation block of the provided text (which
     # might be e.g. the body of a method)
     #
     set lines [split $text \n]
