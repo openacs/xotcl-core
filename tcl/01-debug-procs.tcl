@@ -327,7 +327,7 @@ namespace eval ::xo {
   Timestamp instproc init {} {set :time [clock clicks -milliseconds]}
   Timestamp instproc diffs {} {
     set now [clock clicks -milliseconds]
-    set ldiff [expr {[info exists :ltime] ? [expr {$now-${:ltime}}] : 0}]
+    set ldiff [expr {[info exists :ltime] ? ($now-${:ltime}): 0}]
     set :ltime $now
     return [list [expr {$now-${:time}}] $ldiff]
   }
@@ -609,7 +609,7 @@ namespace eval ::xo {
     set xobjs   [llength [::xotcl::Object info instances -closure]]
     set nobjs   [llength [::nx::Object info instances  -closure]]
     set tmpObjs [llength [info commands ::nsf::__#*]]
-    set tdoms   [llength [concat [info commands domNode0*] [info commands domDoc0x*]]]
+    set tdoms   [llength [list {*}[info commands domNode0*] {*}[info commands domDoc0x*]]]
     set nssets  [llength [ns_set list]]
     ns_log notice "xo::stats $msg: current objects xotcl $xobjs nx $nobjs tmp $tmpObjs tDOM $tdoms ns_set $nssets"
   }
