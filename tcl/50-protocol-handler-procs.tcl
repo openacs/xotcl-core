@@ -213,10 +213,10 @@ namespace eval ::xo {
        ns_register_proc $method $url  [self] handle_request
        ns_register_proc $method $root [self] handle_request
 
-       :log "--ns_register_filter preauth $method $filter_url  [self]"
-       :log "--ns_register_filter preauth $method $root  [self]"
-       :log "--ns_register_proc $method $url [self] handle_request"
-       :log "--ns_register_proc $method $root [self] handle_request"
+       #:log "--ns_register_filter preauth $method $filter_url  [self]"
+       #:log "--ns_register_filter preauth $method $root  [self]"
+       #:log "--ns_register_proc $method $url [self] handle_request"
+       #:log "--ns_register_proc $method $root [self] handle_request"
      }
     ns_register_proc OPTIONS  / ::xo::minimalProctocolHandler OPTIONS
     ns_register_proc PROPFIND / ::xo::minimalProctocolHandler PROPFIND
@@ -322,7 +322,7 @@ namespace eval ::xo {
     set r [:multiStatus [:multiStatusResonse \
                              -href [ns_urldecode [ns_conn url]] \
                              -propstats [list $davprops $status]]]
-    :log multiStatusError=$r
+    #:log multiStatusError=$r
     ns_return 207 text/xml $r
   }
 
