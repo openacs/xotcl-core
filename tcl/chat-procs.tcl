@@ -166,7 +166,7 @@ namespace eval ::xo {
       :add_msg -get_new false $msg
     }
     
-    # This values could already not be here. Just ignore when we don't
+    # These values could already not be here. Just ignore when we don't
     # find them
     try {
       ::xo::clusterwide nsv_unset -nocomplain ${:array}-login $user_id

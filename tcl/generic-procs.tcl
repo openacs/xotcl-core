@@ -609,7 +609,7 @@ namespace eval ::Generic {
     }
     lappend cmd \
         -row_pretty_plural ${:pretty_plural}
-    # This properties will be passed as they are
+    # These properties will be passed as they are
     foreach prop {
       pass_properties
       checkbox_name
