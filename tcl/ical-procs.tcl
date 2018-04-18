@@ -287,7 +287,7 @@ namespace eval ::xo {
   }
 
   #
-  # Subclass ::xo::ProtocolHander for dav (as used by ical)
+  # Subclass ::xo::ProtocolHandler for dav (as used by ical)
   #
   Class create ::xo::dav -superclass ProtocolHandler -parameter {
     {url /webdav}
