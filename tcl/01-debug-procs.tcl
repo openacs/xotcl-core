@@ -216,7 +216,7 @@ if {[::package vcompare [package require xotcl::serializer] 2.0] < -1} {
 
 namespace eval ::xo {
   proc slotobjects cl {
-    set so [list]
+    set so {}
     array set names ""
     foreach c [list $cl {*}[$cl info heritage]] {
       foreach s [$c info slots] {

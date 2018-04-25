@@ -261,7 +261,7 @@ ad_library {
   }
 
   :public object method source_to_html {{-width 100} string} {
-    set lines [list]
+    set lines {}
     foreach l [split $string \n] {
       while {[string length $l] > $width} {
         set pos [string last " \{" $l $width]
@@ -457,7 +457,7 @@ ad_library {
       dict set doc default_values {}
       dict set doc positionals {}
     } else {
-      set defaults [list]
+      set defaults {}
       foreach a [::xo::getObjectProperty $obj ${inst}args $proc_name] {
         if {[::xo::getObjectProperty $obj ${inst}argdefault $proc_name $a d]} {
           lappend defaults $a $d

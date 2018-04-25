@@ -108,7 +108,7 @@ proc class_relation {scope object kind {dosort 0}} {
 
   if {$dosort} {set list [lsort $list]}
 
-  set refs [list]
+  set refs {}
   foreach e $list {
     lappend refs [::xo::api object_link $scope $e]
   }
@@ -126,7 +126,7 @@ proc class_summary {c scope} {
   set result ""
   if {0} {
     set methods [lsort [DO xo::getObjectProperty $c instcommand]]
-    set pretty [list]
+    set pretty {}
     foreach m $methods {
       if {[info exists param($m)]} continue
       set entry [::xo::api method_link $c instproc $m]
@@ -136,7 +136,7 @@ proc class_summary {c scope} {
       append result "<dt><em>Methods for instances:</em></dt> <dd>[join $pretty {, }]</dd>"
     }
     set methods [lsort [DO xo::getObjectProperty $c command -callprotection all]]
-    set pretty [list]
+    set pretty {}
     foreach m $methods {
       if {![DO xo::getObjectProperty ${c}::$m isobject]} {
         lappend pretty [::xo::api method_link $c proc $m]

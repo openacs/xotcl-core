@@ -289,7 +289,7 @@ if {![string match "*contentsentlength*" $msg]} {
 
   ::xotcl::Class create Subscriber -parameter {key channel user_id mode}
   Subscriber proc current {-key } {
-    set result [list]
+    set result {}
     if {[info exists key]} {
       if {[info exists :subscriptions($key)]} {
         return [list $key [set :subscriptions($key)]]
@@ -356,7 +356,7 @@ if {![string match "*contentsentlength*" $msg]} {
   Subscriber proc foreachSubscriber {key method {argument ""}} {
     :msg "$key $method '$argument'"
     if {[info exists :subscriptions($key)]} {
-      set subs1 [list]
+      set subs1 {}
       foreach s [set :subscriptions($key)] {
         if {[catch {$s $method $argument} errMsg]} {
           ns_log error "error in $method to subscriber $s (key=$key): $errMsg"
@@ -419,7 +419,7 @@ if {![string match "*contentsentlength*" $msg]} {
     set :running 0
     set :release 0
     set :spooling 0
-    set :queue [list]
+    set :queue {}
   }
   ::HttpSpooler instproc all_done {} {
     catch {close [:channel]}
@@ -598,7 +598,7 @@ bgdelivery ad_proc returnfile {
 
     set range [ns_set iget [ns_conn headers] range]
     if {[regexp {bytes=(.*)$} $range _ range]} {
-      set ranges [list]
+      set ranges {}
       set bytes 0
       set pos 0
       foreach r [split $range ,] {

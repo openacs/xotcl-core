@@ -132,7 +132,7 @@ namespace eval ::xo::db {
 
     @return list of item_ids
   } {
-    set items [list]
+    set items {}
     foreach item_id [::xo::dc list get_child_items \
                          "select item_id from cr_items where parent_id = :item_id"] {
       lappend items $item_id {*}[my [self proc] -item_id $item_id]
@@ -429,7 +429,7 @@ namespace eval ::xo::db {
     set raw_atts [::xo::db::CrClass set common_query_atts]
     #my log "-- raw_atts = '$raw_atts'"
 
-    set atts [list]
+    set atts {}
     foreach v $raw_atts {
       switch -glob -- $v {
         publish_status {set fq i.$v}
@@ -622,7 +622,7 @@ namespace eval ::xo::db {
       set attribute_selection [join $attributes ,]
     }
     
-    set cond [list]
+    set cond {}
     if {$type_selection_clause ne ""} {lappend cond $type_selection_clause}
     if {$where_clause ne ""}          {lappend cond $where_clause}
     if {[info exists publish_status]} {lappend cond "ci.publish_status = :publish_status"}
@@ -815,8 +815,8 @@ namespace eval ::xo::db {
       # view. So we postpone these updates and perform these
       # as separate statements.
       #
-      set values [list]
-      set attributes [list]
+      set values {}
+      set attributes {}
       #my msg "--long_text_slots: [array get :long_text_slots]"
 
       foreach a $atts v $vars {
@@ -1399,7 +1399,7 @@ namespace eval ::xo::db {
       set attribute_selection [join $attributes ,]
     }
 
-    set cond [list]
+    set cond {}
     if {$type_selection_clause ne ""} {lappend cond $type_selection_clause}
     if {$where_clause ne ""}          {lappend cond $where_clause}
     if {[info exists publish_status]} {lappend cond "ci.publish_status = :publish_status"}
