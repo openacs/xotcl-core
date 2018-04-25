@@ -36,7 +36,7 @@ ad_library {
   }
 
   #
-  # Support functions for the the OpenACS API browser
+  # Support functions for the OpenACS API browser
   #
   :public object method method_label { -kind:switch proc_spec } {
     switch [llength $proc_spec] {

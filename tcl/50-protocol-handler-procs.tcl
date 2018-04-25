@@ -142,7 +142,7 @@ namespace eval ::xo {
   }
 
   ProtocolHandler ad_instproc register { } {
-    Register the the NaviServer/AOLserver filter and traces.
+    Register the NaviServer/AOLserver filter and traces.
     This method is typically called via *-init.tcl.
 
     Note, that the specified url must not have an entry

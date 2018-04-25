@@ -664,7 +664,7 @@ namespace eval ::xo::db {
     #
     # Cache the information, whether the prepared statement was
     # defined per pg session. Depending on the version of the driver,
-    # we can obtain a session_id from the the db driver. If we can't,
+    # we can obtain a session_id from the db driver. If we can't,
     # we fall back to a per request-cache (via toplevel variable).
     #
     try {
@@ -938,9 +938,9 @@ namespace eval ::xo::db {
     -check_function
     sql_file
   } {
-    Load the sql file, if the the kernel is older than the
-    specified version, and the version of the specified package is older,
-    and the check_function does not exist in function_args.
+    Load the sql file, if the kernel is older than the specified
+    version, and the version of the specified package is older, and
+    the check_function does not exist in function_args.
     <p>
     Sample usage: <tt>
     ::xo::db::require function_args \<br>
@@ -2252,28 +2252,29 @@ namespace eval ::xo::db {
     query and create XOTcl objects from the tuples.
 
     @param sql The SQL query to retrieve tuples. Note that if the SQL
-    query only returns a restricted set of attributes, the objects will
-    be only partially instantiated.
+    query only returns a restricted set of attributes, the objects
+    will be only partially instantiated.
 
     @param as_ordered_composite return an ordered composite object
-    preserving the order. If the flag is false, one has to use
-    "info instances" to access the resulted objects.
+    preserving the order. If the flag is false, one has to use "info
+    instances" to access the resulted objects.
 
     @param object_class specifies the XOTcl class, for which instances
     are created.
 
-    @param named_objects If this flag is true, the value of the id_column is used
-    for the name of the created objects (object will be named e.g. ::13738).
-    Otherwise, objects are created with the XOTcl "new" method to avoid object name clashes.
+    @param named_objects If this flag is true, the value of the
+    id_column is used for the name of the created objects (object will
+    be named e.g. ::13738).  Otherwise, objects are created with the
+    XOTcl "new" method to avoid object name clashes.
 
-    @param destroy_on_cleanup If this flag is true, the objects (and ordered composite)
-    will be automatically destroyed on cleaup (typically after the request was processed).
+    @param destroy_on_cleanup If this flag is true, the objects (and
+    ordered composite) will be automatically destroyed on cleaup
+    (typically after the request was processed).
 
-    @param initialize can be used to avoid full initialization, when
-    a large series of of objects is loaded. Per default, these objects
-    are initialized via initialize_loaded_object, when the are
-    of type ::xo::db::Object
-  } {
+    @param initialize can be used to avoid full initialization, when a
+    large series of objects is loaded. Per default, these objects are
+    initialized via initialize_loaded_object, when the are of type
+    ::xo::db::Object } {
 
     if {$object_class eq ""} {set object_class [self]}
     if {$sql eq ""} {set sql [:instance_select_query]}

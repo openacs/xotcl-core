@@ -290,7 +290,7 @@ namespace eval ::xo {
     }
 
     if {[ns_conn isconnected]} {
-      # in case of of host-node map, simplify the url to avoid redirects
+      # in case of host-node map, simplify the url to avoid redirects
       # .... but ad_host works only, when we are connected.... 
       # TODO: solution for syndication
       set root [root_of_host [ad_host]]
