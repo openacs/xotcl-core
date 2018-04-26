@@ -13,7 +13,7 @@ namespace eval ::xo {
     }
 
     proc dotquotel {l} {
-	set result [list]
+	set result {}
 	foreach e $l { lappend result \"$e\" }
 	return $result
     }
@@ -57,7 +57,7 @@ namespace eval ::xo {
 	}
 	append definition "|"
 	::xo::api scope_from_object_reference scope e
-	set methods [list]
+	set methods {}
         dot_append_method -documented_methods $documented_methods $e methods proc
         dot_append_method -documented_methods $documented_methods $e methods instproc
 	dot_append_method -documented_methods $documented_methods $e methods instforward
@@ -103,7 +103,7 @@ namespace eval ::xo {
 	set superclasses ""
 	foreach e $classes {
             if {![::nsf::is object $e]} continue
-            set reduced_sc [list]
+            set reduced_sc {}
             foreach sc [::xo::getObjectProperty $e superclass] {
                 if {$omit_base_classes && [::nsf::is baseclass $sc]} continue
                 lappend reduced_sc $sc
