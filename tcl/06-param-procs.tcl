@@ -5,7 +5,7 @@
 #    Galileo: > 2mio (2nd most frequent kind of object type)
 #    Small oacs installations: 1000 objects (38 package instances)
 #
-#  - High growth, when parmeters are used more intensively
+#  - High growth, when parameters are used more intensively
 #    Size grows quadratically: #parameter * #package_instances,
 #     independent of changed parameter values
 #    -> does not scale well.

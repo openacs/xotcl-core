@@ -1017,7 +1017,7 @@ namespace eval ::xo {
       set order 10
       foreach file $::_xo_js_order {
         if {[string match "*;*" $file]} {
-          # it is not a file, but some javascipt statements
+          # it is not a file, but some JavaScript statements
           #append statements [string map {< "&lt;" > "&gt;"} $file] \n
           append statements $file \n
         } else {

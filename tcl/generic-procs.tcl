@@ -638,7 +638,7 @@ namespace eval ::Generic {
     {*}$cmd
     :multirow
 
-    # Don't put handlers directly on the HTML, but rather define them in javascript afterwards
+    # Don't put handlers directly on the HTML, but rather define them in JavaScript afterwards
     template::add_confirm_handler -CSSclass acs-confirm -message [_ acs-subsite.Delete]?
   }
 

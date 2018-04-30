@@ -202,7 +202,7 @@ namespace eval ::xo {
       # The following should not be necessary, but is is here for
       # cases, where some oacs-code assumes wrongly it is running in a
       # connection thread (e.g. the site master requires to have a
-      # node_id and a url accessible via ad_conn)
+      # node_id and a URL accessible via ad_conn)
       #
       if {![info exists (node_id)]} {
         if {$url eq ""} {
@@ -542,7 +542,7 @@ namespace eval ::xo {
   
   proc ::xo::update_query_variable {old_query var value} {
     #
-    # Replace in a url-query old occurrences of var with new value.
+    # Replace in a URL-query old occurrences of var with new value.
     #
     # @return pairs in a form suitable for export_vars
     #
@@ -560,7 +560,7 @@ namespace eval ::xo {
 
   proc ::xo::update_query {old_query var value} {
     #
-    # Replace in a url-query old occurrences of var with new value.
+    # Replace in a URL-query old occurrences of var with new value.
     #
     # @return encoded HTTP query
     #
