@@ -16,7 +16,7 @@ if {[info commands ::thread::mutex] eq ""} {
     available.  When used with NaviServer, ns_returnfile uses the
     writer threads, which will be even better than the solution via
     the bgdelivery thread, since it works as well via https and uses
-    less resources.
+    fewer resources.
 
     One reason for still using the bgdelivery thread is h264 streaming
     (when the module is in use).
