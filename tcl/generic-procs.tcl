@@ -467,7 +467,7 @@ namespace eval ::Generic {
     # edit button will be the first list element,
     # in between there will be user's elements,
     # delete button will be last
-    set elements [concat $elements ${:elements}]
+    lappend elements {*}${:elements}
     # build delete button
     if {!${:no_delete_p}} {
       set title [_ xotcl-core.delete_item]
