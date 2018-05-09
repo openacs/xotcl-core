@@ -474,7 +474,7 @@ namespace eval ::xo::db {
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     db_with_handle -dbn $dbn db {
       if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
-      set result {}
+      set result [list]
       set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
       while { [::db_getrow $db $answers] } {
         lappend result [ns_set copy $answers]
@@ -585,10 +585,10 @@ namespace eval ::xo::db {
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     db_with_handle db {
       if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
-      set result {}
+      set result [list]
       set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
       while { [db_getrow $db $answers] } {
-        set row {}
+        set row [list]
         foreach {att value} [ns_set array $answers] {lappend row $value}
         lappend result $row
       }
@@ -601,7 +601,7 @@ namespace eval ::xo::db {
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     db_with_handle db {
       if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
-      set result {}
+      set result [list]
       set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
       while { [::db_getrow $db $answers] } {
         lappend result [ns_set value $answers 0]
@@ -1307,7 +1307,7 @@ namespace eval ::xo::db {
       order by pronargs desc, proargtypes desc
     } {
       set n 1
-      set function_args {}
+      set function_args [list]
       foreach line [split $prosrc \n] {
         if {[regexp -nocase "alias +for +\\\$$n" $line]} {
           if {![regexp {^[^a-zA-Z]+([a-zA-Z0-9_]+)\s} $line _ fq_name]} {
@@ -1366,8 +1366,8 @@ namespace eval ::xo::db {
 
   ::xo::db::DBI instproc sql_arg_info {function_args package_name object_name} {
     set defined {}
-    set psql_args {}
-    set arg_order {}
+    set psql_args [list]
+    set arg_order [list]
     # TODO function args not needed in dict
     foreach arg $function_args {
       lassign $arg arg_name default_value
@@ -1548,7 +1548,7 @@ namespace eval ::xo::db {
       return $function_args
     }
     array set additional_defaults [::xo::db::SQL set fallback_defaults(${package_name}__$object_name)]
-    set result {}
+    set result [list]
     foreach arg $function_args {
       lassign $arg arg_name default_value
       if {$default_value eq "" && [info exists additional_defaults($arg_name)]} {
@@ -1565,8 +1565,8 @@ namespace eval ::xo::db {
 
   ::xo::db::SQL instproc sql_arg_info {function_args package_name object_name} {
     set defined {}
-    set psql_args {}
-    set arg_order {}
+    set psql_args [list]
+    set arg_order [list]
     foreach arg $function_args {
       lassign $arg arg_name default_value
       lappend psql_args \$_$arg_name
@@ -1898,8 +1898,8 @@ namespace eval ::xo::db {
 
   ::xo::db::Class instproc db_slots {} {
 
-    array set :db_slot {}
-    array set :db_constraints {}
+    array set :db_slot [list]
+    array set :db_constraints [list]
     #
     # First get all ::xo::db::Attribute slots and check later,
     # if we have to add the id_column automatically.
@@ -1954,7 +1954,7 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::Class instproc table_definition {} {
-    array set column_specs {}
+    array set column_specs [list]
     #
     # iterate over the slots and collect the column_specs for table generation
     #
@@ -2007,7 +2007,7 @@ namespace eval ::xo::db {
       if {![info exists column_specs(${:id_column})]} {
         error "no ::xo::db::Attribute slot for id_column '${:id_column}' specified"
       }
-      set table_specs {}
+      set table_specs [list]
       foreach {att spec} [array get column_specs] {lappend table_specs $att $spec}
       set table_definition $table_specs
     } else {
@@ -2018,8 +2018,8 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::Class instproc mk_update_method {} {
-    set updates {}
-    set vars {}
+    set updates [list]
+    set vars [list]
     foreach {slot_name slot} [array get :db_slot] {
       $slot instvar name column_name
       if {$column_name ne [:id_column]} {
@@ -2282,7 +2282,7 @@ namespace eval ::xo::db {
       set __result [::xo::OrderedComposite new]
       if {$destroy_on_cleanup} {$__result destroy_on_cleanup}
     } else {
-      set __result {}
+      set __result [list]
     }
     if {$named_objects} {
       if {$object_named_after eq ""} {
@@ -2340,8 +2340,8 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::Class instproc fetch_query {id} {
-    set tables {}
-    set attributes {}
+    set tables [list]
+    set attributes [list]
     set id_column [:id_column]
     set join_expressions [list "[:table_name].$id_column = $id"]
     foreach cl [list [self] {*}[:info heritage]] {
@@ -2385,7 +2385,7 @@ namespace eval ::xo::db {
     @param count return the query for counting the solutions
     @return SQL query
   } {
-    set tables {}
+    set tables [list]
     set id_column [:id_column]
 
     if {$count} {
@@ -2395,7 +2395,7 @@ namespace eval ::xo::db {
     }
 
     set all_attributes [expr {$select_attributes eq ""}]
-    set join_expressions {}
+    set join_expressions [list]
     foreach cl [list [self] {*}[:info heritage]] {
       #if {$cl eq "::xo::db::Object"} break
       if {$cl eq "::xotcl::Object"} break

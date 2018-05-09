@@ -72,7 +72,7 @@ namespace eval ::Generic {
   }
 
   Form instproc form_vars {} {
-    set vars {}
+    set vars [list]
     foreach varspec [:fields] {
       lappend vars [lindex [split [lindex $varspec 0] :] 0]
     }

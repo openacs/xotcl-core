@@ -137,7 +137,7 @@ namespace eval ::xo::tdom {
 
     @return flattened list of attribute value pairs
   } {
-    set pairs {}
+    set pairs [list]
     foreach attribute $args {
       set l [split $attribute]
       if {[llength $l] > 1} {
@@ -161,7 +161,7 @@ namespace eval ::xo::tdom {
 
     @return flattened list of attribute value pairs
   } {
-    set pairs {}
+    set pairs [list]
     foreach attribute $args {
       set l [split $attribute]
       if {[llength $l] > 1} {
@@ -245,7 +245,7 @@ namespace eval ::xo {
     #ns_log notice "--local $text $inline"
     set obj [uplevel self]
     if {![$obj exists __localizer]} {
-      $obj set __localizer {}
+      $obj set __localizer [list]
     }
     if {[string first \x02 $text] == -1} {
       return $text
@@ -349,7 +349,7 @@ namespace eval ::xo {
             $l destroy
           }
         }
-        set :__localizer {}
+        set :__localizer [list]
       } \
       -instproc render-data args {
         next
@@ -411,7 +411,7 @@ namespace eval ::xo {
     set M [OrderedComposite create [self]::__columns]
     namespace eval $M [list namespace import -force [self class]::*]
     $M contains $cmd
-    set slots {}
+    set slots [list]
     foreach c [$M children] {
       lappend slots {*}[$c get-slots]
     }
@@ -446,7 +446,7 @@ namespace eval ::xo {
     {-delimiter ","}
   } {
     set output ""
-    set line {}
+    set line [list]
     foreach column [[self]::__columns children] {
       if {[$column exists no_csv]} continue
       set label [$column label]
@@ -458,7 +458,7 @@ namespace eval ::xo {
   }
   append output [join $line $delimiter] \n
   foreach row [:children] {
-    set line {}
+    set line [list]
     foreach column [[self]::__columns children] {
       if {[$column exists no_csv]} continue
       set value [string map {\" \\\" \n \r} [$row set [$column set name]]]
@@ -477,7 +477,7 @@ namespace eval ::xo {
 Class create Table::Line \
     -superclass ::xo::Drawable \
     -instproc attlist {name atts {extra ""}} {
-      set result {} 
+      set result [list] 
       foreach att $atts {
         set varname $name.$att
         if {[info exists :$varname]} {
@@ -992,8 +992,8 @@ namespace eval ::xo {
     return [list]
   }
   Page proc sort_keys_by_value {{-comparison integer} {-direction increasing} pairs} {
-    set result {}
-    set a {}
+    set result [list]
+    set a [list]
     foreach {key value} $pairs {
       lappend a [list $key $value]
     }
