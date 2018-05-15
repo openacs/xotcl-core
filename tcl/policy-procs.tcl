@@ -73,7 +73,7 @@ namespace eval ::xo {
   Policy instproc get_privilege {{-query_context "::xo::cc"} permission object method} {
     # the privilege might by primitive (one word privilege)
     # or it might be complex (attribute + privilege)
-    # or it might be conditional (primitive or complex) in a list of privilges
+    # or it might be conditional (primitive or complex) in a list of privileges
 
     foreach p $permission {
       #my msg "checking permission '$p'"
