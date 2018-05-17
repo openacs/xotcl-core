@@ -1,5 +1,5 @@
 ad_library {
-  XOTcl API for api browser, defines the methods
+  XOTcl API for the API browser, defines the methods
   ad_proc (for object specific methods),
   ad_instproc (for tradional methods) and
   ad_doc (for documenting classes). Syntax for the methods
@@ -321,7 +321,7 @@ ad_library {
   :public object method update_object_doc {scope obj doc_string} {
     ns_log notice "update_object_doc $scope $obj ..."
     #
-    # Update the api browser nsvs with information about the provided
+    # Update the API browser nsvs with information about the provided
     # object.
     #
 
