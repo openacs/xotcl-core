@@ -745,7 +745,7 @@ namespace eval ::xo::db {
 
     if {[info commands ns_cache_create] ne ""} {
       #
-      # Version for NaviServer, which provides allows to provide
+      # Version for NaviServer, which allows us to provide
       # maximum size for a single cache entry.
       #
       ns_cache_create \
@@ -2641,7 +2641,7 @@ namespace eval ::xo::db {
     set object_type [${:domain} object_type]
 
     if {$object_type eq "content_folder"} {
-      # content_folder does NOT allow to use create_attribute etc.
+      # content_folder does NOT allow one to use create_attribute etc.
       return
     }
 
