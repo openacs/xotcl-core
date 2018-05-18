@@ -67,10 +67,10 @@ namespace eval ::xo::db {
     set $key [ns_cache eval xotcl_object_type_cache \
                   [expr {$item_id ? $item_id : $revision_id}] {
                     if {$item_id} {
-                      ::xo::dc 1row get_class_from_item_id \
+                      ::xo::dc 1row -prepare integer get_class_from_item_id \
                           "select content_type as object_type from cr_items where item_id=:item_id"
                     } else {
-                      ::xo::dc 1row get_class_from_revision_id \
+                      ::xo::dc 1row -prepare integer get_class_from_revision_id \
                           "select object_type from acs_objects where object_id=:revision_id"
                     }
                     return $object_type
@@ -104,7 +104,7 @@ namespace eval ::xo::db {
   } { 
     # TODO: the following line is deactivated, until we get rid of the "folder object" in xowiki
     #if {[:isobject ::$item_id]} {return [::$item_id parent_id]}
-    ::xo::dc 1row get_parent "select parent_id from cr_items where item_id = :item_id"
+    ::xo::dc 1row -prepare integer get_parent "select parent_id from cr_items where item_id = :item_id"
     return $parent_id
   }
 
@@ -119,7 +119,7 @@ namespace eval ::xo::db {
   } { 
     # TODO: the following line is deactivated, until we get rid of the "folder object" in xowiki
     #if {[:isobject ::$item_id]} {return [::$item_id parent_id]}
-    ::xo::dc 1row get_name "select name from cr_items where item_id = :item_id"
+    ::xo::dc 1row -prepare integer get_name "select name from cr_items where item_id = :item_id"
     return $name
   }
 
@@ -133,7 +133,7 @@ namespace eval ::xo::db {
     @return list of item_ids
   } {
     set items [list]
-    foreach item_id [::xo::dc list get_child_items \
+    foreach item_id [::xo::dc list -prepare integer get_child_items \
                          "select item_id from cr_items where parent_id = :item_id"] {
       lappend items $item_id {*}[my [self proc] -item_id $item_id]
     }
@@ -983,7 +983,7 @@ namespace eval ::xo::db {
         #set revision_id $old_revision_id
       }
       set :modifying_user $creation_user
-      set :last_modified [::xo::dc get_value get_last_modified \
+      set :last_modified [::xo::dc get_value -prepare integer get_last_modified \
                                 {select last_modified from acs_objects where object_id = :revision_id}]
     }
     return $item_id
