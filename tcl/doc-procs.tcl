@@ -3,29 +3,29 @@ xo::library doc {
 
     @creation-date 2015-04-30
     @author Gustaf Neumann
-    @cvs-id $Id$  
+    @cvs-id $Id$
 }
 
 namespace eval ::xo {
 
     proc dotquote {e} {
-	return \"$e\" 
+        return \"$e\"
     }
 
     proc dotquotel {l} {
-	set result [list]
-	foreach e $l { lappend result \"$e\" }
-	return $result
+        set result [list]
+        foreach e $l { lappend result \"$e\" }
+        return $result
     }
-    
+
     ad_proc dot_append_method {{-documented_methods 1} e methods_ref kind} {
     } {
-	upvar $methods_ref methods
-	set infokind $kind
-	if {$kind eq "instproc"} {append infokind s}
-	::xo::api scope_from_object_reference scope e
+        upvar $methods_ref methods
+        set infokind $kind
+        if {$kind eq "instproc"} {append infokind s}
+        ::xo::api scope_from_object_reference scope e
         if {$kind eq "proc"} {set prefix "&rarr; "} {set prefix ""}
-	foreach methodName [xo::getObjectProperty $e $kind] {
+        foreach methodName [xo::getObjectProperty $e $kind] {
             if {$documented_methods} {
                 set proc_index [::xo::api proc_index $scope $e $kind $methodName]
                 #my msg "check $methodName => [nsv_exists api_proc_doc $proc_index]"
@@ -37,61 +37,61 @@ namespace eval ::xo {
             }
         }
     }
-    
+
     ad_proc dotclass {{-is_focus 0} {-documented_methods 1} e} {
     } {
-	set definition ""
+        set definition ""
         if {$is_focus} {
-	    set style "style=filled,penwidth=1.5,color=bisque4,fillcolor=beige,"
-	} else {
-	    set style ""
-	}
-	set url [export_vars -base show-object [list [list object $e]]]
-	append definition "[dotquote $e] \[${style}URL=\"$url\",label=\"\{$e|"
-	foreach slot [$e info slots] {
-	    set name ""
-	    catch {set name $slot name}
-	    if {$name ne ""} {
-		append definition "[$slot name]\\l"
-	    }
-	}
-	append definition "|"
-	::xo::api scope_from_object_reference scope e
-	set methods [list]
+            set style "style=filled,penwidth=1.5,color=bisque4,fillcolor=beige,"
+        } else {
+            set style ""
+        }
+        set url [export_vars -base show-object [list [list object $e]]]
+        append definition "[dotquote $e] \[${style}URL=\"$url\",label=\"\{$e|"
+        foreach slot [$e info slots] {
+            set name ""
+            catch {set name $slot name}
+            if {$name ne ""} {
+                append definition "[$slot name]\\l"
+            }
+        }
+        append definition "|"
+        ::xo::api scope_from_object_reference scope e
+        set methods [list]
         dot_append_method -documented_methods $documented_methods $e methods proc
         dot_append_method -documented_methods $documented_methods $e methods instproc
-	dot_append_method -documented_methods $documented_methods $e methods instforward
-	foreach method [lsort $methods] {append definition "$method\\l" }
-	append definition "\}\"\];\n"
+        dot_append_method -documented_methods $documented_methods $e methods instforward
+        foreach method [lsort $methods] {append definition "$method\\l" }
+        append definition "\}\"\];\n"
     }
 
     ad_proc dotobject {e} {
     } {
-	set url [export_vars -base show-object [list [list object $e]]]
-     	set definition "[dotquote $e] \[URL=\"$url\"\];\n";
+        set url [export_vars -base show-object [list [list object $e]]]
+        set definition "[dotquote $e] \[URL=\"$url\"\];\n";
     }
 
     ad_proc dotcode {
-	{-with_children 0}
-	{-with_instance_relations 0} 
-	{-omit_base_classes 1} 
-	{-documented_methods 1}
-	{-current_object ""} 	
-	{-dpi 96} 
-	things
+        {-with_children 0}
+        {-with_instance_relations 0}
+        {-omit_base_classes 1}
+        {-documented_methods 1}
+        {-current_object ""}
+        {-dpi 96}
+        things
     } {
     } {
-	set classes {}
-	set objects {}
-	set iclasses {}
-	set mclasses {}
-	
-	foreach e $things {
+        set classes {}
+        set objects {}
+        set iclasses {}
+        set mclasses {}
+
+        foreach e $things {
             if {![::nsf::is object $e] || ($omit_base_classes && [::nsf::is baseclass $e])} continue
             lappend [expr {[::nsf::is class $e] ? "classes" : "objects"}] $e
-	}
-	set instances ""
-	if {$with_instance_relations} {
+        }
+        set instances ""
+        if {$with_instance_relations} {
             foreach e $things {
                 if {![::nsf::is object $e] || ($omit_base_classes && [::nsf::is baseclass $e])} continue
                 set c [$e info class]
@@ -99,9 +99,9 @@ namespace eval ::xo {
                 if {$c ni $things} {lappend iclasses $c}
                 append instances "[dotquote $e]->[dotquote $c];\n"
             }
-	}
-	set superclasses ""
-	foreach e $classes {
+        }
+        set superclasses ""
+        foreach e $classes {
             if {![::nsf::is object $e]} continue
             set reduced_sc [list]
             foreach sc [::xo::getObjectProperty $e superclass] {
@@ -114,7 +114,7 @@ namespace eval ::xo {
                     append superclasses "[dotquote $e]->[dotquotel $sc];\n"
                 }
             }
-	}
+        }
         set children ""
         set mixins ""
         foreach e $things {
@@ -164,7 +164,7 @@ namespace eval ::xo {
         foreach e $iclasses {
             append ticlasses [dotobject $e]
         }
-        
+
         #label = \".\\n.\\nObject relations of [self]\"
         #edge \[dir=back, constraint=0\] \"::Decorate_Action\" -> \"::Action\";
         set objects  [join [dotquotel $objects] {; }]
