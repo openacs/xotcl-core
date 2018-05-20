@@ -213,8 +213,8 @@ namespace eval ::xo {
     # the sense of http://www.iana.org/assignments/character-sets) is
     # provided by ...
     # 
-    # i. a static, built-in correspondence map: see nsd/encoding.c
-    # ii. an extensible correspondence map (i.e., the ns/charsets
+    # i. A static, built-in correspondence map: see nsd/encoding.c
+    # ii. An extensible correspondence map (i.e., the ns/charsets
     # section in config.tcl).
     #
     # For mapping charset to encoding names, I use
@@ -225,8 +225,8 @@ namespace eval ::xo {
     # issues (non-extensibility from standard configuration sites,
     # incompleteness, redundant thread-local storing, scripted
     # implementation):
-    # 1. tcllib/mime package: ::mime::reversemapencoding()
-    # 2. tdom: tDOM::IANAEncoding2TclEncoding(); see lib/tdom.tcl
+    # 1. Tcllib/mime package: ::mime::reversemapencoding()
+    # 2. Tdom: tDOM::IANAEncoding2TclEncoding(); see lib/tdom.tcl
 
     #
     # RFC 3023 support (at least in my reading) demands the following

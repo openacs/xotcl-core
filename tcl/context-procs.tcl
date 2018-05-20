@@ -165,8 +165,10 @@ namespace eval ::xo {
     $source instvar __caller_parameters
     
     if {![info exists :__including_page]} {
-      # a includelet is called from the toplevel. the actual_query might
-      # be cached, so we reset it here.
+      #
+      # An includelet is called from the toplevel. The actual_query
+      # might be cached, so we reset it here.
+      #
       set :actual_query [::xo::cc actual_query]
     }
 

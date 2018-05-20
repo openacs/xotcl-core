@@ -158,7 +158,7 @@ namespace eval ::xo::db {
       #
       # finally, there might be a view with a nextval
       #
-      ns_log debug "db_nextval: sequence($sequence) is not a real sequence.  perhaps it uses the view hack."
+      ns_log debug "db_nextval: sequence($sequence) is not a real sequence.  Perhaps it uses the view hack."
       set nextval [::xo::dc get_value nextval "select nextval from :sequence"]
     }
     return $nextval
@@ -1340,7 +1340,7 @@ namespace eval ::xo::db {
 
   #
   # The generation of the code interface code is driver specific, since
-  # e.q. dbi supports option "-autonull", which simplified the
+  # e.g. dbi supports option "-autonull", which simplified the
   # interface code significantly
   #
 
@@ -1625,7 +1625,7 @@ namespace eval ::xo::db {
       lappend nonposarg_list $arg
     }
     # When the new method is executed within a contains, -childof is
-    # appended. we have to added it here to avoid complains. xotcl 2.0
+    # appended. We have to added it here to avoid complains. Xotcl 2.0
     # should find better ways to handle contain or the new invocation.
     if {$object_name eq "new"} {lappend nonposarg_list -childof}
     #:log "-- define $object_name $nonposarg_list"
