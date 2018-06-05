@@ -43,7 +43,7 @@ namespace eval ::xo {
         if {[dict get $auth auth_status] ne "ok"} {
           :debug "auth status [dict get $auth auth_status]"
           set :user_id 0
-          throw {AUTH UNAUTHORIZED {unauthorized}} $auth(auth_status)
+          throw {AUTH UNAUTHORIZED {unauthorized}} [dict get $auth auth_status]
         }
       }
       :debug "auth_check user_id='[dict get $auth user_id]'"
