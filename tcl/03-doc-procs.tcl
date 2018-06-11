@@ -511,6 +511,10 @@ ad_library {
   }
 
   :public object method get_object_source {scope obj} {
+    if {![nsf::is object $obj]} {
+      ns_log warning "get_object_source: argument passed as obj is not an object: $obj"
+      return ""
+    }
     set init_block [:get_init_block $scope $obj]
     if {$init_block ne ""} {
       set dummy [:get_doc_block $init_block body]
