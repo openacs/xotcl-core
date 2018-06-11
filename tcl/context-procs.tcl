@@ -201,7 +201,7 @@ namespace eval ::xo {
     }
     if {![info exists ::ad_conn(node_id)]} {
       # 
-      # The following should not be necessary, but is is here for
+      # The following should not be necessary, but is here for
       # cases, where some oacs-code assumes wrongly it is running in a
       # connection thread (e.g. the site master requires to have a
       # node_id and a URL accessible via ad_conn)
