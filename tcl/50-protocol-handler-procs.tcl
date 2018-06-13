@@ -102,7 +102,7 @@ namespace eval ::xo {
 
     #
     # Set common data for all kind of requests. A possible outcome is
-    # that we we cannot proceed (authentication failure), so we have
+    # that we cannot proceed (authentication failure), so we have
     # to trap such cases.
     try {
       :initialize
