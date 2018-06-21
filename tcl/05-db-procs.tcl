@@ -770,9 +770,13 @@ namespace eval ::xo::db {
         -size [parameter::get_from_package_key \
                    -package_key xotcl-core \
                    -parameter XOTclObjectTypeCacheSize \
+                   -default 50000]
+    ns_cache create xotcl_package_cache \
+        -size [parameter::get_from_package_key \
+                   -package_key xotcl-core \
+                   -parameter XOTclPackageCacheSize \
                    -default 10000]
   }
-
 
 
   ad_proc -deprecated has_ltree {} {

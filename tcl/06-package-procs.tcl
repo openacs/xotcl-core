@@ -336,7 +336,7 @@ namespace eval ::xo {
 
     @return folder_id
   } {
-    set folder_id [ns_cache eval xotcl_object_type_cache root_folder-${:id} {
+    set folder_id [ns_cache eval xotcl_package_cache root_folder-${:id} {
       
       set folder_id [::xo::db::CrClass lookup -name $name -parent_id $parent_id]
       if {$folder_id == 0} {
