@@ -1019,8 +1019,8 @@ namespace eval ::xo::db {
         -revision_id $revision_id \
         -publish_status $publish_status \
         -is_latest $is_latest
-    ::xo::clusterwide ns_cache flush xotcl_object_cache ::${:item_id}
-    ::xo::clusterwide ns_cache flush xotcl_object_cache ::$revision_id
+    ::xo::xotcl_object_cache flush ::${:item_id}
+    ::xo::xotcl_object_cache flush ::$revision_id
   }
 
   CrItem ad_instproc update_item_index {} {
@@ -1548,7 +1548,7 @@ namespace eval ::xo::db {
           -folder_id ${:folder_id} \
           -content_types [[self class] set allowed_content_types]
     }
-    ::xo::clusterwide ns_cache flush xotcl_object_cache ::${:parent_id}
+    ::xo::xotcl_object_cache flush ::${:parent_id}
     # who is setting sub_folder_list?
     #db_flush_cache -cache_key_pattern sub_folder_list_*
     return ${:folder_id}
@@ -1626,7 +1626,7 @@ namespace eval ::xo::db {
 
   CrCache instproc delete {-item_id} {
     next
-    ::xo::clusterwide ns_cache flush xotcl_object_cache ::$item_id
+    ::xo::xotcl_object_cache flush ::$item_id
     # we should probably flush as well cached revisions
   }
 
@@ -1697,7 +1697,7 @@ namespace eval ::xo::db {
     # cache only names with IDs
     set obj [self]
     set canonical_name ::[$obj item_id]
-    ::xo::clusterwide ns_cache flush xotcl_object_cache $obj
+    ::xo::xotcl_object_cache flush $obj
     if {$obj eq $canonical_name} {
       # :log "--CACHE saving $obj in cache"
       #
@@ -1719,14 +1719,14 @@ namespace eval ::xo::db {
       #
       # In any case, flush the canonical name.
       #
-      ::xo::clusterwide ns_cache flush xotcl_object_cache $canonical_name
+      ::xo::xotcl_object_cache flush $canonical_name
     }
     # To be on he safe side, delete the revison as well from the
     # cache, if possible.
     if {[$obj exists revision_id]} {
       set revision_name ::[$obj revision_id]
       if {$obj ne $revision_name} {
-        ::xo::clusterwide ns_cache flush xotcl_object_cache $revision_name
+        ::xo::xotcl_object_cache flush $revision_name
       }
     }
   }
@@ -1755,7 +1755,7 @@ namespace eval ::xo::db {
     return $item_id
   }
   CrCache::Item instproc delete args {
-    ::xo::clusterwide ns_cache flush xotcl_object_cache [self]
+    ::xo::xotcl_object_cache flush [self]
     # :msg "delete flush xotcl_object_type_cache ${:parent_id}-[:name]"
     ::xo::clusterwide ns_cache flush xotcl_object_type_cache ${:parent_id}-[:name]
     next

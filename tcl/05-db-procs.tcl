@@ -721,7 +721,48 @@ namespace eval ::xo::db {
   ::xo::db::select_driver
 
 
+  nx::Class create ::xo::Cache {
+    #
+    # Provide a simple class to generalize cache management to extend
+    # cache primitiva (in the future, e.g. for cache partitioning).
+    #
+    :property parameter:required
+    :property package_key:required
+    :property maxentry:integer
+    :property {default_size:integer 10000}
+    
+    :public method flush {key} {
+      ::xo::clusterwide ns_cache flush ${:name} $key
+    }
+    
+    :public method init {} {
+      set :name [namespace tail [current]]
+      
+      if {[info commands ns_cache_create] ne ""} {
+        #
+        # Version for NaviServer, which allows us to provide maximum
+        # size for a single cache entry.
+        #
+        ns_cache_create \
+            {*}[expr {[info exists :maxentry] ? "-maxentry ${:maxentry}" : ""}] \
+            ${:name} \
+            [parameter::get_from_package_key \
+                 -package_key ${:package_key} \
+                 -parameter ${:parameter} \
+                 -default ${:default_size}]
+      } else {
+        ns_cache create \
+            ${:name} \
+            -size [parameter::get_from_package_key \
+                       -package_key ${:package_key} \
+                       -parameter ${:parameter} \
+                       -default ${:default_size}]        
+      }
+    }
+  }
+  
 
+  
   ##########################################################################
   #
   # The ns_caches below should exist, before any cached objects are
@@ -735,7 +776,7 @@ namespace eval ::xo::db {
   # already. This change makes the object-cache-init.tcl
   # obsolete.
   #
-  # Unfortunately, ns_cache has no command to check, whether
+  # Unfortunately, AOLserver's ns_cache has no command to check, whether
   # a cache exists, so we use the little catch below to check.
   #
   try {
@@ -743,50 +784,34 @@ namespace eval ::xo::db {
   } on error {errorMsg} {
     ns_log notice "xotcl-core: creating xotcl-object caches"
 
-    if {[info commands ns_cache_create] ne ""} {
-      #
-      # Version for NaviServer, which allows us to provide
-      # maximum size for a single cache entry.
-      #
-      ns_cache_create \
-          -maxentry 200000 \
-          xotcl_object_cache \
-          [parameter::get_from_package_key \
-               -package_key xotcl-core \
-               -parameter XOTclObjectCacheSize \
-               -default 400000]
-    } else {
-      #
-      # Version for AOLserver
-      #
-      ns_cache create xotcl_object_cache \
-          -size [parameter::get_from_package_key \
-                     -package_key xotcl-core \
-                     -parameter XOTclObjectCacheSize \
-                     -default 400000]
-    }
+    ::xo::Cache create ::xo::xotcl_object_cache \
+        -maxentry 200000 \
+        -package_key xotcl-core \
+        -parameter XOTclObjectCacheSize \
+        -default_size 400000
 
-    ns_cache create xotcl_object_type_cache \
-        -size [parameter::get_from_package_key \
-                   -package_key xotcl-core \
-                   -parameter XOTclObjectTypeCacheSize \
-                   -default 50000]
-    ns_cache create xotcl_package_cache \
-        -size [parameter::get_from_package_key \
-                   -package_key xotcl-core \
-                   -parameter XOTclPackageCacheSize \
-                   -default 10000]
+    ::xo::Cache create xotcl_object_type_cache \
+        -package_key xotcl-core \
+        -parameter XOTclObjectTypeCacheSize \
+        -default_size 50000
+
+    ::xo::Cache create xotcl_package_cache \
+        -package_key xotcl-core \
+        -parameter XOTclPackageCacheSize \
+        -default_size 10000    
   }
 
 
   ad_proc -deprecated has_ltree {} {
     Check, whether ltree is available (postgres only)
+    @see ::xo::dc has_ltree
   } {
     ::xo::dc has_ltree
   }
 
   ad_proc -deprecated has_hstore {} {
     Check, whether hstore is available (postgres only)
+    @see ::xo::dc has_hstore
   } {
     ::xo::dc has_hstore
   }
