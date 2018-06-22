@@ -720,6 +720,11 @@ namespace eval ::xo::db {
 
   ::xo::db::select_driver
 
+  ##########################################################################
+  #
+  # Generic Cache class
+  #
+  ##########################################################################
 
   nx::Class create ::xo::Cache {
     #
@@ -731,8 +736,25 @@ namespace eval ::xo::db {
     :property maxentry:integer
     :property {default_size:integer 10000}
 
+    :method cache_name {key} {
+      #
+      # more or less dummy function, can be refined.
+      #
+      return ${:name}
+    }
+
+    :method get_size {} {
+      #
+      # Determine the cache size depending on configuration variables.
+      #
+      return [parameter::get_from_package_key \
+                  -package_key ${:package_key} \
+                  -parameter "${:parameter}Size" \
+                  -default ${:default_size}]
+    }
+
     :public method flush {key} {
-      ::xo::clusterwide ns_cache flush ${:name} $key
+      ::xo::clusterwide ns_cache flush [:cache_name $key] $key
     }
 
     if {[info commands ns_cache_eval] ne ""} {
@@ -740,49 +762,72 @@ namespace eval ::xo::db {
       # NaviServer variant
       #
       :public method eval {key body} {
-        :uplevel [list ns_cache_eval -- ${:name} $key $body]
+        :uplevel [list ns_cache_eval -- [:cache_name $key] $key $body]
       }
       :public method set {key value} {
-        :uplevel [list ns_cache_eval -force -- ${:name} $key [list set _ $value]]
+        :uplevel [list ns_cache_eval -force -- [:cache_name $key] $key [list set _ $value]]
       }
+      :method cache_create {name size} {
+        ns_cache_create \
+            {*}[expr {[info exists :maxentry] ? "-maxentry ${:maxentry}" : ""}] \
+            $name $size
+      }
+
     } else {
       #
-      # AOLerver variant
+      # AOLserver variant
       #
       :public method eval {key body} {
-        :uplevel [list ns_cache eval ${:name} $key $body]
+        :uplevel [list ns_cache eval [:cache_name $key] $key $body]
       }
       :public method set {key value} {
-        :uplevel [list ns_cache set ${:name} $key $value]
+        :uplevel [list ns_cache set [:cache_name $key] $key $value]
+      }
+      :method cache_create {name size} {
+        ns_cache create $name -size $size
       }
     }
 
     :public method init {} {
       set :name [namespace tail [current]]
-
-      if {[info commands ns_cache_create] ne ""} {
-        #
-        # Version for NaviServer, which allows us to provide maximum
-        # size for a single cache entry.
-        #
-        ns_cache_create \
-            {*}[expr {[info exists :maxentry] ? "-maxentry ${:maxentry}" : ""}] \
-            ${:name} \
-            [parameter::get_from_package_key \
-                 -package_key ${:package_key} \
-                 -parameter ${:parameter} \
-                 -default ${:default_size}]
-      } else {
-        ns_cache create \
-            ${:name} \
-            -size [parameter::get_from_package_key \
-                       -package_key ${:package_key} \
-                       -parameter ${:parameter} \
-                       -default ${:default_size}]
-      }
+      :cache_create ${:name} [:get_size]
     }
   }
 
+  ##########################################################################
+  #
+  # Simple Partitioned Cache class
+  #
+  # Parititioning is based on a modulo function based onm the key,
+  # which has to be numeric. So far, no partitioning spanning methods
+  # are provided.
+  #
+  ##########################################################################
+
+  nx::Class create ::xo::PartitionedCache -superclasses ::xo::Cache {
+    :property {partitions:integer 1}
+
+    :protected method cache_name {key:integer} {
+      return ${:name}-[expr {$key % ${:partitions}}]
+    }
+
+    :public method init {} {
+      set :name [namespace tail [current]]
+      set partitions [parameter::get_from_package_key \
+                          -package_key ${:package_key} \
+                          -parameter "${:parameter}Partitions" \
+                          -default ${:partitions}]
+      #
+      # Create multiple separate caches depending on the
+      # partitions. This requires to have a partitioning function
+      # that determines the partition number from the key.
+      #
+      set size [expr {[:get_size] / ${:partitions}}]
+      for {set i 0} {$i < ${:partitions}} {incr i} {
+        :cache_create ${:name}-$i $size
+      }
+    }
+  }
 
 
   ##########################################################################
@@ -806,22 +851,23 @@ namespace eval ::xo::db {
   } on error {errorMsg} {
     ns_log notice "xotcl-core: creating xotcl-object caches"
 
-    ::xo::Cache create ::xo::xotcl_object_cache \
+    ::xo::PartitionedCache create ::xo::xotcl_object_cache \
         -maxentry 200000 \
         -package_key xotcl-core \
-        -parameter XOTclObjectCacheSize \
-        -default_size 400000
+        -parameter XOTclObjectCache \
+        -default_size 400000 \
+        -partitions 2
     ns_log notice "... created ::xo::xotcl_object_cache"
 
     ::xo::Cache create ::xo::xotcl_object_type_cache \
         -package_key xotcl-core \
-        -parameter XOTclObjectTypeCacheSize \
+        -parameter XOTclObjectTypeCache \
         -default_size 50000
     ns_log notice "... created ::xo::xotcl_object_type_cache"
-    
+
     ::xo::Cache create ::xo::xotcl_package_cache \
         -package_key xotcl-core \
-        -parameter XOTclPackageCacheSize \
+        -parameter XOTclPackageCache \
         -default_size 10000
     ns_log notice "... created ::xo::xotcl_package_cache"
   }
