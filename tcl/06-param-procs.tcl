@@ -159,13 +159,11 @@ namespace eval ::xo {
   #
   # Methods on the parameter class object
   #
-  parameter proc get_package_key_from_id {
-                                          -package_id:required
-                                        } {
+  parameter proc get_package_key_from_id {-package_id:required} {
     return [apm_package_key_from_id $package_id]
   }
   parameter proc get_package_id_from_package_key {-package_key:required} {
-    return [ns_cache eval xotcl_object_type_cache package_id-$package_key {
+    return [ns_cache eval xotcl_package_cache package_id-$package_key {
       ::xo::dc get_value get_package_id \
           [::xo::dc select -vars package_id -from apm_packages \
                -where "package_key = :package_key" -limit 1]

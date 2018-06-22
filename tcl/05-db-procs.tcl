@@ -110,7 +110,7 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::postgresql instproc has_ltree {} {
-    ::xo::xotcl_object_type_cache eval [self]::has_ltree {
+    ::xo::xotcl_package_cache eval [self]::has_ltree {
       if {[:get_value check_ltree "select count(*) from pg_proc where proname = 'ltree_in'"] > 0} {
         return 1
       }
@@ -118,7 +118,7 @@ namespace eval ::xo::db {
     }
   }
   ::xo::db::postgresql instproc has_hstore {} {
-    ::xo::xotcl_object_type_cache eval [self]::has_hstore {
+    ::xo::xotcl_package_cache eval [self]::has_hstore {
       if {[:get_value check_ltree "select count(*) from pg_proc where proname = 'hstore_in'"] > 0} {
         return 1
       }
@@ -738,7 +738,8 @@ namespace eval ::xo::db {
 
     :method cache_name {key} {
       #
-      # more or less dummy function, can be refined.
+      # More or less dummy function, can be refined, completely
+      # ignores "key".
       #
       return ${:name}
     }
@@ -753,19 +754,32 @@ namespace eval ::xo::db {
                   -default ${:default_size}]
     }
 
-    :public method flush {key} {
-      ::xo::clusterwide ns_cache flush [:cache_name $key] $key
+    :public method flush {{-tree_key} key} {
+      if {![info exists tree_key]} {set tree_key $key}
+      ::xo::clusterwide ns_cache flush [:cache_name $tree_key] $key
     }
 
     if {[info commands ns_cache_eval] ne ""} {
       #
       # NaviServer variant
       #
-      :public method eval {key body} {
-        :uplevel [list ns_cache_eval -- [:cache_name $key] $key $body]
+      :public method eval {{-tree_key} key body} {
+        if {![info exists tree_key]} {set tree_key $key}
+        try {
+          :uplevel [list ns_cache_eval -- [:cache_name $tree_key] $key $body]
+        } on break {r} {
+          ns_log notice "====================== [self] $key -> break -> <$r>"
+          return 0
+        } on ok {r} {
+          return $r
+        }
       }
       :public method set {key value} {
-        :uplevel [list ns_cache_eval -force -- [:cache_name $key] $key [list set _ $value]]
+        if {![info exists tree_key]} {set tree_key $key}
+        :uplevel [list ns_cache_eval -force -- [:cache_name $tree_key] $key [list set _ $value]]
+      }
+      :public method flush_pattern {{-tree_key ""} pattern} {
+        return [ns_cache_flush -glob [:cache_name $tree_key] $pattern]
       }
       :method cache_create {name size} {
         ns_cache_create \
@@ -777,11 +791,24 @@ namespace eval ::xo::db {
       #
       # AOLserver variant
       #
-      :public method eval {key body} {
-        :uplevel [list ns_cache eval [:cache_name $key] $key $body]
+      :public method eval {{-tree_key} key body} {
+        if {![info exists tree_key]} {set tree_key $key}
+        try {
+          :uplevel [list ns_cache eval [:cache_name $tree_key] $key $body]
+        } on break {r} {
+          return 0
+        } on ok {r} {
+          return $r
+        }
       }
-      :public method set {key value} {
-        :uplevel [list ns_cache set [:cache_name $key] $key $value]
+      :public method set {{-tree_key} key value} {
+        if {![info exists tree_key]} {set tree_key $key}
+        :uplevel [list ns_cache set [:cache_name $tree_key] $key $value]
+      }
+      :public method flush_pattern {{-tree_key ""} pattern} {
+        foreach name [ns_cache names [:cache_name $tree_key] $pattern] {
+          :flush -tree_key $tree_key $name
+        }
       }
       :method cache_create {name size} {
         ns_cache create $name -size $size
@@ -798,9 +825,9 @@ namespace eval ::xo::db {
   #
   # Simple Partitioned Cache class
   #
-  # Parititioning is based on a modulo function based onm the key,
-  # which has to be numeric. So far, no partitioning spanning methods
-  # are provided.
+  # Partitioning is based on a modulo function based on the key, which
+  # has to be numeric. So far, no partitioning-spanning methods are
+  # provided.
   #
   ##########################################################################
 
@@ -819,13 +846,43 @@ namespace eval ::xo::db {
                           -default ${:partitions}]
       #
       # Create multiple separate caches depending on the
-      # partitions. This requires to have a partitioning function
-      # that determines the partition number from the key.
+      # partitions. This requires to have a partitioning function that
+      # determines the partition number from the key.
       #
       set size [expr {[:get_size] / ${:partitions}}]
       for {set i 0} {$i < ${:partitions}} {incr i} {
         :cache_create ${:name}-$i $size
       }
+    }
+  }
+
+
+  ##########################################################################
+  #
+  # Tree Partitioned Cache class
+  #
+  # Tree Partitioning is based on a modulo function using a special
+  # tree_key, which has to be numeric. So far, no
+  # partitioning-spanning methods are provided.
+  #
+  ##########################################################################
+
+  nx::Class create ::xo::TreePartitionedCache -superclasses ::xo::Cache {
+    :property {partitions:integer 1}
+
+    :public method flush_pattern {{-tree_key:integer,required} pattern} {
+      #
+      # flush just in the determined partition
+      #
+      next
+    }
+
+    :public method flush {{-tree_key:integer,required} key} {
+      next
+    }
+
+    :public method set {{-tree_key:integer,required} key value} {
+      next
     }
   }
 
@@ -859,7 +916,7 @@ namespace eval ::xo::db {
         -partitions 2
     ns_log notice "... created ::xo::xotcl_object_cache"
 
-    ::xo::Cache create ::xo::xotcl_object_type_cache \
+    ::xo::TreePartitionedCache create ::xo::xotcl_object_type_cache \
         -package_key xotcl-core \
         -parameter XOTclObjectTypeCache \
         -default_size 50000
@@ -1164,7 +1221,7 @@ namespace eval ::xo::db {
 
     @return object_type, typically an XOTcl class
   } {
-    xo::xotcl_object_type_cache eval $id {
+    xo::xotcl_object_type_cache eval -tree_key $id $id {
       ::xo::dc 1row get_class "select object_type from acs_objects where object_id=:id"
       return $object_type
     }]

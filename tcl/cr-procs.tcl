@@ -1,5 +1,5 @@
 ::xo::library doc {
-  XOTcl for the Content Repository 
+  XOTcl for the Content Repository
 
   @author Gustaf Neumann
   @creation-date 2007-08-13
@@ -19,28 +19,28 @@ namespace eval ::xo::db {
         {folder_id -100}
         {non_cached_instance_var_patterns {__*}}
       } -ad_doc {
-        <p>The meta class CrClass serves for a class of applications that mostly 
-        store information in the content repository and that use a few 
-        attributes adjoining this information. The class handles the open 
-        acs object_type creation and the automatic creation of the 
+        <p>The meta class CrClass serves for a class of applications that mostly
+        store information in the content repository and that use a few
+        attributes adjoining this information. The class handles the open
+        acs object_type creation and the automatic creation of the
         necessary tables based on instances of this meta-class.</p>
-        
-        <p>The definition of new types is handled in the constructor of 
-        CrType through the method 
-        <a href='#instproc-create_object_type'>create_object_type</a>, 
+
+        <p>The definition of new types is handled in the constructor of
+        CrType through the method
+        <a href='#instproc-create_object_type'>create_object_type</a>,
         the removal of the
-        object type is handled through the method 
+        object type is handled through the method
         <a href='#instproc-drop_object_type'>drop_object_type</a>
-        (requires that 
+        (requires that
          all instances of this type are deleted).</p>
 
-        <p>Each content item can be retrieved either through the 
-        general method 
+        <p>Each content item can be retrieved either through the
+        general method
         <a href='/api-doc/proc-view?proc=::xo::db::CrClass+proc+get_instance_from_db'>
-        CrClass get_instance_from_db</a> or through the "get_instance_from_db" method of 
+        CrClass get_instance_from_db</a> or through the "get_instance_from_db" method of
         every subclass of CrItem.
 
-        <p>This Class is a meta-class providing methods for Classes 
+        <p>This Class is a meta-class providing methods for Classes
         managing CrItems.</p>
       }
 
@@ -57,24 +57,24 @@ namespace eval ::xo::db {
     @return object_type typically an XOTcl class
   } {
     #
-    # Use a request-spanning cache. When the type whould changes, we
-    # would require xo::broadcast or server restart.
+    # Use a request-spanning cache. When the object_type would change,
+    # we require xo::broadcast or server restart.
     #
     set key ::xo::object_type($item_id,$revision_id)
     if {[info exists $key]} {
       return [set $key]
     }
-    set $key [ns_cache eval xotcl_object_type_cache \
-                  [expr {$item_id ? $item_id : $revision_id}] {
-                    if {$item_id} {
-                      ::xo::dc 1row -prepare integer get_class_from_item_id \
-                          "select content_type as object_type from cr_items where item_id=:item_id"
-                    } else {
-                      ::xo::dc 1row -prepare integer get_class_from_revision_id \
-                          "select object_type from acs_objects where object_id=:revision_id"
-                    }
-                    return $object_type
-                  }]
+    set entry_key [expr {$item_id ? $item_id : $revision_id}]
+    set $key [xo::xotcl_object_type_cache eval -tree_key $entry_key $entry_key {
+      if {$item_id} {
+        ::xo::dc 1row -prepare integer get_class_from_item_id \
+            "select content_type as object_type from cr_items where item_id=:item_id"
+      } else {
+        ::xo::dc 1row -prepare integer get_class_from_revision_id \
+            "select object_type from acs_objects where object_id=:revision_id"
+      }
+      return $object_type
+    }]
   }
 
   CrClass ad_proc get_instance_from_db {
@@ -82,12 +82,12 @@ namespace eval ::xo::db {
     {-revision_id:integer 0}
     {-initialize:boolean true}
   } {
-    Instantiate the live revision or the specified revision of an 
-    CrItem. The XOTcl object is destroyed automatically on cleanup 
+    Instantiate the live revision or the specified revision of an
+    CrItem. The XOTcl object is destroyed automatically on cleanup
     (end of a connection request).
 
     @return fully qualified object containing the attributes of the CrItem
-  } { 
+  } {
     set object_type [:get_object_type -item_id $item_id -revision_id $revision_id]
     set class [::xo::db::Class object_type_to_class $object_type]
     return [$class get_instance_from_db -item_id $item_id -revision_id $revision_id -initialize $initialize]
@@ -97,11 +97,11 @@ namespace eval ::xo::db {
     -item_id:required
   } {
     Get the parent_id of a content item either from an already instantiated
-    object or from the database without instantiating it. If item_id is not 
+    object or from the database without instantiating it. If item_id is not
     a valid item_id, we throw an error.
 
     @return parent_id
-  } { 
+  } {
     # TODO: the following line is deactivated, until we get rid of the "folder object" in xowiki
     #if {[:isobject ::$item_id]} {return [::$item_id parent_id]}
     ::xo::dc 1row -prepare integer get_parent "select parent_id from cr_items where item_id = :item_id"
@@ -111,12 +111,12 @@ namespace eval ::xo::db {
   CrClass ad_proc get_name {
     -item_id:required
   } {
-    Get the name of a content item either from an already instantiated object 
-    or from the database without instantiating it. If item_id is not a valid 
+    Get the name of a content item either from an already instantiated object
+    or from the database without instantiating it. If item_id is not a valid
     item_id, we throw an error.
 
     @return parent_id
-  } { 
+  } {
     # TODO: the following line is deactivated, until we get rid of the "folder object" in xowiki
     #if {[:isobject ::$item_id]} {return [::$item_id parent_id]}
     ::xo::dc 1row -prepare integer get_name "select name from cr_items where item_id = :item_id"
@@ -126,8 +126,8 @@ namespace eval ::xo::db {
   CrClass ad_proc get_child_item_ids {
     -item_id:required
   } {
-    Return a list of content items having the provided item_id as 
-    direct or indirect parent. The method returns recursively all 
+    Return a list of content items having the provided item_id as
+    direct or indirect parent. The method returns recursively all
     item_ids.
 
     @return list of item_ids
@@ -151,15 +151,15 @@ namespace eval ::xo::db {
     @return item_id
   } {
     return [::xo::dc get_value entry_exists_select {
-      select item_id from cr_items 
+      select item_id from cr_items
       where name = :name and parent_id = :parent_id
       and content_type like :content_type
     } 0]
   }
-  
+
 
   CrClass ad_proc delete {
-    -item_id 
+    -item_id
   } {
     Delete a CrItem in the database
   } {
@@ -176,14 +176,14 @@ namespace eval ::xo::db {
 
   #
   # Deal with locking requirements
-  # 
+  #
   if {[db_driverkey ""] eq "postgresql"} {
     #
     # PostgreSQL
     #
     set pg_version [::xo::dc get_value get_version {
       select substring(version() from 'PostgreSQL #"[0-9]+.[0-9]+#"%' for '#')   }]
-    ns_log notice "--Postgres Version $pg_version"      
+    ns_log notice "--Postgres Version $pg_version"
     if {$pg_version < 8.2} {
       ns_log notice "--Postgres Version $pg_version older than 8.2, use locks"
       #
@@ -225,7 +225,7 @@ namespace eval ::xo::db {
       }
     }
   }
-  
+
 
   #
   # database version (Oracle/PG) independent code
@@ -233,9 +233,9 @@ namespace eval ::xo::db {
 
 
   CrClass set common_query_atts {
-    object_type  
+    object_type
     creation_user creation_date
-    publish_status last_modified 
+    publish_status last_modified
   }
   if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} {
     CrClass lappend common_query_atts package_id
@@ -251,12 +251,12 @@ namespace eval ::xo::db {
   } {
     Unregister the object type from all folders on the system
 
-    @param include_subtypes Boolean value (t/f) to flag whether the 
+    @param include_subtypes Boolean value (t/f) to flag whether the
     operation should be applied on subtypes as well
   } {
     set object_type ${:object_type}
-    xo::dc foreach all_folders { 
-      select folder_id from cr_folder_type_map 
+    xo::dc foreach all_folders {
+      select folder_id from cr_folder_type_map
       where content_type = :object_type
     } {
       ::xo::db::sql::content_folder unregister_content_type \
@@ -271,10 +271,10 @@ namespace eval ::xo::db {
     -folder_id
     operation
   } {
-    register the current object type for folder_id. If folder_id 
+    register the current object type for folder_id. If folder_id
     is not specified, use the instvar of the class instead.
 
-    @param include_subtypes Boolean value (t/f) to flag whether the 
+    @param include_subtypes Boolean value (t/f) to flag whether the
     operation should be applied on subtypes as well
   } {
     if {$operation ne "register" && $operation ne "unregister"} {
@@ -311,7 +311,7 @@ namespace eval ::xo::db {
           -table_name    ${:table_name} \
           -id_column     ${:id_column} \
           -name_method   ${:name_method}
-      
+
       :folder_type register
     }
   }
@@ -335,7 +335,7 @@ namespace eval ::xo::db {
 
   CrClass ad_proc require_folder_object {
     -folder_id
-    -package_id 
+    -package_id
   } {
     Dummy stub; let specializations define it
   } {
@@ -406,12 +406,12 @@ namespace eval ::xo::db {
       }
     }
     :remember_long_text_slots
-    
+
     if {![::xo::db::Class object_type_exists_in_db -object_type ${:object_type}]} {
       :create_object_type
     }
   }
-  
+
 
   CrClass ad_instproc fetch_object {
     -item_id:required
@@ -463,7 +463,7 @@ namespace eval ::xo::db {
           #ns_log notice [$slot serialize]
           lappend atts "n.data as text"
         }
-        
+
         ::xo::db::CrItem::slot::name {
           lappend atts i.[$slot column_name]
         }
@@ -482,7 +482,7 @@ namespace eval ::xo::db {
                where  n.revision_id = :revision_id \
                and    i.item_id = n.item_id \
                and    o.object_id = n.revision_id"]
-        
+
         set selection [db_exec 1row $db dbqd..cr-procs-fetch_object-from-revision_id $sql]
       }
       $object mset [ns_set array $selection]
@@ -494,9 +494,9 @@ namespace eval ::xo::db {
       # case of troubles, comment next line out.
       #
       lappend atts "n.creation_user as modifying_user"
-      
+
       $object set item_id $item_id
-     
+
       $object db_1row [:qn fetch_from_view_item_id] "\
        select [join $atts ,], i.parent_id \
        from   ${:table_name}i n, cr_items i, acs_objects o \
@@ -526,7 +526,7 @@ namespace eval ::xo::db {
     {-item_id 0}
     {-revision_id 0}
     {-initialize:boolean true}
-  } { 
+  } {
     Retrieve either the live revision or a specified revision
     of a content item with all attributes into a newly created object.
     The retrieved attributes are stored in the instance variables in
@@ -549,7 +549,7 @@ namespace eval ::xo::db {
 
   CrClass ad_instproc new_persistent_object {-package_id -creation_user -creation_ip args} {
     Create a new content item of the actual class,
-    configure it with the given arguments and 
+    configure it with the given arguments and
     insert it into the database.  The XOTcl object is
     destroyed automatically on cleanup (end of a connection request).
 
@@ -574,7 +574,7 @@ namespace eval ::xo::db {
 
   CrClass ad_instproc delete {
     -item_id:required
-  } { 
+  } {
     Delete a content item from the content repository.
     @param item_id id of the item to be deleted
   } {
@@ -599,7 +599,7 @@ namespace eval ::xo::db {
   } {
     returns the SQL-query to select the CrItems of the specified object_type
     @param select_attributes attributes for the sql query to be retrieved, in addition
-    to item_id, name, publish_status, object_type, and package_id 
+    to item_id, name, publish_status, object_type, and package_id
     which are always returned
     @param orderby for ordering the solution set
     @param where_clause clause for restricting the answer set
@@ -615,9 +615,9 @@ namespace eval ::xo::db {
     if {![info exists parent_id]} {set parent_id $folder_id}
 
     if {$base_table eq "cr_revisions"} {
-      set attributes [list ci.item_id ci.name ci.publish_status acs_objects.object_type acs_objects.package_id] 
+      set attributes [list ci.item_id ci.name ci.publish_status acs_objects.object_type acs_objects.package_id]
     } else {
-      set attributes [list bt.item_id ci.name ci.publish_status bt.object_type "bt.object_package_id as package_id"] 
+      set attributes [list bt.item_id ci.name ci.publish_status bt.object_type "bt.object_package_id as package_id"]
     }
     foreach a $select_attributes {
       if {$a eq "title"} {set a bt.title}
@@ -632,7 +632,7 @@ namespace eval ::xo::db {
     } else {
       set attribute_selection [join $attributes ,]
     }
-    
+
     set cond [list]
     if {$type_selection_clause ne ""} {lappend cond $type_selection_clause}
     if {$where_clause ne ""}          {lappend cond $where_clause}
@@ -685,9 +685,9 @@ namespace eval ::xo::db {
     {-base_table "cr_revisions"}
     {-initialize true}
   } {
-    Returns a set (ordered composite) of the answer tuples of 
+    Returns a set (ordered composite) of the answer tuples of
     an 'instance_select_query' with the same attributes.
-    The tuples are instances of the class, on which the 
+    The tuples are instances of the class, on which the
     method was called.
   } {
     set s [:instantiate_objects -sql \
@@ -751,7 +751,7 @@ namespace eval ::xo::db {
             -create_acs_attribute false
       } \
       -parameter {
-        package_id 
+        package_id
         {parent_id -100}
         {publish_status ready}
       }
@@ -765,7 +765,7 @@ namespace eval ::xo::db {
   if {[db_driverkey ""] eq "postgresql"} {
     #
     # PostgreSQL
-    # 
+    #
 
     #
     # INSERT statements differ between PostgreSQL and Oracle
@@ -777,7 +777,7 @@ namespace eval ::xo::db {
     }
 
     CrItem instproc fix_content {revision_id content} {
-      [:info class] instvar storage_type 
+      [:info class] instvar storage_type
       # :my msg "--long_text_slots: [[:info class] array get long_text_slots]"
       # foreach {slot_name slot} [[:info class] array get long_text_slots] {
       #   set cls [$slot domain]
@@ -793,11 +793,11 @@ namespace eval ::xo::db {
 
     CrItem instproc update_content {revision_id content} {
       #
-      # This method can be use to update the content field (only this) of 
+      # This method can be use to update the content field (only this) of
       # an content item without creating a new revision. This works
       # currently only for storage_type == "text".
       #
-      [:info class] instvar storage_type 
+      [:info class] instvar storage_type
       if {$storage_type eq "file"} {
         :log "--update_content not implemented for type file"
       } else {
@@ -832,7 +832,7 @@ namespace eval ::xo::db {
 
       foreach a $atts v $vars {
         #
-        # "text" and long_text_slots are handled in Oracle 
+        # "text" and long_text_slots are handled in Oracle
         # via separate update statement.
         #
         if {$a eq "text" || [info exists :long_text_slots($a)]} continue
@@ -864,7 +864,7 @@ namespace eval ::xo::db {
 
     CrItem instproc update_content {revision_id content} {
       #
-      # This method can be used to update the content field (only this) of 
+      # This method can be used to update the content field (only this) of
       # an content item without creating a new revision. This works
       # currently only for storage_type == "text".
       #
@@ -893,17 +893,17 @@ namespace eval ::xo::db {
       }
     }
   }
-  
+
   CrItem instproc update_revision {{-quoted false} revision_id attribute value} {
     #
-    # This method can be use to update arbitrary fields of 
+    # This method can be use to update arbitrary fields of
     # an revision.
     #
     if {$quoted} {set val $value} {set val :value}
     ::xo::dc dml update_content "update cr_revisions set $attribute = $val \
         where revision_id = :revision_id"
   }
-  
+
   CrItem instproc current_user_id {} {
     if {[:isobject ::xo::cc]} {return [::xo::cc user_id]}
     if {[ad_conn isconnected]}  {return [ad_conn user_id]}
@@ -911,11 +911,11 @@ namespace eval ::xo::db {
   }
 
   CrItem ad_instproc save {
-    -modifying_user 
-    {-live_p:boolean true} 
+    -modifying_user
+    {-live_p:boolean true}
     {-use_given_publish_date:boolean false}
   } {
-    Updates an item in the content repository. We insert a new revision instead of 
+    Updates an item in the content repository. We insert a new revision instead of
     changing the current revision.
     @param modifying_user
     @param live_p make this revision the live revision
@@ -959,7 +959,7 @@ namespace eval ::xo::db {
     } else {
       set publish_date_flag ""
     }
-    
+
     ::xo::dc transaction {
       [:info class] instvar storage_type
       set revision_id [xo::dc nextval acs_object_id_seq]
@@ -1029,11 +1029,11 @@ namespace eval ::xo::db {
   } {
     next
   }
-  
+
   CrItem ad_instproc save_new {
-    -package_id 
-    -creation_user 
-    -creation_ip 
+    -package_id
+    -creation_user
+    -creation_ip
     {-live_p:boolean true}
     {-use_given_publish_date:boolean false}
   } {
@@ -1042,9 +1042,9 @@ namespace eval ::xo::db {
     @param creation_user user_id if the creating user
     @param live_p make this revision the live revision
   } {
-    
+
     set __class [:info class]
-    
+
     if {![info exists package_id] && [info exists :package_id]} {
       set package_id ${:package_id}
     }
@@ -1066,7 +1066,7 @@ namespace eval ::xo::db {
       lappend __atts [$__slot column_name]
       lappend __vars $__slot_name
     }
-    
+
     if {$use_given_publish_date} {
       if {"publish_date" ni $__atts} {
         set publish_date ${:publish_date}
@@ -1086,11 +1086,11 @@ namespace eval ::xo::db {
 
       if {![info exists :name] || ${:name} eq ""} {
         # we have an autonamed item, use a unique value for the name
-        set :name [expr {[info exists :__autoname_prefix] ? 
+        set :name [expr {[info exists :__autoname_prefix] ?
                          "${:__autoname_prefix}$revision_id" : $revision_id}]
       }
       if {$title eq ""} {
-        set title [expr {[info exists :__title_prefix] ? 
+        set title [expr {[info exists :__title_prefix] ?
                          "${:__title_prefix} (${:name})" : ${:name}}]
       }
 
@@ -1104,7 +1104,7 @@ namespace eval ::xo::db {
                            -filename  ${:name} \
                            -file      ${:import_file}]
       }
-      
+
       set :item_id [::xo::db::sql::content_item new \
                         -name            ${:name} \
                         -parent_id       ${:parent_id} \
@@ -1119,7 +1119,7 @@ namespace eval ::xo::db {
                         -storage_type    $storage_type \
                         -package_id      $package_id \
                         -with_child_rels f]
-      
+
       if {$storage_type eq "file"} {
         set text [cr_create_content_file ${:item_id} $revision_id ${:import_file}]
       }
@@ -1143,7 +1143,7 @@ namespace eval ::xo::db {
     }
 
     :db_1row [:qn get_dates] {
-      select creation_date, last_modified 
+      select creation_date, last_modified
       from acs_objects where object_id = :revision_id
     }
     set :object_id ${:item_id}
@@ -1151,7 +1151,7 @@ namespace eval ::xo::db {
   }
 
   CrItem ad_instproc delete {} {
-    Delete the item from the content repository with the item_id taken from the 
+    Delete the item from the content repository with the item_id taken from the
     instance variable.
   } {
     # delegate deletion to the class
@@ -1159,7 +1159,7 @@ namespace eval ::xo::db {
   }
 
   CrItem ad_instproc rename {-old_name:required -new_name:required} {
-    Rename a content item 
+    Rename a content item
   } {
     set item_id ${:item_id}
     ::xo::dc dml update_rename \
@@ -1193,7 +1193,7 @@ namespace eval ::xo::db {
           AnchorField author -label [_ file-storage.Author]
           Field content_size -label [_ file-storage.Size] -html {align right}
           Field last_modified_ansi -label [_ file-storage.Last_Modified]
-          Field description -label [_ file-storage.Version_Notes] 
+          Field description -label [_ file-storage.Version_Notes]
           if {[acs_user::site_wide_admin_p]} {AnchorField show -label ""}
           ImageAnchorField live_revision -label [_ xotcl-core.live_revision] \
               -src /resources/acs-subsite/radio.gif \
@@ -1218,10 +1218,10 @@ namespace eval ::xo::db {
                         r.content_length,\
                         content_revision__get_number(r.revision_id) as version_number " \
                  -from  "cr_items ci, cr_revisions r, acs_objects o" \
-                 -where "ci.item_id = :page_id and r.item_id = ci.item_id and o.object_id = r.revision_id 
+                 -where "ci.item_id = :page_id and r.item_id = ci.item_id and o.object_id = r.revision_id
                          and acs_permission__permission_p(r.revision_id, :user_id, 'read')" \
                  -orderby "r.revision_id desc"]
-    
+
     ::xo::dc foreach revisions_select $sql {
       if {$content_length < 1024} {
         if {$content_length eq ""} {set content_length 0}
@@ -1229,9 +1229,9 @@ namespace eval ::xo::db {
       } else {
         set content_size_pretty "[lc_numeric [format %.2f [expr {$content_length/1024.0}]]] [_ file-storage.kb]"
       }
-      
+
       set last_modified_ansi [lc_time_system_to_conn $last_modified_ansi]
-      
+
       if {$version_id != $live_revision_id} {
         set live_revision "Make this Revision Current"
         set live_revision_icon /resources/acs-subsite/radio.gif
@@ -1239,7 +1239,7 @@ namespace eval ::xo::db {
         set live_revision "Current Live Revision"
         set live_revision_icon /resources/acs-subsite/radiochecked.gif
       }
-      
+
       set live_revision_link [export_vars -base $base \
                                   {{m make-live-revision} {revision_id $version_id}}]
 
@@ -1256,7 +1256,7 @@ namespace eval ::xo::db {
           -version_delete.href [export_vars -base $base \
                                     {{m delete-revision} {revision_id $version_id}}] \
           -version_delete.title [_ file-storage.Delete_Version]
-      
+
       [t1 last_child] set payload(revision_id) $version_id
 
       if {$isAdmin} {
@@ -1267,7 +1267,7 @@ namespace eval ::xo::db {
       }
 
     }
-    
+
     # providing diff links to the prevision versions. This can't be done in
     # the first loop, since we have not yet the revision id of entry in the next line.
     set lines [t1 children]
@@ -1360,7 +1360,7 @@ namespace eval ::xo::db {
   #
   #  a) specifying richt-text properties for an instance
   #  b) provide a title for the instance
-  # 
+  #
   # We should provide either a minimal parameter page for this
   # purposes, or - more conservative - provide simply package
   # parameters for this. The only thing we are losing are "computed
@@ -1400,9 +1400,9 @@ namespace eval ::xo::db {
     if {![info exists parent_id]} {set parent_id $folder_id}
 
     if {$base_table eq "cr_folders"} {
-      set attributes [list ci.item_id ci.name ci.publish_status acs_objects.object_type] 
+      set attributes [list ci.item_id ci.name ci.publish_status acs_objects.object_type]
     } else {
-      set attributes [list bt.item_id ci.name ci.publish_status bt.object_type] 
+      set attributes [list bt.item_id ci.name ci.publish_status bt.object_type]
     }
     foreach a $select_attributes {
       # if {$a eq "title"} {set a bt.title}
@@ -1513,7 +1513,7 @@ namespace eval ::xo::db {
     if {![::xotcl::Object isobject $object]} {
       :create $object
     }
-    
+
     $object db_1row [:qn fetch_folder] "
         SELECT * FROM cr_folders
         JOIN cr_items on cr_folders.folder_id = cr_items.item_id
@@ -1570,7 +1570,7 @@ namespace eval ::xo::db {
   ::xo::db::CrFolder instproc is_package_root_folder {} {
     return [expr {${:folder_id} eq [::${:package_id} folder_id]} ? true : false]
   }
-  
+
   ::xo::db::CrFolder instproc delete {} {
     if {[:is_package_root_folder]} {
       ad_return_error "Removal denied" "Dont delete the package root folder, delete the package"
@@ -1578,15 +1578,15 @@ namespace eval ::xo::db {
     }
     ::xo::db::sql::content_folder del -folder_id ${:folder_id} -cascade_p t
   }
-  
+
 
   #
   # Caching interface
   #
   # CrClass is a mixin class for caching the CrItems in ns_cache.
   #
-  
-  ::xotcl::Class create CrCache 
+
+  ::xotcl::Class create CrCache
   CrCache instproc fetch_object {
     -item_id:required
     {-revision_id 0}
@@ -1594,7 +1594,7 @@ namespace eval ::xo::db {
     {-initialize:boolean true}
   } {
     set serialized_object [::xo::xotcl_object_cache eval [string trimleft $object :] {
-      # :log "--CACHE true fetch [self args], call shadowed method [self next]" 
+      # :log "--CACHE true fetch [self args], call shadowed method [self next]"
       set loaded_from_db 1
       # Call the showdowed method with initializing turned off. We
       # want to store object before the after-load initialize in the
@@ -1613,7 +1613,7 @@ namespace eval ::xo::db {
       # or create it.
       if {[:isobject $object]} {
         # There would have been no need to call this method. We could
-        # raise an error here.  
+        # raise an error here.
         # :log "--!! $object exists already"
       } else {
         # Create the object from the serialization and initialize it
@@ -1639,12 +1639,15 @@ namespace eval ::xo::db {
     # In order to cache fails as well, we would have to flush the fail
     # on new added items and renames.
     while {1} {
-      set item_id [ns_cache eval xotcl_object_type_cache $parent_id-$name {
+      set item_id [xo::xotcl_object_type_cache eval -tree_key $parent_id $parent_id-$name {
         set item_id [next]
-        if {$item_id == 0} break ;# don't cache
+        if {$item_id == 0} {
+          #ns_log notice ".... lookup $parent_id-$name => 0 -> break and don't cache"
+          break
+        }
         return $item_id
       }]
-      
+
       break
     }
     # :msg "lookup $parent_id-$name -> item_id=$item_id"
@@ -1653,7 +1656,7 @@ namespace eval ::xo::db {
 
   ::xotcl::Class create CrCache::Item
   CrCache::Item set name_pattern {^::[0-9]+$}
-  
+
   CrCache::Item instproc remove_non_persistent_vars {} {
     #
     # Do not save __db__artefacts in the cache.
@@ -1674,7 +1677,7 @@ namespace eval ::xo::db {
     foreach pattern [[:info class] non_cached_instance_var_patterns] {
       lappend non_cached_vars {*}[info vars :$pattern]
     }
-    
+
     #puts stderr "pattern [[:info class] non_cached_instance_var_patterns], non_cached_vars=$non_cached_vars"
     foreach x $non_cached_vars {
       if {[array exists :$x]} {
@@ -1687,7 +1690,7 @@ namespace eval ::xo::db {
     }
     return [list $arrays $scalars]
   }
-  
+
   CrCache::Item instproc set_non_persistent_vars {vars} {
     lassign $vars arrays scalars
     foreach {var value} $arrays {my array set $var $value}
@@ -1704,7 +1707,7 @@ namespace eval ::xo::db {
       # The object name is eq to the item_id; we assume, this is a
       # fully loaded object, containing all relevant instance
       # variables. We can restore it. After the flash
-      # 
+      #
       # We do not want to cache per object mixins for the
       # time being (some classes might be volatile). So save
       # mixin-list, cache and resore them later for the current
@@ -1751,22 +1754,20 @@ namespace eval ::xo::db {
   }
   CrCache::Item instproc delete args {
     ::xo::xotcl_object_cache flush [string trimleft [self] :]
-    # :msg "delete flush xotcl_object_type_cache ${:parent_id}-[:name]"
-    ::xo::clusterwide ns_cache flush xotcl_object_type_cache ${:parent_id}-[:name]
+    xo::xotcl_object_type_cache flush -tree_key ${:parent_id} ${:parent_id}-[:name]
     next
   }
   CrCache::Item instproc rename {-old_name:required -new_name:required} {
-    # :msg "rename flush xotcl_object_type_cache ${:parent_id}-$old_name"
-    ::xo::clusterwide ns_cache flush xotcl_object_type_cache ${:parent_id}-$old_name
+    ::xo::xotcl_object_type_cache flush -tree_key ${:parent_id} ${:parent_id}-$old_name
     next
   }
-  
+
   CrClass instmixin CrCache
   CrClass mixin CrCache::Class
   CrItem instmixin CrCache::Item
-}  
+}
 
-#::xo::library source_dependent 
+#::xo::library source_dependent
 
 
 #
