@@ -1,5 +1,5 @@
 ::xo::library doc {
-  
+
   XOTcl API for low level db abstraction
 
   @author Gustaf Neumann
@@ -110,7 +110,7 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::postgresql instproc has_ltree {} {
-    ns_cache eval xotcl_object_cache [self]::has_ltree {
+    ::xo::xotcl_object_type_cache eval [self]::has_ltree {
       if {[:get_value check_ltree "select count(*) from pg_proc where proname = 'ltree_in'"] > 0} {
         return 1
       }
@@ -118,7 +118,7 @@ namespace eval ::xo::db {
     }
   }
   ::xo::db::postgresql instproc has_hstore {} {
-    ns_cache eval xotcl_object_cache [self]::has_hstore {
+    ::xo::xotcl_object_type_cache eval [self]::has_hstore {
       if {[:get_value check_ltree "select count(*) from pg_proc where proname = 'hstore_in'"] > 0} {
         return 1
       }
@@ -281,7 +281,7 @@ namespace eval ::xo::db {
   #
   # Driver specific and Driver/Dialect specific hooks
   #
-  ::xotcl::Class create ::xo::db::DB             -superclass ::xo::db::Driver 
+  ::xotcl::Class create ::xo::db::DB             -superclass ::xo::db::Driver
   ::xotcl::Class create ::xo::db::DB-postgresql  -superclass {::xo::db::DB ::xo::db::postgresql}
   ::xotcl::Class create ::xo::db::DB-oracle      -superclass {::xo::db::DB ::xo::db::oracle}
 
@@ -674,7 +674,7 @@ namespace eval ::xo::db {
       set varName ::xo::prepared($session_id,$key)
     } on error {errorMsg} {
       set session_id "-"
-      set varName __prepared($key)    
+      set varName __prepared($key)
     }
 
     if {![info exists $varName]} {
@@ -730,14 +730,36 @@ namespace eval ::xo::db {
     :property package_key:required
     :property maxentry:integer
     :property {default_size:integer 10000}
-    
+
     :public method flush {key} {
       ::xo::clusterwide ns_cache flush ${:name} $key
     }
-    
+
+    if {[info commands ns_cache_eval] ne ""} {
+      #
+      # NaviServer variant
+      #
+      :public method eval {key body} {
+        :uplevel [list ns_cache_eval -- ${:name} $key $body]
+      }
+      :public method set {key value} {
+        :uplevel [list ns_cache_eval -force -- ${:name} $key [list set _ $value]]
+      }
+    } else {
+      #
+      # AOLerver variant
+      #
+      :public method eval {key body} {
+        :uplevel [list ns_cache eval ${:name} $key $body]
+      }
+      :public method set {key value} {
+        :uplevel [list ns_cache set ${:name} $key $value]
+      }
+    }
+
     :public method init {} {
       set :name [namespace tail [current]]
-      
+
       if {[info commands ns_cache_create] ne ""} {
         #
         # Version for NaviServer, which allows us to provide maximum
@@ -756,13 +778,13 @@ namespace eval ::xo::db {
             -size [parameter::get_from_package_key \
                        -package_key ${:package_key} \
                        -parameter ${:parameter} \
-                       -default ${:default_size}]        
+                       -default ${:default_size}]
       }
     }
   }
-  
 
-  
+
+
   ##########################################################################
   #
   # The ns_caches below should exist, before any cached objects are
@@ -789,16 +811,19 @@ namespace eval ::xo::db {
         -package_key xotcl-core \
         -parameter XOTclObjectCacheSize \
         -default_size 400000
+    ns_log notice "... created ::xo::xotcl_object_cache"
 
-    ::xo::Cache create xotcl_object_type_cache \
+    ::xo::Cache create ::xo::xotcl_object_type_cache \
         -package_key xotcl-core \
         -parameter XOTclObjectTypeCacheSize \
         -default_size 50000
-
-    ::xo::Cache create xotcl_package_cache \
+    ns_log notice "... created ::xo::xotcl_object_type_cache"
+    
+    ::xo::Cache create ::xo::xotcl_package_cache \
         -package_key xotcl-core \
         -parameter XOTclPackageCacheSize \
-        -default_size 10000    
+        -default_size 10000
+    ns_log notice "... created ::xo::xotcl_package_cache"
   }
 
 
@@ -816,7 +841,7 @@ namespace eval ::xo::db {
     ::xo::dc has_hstore
   }
 
-  
+
   ::xotcl::Object create require
 
   require proc exists_table {name} {
@@ -920,8 +945,8 @@ namespace eval ::xo::db {
       # postgres could avoid this check and use 'if not exists' from
       # version 9.5
       if {[::xo::dc 0or1row exists "
-         SELECT 1 FROM information_schema.sequences 
-          WHERE sequence_schema = 'public' 
+         SELECT 1 FROM information_schema.sequences
+          WHERE sequence_schema = 'public'
             AND sequence_name = :name"]} return
     }
 
@@ -942,7 +967,7 @@ namespace eval ::xo::db {
       lappend clause "NO"
     }
     lappend clause "CYCLE"
-    lappend clause "CACHE $cache"    
+    lappend clause "CACHE $cache"
     ::xo::dc dml create-seq "
        CREATE SEQUENCE $name [join $clause]"
   }
@@ -1093,7 +1118,7 @@ namespace eval ::xo::db {
 
     @return object_type, typically an XOTcl class
   } {
-    return [ns_cache eval xotcl_object_type_cache $id {
+    xo::xotcl_object_type_cache eval $id {
       ::xo::dc 1row get_class "select object_type from acs_objects where object_id=:id"
       return $object_type
     }]
@@ -1419,7 +1444,7 @@ namespace eval ::xo::db {
   set ::xo::db::sql_suffix(postgresql,content_item,set_live_revision) "FOR NO KEY UPDATE"
   set ::xo::db::sql_suffix(postgresql,content_item,del) "FOR UPDATE"
   set ::xo::db::sql_suffix(postgresql,content_item,new) "FOR UPDATE"
-  
+
   ::xo::db::DB instproc psql_statement_suffix {package_name object_name} {
     set key ::xo::db::sql_suffix(${:dialect},$package_name,$object_name)
     return [expr {[info exists $key] ? [set $key] : ""}]
@@ -2754,7 +2779,7 @@ namespace eval ::xo::db {
       lappend result "([ns_dbquotevalue $e $type])"
     }
     return "(values [join $result ,])"
-  }  
+  }
 }
 
 ::xo::library source_dependent

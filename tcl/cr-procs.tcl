@@ -1019,8 +1019,8 @@ namespace eval ::xo::db {
         -revision_id $revision_id \
         -publish_status $publish_status \
         -is_latest $is_latest
-    ::xo::xotcl_object_cache flush ::${:item_id}
-    ::xo::xotcl_object_cache flush ::$revision_id
+    ::xo::xotcl_object_cache flush ${:item_id}
+    ::xo::xotcl_object_cache flush $revision_id
   }
 
   CrItem ad_instproc update_item_index {} {
@@ -1475,7 +1475,7 @@ namespace eval ::xo::db {
     Because of this, we cannot simply create the instances of CrFolder using the
     "standard naming convention". Instead we create them as ::cr_folder<acs_object_id>
   } {
-    set object ::cr_folder$item_id
+    set object ::$item_id
     if {![:isobject $object]} {
       :fetch_object -object $object -item_id $item_id -initialize $initialize
       $object destroy_on_cleanup
@@ -1548,7 +1548,7 @@ namespace eval ::xo::db {
           -folder_id ${:folder_id} \
           -content_types [[self class] set allowed_content_types]
     }
-    ::xo::xotcl_object_cache flush ::${:parent_id}
+    ::xo::xotcl_object_cache flush ${:parent_id}
     # who is setting sub_folder_list?
     #db_flush_cache -cache_key_pattern sub_folder_list_*
     return ${:folder_id}
@@ -1593,7 +1593,7 @@ namespace eval ::xo::db {
     -object:required
     {-initialize:boolean true}
   } {
-    set serialized_object [ns_cache eval xotcl_object_cache $object {
+    set serialized_object [::xo::xotcl_object_cache eval [string trimleft $object :] {
       # :log "--CACHE true fetch [self args], call shadowed method [self next]" 
       set loaded_from_db 1
       # Call the showdowed method with initializing turned off. We
@@ -1626,7 +1626,7 @@ namespace eval ::xo::db {
 
   CrCache instproc delete {-item_id} {
     next
-    ::xo::xotcl_object_cache flush ::$item_id
+    ::xo::xotcl_object_cache flush $item_id
     # we should probably flush as well cached revisions
   }
 
@@ -1697,7 +1697,7 @@ namespace eval ::xo::db {
     # cache only names with IDs
     set obj [self]
     set canonical_name ::[$obj item_id]
-    ::xo::xotcl_object_cache flush $obj
+    ::xo::xotcl_object_cache flush [string trimleft $obj :]
     if {$obj eq $canonical_name} {
       # :log "--CACHE saving $obj in cache"
       #
@@ -1712,21 +1712,22 @@ namespace eval ::xo::db {
       set mixins [$obj info mixin]
       $obj mixin [list]
       set npv [$obj remove_non_persistent_vars]
-      ns_cache set xotcl_object_cache $obj [$obj serialize]
+      ::xo::xotcl_object_cache set [string trimleft $obj :] [$obj serialize]
       $obj set_non_persistent_vars $npv
       $obj mixin $mixins
     } else {
       #
       # In any case, flush the canonical name.
       #
-      ::xo::xotcl_object_cache flush $canonical_name
+      ::xo::xotcl_object_cache flush [string trimleft $canonical_name :]
     }
     # To be on he safe side, delete the revison as well from the
     # cache, if possible.
     if {[$obj exists revision_id]} {
-      set revision_name ::[$obj revision_id]
-      if {$obj ne $revision_name} {
-        ::xo::xotcl_object_cache flush $revision_name
+      set revision_id [$obj revision_id]
+      set revision_obj ::$revision_id
+      if {$obj ne $revision_obj} {
+        ::xo::xotcl_object_cache flush $revision_id
       }
     }
   }
@@ -1746,16 +1747,10 @@ namespace eval ::xo::db {
   }
   CrCache::Item instproc save_new args {
     set item_id [next]
-    #
-    # The following approach will now work nicely, we would have to
-    # rename the object caching this does not seem important here, the
-    # next fetch will cache it anyhow.
-    #
-    #ns_cache set xotcl_object_cache $item_id [::Serializer deepSerialize [self]]
     return $item_id
   }
   CrCache::Item instproc delete args {
-    ::xo::xotcl_object_cache flush [self]
+    ::xo::xotcl_object_cache flush [string trimleft [self] :]
     # :msg "delete flush xotcl_object_type_cache ${:parent_id}-[:name]"
     ::xo::clusterwide ns_cache flush xotcl_object_type_cache ${:parent_id}-[:name]
     next
