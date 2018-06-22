@@ -768,7 +768,7 @@ namespace eval ::xo::db {
         try {
           :uplevel [list ns_cache_eval -- [:cache_name $tree_key] $key $body]
         } on break {r} {
-          ns_log notice "====================== [self] $key -> break -> <$r>"
+          #ns_log notice "====================== [self] $key -> break -> <$r>"
           return 0
         } on ok {r} {
           return $r
@@ -867,7 +867,7 @@ namespace eval ::xo::db {
   #
   ##########################################################################
 
-  nx::Class create ::xo::TreePartitionedCache -superclasses ::xo::Cache {
+  nx::Class create ::xo::TreePartitionedCache -superclasses ::xo::PartitionedCache {
     :property {partitions:integer 1}
 
     :public method flush_pattern {{-tree_key:integer,required} pattern} {
