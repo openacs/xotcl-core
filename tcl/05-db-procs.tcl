@@ -748,7 +748,7 @@ namespace eval ::xo::db {
       #
       # Determine the cache size depending on configuration variables.
       #
-      return [parameter::get_from_package_key \
+      return [::parameter::get_from_package_key \
                   -package_key ${:package_key} \
                   -parameter "${:parameter}Size" \
                   -default ${:default_size}]
@@ -840,7 +840,7 @@ namespace eval ::xo::db {
 
     :public method init {} {
       set :name [namespace tail [current]]
-      set partitions [parameter::get_from_package_key \
+      set partitions [::parameter::get_from_package_key \
                           -package_key ${:package_key} \
                           -parameter "${:parameter}Partitions" \
                           -default ${:partitions}]
