@@ -1753,7 +1753,11 @@ namespace eval ::xo::db {
     return $item_id
   }
   CrCache::Item instproc delete args {
-    ::xo::xotcl_object_cache flush [string trimleft [self] :]
+    set key [string trimleft [self] :]
+    # Do not try to flush autnamed entries
+    if {[string is integer $key] } {
+        ::xo::xotcl_object_cache flush $key
+    }
     xo::xotcl_object_type_cache flush -tree_key ${:parent_id} ${:parent_id}-[:name]
     next
   }
