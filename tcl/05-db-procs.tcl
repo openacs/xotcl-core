@@ -1224,7 +1224,7 @@ namespace eval ::xo::db {
     xo::xotcl_object_type_cache eval -tree_key $id $id {
       ::xo::dc 1row get_class "select object_type from acs_objects where object_id=:id"
       return $object_type
-    }]
+    }
   }
 
   ::xo::db::Class ad_proc get_instance_from_db {
