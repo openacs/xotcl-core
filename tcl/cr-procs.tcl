@@ -65,7 +65,7 @@ namespace eval ::xo::db {
       return [set $key]
     }
     set entry_key [expr {$item_id ? $item_id : $revision_id}]
-    set $key [xo::xotcl_object_type_cache eval -tree_key $entry_key $entry_key {
+    set $key [xo::xotcl_object_type_cache eval -partition_key $entry_key $entry_key {
       if {$item_id} {
         ::xo::dc 1row -prepare integer get_class_from_item_id \
             "select content_type as object_type from cr_items where item_id=:item_id"
@@ -1639,7 +1639,7 @@ namespace eval ::xo::db {
     # In order to cache fails as well, we would have to flush the fail
     # on new added items and renames.
     while {1} {
-      set item_id [xo::xotcl_object_type_cache eval -tree_key $parent_id $parent_id-$name {
+      set item_id [xo::xotcl_object_type_cache eval -partition_key $parent_id $parent_id-$name {
         set item_id [next]
         if {$item_id == 0} {
           #ns_log notice ".... lookup $parent_id-$name => 0 -> break and don't cache"
@@ -1753,19 +1753,27 @@ namespace eval ::xo::db {
     return $item_id
   }
   CrCache::Item instproc delete args {
+    #
+    # Not all cr_items are cached. Some of the bulk creation commands
+    # create autonamed items, which have non-numeric object names. So
+    # the flush on these will fail anyhow, since these were never
+    # added to the cache.
+    #
     set key [string trimleft [self] :]
-    # Do not try to flush autnamed entries
     if {[string is integer $key] } {
         ::xo::xotcl_object_cache flush $key
     }
-    xo::xotcl_object_type_cache flush -tree_key ${:parent_id} ${:parent_id}-[:name]
+    xo::xotcl_object_type_cache flush -partition_key ${:parent_id} ${:parent_id}-[:name]
     next
   }
   CrCache::Item instproc rename {-old_name:required -new_name:required} {
-    ::xo::xotcl_object_type_cache flush -tree_key ${:parent_id} ${:parent_id}-$old_name
+    ::xo::xotcl_object_type_cache flush -partition_key ${:parent_id} ${:parent_id}-$old_name
     next
   }
 
+  #
+  # Register the caching mixins
+  #
   CrClass instmixin CrCache
   CrClass mixin CrCache::Class
   CrItem instmixin CrCache::Item

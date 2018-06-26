@@ -722,173 +722,6 @@ namespace eval ::xo::db {
 
   ##########################################################################
   #
-  # Generic Cache class
-  #
-  ##########################################################################
-
-  nx::Class create ::xo::Cache {
-    #
-    # Provide a simple class to generalize cache management to extend
-    # cache primitiva (in the future, e.g. for cache partitioning).
-    #
-    :property parameter:required
-    :property package_key:required
-    :property maxentry:integer
-    :property {default_size:integer 10000}
-
-    :method cache_name {key} {
-      #
-      # More or less dummy function, can be refined, completely
-      # ignores "key".
-      #
-      return ${:name}
-    }
-
-    :method get_size {} {
-      #
-      # Determine the cache size depending on configuration variables.
-      #
-      return [::parameter::get_from_package_key \
-                  -package_key ${:package_key} \
-                  -parameter "${:parameter}Size" \
-                  -default ${:default_size}]
-    }
-
-    :public method flush {{-tree_key} key} {
-      if {![info exists tree_key]} {set tree_key $key}
-      ::xo::clusterwide ns_cache flush [:cache_name $tree_key] $key
-    }
-
-    if {[info commands ns_cache_eval] ne ""} {
-      #
-      # NaviServer variant
-      #
-      :public method eval {{-tree_key} key body} {
-        if {![info exists tree_key]} {set tree_key $key}
-        try {
-          :uplevel [list ns_cache_eval -- [:cache_name $tree_key] $key $body]
-        } on break {r} {
-          #ns_log notice "====================== [self] $key -> break -> <$r>"
-          return 0
-        } on ok {r} {
-          return $r
-        }
-      }
-      :public method set {key value} {
-        if {![info exists tree_key]} {set tree_key $key}
-        :uplevel [list ns_cache_eval -force -- [:cache_name $tree_key] $key [list set _ $value]]
-      }
-      :public method flush_pattern {{-tree_key ""} pattern} {
-        return [ns_cache_flush -glob [:cache_name $tree_key] $pattern]
-      }
-      :method cache_create {name size} {
-        ns_cache_create \
-            {*}[expr {[info exists :maxentry] ? "-maxentry ${:maxentry}" : ""}] \
-            $name $size
-      }
-
-    } else {
-      #
-      # AOLserver variant
-      #
-      :public method eval {{-tree_key} key body} {
-        if {![info exists tree_key]} {set tree_key $key}
-        try {
-          :uplevel [list ns_cache eval [:cache_name $tree_key] $key $body]
-        } on break {r} {
-          return 0
-        } on ok {r} {
-          return $r
-        }
-      }
-      :public method set {{-tree_key} key value} {
-        if {![info exists tree_key]} {set tree_key $key}
-        :uplevel [list ns_cache set [:cache_name $tree_key] $key $value]
-      }
-      :public method flush_pattern {{-tree_key ""} pattern} {
-        foreach name [ns_cache names [:cache_name $tree_key] $pattern] {
-          :flush -tree_key $tree_key $name
-        }
-      }
-      :method cache_create {name size} {
-        ns_cache create $name -size $size
-      }
-    }
-
-    :public method init {} {
-      set :name [namespace tail [current]]
-      :cache_create ${:name} [:get_size]
-    }
-  }
-
-  ##########################################################################
-  #
-  # Simple Partitioned Cache class
-  #
-  # Partitioning is based on a modulo function based on the key, which
-  # has to be numeric. So far, no partitioning-spanning methods are
-  # provided.
-  #
-  ##########################################################################
-
-  nx::Class create ::xo::PartitionedCache -superclasses ::xo::Cache {
-    :property {partitions:integer 1}
-
-    :protected method cache_name {key:integer} {
-      return ${:name}-[expr {$key % ${:partitions}}]
-    }
-
-    :public method init {} {
-      set :name [namespace tail [current]]
-      set partitions [::parameter::get_from_package_key \
-                          -package_key ${:package_key} \
-                          -parameter "${:parameter}Partitions" \
-                          -default ${:partitions}]
-      #
-      # Create multiple separate caches depending on the
-      # partitions. This requires to have a partitioning function that
-      # determines the partition number from the key.
-      #
-      set size [expr {[:get_size] / ${:partitions}}]
-      for {set i 0} {$i < ${:partitions}} {incr i} {
-        :cache_create ${:name}-$i $size
-      }
-    }
-  }
-
-
-  ##########################################################################
-  #
-  # Tree Partitioned Cache class
-  #
-  # Tree Partitioning is based on a modulo function using a special
-  # tree_key, which has to be numeric. So far, no
-  # partitioning-spanning methods are provided.
-  #
-  ##########################################################################
-
-  nx::Class create ::xo::TreePartitionedCache -superclasses ::xo::PartitionedCache {
-    :property {partitions:integer 1}
-
-    :public method flush_pattern {{-tree_key:integer,required} pattern} {
-      #
-      # flush just in the determined partition
-      #
-      next
-    }
-
-    :public method flush {{-tree_key:integer,required} key} {
-      next
-    }
-
-    :public method set {{-tree_key:integer,required} key value} {
-      next
-    }
-  }
-
-
-  ##########################################################################
-  #
   # The ns_caches below should exist, before any cached objects are
   # created. Under most conditions, it is sufficient to do this in
   # object-cache-init.tcl, which is performed after xotcl-core procs
@@ -897,8 +730,7 @@ namespace eval ::xo::db {
   # xotcl-core are not executed (probably a bug). Without the
   # ns_cache, creating objects fails with an error. So, we moved the
   # cache creation here and create caches, when they do not exist
-  # already. This change makes the object-cache-init.tcl
-  # obsolete.
+  # already.
   #
   # Unfortunately, AOLserver's ns_cache has no command to check, whether
   # a cache exists, so we use the little catch below to check.
@@ -908,7 +740,7 @@ namespace eval ::xo::db {
   } on error {errorMsg} {
     ns_log notice "xotcl-core: creating xotcl-object caches"
 
-    ::xo::PartitionedCache create ::xo::xotcl_object_cache \
+    ::acs::PartitionedCache create ::xo::xotcl_object_cache \
         -maxentry 200000 \
         -package_key xotcl-core \
         -parameter XOTclObjectCache \
@@ -916,20 +748,23 @@ namespace eval ::xo::db {
         -partitions 2
     ns_log notice "... created ::xo::xotcl_object_cache"
 
-    ::xo::TreePartitionedCache create ::xo::xotcl_object_type_cache \
+    ::acs::TreePartitionedCache create ::xo::xotcl_object_type_cache \
         -package_key xotcl-core \
         -parameter XOTclObjectTypeCache \
         -default_size 50000
     ns_log notice "... created ::xo::xotcl_object_type_cache"
 
-    ::xo::Cache create ::xo::xotcl_package_cache \
+    ::acs::Cache create ::xo::xotcl_package_cache \
         -package_key xotcl-core \
         -parameter XOTclPackageCache \
         -default_size 10000
     ns_log notice "... created ::xo::xotcl_package_cache"
   }
 
-
+  ##########################################################################
+  #
+  # Deprecated functions, obsolted by xo::dc
+  #
   ad_proc -deprecated has_ltree {} {
     Check, whether ltree is available (postgres only)
     @see ::xo::dc has_ltree
@@ -944,7 +779,11 @@ namespace eval ::xo::db {
     ::xo::dc has_hstore
   }
 
-
+  ##########################################################################
+  #
+  # Support for requiring database artifacts
+  #
+  ##########################################################################
   ::xotcl::Object create require
 
   require proc exists_table {name} {
@@ -1221,7 +1060,7 @@ namespace eval ::xo::db {
 
     @return object_type, typically an XOTcl class
   } {
-    xo::xotcl_object_type_cache eval -tree_key $id $id {
+    xo::xotcl_object_type_cache eval -partition_key $id $id {
       ::xo::dc 1row get_class "select object_type from acs_objects where object_id=:id"
       return $object_type
     }
