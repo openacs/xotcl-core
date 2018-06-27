@@ -280,12 +280,8 @@ namespace eval ::xo {
     -propstats:required
     {-propstatus true}
   } {
-<<<<<<< 50-protocol-handler-procs.tcl
-    #my log "multiStatusResonse href $href propstats $propstats"
     set encoded_href [string map {& &amp; < &lt; > &gt;} [ns_urlencode -part path {*}[split $href /]]]
-=======
     #:log "multiStatusResonse href $href propstats $propstats"
->>>>>>> 1.24
     append reply \n \
         {<D:response xmlns:lp1="DAV:" xmlns:lp2="http://apache.org/dav/props/" xmlns:g0="DAV:">} \
         "\n<D:href>$encoded_href</D:href>\n"
