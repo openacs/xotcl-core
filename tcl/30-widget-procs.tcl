@@ -364,20 +364,12 @@ namespace eval ::xo {
   # for the time being, just a proc
   #
   proc get_user_name {uid} {
-    if {$uid ne "" && $uid != 0} {
-      ad_try {
-        acs_user::get -user_id $uid -array user
-      } on error {errorMsg} {
-        # we saw some strange cases, where after a regression,
-        # a user_id was present, which was already deleted...
-        set result [_ xotcl-core.nobody]
-      } on ok {r} {
-        set result "$user(first_names) $user(last_name)"
-      }
-    } else {
-      set result [_ xotcl-core.nobody]
+    set name [expr {[string is integer -strict $uid] ?
+                    [person::name -person_id $uid] : ""}]
+    if {$name eq ""} {
+      set name [_ xotcl-core.nobody]
     }
-    return $result
+    return $name
   }
 
   #
