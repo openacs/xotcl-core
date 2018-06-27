@@ -233,8 +233,11 @@ namespace eval ::xo {
   }
 
   Chat instproc user_name { user_id } {
-    acs_user::get -user_id $user_id -array user
-    return [expr {$user(screen_name) ne "" ? $user(screen_name) : $user(name)}]
+    set screen_name [acs_user::get_user_info -user_id $user_id -element screen_name]
+    if {$screen_name eq ""} {
+      set screen_name [person::name -person_id $user_id]
+    }
+    return $screen_name
   }
 
   Chat instproc user_link { -user_id -color } {
