@@ -67,13 +67,15 @@ namespace eval ::Generic {
                                   [list type [$class pretty_name]]]
     }
 
-    if {![info exists :fields]} {my mkFields}
-    #my log --fields=[:fields]
+    if {![info exists :fields]} {
+      :mkFields
+    }
+    #:log --fields=${:fields}
   }
 
   Form instproc form_vars {} {
     set vars [list]
-    foreach varspec [:fields] {
+    foreach varspec ${:fields} {
       lappend vars [lindex [split [lindex $varspec 0] :] 0]
     }
     return $vars
@@ -100,7 +102,7 @@ namespace eval ::Generic {
         #
         # The item was renamed.
         #
-        #my log "--- rename from $old_name to $new_name"
+        # :log "--- rename from $old_name to $new_name"
         ${:data} rename -old_name $old_name -new_name $new_name
         #
         # Check, whether we have to change the redirect url due to
@@ -124,7 +126,7 @@ namespace eval ::Generic {
           -privilege $privilege
     }
     set :edit_form_page_title [if {$privilege eq "create"} \
-                                  {my add_page_title} {my edit_page_title}]
+                                  {:add_page_title} {:edit_page_title}]
 
     set :context [list ${:edit_form_page_title}]
   }
@@ -164,7 +166,7 @@ namespace eval ::Generic {
   }
 
   Form instproc on_validation_error {} {
-    #my log "-- "
+    # :log "-- "
     set :edit_form_page_title [:edit_page_title]
     set :context [list ${:edit_form_page_title}]
   }
@@ -208,9 +210,9 @@ namespace eval ::Generic {
 
     set object_type [[${:data} info class] object_type]
     set object_name [expr {[${:data} exists name] ? [${:data} set name] : ""}]
-    #my log "-- ${:data}, cl=[${:data} info class] [[${:data} info class] object_type]"
+    # :log "-- ${:data}, cl=[${:data} info class] [[${:data} info class] object_type]"
 
-    #my log "--e [:name] final fields [:fields]"
+    # :log "--e [:name] final fields ${:fields}"
     set exports [list \
       [list object_type $object_type] \
                      [list folder_id ${:folder_id}] \
@@ -219,7 +221,7 @@ namespace eval ::Generic {
       foreach pair $export {lappend exports $pair}
     }
 
-    ad_form -name [:name] -form [:fields] -mode $mode \
+    ad_form -name ${:name} -form ${:fields} -mode $mode \
         -export $exports -action [:action] -html [:html]
 
     set new_data            "set item_id \[[self] new_data\]"
