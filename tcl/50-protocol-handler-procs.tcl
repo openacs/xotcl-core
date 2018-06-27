@@ -280,11 +280,10 @@ namespace eval ::xo {
     -propstats:required
     {-propstatus true}
   } {
-    set encoded_href [string map {& &amp; < &lt; > &gt;} [ns_urlencode -part path {*}[split $href /]]]
     #:log "multiStatusResonse href $href propstats $propstats"
     append reply \n \
         {<D:response xmlns:lp1="DAV:" xmlns:lp2="http://apache.org/dav/props/" xmlns:g0="DAV:">} \
-        "\n<D:href>$encoded_href</D:href>\n"
+        "\n<D:href>$href</D:href>\n"
     # The multi-status respons has 2 formats
     # - with <D:propstat> (used in PROPFIND and PROPPATCH)
     # - without <D:propstat> (used in other cases, e.g. DELETE, COPY, MOVE for collections)
@@ -312,9 +311,6 @@ namespace eval ::xo {
       }
     }
     append reply </D:response>\n
-
-    # ns_log notice "multiStatusResponse $reply"
-    return $reply
   }
 
   ProtocolHandler instproc multiStatusError {status} {
