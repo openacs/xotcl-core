@@ -1603,7 +1603,7 @@ namespace eval ::xo::db {
       # want to store object before the after-load initialize in the
       # cache to save storage.
       set o [next -item_id $item_id -revision_id $revision_id -object $object -initialize 0]
-      set result [::Serializer deepSerialize $o]
+      return [::Serializer deepSerialize $o]
     }]
     # :log "--CACHE: [self args], created [info exists created] o [info exists o]"
     if {[info exists loaded_from_db]} {
@@ -1727,7 +1727,6 @@ namespace eval ::xo::db {
       set npv [$obj remove_non_persistent_vars]
       ::xo::xotcl_object_cache set [string trimleft $obj :] [$obj serialize]
       $obj set_non_persistent_vars $npv
-      #$obj set __cached_object 1
       $obj mixin $mixins
     } else {
       #
