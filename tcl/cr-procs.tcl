@@ -1168,6 +1168,9 @@ namespace eval ::xo::db {
     :update_item_index
   }
 
+  CrItem instproc is_cached_object {} {
+    return [info exists :__cached_object]
+  }
   #
   # The method "changed_redirect_url" is a helper method for old-style
   # wiki pages, still using ad_form. Form.edit_data calls this method
@@ -1600,13 +1603,15 @@ namespace eval ::xo::db {
       # want to store object before the after-load initialize in the
       # cache to save storage.
       set o [next -item_id $item_id -revision_id $revision_id -object $object -initialize 0]
-      return [::Serializer deepSerialize $o]
+      set result [::Serializer deepSerialize $o]
     }]
     # :log "--CACHE: [self args], created [info exists created] o [info exists o]"
     if {[info exists loaded_from_db]} {
       # The basic fetch_object method creates the object, we have
       # just to run the after load init (if wanted)
-      if {$initialize} {$object initialize_loaded_object}
+      if {$initialize} {
+        $object initialize_loaded_object
+      }
     } else {
       # The variable serialized_object contains the serialization of
       # the object from the cache; check if the object exists already
@@ -1618,9 +1623,12 @@ namespace eval ::xo::db {
       } else {
         # Create the object from the serialization and initialize it
         eval $serialized_object
-        if {$initialize} {$object initialize_loaded_object}
+        if {$initialize} {
+          $object initialize_loaded_object
+        }
       }
     }
+    $object set __cached_object 1
     return $object
   }
 
@@ -1700,7 +1708,9 @@ namespace eval ::xo::db {
     # cache only names with IDs
     set obj [self]
     set canonical_name ::[$obj item_id]
-    ::xo::xotcl_object_cache flush [string trimleft $obj :]
+    if {[$obj is_cached_object]} {
+      ::xo::xotcl_object_cache flush [string trimleft $obj :]
+    }
     if {$obj eq $canonical_name} {
       # :log "--CACHE saving $obj in cache"
       #
@@ -1717,6 +1727,7 @@ namespace eval ::xo::db {
       set npv [$obj remove_non_persistent_vars]
       ::xo::xotcl_object_cache set [string trimleft $obj :] [$obj serialize]
       $obj set_non_persistent_vars $npv
+      #$obj set __cached_object 1
       $obj mixin $mixins
     } else {
       #
@@ -1759,9 +1770,8 @@ namespace eval ::xo::db {
     # the flush on these will fail anyhow, since these were never
     # added to the cache.
     #
-    set key [string trimleft [self] :]
-    if {[string is integer $key] } {
-        ::xo::xotcl_object_cache flush $key
+    if {[:is_cached_object]} {
+      ::xo::xotcl_object_cache flush [string trimleft [self] :]
     }
     xo::xotcl_object_type_cache flush -partition_key ${:parent_id} ${:parent_id}-[:name]
     next
