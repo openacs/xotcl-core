@@ -377,7 +377,7 @@ namespace eval ::Generic {
     from class's data-model. A list built in this way will be
     paginated automatically.
 
-    @parameter actions Behaves as in <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>.
+    @param actions Behaves as in <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>.
     If missing, can be automatically generated acting on <code>create_url</code> and <code>no_create_p</code>
     parameters (see below).
 
