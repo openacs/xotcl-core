@@ -75,7 +75,10 @@ if {[info commands ::nx::Object] ne ""} {
   ::nx::Object method qn {query_name} {
     return "dbqd.[:uplevel [list current class]]-[:uplevel [list current method]].$query_name"
   }
-  # allow the use of naturalnum with ::xowiki::Package initialize
+  #
+  # Allow the use of types "naturalnum" and "token" e.g. in
+  # ::xowiki::Package initialize.
+  #
   ::nx::Slot eval {
     :method type=naturalnum {name value} {
       if {![string is integer -strict $value] || $value < 0 } {
@@ -432,56 +435,29 @@ namespace eval ::xo {
 
 namespace eval ::xo {
   #
-  # In earlier versions of xotcl-core, we used variable traces
-  # to trigger deletion of objects. This had two kind of problems:
-  #   1) there was no way to control the order of the deletions
-  #   2) the global variables used for managing db handles might
-  #      be deleted already
-  #   3) the traces are executed at a time when the connection
-  #      is already closed
-  # AOLserver 4.5 supports a trace for freeconn. We can register
-  # a callback to be executed before the connection is freed,
-  # therefore, we have still information from ns_conn available.
-  # For AOLserver 4.5 we use oncleanup, which is at least before
-  # the cleanup of variables.
+  # Cleanup functions
   #
-  # In contrary, in 4.0.10, "on cleanup" is called after the global
-  # variables of a connection thread are deleted. Therefore
-  # the triggered calls should not use database handles,
-  # since these are as well managed via global variables,
-  # the will be deleted as well at this time.
+
   #
-  # To come up with an approach working for AOLserver 4.5 and 4.0.10,
-  # we distinguish between a at_cleanup and at_close, so connection
-  # related info can still be obtained.
+  # Register xo::freeconn function only once
   #
-  if {[catch {set registered [ns_ictl gettraces freeconn]}]} {
-    ns_log notice "*** you should really upgrade to AOLserver 4.5 or better NaviServer"
-    # "ns_ictl oncleanup" is called after variables are deleted
-    if {[ns_ictl epoch] == 0} {
-      ns_ictl oncleanup ::xo::at_cleanup
-      ns_ictl oninit [list ns_atclose ::xo::at_close]
-      ns_ictl ondelete ::xo::at_delete
+  if {"::xo::freeconn" ni [ns_ictl gettraces freeconn]} {
+    if {[catch {ns_ictl trace freeconn ::xo::freeconn} errorMsg]} {
+      ns_log Error "ns_ictl trace returned: $errorMsg"
     }
-
-  } else {
-
-    # register only once
-    if {"::xo::freeconn" ni $registered} {
-      if {[catch {ns_ictl trace freeconn ::xo::freeconn} errorMsg]} {
-        ns_log Warning "ns_ictl trace returned: $errorMsg"
-      }
+  }
+  
+  #
+  # Register::xo::at_delete function only once
+  #
+  if {"::xo::at_delete" ni [ns_ictl gettraces delete]} {
+    if {[catch {ns_ictl trace delete ::xo::at_delete} errorMsg]} {
+      ns_log Warning "rhe command 'ns_ictl trace delete' returned: $errorMsg"
     }
-    if {"::xo::at_delete" ni [ns_ictl gettraces delete]} {
-      if {[catch {ns_ictl trace delete ::xo::at_delete} errorMsg]} {
-        ns_log Warning "rhe command 'ns_ictl trace delete' returned: $errorMsg"
-      }
-    }
-
-    proc ::xo::freeconn {} {
-      catch {::xo::at_close}
-      catch {::xo::at_cleanup}
-    }
+  }
+  
+  proc ::xo::freeconn {} {
+    catch {::xo::at_cleanup}
   }
 
   #proc ::xo::at_create {} {
@@ -497,9 +473,6 @@ namespace eval ::xo {
   ::xotcl::Object instproc destroy_on_cleanup {} {
     #:log "--cleanup adding ::xo::cleanup([self]) [list [self] destroy]"
     set ::xo::cleanup([self]) [list [self] destroy]
-  }
-
-  proc at_close {args} {
   }
 
   proc at_cleanup {args} {
