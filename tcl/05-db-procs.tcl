@@ -2715,13 +2715,25 @@ namespace eval ::xo::db {
     return $timestamp
   }
 
-  #ad_proc list_to_values {list {type text}} {
-  #  set result {}
-  #  foreach e $list {
-  #    lappend result "([ns_dbquotevalue $e $type])"
-  #  }
-  #  return "(values [join $result ,])"
-  #}
+  ad_proc list_to_values {
+    list
+    {type text}
+  } {
+
+    Convert a Tcl list into a quoted SQL VALUES expression
+
+    Example:
+
+    <pre>% list_to_values {1 2 3 4 5}
+    (VALUES (1), (2), (3), (4), (5))</pre>
+
+  } {
+    set result {}
+    foreach e $list {
+      lappend result "([ns_dbquotevalue $e $type])"
+    }
+    return "(VALUES [join $result ,])"
+  }
 }
 
 ::xo::library source_dependent
