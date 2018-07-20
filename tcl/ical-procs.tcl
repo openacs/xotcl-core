@@ -286,13 +286,6 @@ namespace eval ::xo {
     return $t
   }
 
-  #
-  # Subclass ::xo::ProtocolHandler for dav (as used by ical)
-  #
-  Class create ::xo::dav -superclass ProtocolHandler -parameter {
-    {url /webdav}
-  }
-
 }
 
 ::xo::library source_dependent
