@@ -1,5 +1,5 @@
 ::xo::library doc {
-    XoWiki - dav procs.  Simple WebDAV implementation to access files in the wiki via the
+    XoTcl - dav procs.  Simple WebDAV implementation to access files in the wiki via the
     WebDAV protocol.
 
     @creation-date 2010-04-10
@@ -378,7 +378,7 @@ namespace eval ::xo {
       # abstract method to return properties of a file
     }
 
-    :method log {msg} {if {$::xowiki::davStmlog} {ns_log notice "dav::stm: $msg"}}
+    :method log {msg} {if {$::xo::davStmlog} {ns_log notice "dav::stm: $msg"}}
   }
 
 }
