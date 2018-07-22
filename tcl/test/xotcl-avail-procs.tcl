@@ -9,7 +9,7 @@ aa_register_case -cats {api smoke} check_xotcl {
   proc ? {cmd expected {msg ""}} {
    set r [uplevel $cmd]
    if {$msg eq ""} {set msg $cmd}
-   aa_true $msg [expr {$r eq $expected}]
+   aa_true $msg {$r eq $expected}
    #if {$r ne $expected} {
    #  test errmsg "$msg returned '$r' ne '$expected'"
    #} else {
