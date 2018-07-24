@@ -273,7 +273,7 @@ namespace eval ::xo::db {
   ::xo::db::Driver abstract instproc list_of_lists  {{-dbn ""} {-bind ""} -prepare qn sql}
   ::xo::db::Driver abstract instproc list           {{-dbn ""} {-bind ""} -prepare qn sql}
   ::xo::db::Driver abstract instproc dml            {{-dbn ""} {-bind ""} -prepare qn sql}
-  ::xo::db::Driver abstract instproc foreach        {{-dbn ""} {-bind ""} -prepare qn sql script}
+  ::xo::db::Driver abstract instproc foreach        {{-dbn ""} {-bind ""} -prepare qn sql {script}}
   ::xo::db::Driver abstract instproc transaction    {{-dbn ""} script args}
   ::xo::db::Driver abstract instproc ds {onOff}
   ::xo::db::Driver abstract instproc prepare        {-handle {-argtypes ""} sql}
@@ -763,7 +763,7 @@ namespace eval ::xo::db {
 
   ##########################################################################
   #
-  # Deprecated functions, obsolted by xo::dc
+  # Deprecated functions, obsoleted by xo::dc
   #
   ad_proc -deprecated has_ltree {} {
     Check, whether ltree is available (postgres only)

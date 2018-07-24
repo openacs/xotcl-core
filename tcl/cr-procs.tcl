@@ -1576,7 +1576,7 @@ namespace eval ::xo::db {
 
   ::xo::db::CrFolder instproc delete {} {
     if {[:is_package_root_folder]} {
-      ad_return_error "Removal denied" "Dont delete the package root folder, delete the package"
+      ad_return_error "Removal denied" "Don't delete the package root folder, delete the package"
       return
     }
     ::xo::db::sql::content_folder del -folder_id ${:folder_id} -cascade_p t
