@@ -21,7 +21,7 @@ applications using XOTcl. It includes
 XOTcl thread handling for OpenACS (supporting persistent and
 volatile threads) and a definitions for
 documenting XOTcl object, classes and methods 
-integrated with the api-browser of OpenACS. Documented
+integrated with the API-browser of OpenACS. Documented
 procs and instproc an be created using the methods ad_proc
 and ad_instproc. This component provides as 
 well an XOTcl Object and Class browser, as well as
