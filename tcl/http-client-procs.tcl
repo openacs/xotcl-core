@@ -157,7 +157,7 @@ namespace eval ::xo {
   HttpCore instproc parse_url {} {
     :instvar protocol url host port path
     if {[regexp {^(http|https)://([^/]+)(/.*)?$} $url _ protocol host path]} {
-      # Be friendly and allow strictly speaking invalid urls 
+      # Be friendly and allow strictly speaking invalid URLs 
       # like "http://www.openacs.org"  (no trailing slash)
       if {$path eq ""} {set path /}
       :set_default_port $protocol

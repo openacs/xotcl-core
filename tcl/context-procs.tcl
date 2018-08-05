@@ -1,7 +1,7 @@
 xo::library doc  {
   Context handling interface
   
-  Definition of a connection context, containing user info, urls, parameters.
+  Definition of a connection context, containing user info, URLs, parameters.
   this is used via "Package initialize"... similar as page_contracts and
   for included content (includelets), and used for per-connection caching as well.
   The intention is similar as with ad_conn, but based on objects.

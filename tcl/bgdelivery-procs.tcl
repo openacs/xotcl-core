@@ -27,7 +27,7 @@ if {[info commands ::thread::mutex] eq ""} {
 
   return
 }
-#return ;# DONT COMMIT
+#return ;# DON'T COMMIT
 
 # catch {ns_conn contentsentlength} alone does not work, since we do not have
 # a connection yet, and the bgdelivery won't be activated
