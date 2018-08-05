@@ -751,7 +751,8 @@ namespace eval ::xo::db {
     ::acs::KeyPartitionedCache create ::xo::xotcl_object_type_cache \
         -package_key xotcl-core \
         -parameter XOTclObjectTypeCache \
-        -default_size 50000
+        -default_size 50000 \
+        -partitions 2
     ns_log notice "... created ::xo::xotcl_object_type_cache"
 
     ::acs::Cache create ::xo::xotcl_package_cache \
