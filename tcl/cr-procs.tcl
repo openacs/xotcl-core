@@ -143,18 +143,27 @@ namespace eval ::xo::db {
   CrClass ad_proc lookup {
     -name:required
     {-parent_id -100}
-    {-content_type "::%"}
+    {-content_type}
   } {
     Check, whether an content item with the given name exists.
-    If the item exists, return its item_id, otherwise 0.
-
-    @return item_id
+    When content_type is provided (e.g. -content_type "::%")
+    then a like operation is applied on the value.
+    
+    @return item_id If the item exists, return its item_id, otherwise 0.
   } {
-    return [::xo::dc get_value entry_exists_select {
-      select item_id from cr_items
-      where name = :name and parent_id = :parent_id
-      and content_type like :content_type
-    } 0]
+    if {[info exists content_type]} {
+      set result [::xo::dc get_value lookup_by_name_and_ct {
+        select item_id from cr_items
+        where name = :name and parent_id = :parent_id
+        and content_type like :content_type
+      } 0]       
+    } else {
+      set result [::xo::dc get_value lookup_by_name {
+        select item_id from cr_items
+        where name = :name and parent_id = :parent_id
+      } 0]
+    }
+    return $result
   }
 
 
@@ -1642,6 +1651,7 @@ namespace eval ::xo::db {
   CrCache::Class instproc lookup {
     -name:required
     {-parent_id -100}
+    {-content_type}   
   } {
     # We need here the strange logic to avoid caching of lookup fails.
     # In order to cache fails as well, we would have to flush the fail
