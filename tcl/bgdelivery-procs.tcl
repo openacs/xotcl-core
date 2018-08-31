@@ -339,6 +339,7 @@ if {![string match "*contentsentlength*" $msg]} {
     #ns_log notice "SEND <$msg> [:mode]"
     :log ""
     if {[:mode] eq "scripted"} {
+      ::sec_handler_reset
       set emsg [encoding convertto utf-8 $msg]
       #ns_log notice "SEND data <$msg> encoded <$emsg>"
       set smsg "<script type='text/javascript' nonce='$::__csp_nonce'>\nvar data = $emsg;\n\
@@ -359,7 +360,7 @@ if {![string match "*contentsentlength*" $msg]} {
       set subs1 [list]
       foreach s [set :subscriptions($key)] {
         if {[catch {$s $method $argument} errMsg]} {
-          ns_log error "error in $method to subscriber $s (key=$key): $errMsg"
+          ns_log error "error in $method to subscriber $s (key=$key): $errMsg\n$::errorInfo"
           $s destroy
         } else {
           lappend subs1 $s
