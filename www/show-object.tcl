@@ -1,6 +1,6 @@
 ad_page_contract {
   Show an xotcl class or object
-  
+
   @author Gustaf Neumann
   @cvs-id $Id$
 } -query {
@@ -36,7 +36,7 @@ if {$scope ne ""} {
 }
 
 if {!$isobject} {
-  ad_return_complaint 1 "Unable to access object '$object'. 
+  ad_return_complaint 1 "Unable to access object '$object'.
     Might this be a temporary object?"
   ad_script_abort
 }
@@ -45,7 +45,7 @@ if {$scope ne ""} {
   auth::require_login
 }
 
-interp alias {} DO {} ::xo::api scope_eval $scope 
+interp alias {} DO {} ::xo::api scope_eval $scope
 
 # get object fully qualified
 set object [DO namespace origin $object]
@@ -162,7 +162,7 @@ proc class_summary {c scope} {
     #
     set llength [expr {8 + [string length $c]}]
     set pstart "&nbsp;\\<br>[string repeat {&nbsp;} 10]"
-    
+
     foreach p $parameters {
       if {[llength $p]>1} {
         lassign $p p default
@@ -174,7 +174,7 @@ proc class_summary {c scope} {
     }
   }
   append line "<p>\n"
-  
+
   return "<pre>$line</pre>"
 }
 
@@ -205,7 +205,7 @@ if {$isclass} {
   # class in quesiton in focus.
   set heritage [DO xo::getObjectProperty $object heritage]
   set subclasses [DO xo::getObjectProperty $object subclass]
-  
+
   if {[llength $heritage] > $above} {
     # In case we have nothing to show from the subclasses,
     # show one more superclass to provide a better overview.
@@ -215,9 +215,9 @@ if {$isclass} {
     if {[llength $heritage] > $above} {
       set heritage [lrange $heritage 0 $above-1]
     }
-  } 
+  }
   lappend class_hierarchy {*}$heritage
-  
+
   if {$object ni $class_hierarchy} {
     lappend class_hierarchy $object
   }
@@ -303,7 +303,7 @@ if {$show_source} {
 
 proc api_src_doc {out show_source scope object proc m} {
   set output "<a name='$proc-$m'></a><li>$out"
-  if { $show_source } { 
+  if { $show_source } {
     append output \
         "<pre class='code'>" \
         [::apidoc::tcl_to_html [::xo::api proc_index $scope $object $proc $m]] \
@@ -353,7 +353,7 @@ if {$show_methods} {
         set out [local_api_documentation -proc_type $type $show_methods $scope $object instproc $m]
         if {$out ne ""} {
           append method_output "<a name='instproc-$m'></a><li>$out"
-          if { $show_source } { 
+          if { $show_source } {
             append method_output \
                 "<pre class='code'>" \
                 [::apidoc::tcl_to_html [::xo::api proc_index $scope $object instproc $m]] \
@@ -423,7 +423,7 @@ if {!$as_img} {
     ns_log warning "program 'dot' is not available"
     #ad_script_abort
   } else {
- 
+
     set tmpnam [ad_tmpnam]
     set tmpfile $tmpnam.svg
     set f [open $tmpnam.dot w]; puts $f $dot_code; close $f
