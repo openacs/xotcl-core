@@ -429,7 +429,12 @@ if {!$as_img} {
     set f [open $tmpnam.dot w]; puts $f $dot_code; close $f
 
     #ns_log notice "svg $tmpnam dot $tmpnam.dot"
-    set f [open "|$dot  -Tsvg -o $tmpfile" w]; puts $f $dot_code; close $f
+    set f [open "|$dot  -Tsvg -o $tmpfile" w]; puts $f $dot_code
+    try {
+      close $f
+    } on error {errorMsg} {
+      ns_log warning "dot returned $errorMsg"
+    }
     set f [open  $tmpfile]; set svg [read $f]; close $f
 
     # delete the first three lines generated from dot
