@@ -178,7 +178,7 @@ namespace eval ::Generic {
     }
     #:log "-- redirect to $link // [string match "*\?*" $link]"
     #
-    # We we use here the classical idiom
+    # We use here the classical idiom
     #      ad_returnredirect
     #      ad_script_abort
     #
