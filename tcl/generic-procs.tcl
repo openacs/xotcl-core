@@ -170,7 +170,7 @@ namespace eval ::Generic {
     set :edit_form_page_title [:edit_page_title]
     set :context [list ${:edit_form_page_title}]
   }
-  
+
   Form instproc after_submit {item_id} {
     set link [:submit_link]
     if {$link eq "view"} {
