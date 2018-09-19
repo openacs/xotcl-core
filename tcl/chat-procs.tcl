@@ -260,7 +260,7 @@ namespace eval ::xo {
   Chat instproc noencode    {string} {set string}
   Chat instproc encode      {string} {my [:encoder] $string}
   Chat instproc json_encode {string} {
-    string map [list \n \\n \" \\\" ' {\'}] $string
+    string map [list \n \\n \" \\\" ' {\"}] $string
   }
 
   Chat instproc json_encode_msg {msg} {
@@ -271,8 +271,8 @@ namespace eval ::xo {
     set timeshort [clock format [$msg time] -format {[%H:%M:%S]}]
     set text [:json_encode [$msg msg]]
     foreach var {userlink timeshort} {set $var [:json_encode [set $var]]}
-    return [subst -nocommands {{'messages': [
-            {'user':'$userlink', 'time': '$timeshort', 'msg':'$text'}
+    return [subst -nocommands {{"messages": [
+            {"user": "$userlink", "time": "$timeshort", "msg": "$text"}
            ]\n}
     }]
   }
