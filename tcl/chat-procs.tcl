@@ -260,7 +260,7 @@ namespace eval ::xo {
   Chat instproc noencode    {string} {set string}
   Chat instproc encode      {string} {my [:encoder] $string}
   Chat instproc json_encode {string} {
-    string map [list \n \\n \" \\\" ' {\"}] $string
+    string map [list \n \\n \" \\\" ' {\\'}] $string
   }
 
   Chat instproc json_encode_msg {msg} {
