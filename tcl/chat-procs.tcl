@@ -305,7 +305,7 @@ namespace eval ::xo {
 
   Chat instproc render {} {
     :orderby time
-    set result "<div class='messages'>\n"
+    set result ""
     foreach child [:children] {
       set msg       [$child msg]
       set user_id   [$child user_id]
@@ -314,11 +314,14 @@ namespace eval ::xo {
       set timeshort [clock format [$child time] -format {[%H:%M:%S]}]
       set userlink  [:user_link -user_id $user_id -color $color]
       ns_log notice "encode <$msg> using encoder [:encoder] gives <[:encode $msg]>"
-      append result "<p class='line'><span class='timestamp'>$timeshort</span> " \
-                        "<span class='user'>$userlink</span> " \
-                        "<span class='message'>[:encode $msg]</span></p>\n"
+      append result [subst {
+        <p class='line'>
+        <span class='timestamp'>$timeshort</span>
+        <span class='user'>$userlink:</span>
+        <span class='message'>[:encode $msg]</span>
+        </p>
+      }]
     }
-    append result "</div>"
     return $result
   }
 
