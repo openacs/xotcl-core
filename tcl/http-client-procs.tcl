@@ -253,7 +253,7 @@ namespace eval ::xo {
     #
     # (C) If neither A or B apply (e.g., because an invalid charset
     # name was given to the charset parameter), we default to
-    # "binary". This corresponds to the behaviour of
+    # "binary". This corresponds to the behavior of
     # [ns_encodingfortype].  Also note, that the RFCs 3023 and 2616 do
     # not state any procedure when "invalid" charsets etc. are
     # identified. I assume, RFC-compliant clients have to ignore them
@@ -759,7 +759,7 @@ namespace eval ::xo {
   # TLS/SSL support
   #
   # Perform HTTPS requests via TLS (does not require nsopenssl)
-  # - requires tls 1.5.0 to be compiled into <aolsever>/lib/ ...
+  # - requires tls 1.5.0 to be compiled into <AOLserver>/lib/ ...
   # - - - - - - - - - - - - - - - - - - 
   # - see http://www.ietf.org/rfc/rfc2246.txt
   # - http://wp.netscape.com/eng/ssl3/3-SPEC.HTM
