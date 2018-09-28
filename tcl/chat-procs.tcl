@@ -7,7 +7,7 @@ xo::library doc {
 }
 
 namespace eval ::xo {
-  Class create Message -parameter {time user_id msg color}
+  Class create Message -parameter {time user_id msg color {type "message"}}
   Class create Chat -superclass ::xo::OrderedComposite \
       -parameter {
         chat_id
@@ -16,7 +16,7 @@ namespace eval ::xo {
         {mode default}
         {encoder noencode}
         {timewindow 600}
-        {sweepinterval 599}
+        {sweepinterval 5}
         {login_messages_p t}
         {logout_messages_p t}
       }
@@ -70,9 +70,8 @@ namespace eval ::xo {
     set msg     [ns_quotehtml $msg]
     # :log "-- msg=$msg"
 
-    if {$get_new
-        && [info commands ::thread::mutex] ne ""
-        && [info commands ::bgdelivery] ne ""} {
+    if {[info commands ::thread::mutex] ne "" &&
+        [info commands ::bgdelivery] ne ""} {
       # we could use the streaming interface
       :broadcast_msg [Message new -volatile -time [clock seconds] \
                             -user_id $user_id -color $color [list -msg $msg]]
@@ -124,9 +123,9 @@ namespace eval ::xo {
         }
       }
       ::xo::clusterwide nsv_set ${:array}-seen ${:session_id} ${:now}
-      #my log "--c setting session_id ${:session_id}: ${:now}"
+      # my log "--c setting session_id ${:session_id}: ${:now}"
     } else {
-      #my log "--c nothing new for ${:session_id}"
+      # my log "--c nothing new for ${:session_id}"
     }
     :render
   }
@@ -152,9 +151,11 @@ namespace eval ::xo {
       # was 1200
       if {$ago > 300} {
         :logout -user_id $user -msg "auto logout"
+        # ns_log warning "-user_id $user auto logout"
         try {::bgdelivery do ::Subscriber sweep chat-[:chat_id]}
       }
     }
+    :broadcast_msg [Message new -volatile -type "users" -time [clock seconds]]
     :log "-- ending"
   }
 
@@ -163,9 +164,9 @@ namespace eval ::xo {
     ns_log Notice "--core-chat User $user_id logging out of chat"
     if {${:logout_messages_p}} {
       if {$msg eq ""} {set msg [_ chat.has_left_the_room].}
-      :add_msg -get_new false $msg
+      :add_msg -uid $user_id -get_new false $msg
     }
-    
+
     # These values could already not be here. Just ignore when we don't
     # find them
     try {
@@ -192,15 +193,7 @@ namespace eval ::xo {
   }
 
   Chat instproc get_users {} {
-    set output ""
-    foreach {user_id timestamp} [:active_user_list] {
-      if {$user_id > 0} {
-        set diff [clock format [expr {[clock seconds] - $timestamp}] -format "%H:%M:%S" -gmt 1]
-        set userlink  [:user_link -user_id $user_id]
-        append output "<TR><TD class='user'>$userlink</TD><TD class='timestamp'>$diff</TD></TR>\n"
-      }
-    }
-    return $output
+    return [:json_encode_msg [Message new -volatile -type "users" -time [clock seconds]]]
   }
 
   Chat instproc user_active {user_id} {
@@ -212,8 +205,8 @@ namespace eval ::xo {
   Chat instproc login {} {
     :log "--chat login"
     if {${:login_messages_p} && ![:user_active ${:user_id}]} {
-      :add_msg -get_new false [_ xotcl-core.has_entered_the_room]
-    } elseif {![nsv_exists ${:array}-login ${:user_id}]} {
+      :add_msg -uid ${:user_id} -get_new false [_ xotcl-core.has_entered_the_room]
+    } elseif {${:user_id} > 0 && ![nsv_exists ${:array}-login ${:user_id}]} {
       # give some proof of our presence to the chat system when we
       # don't issue the login message
       ::xo::clusterwide nsv_set ${:array}-login ${:user_id} [clock seconds]
@@ -253,7 +246,7 @@ namespace eval ::xo {
     } else {
       set creator "System"
     }
-    return [:encode $creator]
+    return $creator
   }
 
   Chat instproc urlencode   {string} {ns_urlencode $string}
@@ -264,25 +257,48 @@ namespace eval ::xo {
   }
 
   Chat instproc json_encode_msg {msg} {
-    set old [:encoder]
-    :encoder noencode ;# just for user_link
-    set userlink [:user_link -user_id [$msg user_id] -color [$msg color]]
-    :encoder $old
-    set timeshort [clock format [$msg time] -format {[%H:%M:%S]}]
-    set text [:json_encode [$msg msg]]
-    foreach var {userlink timeshort} {set $var [:json_encode [set $var]]}
-    return [subst -nocommands {{"messages": [
-            {"user": "$userlink", "time": "$timeshort", "msg": "$text"}
-           ]\n}
-    }]
+    set type [$msg type]
+    switch $type {
+      "message" {
+        set message   [$msg msg]
+        set user_id   [$msg user_id]
+        set color     [$msg color]
+        set user      [:user_link -user_id $user_id -color $color]
+        set timestamp [clock format [$msg time] -format {[%H:%M:%S]}]
+        foreach var {message user timestamp} {
+          set $var [:json_encode [set $var]]
+        }
+        return [subst {{"type": "$type", "message": "$message", "timestamp": "$timestamp", "user": "$user"}\n}]
+      }
+      "users" {
+        set message [list]
+        foreach {user_id timestamp} [:active_user_list] {
+          if {$user_id < 0} continue
+          set timestamp [clock format [expr {[clock seconds] - $timestamp}] -format "%H:%M:%S" -gmt 1]
+          set user      [:user_link -user_id $user_id]
+          foreach var {user timestamp} {
+            set $var [:json_encode [set $var]]
+          }
+          lappend message [subst {{"timestamp": "$timestamp", "user": "$user"}}]
+        }
+        set message "\[[join $message ,]\]"
+        return [subst {{"type": "$type", "chat_id": "[:chat_id]", "message": $message}\n}]
+      }
+    }
   }
 
   Chat instproc js_encode_msg {msg} {
-    set json [:json_encode_msg $msg]
-    return "<script type='text/javascript' language='javascript' nonce='$::__csp_nonce'>
-    var data = $json;
-    parent.getData(data);
-    </script>\n"
+    set json [string trim [:json_encode_msg $msg]]
+    if {$json ne ""} {
+      return [subst {
+        <script type='text/javascript' language='javascript' nonce='$::__csp_nonce'>
+           var data = $json;
+           parent.getData(data);
+        </script>\n
+      }]
+    } else {
+      return
+    }
   }
 
   Chat instproc broadcast_msg {msg} {
@@ -295,34 +311,18 @@ namespace eval ::xo {
     set user_id [expr {[info exists uid] ? $uid : ${:user_id}}]
     set color [:user_color $user_id]
     bgdelivery subscribe chat-[:chat_id] "" [:mode]
-    if {${:login_messages_p} && ![:user_active $user_id]} {
-      :broadcast_msg [Message new -volatile -time [clock seconds] \
-                            -user_id $user_id -color $color \
-                            -msg [_ xotcl-core.has_entered_the_room] ]
-    }
-    #my get_all
   }
 
   Chat instproc render {} {
     :orderby time
-    set result ""
+    set result [list]
+    # Piggyback the users list in every rendering, this way we don't
+    # need a separate ajax request for the polling interface.
+    :add [Message new -type "users" -time [clock seconds]]
     foreach child [:children] {
-      set msg       [$child msg]
-      set user_id   [$child user_id]
-      set color     [$child color]
-      set timelong  [clock format [$child time]]
-      set timeshort [clock format [$child time] -format {[%H:%M:%S]}]
-      set userlink  [:user_link -user_id $user_id -color $color]
-      ns_log notice "encode <$msg> using encoder [:encoder] gives <[:encode $msg]>"
-      append result [subst {
-        <p class='line'>
-        <span class='timestamp'>$timeshort</span>
-        <span class='user'>$userlink:</span>
-        <span class='message'>[:encode $msg]</span>
-        </p>
-      }]
+      lappend result [:json_encode_msg $child]
     }
-    return $result
+    return "\[[join $result ,]\]"
   }
 
   ############################################################################
@@ -341,13 +341,7 @@ namespace eval ::xo {
   }
 
   ChatClass method initialize_nsvs {} {
-    # read the last_activity information at server start into a nsv array
-    ::xo::dc foreach get_rooms {
-      select room_id, to_char(max(creation_date),'HH24:MI:SS YYYY-MM-DD') as last_activity
-      from chat_msgs group by room_id
-    } {
-      ::xo::clusterwide nsv_set [self]-$room_id-seen last [clock scan $last_activity]
-    }
+    # empty stub for subclasses to extend
   }
 
   ChatClass method flush_messages {-chat_id:required} {
