@@ -67,7 +67,7 @@ namespace eval ::xo {
   # Please, make sure that you use a recent distribution of tclthread
   # ( > 2.6.5 ) to have the blocking-timeout feature working
   # safely. This newly introduced feature makes use of advanced thread
-  # synchronisation offered by tclthread that needed to be fixed in
+  # synchronization offered by tclthread that needed to be fixed in
   # tclthread <= 2.6.5. At the time of this writing, there was no
   # post-2.6.5 release of tclthread, hence, you are required to obtain a
   # CVS snapshot, dating at least 2008-05-23. E.g.:
