@@ -116,7 +116,7 @@ ad_library {
       #
       # jquery is just needed for the used ajax call
       #
-      template::head::add_javascript -src //code.jquery.com/jquery-1.11.3.min.js
+      template::head::add_javascript -src //code.jquery.com/jquery-1.12.4.min.js
       security::csp::require script-src code.jquery.com
 
       template::add_body_script -script {
