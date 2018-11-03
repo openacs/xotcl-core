@@ -177,6 +177,35 @@ namespace eval ::xo::db {
     return [string map [list "__" .] $sql]
   }
 
+  ::xo::db::oracle instproc limit_clause {
+    {-sql}
+    {-limit ""}
+    {-offset ""}
+  } {
+    if {$limit ne "" || $offset ne ""} {
+      if {$offset eq ""} {
+        #
+        # Only a limit is given.
+        #
+        set limit_clause "ROWNUM <= $limit"
+      } elseif {$limit eq ""} {
+        #
+        # Only an offset is given.
+        #
+        set limit_clause "ROWNUM >= $offset"
+      } else {
+        #
+        # Both, an offset and limit is given.
+        #
+        set limit_clause "ROWNUM BETWEEN $offset and [expr {$offset+$limit}]"
+      }
+      # for pagination, we will need an "inner" sort, such as
+      # SELECT * FROM (SELECT ...., ROW_NUMBER() OVER (ORDER BY ...) R FROM table) WHERE R BETWEEN 0 and 100
+      set sql "SELECT * FROM ($sql) WHERE $limit_clause"
+    }
+    return $sql
+  }
+  
   ::xo::db::oracle instproc map_datatype {type} {
     switch -- $type {
       string    { set type varchar2(1000) }
@@ -188,6 +217,7 @@ namespace eval ::xo::db {
     }
     return $type
   }
+  
   ::xo::db::oracle instproc datatype_constraint {type table att} {
     set constraint ""
     switch -- $type {
@@ -216,16 +246,7 @@ namespace eval ::xo::db {
     if {$map_function_names} {set vars [:map_function_name $vars]}
     set sql "SELECT $vars FROM $from $where_clause $group_clause"
     if {$limit ne "" || $offset ne ""} {
-      if {$offset eq ""} {
-        set limit_clause "ROWNUM <= $limit"
-      } elseif {$limit eq ""} {
-        set limit_clause "ROWNUM >= $offset"
-      } else {
-        set limit_clause "ROWNUM BETWEEN $offset and [expr {$offset+$limit}]"
-      }
-      # for pagination, we will need an "inner" sort, such as
-      # SELECT * FROM (SELECT ...., ROW_NUMBER() OVER (ORDER BY ...) R FROM table) WHERE R BETWEEN 0 and 100
-      set sql "SELECT * FROM ($sql $order_clause) WHERE $limit_clause"
+      set sql [:limit_clause -sql "$sql $order_clause" -limit $limit -offset $offset]
     } else {
       append sql " " $order_clause
     }
