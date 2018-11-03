@@ -404,7 +404,7 @@ namespace eval ::xo::db {
 
     # "CrClasses" stores all attributes of the class hierarchy in
     # db_slot. This is due to the usage of the
-    # automatically created views. Note, that classes created with
+    # automatically created views. Note that classes created with
     # ::xo::db::Class keep only the class specific db slots.
     #
     foreach {slot_name slot} [[:info superclass] array get :db_slot] {

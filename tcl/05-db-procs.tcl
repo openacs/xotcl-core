@@ -1316,7 +1316,7 @@ namespace eval ::xo::db {
     # Note: based on the ordering, char has lower priority over int*
     # which is probably a bug, but is not a problem in OpenACS.
     #
-    # Note, that we can as well get the type in future versions.
+    # Note that we can as well get the type in future versions.
     #
     ::xo::dc foreach get_function_params {
       select proname, pronargs, proargtypes, prosrc
@@ -1672,7 +1672,7 @@ namespace eval ::xo::db {
       } elseif {![$class_name istype ::xo::db::Class]} {
         #
         # The methods of ::xo::db::sql::util like "table_exists" fall
-        # into this category. Make sure, that we do not create new
+        # into this category. Make sure that we do not create new
         # objects via the next command.
         #
         continue
@@ -2464,7 +2464,7 @@ namespace eval ::xo::db {
     {-initialize true}
   } {
     Returns a set (ordered composite) of the answer tuples of
-    an 'instance_select_query' with the same attributes. Note, that
+    an 'instance_select_query' with the same attributes. Note that
     the returned objects might by partially instantiated.
 
     @return ordered composite

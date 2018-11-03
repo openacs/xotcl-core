@@ -145,7 +145,7 @@ namespace eval ::xo {
     Register the NaviServer/AOLserver filter and traces.
     This method is typically called via *-init.tcl.
 
-    Note, that the specified url must not have an entry
+    Note that the specified url must not have an entry
     in the site-nodes, otherwise the OpenACS request
     processor performs always the cockie-based authorization.
 
