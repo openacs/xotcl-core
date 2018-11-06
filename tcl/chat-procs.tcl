@@ -143,11 +143,11 @@ namespace eval ::xo {
   }
 
   Chat instproc sweeper {} {
-    :log "--core-chat starting"
+    #:log "--core-chat starting"
     foreach {user timestamp} [nsv_array get ${:array}-last-activity] {
-      ns_log Notice "--core-chat at user $user with $timestamp"
+      #ns_log notice "--core-chat at user $user with $timestamp"
       set ago [expr {(${:now} - $timestamp) / 1000}]
-      ns_log Notice "--core-chat Checking: now=${:now}, timestamp=$timestamp, ago=$ago"
+      #ns_log notice "--core-chat Checking: now=${:now}, timestamp=$timestamp, ago=$ago"
       # was 1200
       if {$ago > 300} {
         :logout -user_id $user -msg "auto logout"
@@ -161,7 +161,7 @@ namespace eval ::xo {
 
   Chat instproc logout {{-user_id ""} {-msg ""}} {
     set user_id [expr {$user_id ne "" ? $user_id : ${:user_id}}]
-    ns_log Notice "--core-chat User $user_id logging out of chat"
+    ns_log notice "--core-chat User $user_id logging out of chat"
     if {${:logout_messages_p}} {
       if {$msg eq ""} {set msg [_ chat.has_left_the_room].}
       :add_msg -uid $user_id -get_new false $msg
@@ -302,7 +302,7 @@ namespace eval ::xo {
   }
 
   Chat instproc broadcast_msg {msg} {
-    :log "--chat broadcast_msg"
+    #:log "--chat broadcast_msg"
     ::xo::clusterwide \
         bgdelivery send_to_subscriber chat-[:chat_id] [:json_encode_msg $msg]
   }
@@ -330,10 +330,10 @@ namespace eval ::xo {
   ############################################################################
   Class create ChatClass -superclass ::xotcl::Class
   ChatClass method sweep_all_chats {} {
-    :log "-- starting"
+    #:log "-- starting"
     foreach nsv [nsv_names "[self]-*-seen"] {
       if { [regexp "[self]-(\[0-9\]+)-seen" $nsv _ chat_id] } {
-        :log "--Chat_id $chat_id"
+        #:log "--Chat_id $chat_id"
         :new -volatile -chat_id $chat_id -user_id 0 -session_id 0 -init -sweeper
       }
     }
