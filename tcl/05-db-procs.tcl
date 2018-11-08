@@ -263,7 +263,7 @@ namespace eval ::xo::db {
   ::xo::db::oracle instproc mk_sql_constraint_name {table att suffix} {
     #
     # Constraint names are limited in oracle to 30 characters;
-    # Postgres has no such limits. Therefore, we use different
+    # PostgreSQL has no such limits. Therefore, we use different
     # rules depending on whether we are running under Oracle or not.
     #
     set name ${table}_${att}_$suffix
@@ -560,7 +560,7 @@ namespace eval ::xo::db {
   }
 
   #
-  # The default insert-view operation (different in postgres and oracle)
+  # The default insert-view operation (different in PostgreSQL and Oracle)
   #
   ::xo::db::Driver instproc insert-view-operation {} { return dml }
   ::xo::db::DB-postgresql instproc insert-view-operation {} { return 0or1row }
@@ -906,8 +906,10 @@ namespace eval ::xo::db {
          SELECT 1 FROM user_sequences
           WHERE sequence_name = :name limit 1"]} return
     } else {
-      # postgres could avoid this check and use 'if not exists' from
-      # version 9.5
+      #
+      # PostgreSQL could avoid this check and use 'if not exists' in
+      # versions starting with 9.5.
+      #
       if {[::xo::dc 0or1row exists "
          SELECT 1 FROM information_schema.sequences
           WHERE sequence_schema = 'public'
@@ -968,7 +970,7 @@ namespace eval ::xo::db {
     &nbsp;&nbsp;[acs_package_root_dir xotcl-request-broker]/patches/funcs-1.sql</tt>
   } {
     if {[db_driverkey ""] eq "postgresql"} {
-      # only necessary with postgres
+      # only necessary with PostgreSQL
       if {[info exists kernel_older_than]} {
         if {[apm_version_names_compare \
                  $kernel_older_than [ad_acs_version]] < 1} {
@@ -1415,7 +1417,7 @@ namespace eval ::xo::db {
   }
 
   #
-  #  DB and Postgres interface method generation (no autonull):
+  #  DB-postgresql interface method generation (no autonull):
   #
   ::xo::db::DB-postgresql instproc generate_psql {package_name object_name} {
     set function_args [:get_function_args $package_name $object_name]
@@ -1603,9 +1605,10 @@ namespace eval ::xo::db {
     # This method compiles a stored procedure into a xotcl method
     # using a classic nonpositional argument style interface.
     #
-    # The current implementation should work on postgres and oracle (not tested)
-    # but will not work, when a single OpenACS instance want to talk to
-    # postgres and oracle simultaneously. Not sure, how important this is...
+    # The current implementation should work on PostgreSQL and Oracle
+    # (not tested) but will not work, when a single OpenACS instance
+    # want to talk to PostgreSQL and Oracle simultaneously. Not sure,
+    # how important this is...
     #
     if {$object_name eq "set"} {
       :log "We cannot handle object_name = '$object_name' in this version"
@@ -1716,7 +1719,7 @@ namespace eval ::xo::db {
   }
 
   #
-  # now, create all stored procedures in postgres or Oracle
+  # Now, create all stored procedures in PostgreSQL or Oracle.
   #
   ::xo::db::Class create_all_functions
 
@@ -1785,6 +1788,16 @@ namespace eval ::xo::db {
 
       require proc default {-table -col -value} {
         set default [::xo::db::sql::util get_default -table $table -column $col]
+        #
+        # Newer versions of PostgreSQL return default values with type
+        # casts (e.g. 'en_US'::character varying). In these cases, we
+        # remove the type cast from the returned default value before
+        # comparison.
+        #
+        if {[string match *'::* $default]} {
+          lassign [split $default :] default .
+          set default [string trim $default ']
+        }
         if {$default ne $value} {
           ::xo::dc dml alter-table-$table \
               "alter table $table alter column $col set default :value"
@@ -1831,7 +1844,7 @@ namespace eval ::xo::db {
   #
   if {[db_driverkey ""] eq "postgresql"} {
     #
-    # Postgres
+    # PostgreSQL
     #
     ::xo::db::Class instproc object_types_query {
       {-subtypes_first:boolean false}
