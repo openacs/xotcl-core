@@ -351,7 +351,13 @@ if {![string match "*contentsentlength*" $msg]} {
     #my log "-- sending to subscriber for [:key] $smsg ch=[:channel] \
         #        mode=[:mode], user_id [:user_id]"
     puts -nonewline [:channel] $smsg
-    flush [:channel]
+    # Failure to flush the channel usually indicates that client
+    # (e.g. browser) closed the connection.
+    if {[catch {
+      flush [:channel]
+    }]} {
+      error "client_disconnected"
+    }
   }
 
   Subscriber proc foreachSubscriber {key method {argument ""}} {
@@ -360,7 +366,11 @@ if {![string match "*contentsentlength*" $msg]} {
       set subs1 [list]
       foreach s [set :subscriptions($key)] {
         if {[catch {$s $method $argument} errMsg]} {
-          ns_log error "error in $method to subscriber $s (key=$key): $errMsg\n$::errorInfo"
+          if {$errMsg eq "client_disconnected"} {
+            ns_log warning "$method to subscriber $s (key=$key): $errMsg"
+          } else {
+            ns_log error "error in $method to subscriber $s (key=$key): $errMsg\n$::errorInfo"
+          }
           $s destroy
         } else {
           lappend subs1 $s
