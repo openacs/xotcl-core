@@ -226,27 +226,17 @@ namespace eval ::xo {
   }
 
   Chat instproc user_name { user_id } {
-    set screen_name [acs_user::get_user_info -user_id $user_id -element screen_name]
-    if {$screen_name eq ""} {
-      set screen_name [person::name -person_id $user_id]
+    if {$user_id > 0} {
+      set screen_name [acs_user::get_user_info -user_id $user_id -element screen_name]
+      if {$screen_name eq ""} {
+        set screen_name [person::name -person_id $user_id]
+      }
+    } elseif { $user_id == 0 } {
+      set screen_name "Nobody"
+    } else {
+      set screen_name "System"
     }
     return $screen_name
-  }
-
-  Chat instproc user_link { -user_id -color } {
-    if {$user_id > 0} {
-      set name [:user_name $user_id]
-      set url "/shared/community-member?user%5fid=$user_id"
-      if {![info exists color]} {
-        set color [:user_color $user_id]
-      }
-      set creator "<a style='color:$color;' target='_blank' href='[ns_quotehtml $url]'>$name</a>"
-    } elseif { $user_id == 0 } {
-      set creator "Nobody"
-    } else {
-      set creator "System"
-    }
-    return $creator
   }
 
   Chat instproc urlencode   {string} {ns_urlencode $string}
@@ -262,24 +252,25 @@ namespace eval ::xo {
       "message" {
         set message   [$msg msg]
         set user_id   [$msg user_id]
+        set user      [:user_name $user_id]
         set color     [$msg color]
-        set user      [:user_link -user_id $user_id -color $color]
         set timestamp [clock format [$msg time] -format {[%H:%M:%S]}]
-        foreach var {message user timestamp} {
+        foreach var {message user timestamp color user_id} {
           set $var [:json_encode [set $var]]
         }
-        return [subst {{"type": "$type", "message": "$message", "timestamp": "$timestamp", "user": "$user"}\n}]
+        return [subst {{"type": "$type", "message": "$message", "timestamp": "$timestamp", "user": "$user", "color": "$color", "user_id": "$user_id"}\n}]
       }
       "users" {
         set message [list]
         foreach {user_id timestamp} [:active_user_list] {
           if {$user_id < 0} continue
           set timestamp [clock format [expr {[clock seconds] - $timestamp}] -format "%H:%M:%S" -gmt 1]
-          set user      [:user_link -user_id $user_id]
-          foreach var {user timestamp} {
+          set user      [:user_name $user_id]
+          set color     [:user_color $user_id]
+          foreach var {user timestamp color user_id} {
             set $var [:json_encode [set $var]]
           }
-          lappend message [subst {{"timestamp": "$timestamp", "user": "$user"}}]
+          lappend message [subst {{"timestamp": "$timestamp", "user": "$user", "color": "$color", "user_id": "$user_id"}}]
         }
         set message "\[[join $message ,]\]"
         return [subst {{"type": "$type", "chat_id": "[:chat_id]", "message": $message}\n}]
