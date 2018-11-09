@@ -351,12 +351,13 @@ if {![string match "*contentsentlength*" $msg]} {
     #my log "-- sending to subscriber for [:key] $smsg ch=[:channel] \
         #        mode=[:mode], user_id [:user_id]"
     puts -nonewline [:channel] $smsg
-    # Failure to flush the channel usually indicates that client
-    # (e.g. browser) closed the connection.
-    if {[catch {
+    try {
       flush [:channel]
-    }]} {
-      error "client_disconnected"
+    } trap {POSIX EPIPE} {} {
+      # A broken pipe when flushing the channel usually indicates that
+      # client (e.g. browser) closed the connection. This is not a
+      # real error.
+      throw {CLIENTDISCONNECT} {client disconnected}
     }
   }
 
@@ -366,7 +367,8 @@ if {![string match "*contentsentlength*" $msg]} {
       set subs1 [list]
       foreach s [set :subscriptions($key)] {
         if {[catch {$s $method $argument} errMsg]} {
-          if {$errMsg eq "client_disconnected"} {
+          # Treat client disconnection as justa warning
+          if {$::errorCode eq "CLIENTDISCONNECT"} {
             ns_log warning "$method to subscriber $s (key=$key): $errMsg"
           } else {
             ns_log error "error in $method to subscriber $s (key=$key): $errMsg\n$::errorInfo"
