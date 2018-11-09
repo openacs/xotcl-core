@@ -367,7 +367,7 @@ if {![string match "*contentsentlength*" $msg]} {
       set subs1 [list]
       foreach s [set :subscriptions($key)] {
         if {[catch {$s $method $argument} errMsg]} {
-          # Treat client disconnection as justa warning
+          # Treat client disconnection as just a warning
           if {$::errorCode eq "CLIENTDISCONNECT"} {
             ns_log warning "$method to subscriber $s (key=$key): $errMsg"
           } else {
