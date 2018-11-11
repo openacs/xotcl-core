@@ -205,7 +205,7 @@ namespace eval ::xo::db {
     }
     return $sql
   }
-  
+
   ::xo::db::oracle instproc map_datatype {type} {
     switch -- $type {
       string    { set type varchar2(1000) }
@@ -217,7 +217,7 @@ namespace eval ::xo::db {
     }
     return $type
   }
-  
+
   ::xo::db::oracle instproc datatype_constraint {type table att} {
     set constraint ""
     switch -- $type {
@@ -649,11 +649,30 @@ namespace eval ::xo::db {
     #
     set key [ns_md5 $sql]
 
-    if {[nsv_exists pepared_statement $key]} {
+    #
+    # Get local variables "prepare", "execute", "prepName", and "sql"
+    # keeping the relevant prepared statement context.
+    #
+    set per_interp_cache ::xo::prepared($key)
+    if {[info exists $per_interp_cache]} {
       #
-      # The perepared statement exists already
+      # The prepared statement exists in the per-interp cache, get the
+      # values from there.
       #
-      lassign [nsv_get pepared_statement $key] prepare execute prepName sql
+      lassign [set $per_interp_cache] prepare execute prepName sql
+
+    } elseif {[nsv_exists prepared_statement $key]} {
+      #
+      # The prepared statement exists already in the nsv-cache.
+      #
+      set nsv_cached_value [nsv_get prepared_statement $key]
+      #
+      # Save the nsv-cached value as well in the per-interpreter cache
+      # and set the output variables.
+      #
+      set $per_interp_cache $nsv_cached_value
+      lassign $nsv_cached_value prepare execute prepName sql
+      
     } else {
       #
       # Compute a PREPARE statement and an EXECUTE statement on the
@@ -675,11 +694,11 @@ namespace eval ::xo::db {
       if {[llength $argtypes] == [llength $prepArgs]} {
         set prepArgs $argtypes
       }
-      set c [nsv_incr pepared_statement count]
+      set c [nsv_incr prepared_statement count]
       set prepName __p$c
       set prepare "PREPARE $prepName ([join $prepArgs ,]) AS $l"
       set execute "EXECUTE $prepName ([join $execArgs ,])"
-      nsv_set pepared_statement $key [list $prepare $execute $prepName $sql]
+      nsv_set prepared_statement $key [list $prepare $execute $prepName $sql]
     }
 
     #
