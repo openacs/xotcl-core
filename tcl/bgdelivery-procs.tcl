@@ -353,14 +353,19 @@ if {![string match "*contentsentlength*" $msg]} {
     try {
       puts -nonewline [:channel] $smsg
       flush [:channel]
-    } trap {POSIX EPIPE} {} {
-      # A broken pipe when flushing the channel usually indicates that
-      # client (e.g. browser) closed the connection. This is not a
-      # real error.
-      throw {CLIENTDISCONNECT} {client disconnected}
     } on error {errorMsg} {
-      ns_log warning "subscriber send $::errorCode <$errorMsg>"
-      throw $::errorCode $errorMsg
+      # Broken pipe and connection reset are to be expected if the
+      # clients (e.g. browser in a chat) leaves the page. It is not a
+      # real error.
+      set ok_errors {
+        "POSIX EPIPE {broken pipe}"
+        "POSIX ECONNRESET {connection reset by peer}"
+      }
+      if {$::errorCode in $ok_errors} {
+        throw {CLIENTDISCONNECT} {client disconnected}
+      } else {
+        throw $::errorCode $errorMsg
+      }
     }
   }
 
@@ -369,15 +374,15 @@ if {![string match "*contentsentlength*" $msg]} {
     if {[info exists :subscriptions($key)]} {
       set subs1 [list]
       foreach s [set :subscriptions($key)] {
-        if {[catch {$s $method $argument} errMsg]} {
-          # Treat client disconnection as just a warning
-          if {$::errorCode eq "CLIENTDISCONNECT"} {
-            ns_log warning "$method to subscriber $s (key=$key): $errMsg"
-          } else {
-            ns_log error "error in $method to subscriber $s (key=$key): $errMsg\n$::errorInfo"
-          }
+        try {
+          $s $method $argument
+        } trap {CLIENTDISCONNECT} {errMsg} {
+          ns_log warning "$method to subscriber $s (key=$key): $errMsg"
           $s destroy
-        } else {
+        } on error {errMsg} {
+          ns_log error "error in $method to subscriber $s (key=$key): $errMsg\n$::errorInfo"
+          $s destroy
+        } on ok {result} {
           lappend subs1 $s
         }
       }
