@@ -350,8 +350,8 @@ if {![string match "*contentsentlength*" $msg]} {
     }
     #my log "-- sending to subscriber for [:key] $smsg ch=[:channel] \
         #        mode=[:mode], user_id [:user_id]"
-    puts -nonewline [:channel] $smsg
     try {
+      puts -nonewline [:channel] $smsg
       flush [:channel]
     } trap {POSIX EPIPE} {} {
       # A broken pipe when flushing the channel usually indicates that
