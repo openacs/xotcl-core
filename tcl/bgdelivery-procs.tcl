@@ -358,6 +358,9 @@ if {![string match "*contentsentlength*" $msg]} {
       # client (e.g. browser) closed the connection. This is not a
       # real error.
       throw {CLIENTDISCONNECT} {client disconnected}
+    } on error {errorMsg} {
+      ns_log warning "subscriber send $::errorCode <$errorMsg>"
+      throw $::errorCode $errorMsg
     }
   }
 
