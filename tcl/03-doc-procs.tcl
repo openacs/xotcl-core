@@ -48,12 +48,16 @@ ad_library {
       }
     }
     if {[info exists method]} {
-      set isNx [:scope_eval $scope \
-                    ::nsf::directdispatch $obj ::nsf::methods::object::info::hastype ::nx::Class]
-      if {$kind} {
-        return [set :methodLabel($isNx-$methodType)]
-      } else {
-        return "$obj [set :methodLabel($isNx-$methodType)] $method"
+      set isObject [:scope_eval $scope ::nsf::is object $obj]
+      if {$isObject} {
+        set isNx [:scope_eval $scope \
+                      ::nsf::directdispatch $obj ::nsf::methods::object::info::hastype ::nx::Class]
+        if {$kind} {
+          set result [set :methodLabel($isNx-$methodType)]
+        } else {
+          set result "$obj [set :methodLabel($isNx-$methodType)] $method"
+        }
+        return $result
       }
     }
     return $proc_spec
@@ -63,7 +67,7 @@ ad_library {
     #
     # Return HTML code for a debug switch that lets an admin turn
     # debugging of functions and methods on and off. This
-    # functionality is only allowed to site-wide admins
+    # functionality is only allowed to site-wide admins.
     #
     if {![acs_user::site_wide_admin_p]
         || [info commands ::nsf::method::property] eq ""
