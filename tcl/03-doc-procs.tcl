@@ -104,6 +104,10 @@ ad_library {
       ns_log warning "unexpected method type <$methodType>"
       set modifier ""
     }
+    set isObject [:scope_eval $scope ::nsf::is object $obj]
+    if {!$isObject} {
+      return ""
+    }
     set debug_p [:scope_eval $scope ::nsf::method::property $obj {*}$modifier $method debug]
 
     #
