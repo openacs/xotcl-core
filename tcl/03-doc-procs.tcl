@@ -250,9 +250,13 @@ ad_library {
   }
 
   :public object method object_url {{-show_source 0} {-show_methods 1} scope obj} {
-    #set object [:scope_eval $scope nsf::object::qualify $obj]
-    set object [:scope_eval $scope namespace origin $obj]
-    return [export_vars -base /xotcl/show-object {object show_source show_methods}]
+    set isObject [:scope_eval $scope ::nsf::is object $obj]
+    if {$isObject} {
+      set object [:scope_eval $scope namespace origin $obj]
+      return [export_vars -base /xotcl/show-object {object show_source show_methods}]
+    } else {
+      return .
+    }
   }
 
   :public object method object_index {scope obj} {
