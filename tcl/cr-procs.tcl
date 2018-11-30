@@ -931,6 +931,11 @@ namespace eval ::xo::db {
   } {
     set __atts [list creation_user]
     set __vars $__atts
+    if {[ns_conn isconnected]} {
+      lappend __atts creation_ip
+      set peeraddr [ad_conn peeraddr]
+      lappend __vars peeraddr
+    }
 
     #
     # The modifying_user is not maintained by the CR (bug?)
