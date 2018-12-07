@@ -90,7 +90,7 @@ ad_library {
       3 {lassign $proc_spec obj methodType method; set scope ""}
       4 {lassign $proc_spec scope obj methodType method}
       default {
-        ns_log notice "Unexpected format <$proc_spec> consists of [llength $proc_spec] parts"
+        ns_log notice "[self] debug_widget: Unexpected format <$proc_spec> consists of [llength $proc_spec] parts"
         return ""
       }
     }
@@ -101,7 +101,7 @@ ad_library {
     } elseif {$methodType eq "Class"} {
       return ""
     } else {
-      ns_log warning "unexpected method type <$methodType>"
+      ns_log warning "[self] debug_widget unexpected method type <$methodType>"
       set modifier ""
     }
     set isObject [:scope_eval $scope ::nsf::is object $obj]
@@ -524,7 +524,7 @@ ad_library {
 
   :public object method get_object_source {scope obj} {
     if {![nsf::is object $obj]} {
-      ns_log warning "get_object_source: argument passed as obj is not an object: $obj"
+      ns_log warning "[self] get_object_source: argument passed as obj is not an object: $obj"
       return ""
     }
     set init_block [:get_init_block $scope $obj]
