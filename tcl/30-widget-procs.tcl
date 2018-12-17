@@ -646,7 +646,7 @@ namespace eval ::xo::Table {
           template::add_event_listener \
               -id $id \
               -preventdefault=false \
-              -script [subst {acs_ListBulkActionClick('$name','[$ba url]');}]
+              -script [subst {acs_ListBulkActionClick("$name","[$ba url]");}]
         }
       }
     }
