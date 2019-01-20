@@ -142,7 +142,7 @@ Class create ::xotcl::THREAD \
       [list set ::xotcl::currentScript [info script]] \n\
       [list set ::xotcl::currentThread [self]] \n\
       $cmd
-  set :mutex [ns_mutex create]
+  set :mutex [ns_mutex create ns_mutex[self]]
   ns_log notice "mutex ${:mutex} created"
   next
 }
@@ -175,7 +175,7 @@ Class create ::xotcl::THREAD \
       :log "thread terminated"
       nsv_unset [self class] [self]
       ns_mutex destroy ${:mutex}
-      :log "+++ mutex ${:mutex} destroyed"
+      ns_log notice "mutex ${:mutex} destroyed"
     }
   }
   next
