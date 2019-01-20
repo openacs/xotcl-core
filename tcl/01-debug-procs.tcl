@@ -532,14 +532,14 @@ namespace eval ::xo {
   proc ::xo::at_delete args {
     #
     # Delete all object and classes at a time, where the thread is
-    # fully functioning. During interp exit, the commands would be
-    # deleted anyhow, but there exists a potential memory leak, when
-    # e.g. a destroy method (or an exit handler) writes to ns_log.
-    # ns_log requires the thread name, but it is cleared already
-    # earlier (after the interp deletion trace). AOLserver recreated
-    # the name and the an entry in the thread list, but this elements
-    # will not be freed. If we destroy the objects here, the mentioned
-    # problem will not occur.
+    # still fully functioning. During interp exit, the commands would
+    # be deleted anyhow, but there exists a potential memory leak,
+    # when e.g. a destroy method (or an exit handler) writes to
+    # ns_log.  ns_log requires the thread name, but it is cleared
+    # already earlier (after the interp deletion trace). AOLserver
+    # recreated the name and the an entry in the thread list, but this
+    # elements will not be freed. If we destroy the objects here, the
+    # mentioned problem will not occur.
     #
     ns_log notice "ON DELETE $args"
     ::xo::broadcast clear

@@ -509,7 +509,8 @@ namespace eval ::xo::db {
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     set qn [uplevel [list [self] qn $qn]]
     #
-    # the prepare in the next line works probably only with inline sql statements
+    # The prepare statement in the next line works probably only with
+    # inline sql statements.
     #
     #if {[info exists prepare]} {set sql [:prepare -dbn $dbn -argtypes $prepare $sql]}
     #ns_log notice "### [list ::db_foreach -dbn $dbn $qn $sql $body {*}$bindOpt]"
@@ -2608,6 +2609,8 @@ namespace eval ::xo::db {
 
     set column_name ${:column_name}
     set object_type [${:domain} object_type]
+    #ns_log notice "::xo::db::Attribute create_attribute $object_type $column_name epoch [ns_ictl epoch] [array get ::db_state_default]"
+
     if {[::xo::dc get_value check_att {select 0 from acs_attributes where
       attribute_name = :column_name and object_type = :object_type} 1]} {
 
