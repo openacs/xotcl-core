@@ -1814,14 +1814,15 @@ namespace eval ::xo::db {
         # remove the type cast from the returned default value before
         # comparison.
         #
-        if {[string match *'::* $default]} {
-          lassign [split $default :] default .
-          set default [string trim $default ']
-        }
-        #
         # Depending on the generation and real datatype of the DBMS,
-        # boolean values are reported differently from the DBMS.
+        # certain datatype values are reported differently from the
+        # DBMS. Therefore, we use a type cast to check whether
+        # specified default value (e.g. '1900-01-01') is in fact
+        # equivalent to default stored in db (e.g. '1900-01-01
+        # 00:00:00+01'::timestamp with time zone).
         #
+        # Booleans can be normalized in advance without involving the
+        # database
         if {
             ($default eq "f" && $value eq "false")
             || ($default eq "t" && $value eq "true")
@@ -1829,8 +1830,20 @@ namespace eval ::xo::db {
           set value $default
         }
         if {$default ne $value} {
-          ::xo::dc dml alter-table-$table \
-              "alter table $table alter column $col set default :value"
+          if {[regexp {^'(.*)'::(.*)$} $default match default_value default_datatype]} {
+            set clause "$default <> cast(:value as $default_datatype)"
+          } else {
+            set datatype [db_column_type $table $col]
+            set clause "cast(:default as $datatype) <> cast(:value as $datatype)"
+          }
+          # This last coalesce is in case one of the compared values
+          # was null: as we know they were different, this is
+          # certainly a new default
+          if {[::xo::dc get_value check_default "
+             select coalesce($clause, true) from dual"]} {
+            ::xo::dc dml alter-table-$table \
+                "alter table $table alter column $col set default :value"
+          }
         }
       }
 
