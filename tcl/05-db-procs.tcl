@@ -1818,6 +1818,16 @@ namespace eval ::xo::db {
           lassign [split $default :] default .
           set default [string trim $default ']
         }
+        #
+        # Depending on the generation and real datatype of the DBMS,
+        # boolean values are reported differently from the DBMS.
+        #
+        if {
+            ($default eq "f" && $value eq "false")
+            || ($default eq "t" && $value eq "true")
+          } {
+          set value $default
+        }
         if {$default ne $value} {
           ::xo::dc dml alter-table-$table \
               "alter table $table alter column $col set default :value"
