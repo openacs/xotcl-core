@@ -774,9 +774,13 @@ namespace eval ::xo {
   # after a request was processed (defined in this file).
   #
   ::xotcl::Object create ::xo::broadcast
-  ::xo::broadcast proc send {cmd} {
+  ::xo::broadcast proc send {-thread_pattern cmd} {
     foreach thread_info [ns_info threads] {
-      switch -glob -- [lindex $thread_info 0] {
+      set tn [lindex $thread_info 0]
+      if { [info exists thread_name] && ![string match $thread_pattern $tn] } {
+        continue
+      }
+      switch -glob -- $tn {
         -conn:* -
         -sched:* {
           set tid [lindex $thread_info 2]
