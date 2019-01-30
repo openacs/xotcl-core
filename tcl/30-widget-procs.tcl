@@ -195,7 +195,7 @@ namespace eval ::xo::tdom {
   namespace eval ::html {}
   proc ::html::CSRFToken {} {
     ::if {[::info exists ::__csrf_token]} {
-      ::html::input -type hidden -name __csrf_token -value [::security::csrf::token] {}
+      ::html::input -type hidden -name __csrf_token -value $::__csrf_token {}
     }
   }
 
