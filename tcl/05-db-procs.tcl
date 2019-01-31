@@ -846,8 +846,8 @@ namespace eval ::xo::db {
       set column_name [string tolower $column_name]
     }
     ::xo::db::sql::util table_column_exists \
-        -t_name $table_name \
-        -c_name $column_name
+        -p_table $table_name \
+        -p_column $column_name
   }
 
   require proc table {name definition {populate ""}} {
@@ -1841,6 +1841,7 @@ namespace eval ::xo::db {
           # certainly a new default
           if {[::xo::dc get_value check_default "
              select coalesce($clause, true) from dual"]} {
+            ns_log warning "needed"
             ::xo::dc dml alter-table-$table \
                 "alter table $table alter column $col set default :value"
           }
