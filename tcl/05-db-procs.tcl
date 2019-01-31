@@ -1841,7 +1841,6 @@ namespace eval ::xo::db {
           # certainly a new default
           if {[::xo::dc get_value check_default "
              select coalesce($clause, true) from dual"]} {
-            ns_log warning "needed"
             ::xo::dc dml alter-table-$table \
                 "alter table $table alter column $col set default :value"
           }
