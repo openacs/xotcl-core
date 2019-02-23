@@ -287,7 +287,7 @@ if {![string match "*contentsentlength*" $msg]} {
   set ::subscription_count 0
   set ::message_count 0
 
-  ::xotcl::Class create Subscriber -parameter {key channel user_id mode}
+  ::xotcl::Class create Subscriber -parameter {key channel user_id mode {start_of_page ""}}
   Subscriber proc current {-key } {
     set result [list]
     if {[info exists key]} {
@@ -338,16 +338,8 @@ if {![string match "*contentsentlength*" $msg]} {
   Subscriber instproc send {msg} {
     #ns_log notice "SEND <$msg> [:mode]"
     :log ""
-    if {[:mode] eq "scripted"} {
-      ::sec_handler_reset
-      set emsg [encoding convertto utf-8 $msg]
-      #ns_log notice "SEND data <$msg> encoded <$emsg>"
-      set smsg "<script type='text/javascript' nonce='$::__csp_nonce'>\nvar data = $emsg;\n\
-            parent.getData(data);</script>\n"
-      set smsg [format %x [string length $smsg]]\r\n$smsg\r\n
-    } else {
-      set smsg $msg
-    }
+    ::sec_handler_reset
+    set smsg [::xo::mr::bgdelivery encode_message [:mode] $msg]
     #my log "-- sending to subscriber for [:key] $smsg ch=[:channel] \
         #        mode=[:mode], user_id [:user_id]"
     try {
@@ -362,7 +354,7 @@ if {![string match "*contentsentlength*" $msg]} {
         "POSIX ECONNRESET {connection reset by peer}"
       }
       if {$::errorCode in $ok_errors} {
-        throw {CLIENTDISCONNECT} {client disconnected}
+        throw {AD_CLIENTDISCONNECT} {client disconnected}
       } else {
         throw $::errorCode $errorMsg
       }
@@ -376,7 +368,7 @@ if {![string match "*contentsentlength*" $msg]} {
       foreach s [set :subscriptions($key)] {
         try {
           $s $method $argument
-        } trap {CLIENTDISCONNECT} {errMsg} {
+        } trap {AD_CLIENTDISCONNECT} {errMsg} {
           ns_log warning "$method to subscriber $s (key=$key): $errMsg"
           $s destroy
         } on error {errMsg} {
@@ -411,22 +403,8 @@ if {![string match "*contentsentlength*" $msg]} {
     #my log "-- cl=[:info class], subscriptions([:key]) = $subscriptions([:key])"
     fconfigure [:channel] -translation binary
 
-    if {[:mode] eq "scripted"} {
-      set content_type "text/html;charset=utf-8"
-      set encoding "Cache-Control: no-cache\r\nTransfer-Encoding: chunked\r\n"
-      set body "<html><body>[string repeat { } 1024]\r\n"
-      set body [format %x [string length $body]]\r\n$body\r\n
-    } else {
-      # Chrome refuses to expose partial response to ajax unless we
-      # set content_type to octet stream.  Drawback is we have to
-      # force the translation on the channel.
-      set content_type "application/octet-stream"
-      set encoding ""
-      fconfigure [:channel] -encoding utf-8
-      set body ""
-    }
-
-    puts -nonewline [:channel] "HTTP/1.1 200 OK\r\nContent-type: $content_type\r\n$encoding\r\n$body"
+    fconfigure [:channel] -encoding utf-8
+    puts -nonewline [:channel] ${:start_of_page}
     flush [:channel]
   }
 
@@ -769,14 +747,14 @@ ad_proc -public ad_returnfile_background {{-client_data ""} status_code mime_typ
 }
 
 #####################################
-bgdelivery proc subscribe {key {initmsg ""} {mode default} } {
+bgdelivery proc -deprecated subscribe {key {initmsg ""} {mode default} } {
   set ch [ns_conn channel]
   thread::transfer [:get_tid] $ch
   #my do ::Subscriber sweep $key
   :do ::Subscriber new -channel $ch -key $key -user_id [ad_conn user_id] -mode $mode
 }
 
-bgdelivery proc send_to_subscriber {key msg} {
+bgdelivery proc -deprecated send_to_subscriber {key msg} {
   :do -async ::Subscriber broadcast $key $msg
 }
 #####################################
