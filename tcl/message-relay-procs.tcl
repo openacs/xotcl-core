@@ -131,7 +131,7 @@ namespace eval ::xo::mr {
       return [expr {
                     [info commands ::thread::mutex] ne ""
                     && [info commands ::bgdelivery] ne ""
-                    && ![security::secure_conn_p]
+                    && (![ns_conn isconnected] || ![security::secure_conn_p])
                   }]
     }
 
