@@ -258,7 +258,7 @@ if {[nsv_exists api_library_doc $index]} {
     append output "<dt><b>Created:</b>\n<dd>[lindex $doc_elements(creation-date) 0]\n"
   }
   if { [info exists doc_elements(author)] } {
-    append output "<dt><b>Author[ad_decode [llength $doc_elements(author)] 1 "" "s"]:</b>\n"
+    append output "<dt><b>Author[expr {[llength $doc_elements(author)] > 1 ? "s" : ""}]:</b>\n"
     foreach author $doc_elements(author) {
       append output "<dd>[::apidoc::format_author $author]\n"
     }
