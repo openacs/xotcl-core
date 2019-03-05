@@ -2246,6 +2246,7 @@ namespace eval ::xo::db {
     -package_id
     -creation_user
     -creation_ip
+    {-context_id ""}
     {object_title ""}
   } {
     :get_context package_id creation_user creation_ip
@@ -2256,6 +2257,7 @@ namespace eval ::xo::db {
                 -package_id $package_id \
                 -creation_user $creation_user \
                 -creation_ip $creation_ip \
+                -context_id $context_id \
                 -security_inherit_p [:security_inherit_p]]
     return $id
   }
@@ -2549,17 +2551,26 @@ namespace eval ::xo::db {
 
   ::xo::db::Object instproc insert {} {:log no-insert;}
 
-  ::xo::db::Object ad_instproc update {-package_id -modifying_user} {
+  ::xo::db::Object ad_instproc update {
+    -package_id -modifying_user -context_id
+  } {
     Update the current object in the database
   } {
     set object_id ${:object_id}
     if {![info exists package_id] && [info exists :package_id]} {
       set package_id ${:package_id}
     }
+    if {![info exists context_id] && [info exists :context_id]} {
+      set context_id ${:context_id}
+    }
     [:info class] get_context package_id modifying_user modifying_ip
-    ::xo::dc dml update_object {update acs_objects
-      set modifying_user = :modifying_user, modifying_ip = :modifying_ip
-      where object_id = :object_id}
+    ::xo::dc dml update_object {
+      update acs_objects set
+         modifying_user = :modifying_user,
+         modifying_ip   = :modifying_ip,
+         context_id     = :context_id
+      where object_id = :object_id
+    }
   }
 
   ::xo::db::Object ad_instproc delete {} {
@@ -2569,17 +2580,18 @@ namespace eval ::xo::db {
     :destroy
   }
 
-  ::xo::db::Object ad_instproc save {-package_id -modifying_user} {
+  ::xo::db::Object ad_instproc save {-package_id -modifying_user -context_id} {
     Save the current object in the database
   } {
-    set cmd [list my update]
+    set cmd [list :update]
     if {[info exists package_id]} {lappend cmd -package_id $package_id}
     if {[info exists modifying_user]} {lappend cmd -modifying_user $modifying_user}
+    if {[info exists context_id]} {lappend cmd -context_id $context_id}
     {*}$cmd
   }
 
   ::xo::db::Object ad_instproc save_new {
-    -package_id -creation_user -creation_ip
+    -package_id -creation_user -creation_ip -context_id
   } {
     Save the XOTcl Object with a fresh acs_object
     in the database.
@@ -2589,12 +2601,16 @@ namespace eval ::xo::db {
     if {![info exists package_id] && [info exists :package_id]} {
       set package_id ${:package_id}
     }
+    if {![info exists context_id] && [info exists :context_id]} {
+      set context_id ${:context_id}
+    }
     [:info class] get_context package_id creation_user creation_ip
     ::xo::dc transaction {
       set id [[:info class] new_acs_object \
                   -package_id $package_id \
                   -creation_user $creation_user \
                   -creation_ip $creation_ip \
+                  -context_id $context_id \
                   ""]
       [:info class] initialize_acs_object [self] $id
       :insert
