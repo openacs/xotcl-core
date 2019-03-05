@@ -2743,7 +2743,43 @@ namespace eval ::xo::db {
   ::xo::db::Object slots {
     ::xo::db::Attribute create object_id    -pretty_name "Object ID" -datatype integer
     #::xo::db::Attribute create object_type  -pretty_name "Object Type"
-    ::xo::db::Attribute create object_title -pretty_name "Object Title" -column_name title
+    ::xo::db::Attribute create object_title \
+        -pretty_name "Object Title" \
+        -column_name title
+    ::xo::db::Attribute create context_id \
+        -pretty_name "Context ID" \
+        -datatype integer \
+        -column_name context_id
+    ::xo::db::Attribute create security_inherit_p \
+        -pretty_name "Security Inherit" \
+        -datatype boolean \
+        -column_name security_inherit_p
+    ::xo::db::Attribute create package_id \
+        -pretty_name "Package ID" \
+        -datatype integer \
+        -column_name package_id
+    ::xo::db::Attribute create creation_user \
+        -pretty_name "Creation User" \
+        -datatype integer \
+        -column_name creation_user
+    ::xo::db::Attribute create creation_date \
+        -pretty_name "Creation Date" \
+        -datatype timestamp \
+        -column_name creation_date
+    ::xo::db::Attribute create creation_ip \
+        -pretty_name "Creation IP Address" \
+        -column_name creation_ip
+    ::xo::db::Attribute create last_modified \
+        -pretty_name "Last Modified On" \
+        -datatype timestamp \
+        -column_name last_modified
+    ::xo::db::Attribute create modifying_user \
+        -pretty_name "Modifying User" \
+        -datatype integer \
+        -column_name modifying_user
+    ::xo::db::Attribute create modifying_ip \
+        -pretty_name "Modifying IP Address" \
+        -column_name modifying_ip
   }
   ::xo::db::Object db_slots
   ##############

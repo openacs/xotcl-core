@@ -453,8 +453,9 @@ namespace eval ::xo::db {
       }
       lappend atts $fq
     }
+
     foreach {slot_name slot} [array get :db_slot] {
-      switch -- $slot {
+      switch -glob -- $slot {
         ::xo::db::CrItem::slot::text {
           #
           # We need the rule, since insert the handling of the sql
@@ -475,6 +476,9 @@ namespace eval ::xo::db {
 
         ::xo::db::CrItem::slot::name {
           lappend atts i.[$slot column_name]
+        }
+        ::xo::db::Object::slot::* {
+          lappend atts o.[$slot column_name]
         }
         default {
           lappend atts n.[$slot column_name]
@@ -954,9 +958,14 @@ namespace eval ::xo::db {
 
     foreach {__slot_name __slot} [[:info class] array get db_slot] {
       if {
-          $__slot eq "::xo::db::Object::slot::object_title" ||
-          $__slot eq "::xo::db::CrItem::slot::name" ||
-          $__slot eq "::xo::db::CrItem::slot::publish_date"
+          $__slot in {
+            "::xo::db::Object::slot::object_title"
+            "::xo::db::Object::slot::creation_user"
+            "::xo::db::Object::slot::creation_ip"
+            "::xo::db::Object::slot::package_id"
+            "::xo::db::CrItem::slot::name"
+            "::xo::db::CrItem::slot::publish_date"
+          }
         } continue
       set $__slot_name [set :$__slot_name]
       lappend __atts [$__slot column_name]
@@ -1071,9 +1080,14 @@ namespace eval ::xo::db {
     foreach {__slot_name __slot} [$__class array get db_slot] {
       # :log "--slot = $__slot"
       if {
-          $__slot eq "::xo::db::Object::slot::object_title" ||
-          $__slot eq "::xo::db::CrItem::slot::name" ||
-          $__slot eq "::xo::db::CrItem::slot::publish_date"
+          $__slot in {
+            "::xo::db::Object::slot::object_title"
+            "::xo::db::Object::slot::creation_user"
+            "::xo::db::Object::slot::creation_ip"
+            "::xo::db::Object::slot::package_id"
+            "::xo::db::CrItem::slot::name"
+            "::xo::db::CrItem::slot::publish_date"
+          }
         } continue
       :instvar $__slot_name
       if {![info exists $__slot_name]} {set $__slot_name ""}
