@@ -136,7 +136,8 @@ namespace eval ::xo::mr {
     }
 
     :public object method sweep {key} {
-      ::bgdelivery do ::Subscriber sweep chat-[:chat_id]}
+      ::bgdelivery do ::Subscriber sweep $key
+    }
   }
 
   #
