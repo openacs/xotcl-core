@@ -145,7 +145,7 @@ namespace eval ::xo::db {
     {-parent_id -100}
     {-content_type}
   } {
-    Check, whether an content item with the given name exists.
+    Check, whether a content item with the given name exists.
     When content_type is provided (e.g. -content_type "::%")
     then a like operation is applied on the value.
     
@@ -807,7 +807,7 @@ namespace eval ::xo::db {
     CrItem instproc update_content {revision_id content} {
       #
       # This method can be use to update the content field (only this) of
-      # an content item without creating a new revision. This works
+      # a content item without creating a new revision. This works
       # currently only for storage_type == "text".
       #
       [:info class] instvar storage_type
@@ -878,7 +878,7 @@ namespace eval ::xo::db {
     CrItem instproc update_content {revision_id content} {
       #
       # This method can be used to update the content field (only this) of
-      # an content item without creating a new revision. This works
+      # a content item without creating a new revision. This works
       # currently only for storage_type == "text".
       #
       [:info class] instvar storage_type

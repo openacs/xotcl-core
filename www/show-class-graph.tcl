@@ -17,7 +17,7 @@ set dot_code [::xo::dotcode -dpi $dpi \
                   $classes]
 set dot ""
 catch {set dot [::util::which dot]}
-# final ressort for cases, where ::util::which is not available
+# final resort for cases, where ::util::which is not available
 if {$dot eq "" && [file executable /usr/bin/dot]} {set dot /usr/bin/dot}
 if {$dot eq ""} {ns_return 404 plain/text "dot not found"; ad_script_abort}
  

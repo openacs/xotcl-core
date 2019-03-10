@@ -55,7 +55,7 @@ Features:
             <callback type="after-upgrade"  proc="::xotcl-core::after-upgrade"/>
         </callbacks>
         <parameters>
-            <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="NslogRedirector"  default="0" description="Allow redirections of nslog. The redirector filters ns_log messages and sends these not only to the error log (standard behaviour) but also to ds_comments in the developer support. This way, a developer can view the log messages for the current request directly in the browser when the developer support is activated, without having to watch the log file. 
+            <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="NslogRedirector"  default="0" description="Allow redirections of nslog. The redirector filters ns_log messages and sends these not only to the error log (standard behavior) but also to ds_comments in the developer support. This way, a developer can view the log messages for the current request directly in the browser when the developer support is activated, without having to watch the log file. 
 
 The value of 0 means &quot;no redirecting&quot; (deactivation), 1 means &quot;redirecting errors&quot;, 2 means &quot;redirect errors and notices&quot;"/>
             <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="XOTclObjectCacheSize"  default="400000" description="Size of the ns_cache xotcl_object_cache (used for caching XOTcl objects fetched from the database)"/>

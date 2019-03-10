@@ -1424,7 +1424,7 @@ namespace eval ::xo::db {
 
   #
   # In some cases, we need locks on SQL select statements, when the
-  # select updates tuples, e.g via a function. This is required at
+  # select updates tuples, e.g. via a function. This is required at
   # least in PostgreSQL.
   #
   set ::xo::db::sql_suffix(postgresql,content_item,set_live_revision) "FOR NO KEY UPDATE"
