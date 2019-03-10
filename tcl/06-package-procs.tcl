@@ -413,7 +413,7 @@ namespace eval ::xo {
         lappend __vars [lindex $_var 0] [uplevel subst [lindex $_var 1]]
       } else {
         #
-        # We have just a variable name, provide an linked variable to
+        # We have just a variable name, provide a linked variable to
         # access the value.
         #
         set localvar local.$_var

@@ -592,7 +592,7 @@ namespace eval ::xo {
   # created/recreated, it does not perform a cleanup of its
   # contents. This means that preexisting procs, objects classes,
   # variables etc. will survive a recreation. As a consequence,
-  # ::xo::Modules can easily span multiple files an they can be used
+  # ::xo::Modules can easily span multiple files and they can be used
   # like a namespace. However, the modules have the advantage that it
   # is possible to define procs, instprocs with non-positional
   # arguments directly in it. It is as well possible to use mixins

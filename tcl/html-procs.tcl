@@ -4,7 +4,7 @@ proc require_html_procs {} {
   if {[info commands ::html::a] eq ""} {
     namespace eval ::html {
 
-      # Declare Tcl commands for building HTML elements. This is an complete
+      # Declare Tcl commands for building HTML elements. This is a complete
       # set taken from W3C on http://www.w3.org/TR/html4/index/elements.html
       #
 

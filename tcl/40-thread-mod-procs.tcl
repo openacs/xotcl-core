@@ -53,7 +53,7 @@
   hide the fact, that certain classes/objects
   are part of a thread. The following command
   creates a Proxy for an object c1 in thread t1.
-  After this, c1 can be used like an local object.
+  After this, c1 can be used like a local object.
   <pre>
   ::xotcl::THREAD::Proxy c1 -attach t1
   set x [c1 ++]
@@ -295,7 +295,7 @@ Class create ::xotcl::THREAD \
 
 #
 # Sample Thread client routine, calls a same named object in the
-# server thread. Thread clients should be created in an connection
+# server thread. Thread clients should be created in a connection
 # thread dynamically to avoid name clashes in the blueprint.
 
 Class create ::xotcl::THREAD::Client -parameter {server {serverobj [self]}}

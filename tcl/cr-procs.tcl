@@ -1047,7 +1047,7 @@ namespace eval ::xo::db {
   }
 
   CrItem ad_instproc update_item_index {} {
-    Dummy stub to allow subclasses to produce an more efficient
+    Dummy stub to allow subclasses to produce a more efficient
     index for items based on live revisions.
   } {
     next
