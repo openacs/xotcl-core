@@ -910,7 +910,7 @@ namespace eval ::xo::db {
   CrItem instproc update_revision {{-quoted false} revision_id attribute value} {
     #
     # This method can be use to update arbitrary fields of
-    # an revision.
+    # a revision.
     #
     if {$quoted} {set val $value} {set val :value}
     ::xo::dc dml update_content "update cr_revisions set $attribute = $val \
