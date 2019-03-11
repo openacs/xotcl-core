@@ -2560,8 +2560,8 @@ namespace eval ::xo::db {
     if {![info exists package_id] && [info exists :package_id]} {
       set package_id ${:package_id}
     }
-    if {![info exists context_id] && [info exists :context_id]} {
-      set context_id ${:context_id}
+    if {![info exists context_id]} {
+      set context_id [expr {[info exists :context_id] ? ${:context_id} : ""}]
     }
     [:info class] get_context package_id modifying_user modifying_ip
     ::xo::dc dml update_object {
@@ -2601,8 +2601,8 @@ namespace eval ::xo::db {
     if {![info exists package_id] && [info exists :package_id]} {
       set package_id ${:package_id}
     }
-    if {![info exists context_id] && [info exists :context_id]} {
-      set context_id ${:context_id}
+    if {![info exists context_id]} {
+      set context_id [expr {[info exists :context_id] ? ${:context_id} : ""}]
     }
     [:info class] get_context package_id creation_user creation_ip
     ::xo::dc transaction {
