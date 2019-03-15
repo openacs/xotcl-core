@@ -1244,13 +1244,13 @@ namespace eval ::xo::db {
                         o.creation_user as author_id, \
                         to_char(o.last_modified,'YYYY-MM-DD HH24:MI:SS') as last_modified_ansi,\
                         r.description,\
-                        acs_permission__permission_p(r.revision_id,:user_id,'admin') as admin_p,\
-                        acs_permission__permission_p(r.revision_id,:user_id,'delete') as delete_p,\
+                        acs_permission.permission_p(r.revision_id,:user_id,'admin') as admin_p,\
+                        acs_permission.permission_p(r.revision_id,:user_id,'delete') as delete_p,\
                         r.content_length,\
                         content_revision__get_number(r.revision_id) as version_number " \
                  -from  "cr_items ci, cr_revisions r, acs_objects o" \
                  -where "ci.item_id = :page_id and r.item_id = ci.item_id and o.object_id = r.revision_id
-                         and acs_permission__permission_p(r.revision_id, :user_id, 'read')" \
+                         and acs_permission.permission_p(r.revision_id, :user_id, 'read')" \
                  -orderby "r.revision_id desc"]
 
     ::xo::dc foreach revisions_select $sql {

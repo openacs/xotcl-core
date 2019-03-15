@@ -27,7 +27,7 @@ namespace eval ::xo {
                    -where {
                      package_key = :package_key 
                      and s.object_id = package_id
-                     and acs_permission__permission_p(package_id, :party_id, :privilege)
+                     and acs_permission.permission_p(package_id, :party_id, :privilege)
                    } -limit 1]
       ::xo::dc get_value get_package_id $sql
     } else {
