@@ -200,8 +200,20 @@ aa_register_case -cats {api smoke} test_cr_items {
         $orm_object set context_id $new_context_id
 
         aa_log "Saving the object"
+        set old_revision_id [$orm_object set revision_id]
         $orm_object save
         set revision_id [$orm_object set revision_id]
+
+        aa_true "revision_id changed after saving" {$revision_id != $old_revision_id}
+        aa_true "Old revision is still there" [::xo::dc 0or1row check_old_revision {
+            select 1 from cr_revisions where revision_id = :old_revision_id
+        }]
+        aa_true "New revision is the live revision" {
+            $revision_id == [::xo::dc get_value get_live_revision {
+                select live_revision from cr_items
+                where item_id = :object_id
+            }]
+        }
 
         aa_log "Fetching object again from DB"
         ::xo::dc 1row get_object_from_db {
