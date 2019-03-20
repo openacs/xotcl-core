@@ -19,8 +19,7 @@ aa_register_case -cats {api smoke} test_xo_db_object {
         set db_exists_p [::xo::dc 0or1row lookup_object {
             select 1 from acs_objects where object_id = :object_id
         }]
-        aa_equals "Object was created" \
-            [string is true -strict $orm_exists_p] [string is true -strict $db_exists_p]
+        aa_true "Object was created" {$orm_exists_p && $db_exists_p}
 
         aa_log "Fetching object from ORM"
         set orm_object [::xo::db::Class get_instance_from_db -id $object_id]
@@ -120,8 +119,7 @@ aa_register_case -cats {api smoke} test_xo_db_object {
         set db_exists_p [::xo::dc 0or1row lookup_object {
             select 1 from acs_objects where object_id = :object_id
         }]
-        aa_equals "Object is not there anymore" \
-            [string is true -strict $orm_exists_p] [string is true -strict $db_exists_p]
+        aa_true "Object is not there anymore" {!$orm_exists_p && !$db_exists_p}
     }
 }
 
@@ -142,8 +140,7 @@ aa_register_case -cats {api smoke} test_cr_items {
         set db_exists_p [::xo::dc 0or1row lookup_object {
             select 1 from cr_items where item_id = :object_id
         }]
-        aa_equals "Object was created" \
-            [string is true -strict $orm_exists_p] [string is true -strict $db_exists_p]
+        aa_true "Object was created" {$orm_exists_p && $db_exists_p}
 
         aa_log "Fetching object from ORM"
         set orm_object [::xo::db::CrClass get_instance_from_db -item_id $object_id]
@@ -261,8 +258,7 @@ aa_register_case -cats {api smoke} test_cr_items {
         set db_exists_p [::xo::dc 0or1row lookup_object {
             select 1 from acs_objects where object_id = :object_id
         }]
-        aa_equals "Object is not there anymore" \
-            [string is true -strict $orm_exists_p] [string is true -strict $db_exists_p]
+        aa_true "Object is not there anymore" {!$orm_exists_p && !$db_exists_p}
     }
 }
 
