@@ -958,21 +958,13 @@ namespace eval ::xo::db {
 
     foreach {__slot_name __slot} [[:info class] array get db_slot] {
       if {
-          $__slot in {
-            "::xo::db::Object::slot::object_title"
-            "::xo::db::Object::slot::creation_user"
-            "::xo::db::Object::slot::creation_date"
-            "::xo::db::Object::slot::creation_ip"
-            "::xo::db::Object::slot::last_modified"
-            "::xo::db::Object::slot::modifying_user"
-            "::xo::db::Object::slot::modifying_ip"
-            "::xo::db::Object::slot::package_id"
-            "::xo::db::Object::slot::context_id"
-            "::xo::db::Object::slot::security_inherit_p"
+          [$__slot domain] eq "::xo::db::Object"
+          || $__slot in {
             "::xo::db::CrItem::slot::name"
             "::xo::db::CrItem::slot::publish_date"
           }
         } continue
+      #ns_log notice "REMAINING SLOT: [$__slot serialize]"
       set $__slot_name [set :$__slot_name]
       lappend __atts [$__slot column_name]
       lappend __vars $__slot_name
@@ -1086,20 +1078,11 @@ namespace eval ::xo::db {
     foreach {__slot_name __slot} [$__class array get db_slot] {
       # :log "--slot = $__slot"
       if {
-          $__slot in {
-            "::xo::db::Object::slot::object_title"
-            "::xo::db::Object::slot::creation_user"
-            "::xo::db::Object::slot::creation_date"
-            "::xo::db::Object::slot::creation_ip"
-            "::xo::db::Object::slot::last_modified"
-            "::xo::db::Object::slot::modifying_user"
-            "::xo::db::Object::slot::modifying_ip"
-            "::xo::db::Object::slot::package_id"
-            "::xo::db::Object::slot::context_id"
-            "::xo::db::Object::slot::security_inherit_p"
+          [$__slot domain] eq "::xo::db::Object"
+          || $__slot in {
             "::xo::db::CrItem::slot::name"
             "::xo::db::CrItem::slot::publish_date"
-          }
+          }          
         } continue
       :instvar $__slot_name
       if {![info exists $__slot_name]} {set $__slot_name ""}
