@@ -961,8 +961,14 @@ namespace eval ::xo::db {
           $__slot in {
             "::xo::db::Object::slot::object_title"
             "::xo::db::Object::slot::creation_user"
+            "::xo::db::Object::slot::creation_date"
             "::xo::db::Object::slot::creation_ip"
+            "::xo::db::Object::slot::last_modified"
+            "::xo::db::Object::slot::modifying_user"
+            "::xo::db::Object::slot::modifying_ip"
             "::xo::db::Object::slot::package_id"
+            "::xo::db::Object::slot::context_id"
+            "::xo::db::Object::slot::security_inherit_p"
             "::xo::db::CrItem::slot::name"
             "::xo::db::CrItem::slot::publish_date"
           }
@@ -1083,8 +1089,14 @@ namespace eval ::xo::db {
           $__slot in {
             "::xo::db::Object::slot::object_title"
             "::xo::db::Object::slot::creation_user"
+            "::xo::db::Object::slot::creation_date"
             "::xo::db::Object::slot::creation_ip"
+            "::xo::db::Object::slot::last_modified"
+            "::xo::db::Object::slot::modifying_user"
+            "::xo::db::Object::slot::modifying_ip"
             "::xo::db::Object::slot::package_id"
+            "::xo::db::Object::slot::context_id"
+            "::xo::db::Object::slot::security_inherit_p"
             "::xo::db::CrItem::slot::name"
             "::xo::db::CrItem::slot::publish_date"
           }
