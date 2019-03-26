@@ -148,7 +148,7 @@ namespace eval ::xo::db {
     Check, whether a content item with the given name exists.
     When content_type is provided (e.g. -content_type "::%")
     then a like operation is applied on the value.
-    
+
     @return item_id If the item exists, return its item_id, otherwise 0.
   } {
     if {[info exists content_type]} {
@@ -156,7 +156,7 @@ namespace eval ::xo::db {
         select item_id from cr_items
         where name = :name and parent_id = :parent_id
         and content_type like :content_type
-      } 0]       
+      } 0]
     } else {
       set result [::xo::dc get_value lookup_by_name {
         select item_id from cr_items
@@ -1082,7 +1082,7 @@ namespace eval ::xo::db {
           || $__slot in {
             "::xo::db::CrItem::slot::name"
             "::xo::db::CrItem::slot::publish_date"
-          }          
+          }
         } continue
       :instvar $__slot_name
       if {![info exists $__slot_name]} {set $__slot_name ""}
@@ -1665,7 +1665,7 @@ namespace eval ::xo::db {
   CrCache::Class instproc lookup {
     -name:required
     {-parent_id -100}
-    {-content_type}   
+    {-content_type}
   } {
     # We need here the strange logic to avoid caching of lookup fails.
     # In order to cache fails as well, we would have to flush the fail
