@@ -767,7 +767,7 @@ namespace eval ::xo::Table {
     }
     foreach pair [split $actual_query &] {
       lassign [split $pair =] key value
-      if {$key eq "orderby"} continue
+      if {$key in {"orderby" "__csrf_token"}} continue
       lappend query [list [ns_urldecode $key] [ns_urldecode $value]]
     }
     set href [export_vars -base [ad_conn url] $query]
