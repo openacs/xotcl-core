@@ -87,12 +87,14 @@ if { $cache == 0 } {
   set count 0
   foreach name [lsort -dictionary $item_list] {
     if {[catch {set entry [ns_cache get $cache $name]}]} continue
-    if {$filter ne ""} {if {![regexp $filter $entry]} continue}
+    if {$filter ne ""} {
+      if {![regexp $filter $entry]} continue
+    }
     incr count
     set n ""
     regexp -- {-set name ([^\\]+)\\} $entry _ n
-    set show_url  [export_vars -base [ns_conn url] [list cache [list item $name]]]
-    set flush_url [export_vars -base [ns_conn url] [list cache [list flush $name]]]
+    set show_url  [export_vars -base [ns_conn url] {cache {item $name}}]
+    set flush_url [export_vars -base [ns_conn url] {cache {flush $name}}]
     append entries "<li><a href=\"[ns_quotehtml $show_url]\">$name</a> $n ([string length $entry] bytes, " \
         "<a href=\"[ns_quotehtml $flush_url]\">flush</a>)</li>"
   }
