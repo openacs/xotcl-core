@@ -46,7 +46,7 @@ namespace eval ::xo {
         } else {
             set style ""
         }
-        set url [export_vars -base show-object [list [list object $e]]]
+        set url [export_vars -base show-object {{object $e}}
         append definition "[dotquote $e] \[${style}URL=\"$url\",label=\"\{$e|"
         foreach slot [$e info slots] {
             set name ""
@@ -67,7 +67,7 @@ namespace eval ::xo {
 
     ad_proc dotobject {e} {
     } {
-        set url [export_vars -base show-object [list [list object $e]]]
+        set url [export_vars -base show-object {{object $e}}]
         set definition "[dotquote $e] \[URL=\"$url\"\];\n";
     }
 
