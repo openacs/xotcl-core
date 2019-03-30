@@ -1,6 +1,6 @@
 ad_page_contract {
         Cache Viewer
-} {    
+} {
   {cache:optional 0}
   {item:optional 0}
   {flush:optional 0}
@@ -25,7 +25,7 @@ if { $flush ne "0" } {
   ns_cache flush $cache $flush
   ad_returnredirect [export_vars -base [ns_conn url] {cache}]
   ad_script_abort
-} 
+}
 
 if {$flushall == 1} {
   foreach i [ns_cache names $cache] {
@@ -43,7 +43,7 @@ set output ""
 
 if { $cache == 0 } {
   set context ""
-  
+
   TableWidget create t1 \
       -actions [subst {
         Action new -label Refresh -url [ad_conn url] -tooltip "Reload this page"
@@ -71,12 +71,12 @@ if { $cache == 0 } {
   set item_list [ns_cache names $cache]
   set item_count [llength $item_list]
   set href [export_vars -base [ns_conn url] {cache {flushall 1}}]
-  
+
   append output "<h3>Items in cache $cache ($item_count) with size [ns_cache_size $cache]</h3>\n"
   append output "<form>
     <input type='hidden' name='cache' value='$cache'>
     <a href='[ns_quotehtml $href]' class='button'>flush all</a>
-    Filter: <input name='filter' value='$filter'> 
+    Filter: <input name='filter' value='$filter'>
     </form>
   "
 
