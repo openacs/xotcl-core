@@ -1313,7 +1313,7 @@ namespace eval ::xo::db {
       $e set diff.href ""
       $e set diff ""
       $e set plain_diff.href ""
-      $e set plain_diff ""      
+      $e set plain_diff ""
     }
 
     return [t1 asHTML]
