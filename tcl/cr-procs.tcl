@@ -1216,6 +1216,7 @@ namespace eval ::xo::db {
               -title "View Item" -alt  "view" \
               -width 16 -height 16 -border 0
           AnchorField diff -label ""
+          AnchorField plain_diff -label ""
           AnchorField author -label [_ file-storage.Author]
           Field content_size -label [_ file-storage.Size] -html {align right}
           Field last_modified_ansi -label [_ file-storage.Last_Modified]
@@ -1304,11 +1305,15 @@ namespace eval ::xo::db {
       set compare_revision_id [$n set payload(revision_id)]
       $e set diff.href [export_vars -base $base {{m diff} compare_revision_id revision_id}]
       $e set diff "diff"
+      $e set plain_diff.href [export_vars -base $base {{m diff} {plain_text_diff 1} compare_revision_id revision_id}]
+      $e set plain_diff "plain"
     }
     set e [lindex $lines end]
     if {$e ne ""} {
       $e set diff.href ""
       $e set diff ""
+      $e set plain_diff.href ""
+      $e set plain_diff ""      
     }
 
     return [t1 asHTML]
