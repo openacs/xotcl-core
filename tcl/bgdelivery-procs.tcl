@@ -202,7 +202,7 @@ if {![string match "*contentsentlength*" $msg]} {
       my end-delivery -client_data $client_data $filename $handle $channel [set $bytesVar]
     } else {
       set block [h264read $handle]
-      # one should not use "bytelength" on binary data: http://wiki.tcl.tk/8455
+      # one should not use "bytelength" on binary data: https://wiki.tcl-lang.org/8455
       set len [string length $block]
       incr $bytesVar $len
       h264Spooler incr byteCount $len
