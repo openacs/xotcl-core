@@ -322,7 +322,7 @@ if {![string match "*contentsentlength*" $msg]} {
     if {[catch {set eof [eof $channel]}]} {set eof 1}
     :log "sweep [:channel] EOF $eof"
     if {$eof} {
-      error "connection $channel closed by peer"
+      throw {AD_CLIENTDISCONNECT} "connection $channel closed by peer"
     }
     # make an IO attempt to trigger EOF
     if {[catch {
@@ -331,7 +331,7 @@ if {![string match "*contentsentlength*" $msg]} {
       set x [read $channel]
       fconfigure $channel -blocking $blocking
     } errorMsg]} {
-      error "connection $channel closed due to IO error"
+      throw {AD_CLIENTDISCONNECT} "connection $channel closed due to IO error"
     }
   }
 
