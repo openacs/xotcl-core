@@ -156,11 +156,10 @@ aa_register_case -cats {api smoke} test_cr_items {
             where object_id = :object_id
         }
         # In CrItem modification info is in fact creation info of the
-        # live revision (except the modifying ip at creation, which
-        # comes from the item's acs_object)
+        # live revision, with the exception of the modifying ip, which
+        # comes from the item's acs_object
         ::xo::dc 1row get_revision_object {
             select creation_user as modifying_user,
-                   coalesce(creation_ip, :modifying_ip) as modifying_ip,
                    creation_date as last_modified
             from acs_objects
             where object_id = :revision_id
@@ -224,10 +223,10 @@ aa_register_case -cats {api smoke} test_cr_items {
             where object_id = :object_id
         }
         # In CrItem modification info is in fact creation info of the
-        # live revision
+        # live revision, with the exception of the modifying ip, which
+        # comes from the item's acs_object
         ::xo::dc 1row get_revision_object {
             select creation_user as modifying_user,
-                   creation_ip as modifying_ip,
                    creation_date as last_modified
             from acs_objects
             where object_id = :revision_id
