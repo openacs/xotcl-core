@@ -2235,7 +2235,7 @@ namespace eval ::xo::db {
     }
     if {![info exists ip]} {
       if {[ns_conn isconnected]} {
-        set ip [ns_conn peeraddr]
+        set ip [ad_conn peeraddr]
       } else {
         set ip [ns_info address]
       }
