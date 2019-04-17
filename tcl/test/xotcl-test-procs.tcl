@@ -68,6 +68,7 @@ aa_register_case -cats {api smoke} test_xo_db_object {
         set new_context_id [::xo::dc get_value get_context_id {
             select min(object_id) from acs_objects
             where object_id <> :object_id
+              and object_id <> :old_context_id
         }]
         aa_log "Setting a different context_id: $new_context_id"
         $orm_object set context_id $new_context_id
@@ -200,6 +201,7 @@ aa_register_case -cats {api smoke} test_cr_items {
         set new_context_id [::xo::dc get_value get_context_id {
             select min(object_id) from acs_objects
             where object_id <> :object_id
+              and object_id <> :old_context_id
         }]
         aa_log "Setting a different context_id: $new_context_id"
         $orm_object set context_id $new_context_id
@@ -243,12 +245,28 @@ aa_register_case -cats {api smoke} test_cr_items {
             select title from cr_revisions
             where revision_id = :revision_id
         }]
+
+
+        aa_section "Check modifications BEFORE refetching"
+        aa_equals "title was updated"      [$orm_object set title]      $new_title
+        aa_equals "context_id was updated" [$orm_object set context_id] $new_context_id
         foreach att $attributes {
             if {![aa_equals "Attribute $att in the object matches database value" [set $att] [$orm_object set $att]]} {
                 aa_log "DB: [set $att]| ORM: [$orm_object set $att]"
             }
         }
 
+
+        aa_section "Check modifications AFTER refetching"
+        aa_log "Fetching object again from ORM"
+        set orm_object [::xo::db::CrItem get_instance_from_db -item_id $object_id]
+        aa_equals "title was updated"      [$orm_object set title]      $new_title
+        aa_equals "context_id was updated" [$orm_object set context_id] $new_context_id
+        foreach att $attributes {
+            if {![aa_equals "Attribute $att in the object matches database value" [set $att] [$orm_object set $att]]} {
+                aa_log "DB: [set $att]| ORM: [$orm_object set $att]"
+            }
+        }
 
         aa_section "Object deletion"
         $orm_object delete
