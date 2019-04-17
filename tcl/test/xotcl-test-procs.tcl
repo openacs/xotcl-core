@@ -42,7 +42,7 @@ aa_register_case -cats {api smoke} test_xo_db_object {
             from acs_objects
             where object_id = :object_id
         }
-        foreach att {
+        set attributes {
             object_title
             creation_date
             creation_user
@@ -52,7 +52,8 @@ aa_register_case -cats {api smoke} test_xo_db_object {
             modifying_user
             modifying_ip
             last_modified
-        } {
+        }
+        foreach att $attributes {
             aa_equals "Same $att" [set $att] [$orm_object set $att]
         }
 
@@ -75,17 +76,6 @@ aa_register_case -cats {api smoke} test_xo_db_object {
         $orm_object save
 
 
-        set attributes {
-            object_title
-            creation_date
-            creation_user
-            creation_ip
-            package_id
-            context_id
-            modifying_user
-            modifying_ip
-            last_modified
-        }
         aa_log "Fetching object attributes from DB"
         ::xo::dc 1row get_object_from_db {
             select title as object_title,
@@ -138,6 +128,8 @@ aa_register_case -cats {api smoke} test_cr_items {
    Test basic ::xo::db::CrItem ORM features
 } {
     aa_run_with_teardown -test_code {
+
+        aa_section "Object creation"
         aa_log "Create object"
         set orm_object [::xo::db::CrItem new]
         $orm_object set title "test_title"
@@ -153,6 +145,8 @@ aa_register_case -cats {api smoke} test_cr_items {
         }]
         aa_true "Object was created" {$orm_exists_p && $db_exists_p}
 
+
+        aa_section "Object fetching"
         aa_log "Fetching object from ORM"
         set orm_object [::xo::db::CrClass get_instance_from_db -item_id $object_id]
         aa_log "Fetching object from DB"
@@ -161,17 +155,16 @@ aa_register_case -cats {api smoke} test_cr_items {
                    creation_user,
                    creation_ip,
                    package_id,
-                   context_id,
-                   modifying_ip
+                   context_id
             from acs_objects
             where object_id = :object_id
         }
         # In CrItem modification info is in fact creation info of the
-        # live revision, with the exception of the modifying ip, which
-        # comes from the item's acs_object
+        # live revision
         ::xo::dc 1row get_revision_object {
             select creation_user as modifying_user,
-                   creation_date as last_modified
+                   creation_date as last_modified,
+                   creation_ip   as modifying_ip
             from acs_objects
             where object_id = :revision_id
         }
@@ -179,7 +172,7 @@ aa_register_case -cats {api smoke} test_cr_items {
             select title from cr_revisions
             where revision_id = :revision_id
         }]
-        foreach att {
+        set attributes {
             title
             creation_date
             creation_user
@@ -189,13 +182,18 @@ aa_register_case -cats {api smoke} test_cr_items {
             modifying_user
             modifying_ip
             last_modified
-        } {
-            aa_equals "Same $att" [set $att] [$orm_object set $att]
+        }
+        foreach att $attributes {
+            if {![aa_equals "Attribute $att in the object matches database value" [set $att] [$orm_object set $att]]} {
+                aa_log "DB: [set $att]| ORM: [$orm_object set $att]"
+            }
         }
 
+
+        aa_section "Object manipulation"
         aa_log "Setting a different title"
-        set old_title [$orm_object set title]
-        $orm_object set title "a different title"
+        set new_title "a different title"
+        $orm_object set title $new_title
 
         set old_context_id [$orm_object set context_id]
         # obtain a random different context_id
@@ -228,17 +226,16 @@ aa_register_case -cats {api smoke} test_cr_items {
                    creation_user,
                    creation_ip,
                    package_id,
-                   context_id,
-                   modifying_ip
+                   context_id
             from acs_objects
             where object_id = :object_id
         }
         # In CrItem modification info is in fact creation info of the
-        # live revision, with the exception of the modifying ip, which
-        # comes from the item's acs_object
+        # live revision
         ::xo::dc 1row get_revision_object {
             select creation_user as modifying_user,
-                   creation_date as last_modified
+                   creation_date as last_modified,
+                   creation_ip   as modifying_ip
             from acs_objects
             where object_id = :revision_id
         }
@@ -246,23 +243,14 @@ aa_register_case -cats {api smoke} test_cr_items {
             select title from cr_revisions
             where revision_id = :revision_id
         }]
-
-        # context_id will not change using the ORM. Not sure what this means, but we expose it
-        aa_equals "context_id did not change" $new_context_id [$orm_object set context_id]
-
-        foreach att {
-            title
-            creation_date
-            creation_user
-            creation_ip
-            package_id
-            modifying_user
-            modifying_ip
-            last_modified
-        } {
-            aa_equals "Same $att after modifying the title" [set $att] [$orm_object set $att]
+        foreach att $attributes {
+            if {![aa_equals "Attribute $att in the object matches database value" [set $att] [$orm_object set $att]]} {
+                aa_log "DB: [set $att]| ORM: [$orm_object set $att]"
+            }
         }
 
+
+        aa_section "Object deletion"
         $orm_object delete
         set orm_exists_p [::xo::db::Class exists_in_db -id $object_id]
         set db_exists_p [::xo::dc 0or1row lookup_object {
