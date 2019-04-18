@@ -414,6 +414,22 @@ namespace eval ::xo {
     }
   }
 
+  Table ad_instproc column_names {} {
+    
+    Return a list of names of the columns of the current table.  These
+    names are used to refer to the columns, e.g. in sorting or when
+    values are set.
+
+    @return list of names
+    
+  } {
+    set names {}
+    foreach c [[[self]::__columns] children] {
+      lappend names [$c name]
+    }
+    return $names
+  }
+
   Table instproc render_with {renderer trn_mixin} {
     #:log "-- renderer=$renderer"
     set cl [self class]
