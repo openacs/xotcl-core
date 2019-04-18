@@ -33,7 +33,7 @@ Object instproc asHTML {{-master defaultMaster} -page:switch} {
 #
 # Define Widget classes with localization
 #
-# Most importantly, we define ::xo::Table, somewhat similar to the classical multirow 
+# Most importantly, we define ::xo::Table, somewhat similar to the classical multirow
 
 namespace eval ::xo {}
 namespace eval ::xo::tdom {
@@ -176,7 +176,7 @@ namespace eval ::xo::tdom {
     }
     return $pairs
   }
-  
+
   #
   # ::xo::tdom::Object
   # is the top of the class hierarchies for tDOM objects
@@ -229,7 +229,7 @@ namespace eval ::xo {
     regsub -all \x01# $text "#" text
     return $text
   }
-  
+
   proc escape_message_keys {text} {
     regsub -all {(\#[a-zA-Z0-9_:-]+\.[a-zA-Z0-9_:-]+)\#} $text "\\1\x01#" text
     return $text
@@ -254,10 +254,10 @@ namespace eval ::xo {
       if {$inline} {
         # Attempt to move all message keys outside of tags
         while { [regsub -all {(<[^>]*)(\x02\(\x01[^\x01]*\x01\)\x02)([^>]*>)} $text {\2\1\3} text] } {}
-        
+
         # Attempt to move all message keys outside of <select>...</select> statements
         regsub -all -nocase {(<option\s[^>]*>[^<]*)(\x02\(\x01[^\x01]*\x01\)\x02)([^<]*</option[^>]*>)} $text {\2\1\3} text
-        
+
         while { [regsub -all -nocase {(<select[^>]*>[^<]*)(\x02\(\x01[^\x01]*\x01\)\x02)} $text {\2\1} text] } {}
       }
 
@@ -267,17 +267,17 @@ namespace eval ::xo {
         lassign [split $key .] package_key message_key
         set url [export_vars -base $::xo::acs_lang_url/edit-localized-message {
           {locale {[ad_conn locale]} }
-          package_key message_key 
-          {return_url [ad_return_url]} 
+          package_key message_key
+          {return_url [ad_return_url]}
         }]
         if {[lang::message::message_exists_p [ad_conn locale] $key]} {
           set type localized
         } elseif { [lang::message::message_exists_p "en_US" $key] } {
           set type us_only
         } else { # message key is missing
-          set url [export_vars -base $::xo::acs_lang_url/localized-message-new { 
-            {locale en_US } package_key message_key 
-            {return_url [ad_return_url]} 
+          set url [export_vars -base $::xo::acs_lang_url/localized-message-new {
+            {locale en_US } package_key message_key
+            {return_url [ad_return_url]}
           }]
           set type missing
         }
@@ -328,7 +328,7 @@ namespace eval ::xo {
   }
 
   ## todo : make these checks only in trn mode (additional mixin)
-  
+
   Class create Drawable \
       -superclass ::xo::tdom::AttributeManager \
       -instproc _ {attr} {
@@ -359,7 +359,7 @@ namespace eval ::xo {
         next
         :render_localizer
       }
-   
+
   #
   # for the time being, just a proc
   #
@@ -376,11 +376,11 @@ namespace eval ::xo {
   # define an abstract table
   #
   Class create Table -superclass OrderedComposite \
-      -parameter [expr {[apm_version_names_compare [ad_acs_version] 5.3.0] == 1 ? 
+      -parameter [expr {[apm_version_names_compare [ad_acs_version] 5.3.0] == 1 ?
                         {{no_data  "#xotcl-core.No_Data#"} {renderer TABLE3} name} :
-                        {{no_data  "#xotcl-core.No_Data#"} {renderer TABLE2} name} 
+                        {{no_data  "#xotcl-core.No_Data#"} {renderer TABLE2} name}
                       }]
-  
+
   Table instproc destroy {} {
     #:log "-- "
     foreach c {__bulkactions __actions __columns} {
@@ -415,13 +415,13 @@ namespace eval ::xo {
   }
 
   Table ad_instproc column_names {} {
-    
+
     Return a list of names of the columns of the current table.  These
     names are used to refer to the columns, e.g. in sorting or when
     values are set.
 
     @return list of names
-    
+
   } {
     set names {}
     foreach c [[[self]::__columns] children] {
@@ -433,7 +433,7 @@ namespace eval ::xo {
   Table instproc render_with {renderer trn_mixin} {
     #:log "-- renderer=$renderer"
     set cl [self class]
-    :mixin ${cl}::$renderer 
+    :mixin ${cl}::$renderer
     foreach child [$cl info classchildren] {
       #:log "-- $child class [$child info class] "
       set mixinname ${cl}::${renderer}::[namespace tail $child]
@@ -485,7 +485,7 @@ namespace eval ::xo {
 Class create Table::Line \
     -superclass ::xo::Drawable \
     -instproc attlist {name atts {extra ""}} {
-      set result [list] 
+      set result [list]
       foreach att $atts {
         set varname $name.$att
         if {[info exists :$varname]} {
@@ -503,7 +503,7 @@ Class create Table::Line \
 namespace eval ::xo::Table {
   Class create Action \
       -superclass ::xo::OrderedComposite::Child \
-      -parameter {label url {tooltip {}}} 
+      -parameter {label url {tooltip {}}}
   #-proc destroy {} {
   #   :log "-- DESTROY "
   #      show_stack
@@ -583,27 +583,27 @@ namespace eval ::xo::Table {
 
   Class create ImageField_EditIcon \
       -superclass ImageAnchorField -parameter {
-        {src /resources/acs-subsite/Edit16.gif} {width 16} {height 16} {border 0} 
+        {src /resources/acs-subsite/Edit16.gif} {width 16} {height 16} {border 0}
         {title "[_ xotcl-core.edit_item]"} {alt "edit"}
       }
-  
+
   Class create ImageField_AddIcon \
       -superclass ImageAnchorField -parameter {
-        {src /resources/acs-subsite/Add16.gif} {width 16} {height 16} {border 0} 
+        {src /resources/acs-subsite/Add16.gif} {width 16} {height 16} {border 0}
         {title "[_ xotcl-core.add_item]"} {alt "add"}
       }
 
   Class create ImageField_ViewIcon \
       -superclass ImageAnchorField -parameter {
-        {src /resources/acs-subsite/Zoom16.gif} {width 16} {height 16} {border 0} 
+        {src /resources/acs-subsite/Zoom16.gif} {width 16} {height 16} {border 0}
         {title "[_ xotcl-core.view_item]"} {alt "view"}
       }
   Class create ImageField_DeleteIcon \
       -superclass ImageAnchorField -parameter {
-        {src /resources/acs-subsite/Delete16.gif} {width 16} {height 16} {border 0} 
+        {src /resources/acs-subsite/Delete16.gif} {width 16} {height 16} {border 0}
         {title "[_ xotcl-core.delete_item]"} {alt "delete"}
       }
-  
+
   # export table elements
   namespace export Field AnchorField HiddenField Action ImageField ImageAnchorField \
       ImageField_EditIcon ImageField_ViewIcon ImageField_DeleteIcon ImageField_AddIcon \
@@ -639,10 +639,10 @@ namespace eval ::xo::Table {
             html::t -disableOutputEscaping "&middot;"
           }
         }
-      } 
+      }
     }
   }
-  
+
   TABLE instproc render-bulkactions {} {
     set bulkactions [[self]::__bulkactions children]
     html::div -class "list-button-bar-bottom" {
@@ -682,7 +682,7 @@ namespace eval ::xo::Table {
         #:log "--LINE vars=[:info vars] cL: [[self class] info vars] r=[:renderer]"
         html::tr -class [expr {[incr :__rowcount]%2 ? ${:css.tr.odd-class} : ${:css.tr.even-class}}] {
           foreach field [[self]::__columns children] {
-            html::td  [concat [list class list] [$field html]] { 
+            html::td  [concat [list class list] [$field html]] {
               $field render-data $line
             }
           }
@@ -690,7 +690,7 @@ namespace eval ::xo::Table {
       }
     }
   }
-  
+
   TABLE instproc render {} {
     if {![:isobject [self]::__actions]} {:actions {}}
     if {![:isobject [self]::__bulkactions]} {:bulkactions {}}
@@ -702,7 +702,7 @@ namespace eval ::xo::Table {
       }
     } else {
       set name [[self]::__bulkactions set __identifier]
-      html::form -name $name -method POST { 
+      html::form -name $name -method POST {
         html::table -class ${:css.table-class} {
           :render-actions
           :render-body
@@ -714,25 +714,25 @@ namespace eval ::xo::Table {
 
   #
   # Define renderer for elements of a Table
-  # 
-  # ::xo:Table requires the elements to have the methods render and render-data 
+  #
+  # ::xo:Table requires the elements to have the methods render and render-data
   #
 
   Class create TABLE::Action \
       -superclass ::xo::Drawable \
       -instproc render {} {
-        html::a -class button -title [:_ tooltip] -href [:url] { 
+        html::a -class button -title [:_ tooltip] -href [:url] {
           html::t [:_ label]
         }
         #:log "-- "
       }
   #-proc destroy {} {
   #  :log "-- DESTROY"
-  #  show_stack 
+  #  show_stack
   #  next
   #}
 
-  Class create TABLE::Field -superclass ::xo::Drawable 
+  Class create TABLE::Field -superclass ::xo::Drawable
   TABLE::Field instproc render-data {line} {
     $line instvar [list [:name].richtext richtext]
     if {![info exists richtext] || $richtext eq ""} {
@@ -741,12 +741,12 @@ namespace eval ::xo::Table {
     if {$richtext} {
       html::t -disableOutputEscaping [$line set [:name]]
     } else {
-      html::t [$line set [:name]] 
+      html::t [$line set [:name]]
     }
   }
 
   TABLE::Field instproc render {} {
-    html::th [concat [list class list] [:html]] { 
+    html::th [concat [list class list] [:html]] {
       if {${:orderby} eq ""} {
         html::t [:_ label]
       } else {
@@ -797,7 +797,7 @@ namespace eval ::xo::Table {
   Class create TABLE::AnchorField \
       -superclass TABLE::Field \
       -instproc render-data {line} {
-        if {[$line exists [:name].href] && 
+        if {[$line exists [:name].href] &&
             [set href [$line set [:name].href]] ne ""} {
           # use the CSS class rather from the Field than not the line
           :instvar CSSclass
@@ -812,8 +812,8 @@ namespace eval ::xo::Table {
   Class create TABLE::HiddenField \
       -instproc render {} {;} \
       -instproc render-data {line} {;}
-  
-  
+
+
   Class create TABLE::ImageField \
       -superclass TABLE::Field \
       -instproc render-data {line} {
@@ -838,11 +838,11 @@ namespace eval ::xo::Table {
         }
       }
 
-  Class create TABLE::BulkAction -superclass ::xo::Drawable 
+  Class create TABLE::BulkAction -superclass ::xo::Drawable
   TABLE::BulkAction instproc render {} {
     set name [:name]
     #:msg [:serialize]
-    html::th -class list { 
+    html::th -class list {
       html::input -type checkbox -name __bulkaction -id __bulkaction \
           -title "Mark/Unmark all rows"
       ::html::CSRFToken
@@ -853,7 +853,7 @@ namespace eval ::xo::Table {
       }, false);
     }]
   }
-  
+
   TABLE::BulkAction instproc render-data {line} {
     #:msg [:serialize]
     set name [:name]
@@ -909,7 +909,7 @@ namespace eval ::xo::Table {
   Class create TABLE3 \
       -superclass TABLE2 \
       -instproc init_renderer {} {
-        next 
+        next
         set :css.table-class list-table
         set :css.tr.even-class even
         set :css.tr.odd-class odd
