@@ -41,12 +41,21 @@ namespace eval ::xo {
   }
 
   OrderedComposite instproc children {} {
+    if {![info exists :__children]} {
+      return ""
+    }
     set children [expr {[info exists :__children] ? ${:__children} : ""}]
     if {[info exists :__orderby]} {
+      if {[llength ${:__children}] > 0} {
+        set firstChild [lindex ${:__children} 0]
+        if {![$firstChild exists ${:__orderby}]} {
+          error "invalid sorting criterion '${:__orderby}'"
+        }
+      }
       set order [expr {[info exists :__order] ? ${:__order} : "increasing"}]
-      return [lsort -command [list my __compare] -$order $children]
+      return [lsort -command [list my __compare] -$order ${:__children}]
     } else {
-      return $children
+      return ${:__children}
     }
   }
   OrderedComposite instproc add obj {
