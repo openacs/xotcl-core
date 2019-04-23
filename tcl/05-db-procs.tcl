@@ -2573,6 +2573,14 @@ namespace eval ::xo::db {
          context_id     = :context_id
       where object_id = :object_id
     }
+    # Make sure object memory image reflects db values
+    foreach att {modifying_user modifying_ip context_id} {
+      set :${att} [set $att]
+    }
+    set :last_modified [::xo::dc get_value get_last_modified {
+      select last_modified from acs_objects
+      where object_id = :object_id
+    }]
   }
 
   ::xo::db::Object ad_instproc delete {} {
