@@ -155,17 +155,17 @@ aa_register_case -cats {api smoke} test_cr_items {
             select creation_date,
                    creation_user,
                    creation_ip,
+                   modifying_ip,
                    package_id,
                    context_id
             from acs_objects
             where object_id = :object_id
         }
-        # In CrItem modification info is in fact creation info of the
-        # live revision
+        # In CrItem some modification info is in fact creation info of
+        # the live revision
         ::xo::dc 1row get_revision_object {
             select creation_user as modifying_user,
-                   creation_date as last_modified,
-                   creation_ip   as modifying_ip
+                   creation_date as last_modified
             from acs_objects
             where object_id = :revision_id
         }
@@ -227,17 +227,17 @@ aa_register_case -cats {api smoke} test_cr_items {
             select creation_date,
                    creation_user,
                    creation_ip,
+                   modifying_ip,
                    package_id,
                    context_id
             from acs_objects
             where object_id = :object_id
         }
-        # In CrItem modification info is in fact creation info of the
-        # live revision
+        # In CrItem some modification info is in fact creation info of
+        # the live revision
         ::xo::dc 1row get_revision_object {
             select creation_user as modifying_user,
-                   creation_date as last_modified,
-                   creation_ip   as modifying_ip
+                   creation_date as last_modified
             from acs_objects
             where object_id = :revision_id
         }
