@@ -487,19 +487,17 @@ namespace eval ::xo::db {
     }
     if {$revision_id} {
       $object set revision_id $revision_id
-
-      db_with_handle db {
-        set sql [::xo::dc prepare -handle $db -argtypes integer "\
-               select [join $atts ,], i.parent_id \
-               from   ${:table_name}i n, cr_items i,acs_objects o \
-               where  n.revision_id = :revision_id \
-               and    i.item_id = n.item_id \
-               and    o.object_id = n.revision_id"]
-
-        set selection [db_exec 1row $db dbqd..cr-procs-fetch_object-from-revision_id $sql]
-      }
+      set sql [subst {
+        select [join $atts ,], i.parent_id
+          from ${:table_name}i n, cr_items i,acs_objects o
+         where n.revision_id = :revision_id
+           and i.item_id = n.item_id
+           and o.object_id = n.revision_id
+      }]
+      set selection [lindex [::xo::dc sets \
+                                 -prepare integer \
+                                 fetch_object_from_revision_id $sql] 0]
       $object mset [ns_set array $selection]
-
     } else {
       #
       # We fetch the creation_user and the modifying_user by returning
