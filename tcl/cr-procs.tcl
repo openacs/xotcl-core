@@ -1020,8 +1020,19 @@ namespace eval ::xo::db {
         #set revision_id $old_revision_id
       }
       set :modifying_user $creation_user
-      set :last_modified [::xo::dc get_value -prepare integer get_last_modified \
-                                {select last_modified from acs_objects where object_id = :revision_id}]
+      ::xo::dc 1row -prepare integer get_metadata {
+        select context_id, last_modified
+        from acs_objects where object_id = :revision_id
+      }
+      set :last_modified $last_modified
+      if {$context_id != ${:context_id}} {
+        set context_id ${:context_id}
+        ::xo::dc dml update_context {
+          update acs_objects
+          set context_id = :context_id
+          where object_id = :item_id
+        }
+      }
     }
     return $item_id
   }
@@ -1053,6 +1064,7 @@ namespace eval ::xo::db {
     -package_id
     -creation_user
     -creation_ip
+    -context_id
     {-live_p:boolean true}
     {-use_given_publish_date:boolean false}
   } {
@@ -1066,6 +1078,9 @@ namespace eval ::xo::db {
 
     if {![info exists package_id] && [info exists :package_id]} {
       set package_id ${:package_id}
+    }
+    if {![info exists context_id]} {
+      set context_id [expr {[info exists :context_id] ? ${:context_id} : ""}]
     }
     [self class] get_context package_id creation_user creation_ip
     set :creation_user $creation_user
@@ -1131,6 +1146,7 @@ namespace eval ::xo::db {
                         -parent_id       ${:parent_id} \
                         -creation_user   $creation_user \
                         -creation_ip     $creation_ip \
+                        -context_id      $context_id \
                         -item_subtype    "content_item" \
                         -content_type    $object_type \
                         -description     $description \
