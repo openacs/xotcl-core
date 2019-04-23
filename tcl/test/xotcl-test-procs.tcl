@@ -68,7 +68,7 @@ aa_register_case -cats {api smoke} test_xo_db_object {
         set new_context_id [::xo::dc get_value get_context_id {
             select min(object_id) from acs_objects
             where object_id <> :object_id
-              and object_id <> :old_context_id
+              and (:old_context_id is null or object_id <> :old_context_id)
         }]
         aa_log "Setting a different context_id: $new_context_id"
         $orm_object set context_id $new_context_id
@@ -201,7 +201,7 @@ aa_register_case -cats {api smoke} test_cr_items {
         set new_context_id [::xo::dc get_value get_context_id {
             select min(object_id) from acs_objects
             where object_id <> :object_id
-              and object_id <> :old_context_id
+              and (:old_context_id is null or object_id <> :old_context_id)
         }]
         aa_log "Setting a different context_id: $new_context_id"
         $orm_object set context_id $new_context_id
