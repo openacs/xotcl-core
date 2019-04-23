@@ -2564,8 +2564,10 @@ namespace eval ::xo::db {
       set context_id [expr {[info exists :context_id] ? ${:context_id} : ""}]
     }
     [:info class] get_context package_id modifying_user modifying_ip
+    set title ${:object_title}
     ::xo::dc dml update_object {
       update acs_objects set
+         title          = :title,
          modifying_user = :modifying_user,
          modifying_ip   = :modifying_ip,
          context_id     = :context_id
