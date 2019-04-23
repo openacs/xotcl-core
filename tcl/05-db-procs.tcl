@@ -2577,7 +2577,8 @@ namespace eval ::xo::db {
     foreach att {modifying_user modifying_ip context_id} {
       set :${att} [set $att]
     }
-    set :last_modified [::xo::dc get_value get_last_modified {
+    set :last_modified [::xo::dc get_value -prepare integer \
+                            get_last_modified {
       select last_modified from acs_objects
       where object_id = :object_id
     }]
