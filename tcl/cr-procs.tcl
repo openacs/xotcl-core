@@ -1025,7 +1025,8 @@ namespace eval ::xo::db {
         from acs_objects where object_id = :revision_id
       }
       set :last_modified $last_modified
-      if {$context_id != ${:context_id}} {
+      if {[info exists :context_id] &&
+          $context_id != ${:context_id}} {
         set context_id ${:context_id}
         ::xo::dc dml update_context {
           update acs_objects
