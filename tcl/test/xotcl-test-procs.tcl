@@ -8,6 +8,17 @@ aa_register_case -cats {api smoke} test_xo_db_object {
 } {
     aa_run_with_teardown -test_code {
 
+        aa_section "Quick trivial CRUD of an object"
+        aa_log "Create object"
+        set orm_object [::xo::db::Object new]
+        aa_log "Save new"
+        set object_id [$orm_object save_new]
+        aa_log "Fetch"
+        set orm_object [::xo::db::Class get_instance_from_db -id $object_id]
+        aa_log "Save"
+        $orm_object save
+        aa_log "Delete"
+        $orm_object delete
 
         aa_section "Object creation"
         aa_log "Create object"
@@ -129,6 +140,18 @@ aa_register_case -cats {api smoke} test_cr_items {
    Test basic ::xo::db::CrItem ORM features
 } {
     aa_run_with_teardown -test_code {
+
+        aa_section "Quick trivial CRUD of an object"
+        aa_log "Create object"
+        set orm_object [::xo::db::CrItem new]
+        aa_log "Save new"
+        set object_id [$orm_object save_new]
+        aa_log "Fetch"
+        set orm_object [::xo::db::CrClass get_instance_from_db -item_id $object_id]
+        aa_log "Save"
+        $orm_object save
+        aa_log "Delete"
+        $orm_object delete
 
         aa_section "Object creation"
         aa_log "Create object"
