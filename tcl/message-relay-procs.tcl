@@ -194,7 +194,8 @@ namespace eval ::xo::mr {
 
       foreach handle [nsv_array names mr_connchan_$key] {
         try {
-          ns_connchan write $handle [:encode_message [nsv_array names mr_connchan_$key $handle] $msg]
+          set mode [nsv_get mr_connchan_$key $handle]
+          ns_connchan write $handle [:encode_message $mode $msg]
         } on error {errorMsg} {
           ns_log warning "message relay: duplicate registration for <$key> attempted"
           :cleanup $key $handle
