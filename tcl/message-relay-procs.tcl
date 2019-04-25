@@ -78,11 +78,11 @@ namespace eval ::xo {
       # capabilities of the client browser. So the incoming message
       # has to be recoded multiple times.
       #
+      set msg [encoding convertto utf-8 $msg]
       if {$mode eq "scripted"} {
         #::sec_handler_reset
-        set emsg [encoding convertto utf-8 $msg]
         #ns_log notice "SEND data <$msg> encoded <$emsg>"
-        set jsMsg "<script type='text/javascript' nonce='$::__csp_nonce'>\nvar data = $emsg;\n\
+        set jsMsg "<script type='text/javascript' nonce='$::__csp_nonce'>\nvar data = $msg;\n\
                parent.getData(data);</script>\n"
         set msg [format %x [string length $jsMsg]]\r\n$jsMsg\r\n
       }
