@@ -82,8 +82,12 @@ namespace eval ::xo {
       if {$mode eq "scripted"} {
         #::sec_handler_reset
         #ns_log notice "SEND data <$msg> encoded <$emsg>"
-        set jsMsg "<script type='text/javascript' nonce='$::__csp_nonce'>\nvar data = $msg;\n\
-               parent.getData(data);</script>\n"
+        set jsMsg [subst {
+          <script nonce='[::security::csp::nonce]'>
+              var data = $msg;
+              parent.getData(data);
+          </script>
+        }]
         set msg [format %x [string length $jsMsg]]\r\n$jsMsg\r\n
       }
       #ns_log notice "#### [self] encode_message <$mode> returns <$msg>"
