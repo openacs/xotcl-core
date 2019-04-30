@@ -215,6 +215,7 @@ if {[::package vcompare [package require xotcl::serializer] 2.0] < -1} {
   ns_set update $form show_methods   [::xo::cc query_parameter "show_methods" 2]
   ns_set update $form show_variables [::xo::cc query_parameter "show_variables" 1]
   rp_internal_redirect /packages/xotcl-core/www/show-object
+  ad_script_abort
 }
 
 namespace eval ::xo {
