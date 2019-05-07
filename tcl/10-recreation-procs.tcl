@@ -152,7 +152,7 @@ if {[string match "1.3.*" $version]} {
     $obj set_instance_vars_defaults
 
     # we use uplevel to handle -volatile correctly
-    set pos [:uplevel $obj configure $args]
+    set pos [:uplevel [list $obj configure $args]]
     if {"-init" ni $args} {
       incr pos -1
       $obj init {*}[lrange $args 0 $pos]
