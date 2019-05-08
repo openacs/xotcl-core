@@ -61,7 +61,7 @@ namespace eval ::xo {
   OrderedComposite instproc add obj {
     lappend :__children $obj
     $obj set __parent [self]
-    #my log "-- adding __parent [self] to $obj -- calling after_insert"
+    #:log "-- adding __parent [self] to $obj -- calling after_insert"
     #$obj __after_insert
   }
   OrderedComposite instproc delete obj {
@@ -78,12 +78,12 @@ namespace eval ::xo {
   OrderedComposite instproc destroy {} {
     # destroy all children of the ordered composite
     if {[info exists :__children]} {
-      #my log "--W destroying children ${:__children}"
+      #:log "--W destroying children ${:__children}"
       foreach c ${:__children} { 
         if {[:isobject $c]} {$c destroy}
       }
     }
-    #show_stack;my log "--W children murdered, now next, chlds=[:info children]"
+    #show_stack;:log "--W children murdered, now next, chlds=[:info children]"
     #namespace eval [self] {namespace forget *}  ;# for pre 1.4.0 versions
     next
   }
@@ -171,7 +171,7 @@ namespace eval ::xo {
     $parent lappend __children [self]
     set :__parent $parent
     #my __after_insert
-    #my log "-- adding __parent  $parent to [self]"
+    #:log "-- adding __parent  $parent to [self]"
     return $r
   }
 
@@ -182,7 +182,7 @@ namespace eval ::xo {
     set by ${:__orderby}
     set x [$a set $by]
     set y [$b set $by]
-    #my log "--value compare  $x $y] => [:__value_compare $x $y 0]"
+    #:log "--value compare  $x $y] => [:__value_compare $x $y 0]"
     return [:__value_compare $x $y 0]
   }
   OrderedComposite::IndexCompare instproc __value_compare {x y def} {

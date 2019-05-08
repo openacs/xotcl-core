@@ -57,12 +57,12 @@ if {![::xotcl::Object isclass ::xotcl::RecreationClass]} {
     {instreinit}
   } -superclass ::xotcl::Class \
       -instproc recreate {obj args} {
-        #my log "### recreateclass instproc $obj <$args>"
+        #:log "### recreateclass instproc $obj <$args>"
         # the minimal reconfiguration is to set the class and remove methods
         $obj class [self]
         foreach p [$obj info procs] {$obj proc $p {} {}}
         if {![info exists :instrecreate]} {
-          #my log "### no instrecreate for $obj <$args>"
+          #:log "### no instrecreate for $obj <$args>"
           next
           return
         }
@@ -72,15 +72,15 @@ if {![::xotcl::Object isclass ::xotcl::RecreationClass]} {
           # set defaults and run configure
           $obj set_instance_vars_defaults
           $obj configure {*}$args
-          #my log "### instproc recreate $obj + configure $args ..."
+          #:log "### instproc recreate $obj + configure $args ..."
         }
         if {[info exists :instreinit]} {
-          #my log "### instreinit for $obj <$args>"
+          #:log "### instreinit for $obj <$args>"
           $obj init 
-          #my log "### instproc recreate $obj + init ..."
+          #:log "### instproc recreate $obj + init ..."
         }
       } -proc recreate {obj args} {
-        #my log "### recreateclass proc $obj <$args>"
+        #:log "### recreateclass proc $obj <$args>"
         # the minimal reconfiguration is to set the class and remove methods
         $obj class [self]
         foreach p [$obj info instprocs] {$obj instproc $p {} {}}
@@ -116,7 +116,7 @@ if {[string match "1.3.*" $version]} {
     @param args arguments passed to recreate (might contain parameters)
   } {
     # clean on the class level
-    #my log "proc recreate $obj $args"
+    #:log "proc recreate $obj $args"
     foreach p [$obj info instprocs] {$obj instproc $p {} {}}
     $obj instmixin set {}
     $obj instfilter set {}
@@ -135,7 +135,7 @@ if {[string match "1.3.*" $version]} {
     @param args arguments passed to recreate (might contain parameters)
   } {
     # clean on the object level
-    #my log "+++ instproc recreate $obj <$args> old class = [$obj info class], new class = [self]"
+    #:log "+++ instproc recreate $obj <$args> old class = [$obj info class], new class = [self]"
     $obj filter set {}
     $obj mixin set {}
     set cl [self] 

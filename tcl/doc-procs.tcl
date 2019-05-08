@@ -28,7 +28,7 @@ namespace eval ::xo {
         foreach methodName [xo::getObjectProperty $e $kind] {
             if {$documented_methods} {
                 set proc_index [::xo::api proc_index $scope $e $kind $methodName]
-                #my msg "check $methodName => [nsv_exists api_proc_doc $proc_index]"
+                #:msg "check $methodName => [nsv_exists api_proc_doc $proc_index]"
                 if {[nsv_exists api_proc_doc $proc_index]} {
                     lappend methods $prefix$methodName
                 }

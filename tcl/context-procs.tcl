@@ -52,14 +52,14 @@ namespace eval ::xo {
       if {[ns_conn isconnected]} {
         set :actual_query [ns_conn query]
       }
-      #my log "--CONN ns_conn query = <$actual_query>"
+      #:log "--CONN ns_conn query = <$actual_query>"
     }
 
     set decodeCmd ns_urldecode
     if {$::xo::naviserver} {lappend decodeCmd --}
 
     # get the query parameters (from the url)
-    #my log "--P processing actual query ${:actual_query}"
+    #:log "--P processing actual query ${:actual_query}"
     foreach querypart [split ${:actual_query} &] {
       set name_value_pair [split $querypart =]
       set att_name [{*}$decodeCmd [lindex $name_value_pair 0]]
@@ -79,11 +79,11 @@ namespace eval ::xo {
     # get the query parameters (from the form if necessary)
     if {[:istype ::xo::ConnectionContext]} {
       foreach param [array names ""] {
-        #my log "--cc check $param [info exists passed_args($param)]"
+        #:log "--cc check $param [info exists passed_args($param)]"
         set name [string range $param 1 end]
         if {![info exists passed_args($param)] &&
             [:exists_form_parameter $name]} {
-          #my log "--cc adding passed_args(-$name) [:form_parameter $name]"
+          #:log "--cc adding passed_args(-$name) [:form_parameter $name]"
           set passed_args($param) [:form_parameter $name]
         }
       }
@@ -91,7 +91,7 @@ namespace eval ::xo {
     
     # get the caller parameters (e.g. from the includelet call)
     if {[info exists caller_parameters]} {
-      #my log "--cc caller_parameters=$caller_parameters"
+      #:log "--cc caller_parameters=$caller_parameters"
       array set caller_param $caller_parameters
       
       foreach param [array names caller_param] {
@@ -108,12 +108,12 @@ namespace eval ::xo {
       lappend parse_args $param $passed_args($param)
     }
     
-    #my log "--cc calling parser eval [self] __parse $parse_args"
+    #:log "--cc calling parser eval [self] __parse $parse_args"
     if {[catch {[self] __parse {*}$parse_args} errorMsg]} {
       ad_return_complaint 1 [ns_quotehtml $errorMsg]
       ad_script_abort
     }
-    #my msg "--cc qp [array get :queryparm] // ${:actual_query}"
+    #:msg "--cc qp [array get :queryparm] // ${:actual_query}"
   }
 
   Context instproc original_url_and_query args {
@@ -134,7 +134,7 @@ namespace eval ::xo {
   }
   
   Context instproc exists_query_parameter {name} {
-    #my log "--qp exists $name => [info exists :queryparm($name)]"
+    #:log "--qp exists $name => [info exists :queryparm($name)]"
     info exists :queryparm($name)
   }
   Context instproc get_all_query_parameter {} {
@@ -240,11 +240,11 @@ namespace eval ::xo {
     }
 
     if {![info exists url]} {
-      #my log "--CONN ns_conn url"
+      #:log "--CONN ns_conn url"
       set url [ns_conn url]
     }
     set package_id [:require_package_id_from_url -package_id $package_id $url]
-    #my log "--i [self args] URL='$url', pkg=$package_id"
+    #:log "--i [self args] URL='$url', pkg=$package_id"
 
     # get locale; TODO at some time, we should get rid of the ad_conn init problem
     if {[ns_conn isconnected]} {
@@ -268,10 +268,10 @@ namespace eval ::xo {
           -locale $locale \
           -url $url
       #::xo::show_stack
-      #my msg "--cc ::xo::cc created $url [::xo::cc serialize]"
+      #:msg "--cc ::xo::cc created $url [::xo::cc serialize]"
       ::xo::cc destroy_on_cleanup
     } else {
-      #my msg "--cc ::xo::cc reused $url -package_id $package_id"
+      #:msg "--cc ::xo::cc reused $url -package_id $package_id"
       ::xo::cc configure \
           -url $url \
           -actual_query $actual_query \
@@ -335,7 +335,7 @@ namespace eval ::xo {
   }
 
   ConnectionContext instproc returnredirect {-allow_complete_url:switch url} {
-    #my log "--rp"
+    #:log "--rp"
     set :__continuation [expr {$allow_complete_url 
                                  ? [list ad_returnredirect -allow_complete_url $url] 
                                  : [list ad_returnredirect $url]}]
@@ -369,7 +369,7 @@ namespace eval ::xo {
       set user_url [acs_community_member_admin_url -user_id ${:requestor}]
       set :user "<a href='$user_url'>${:requestor}</a>"
     }
-    #my log "--i requestor = ${:requestor}"
+    #:log "--i requestor = ${:requestor}"
     
     :process_query_parameter
   }
@@ -442,26 +442,26 @@ namespace eval ::xo {
       set granted [permission::permission_p -no_login -party_id $party_id \
                        -object_id $object_id \
                        -privilege $privilege]
-      #my msg "--p lookup $key ==> $granted uid=[:user_id] uuid=${:untrusted_user_id}"
+      #:msg "--p lookup $key ==> $granted uid=[:user_id] uuid=${:untrusted_user_id}"
       if {$granted || ${:user_id} == ${:untrusted_user_id}} {
         set $key $granted
         return $granted
       }
       # The permission is not granted for the public.
       # We force the user to login
-      #my log "-- require login"
+      #:log "-- require login"
       #auth::require_login
       return 0
     }
 
     set key :permission($object_id,$privilege,$party_id)
     if {[info exists $key]} {return [set $key]}
-    #my msg "--p lookup $key"
+    #:msg "--p lookup $key"
     set $key [permission::permission_p -no_login \
                   -party_id $party_id \
                   -object_id $object_id \
                   -privilege $privilege]
-    #my log "--  context return [set :$key]"
+    #:log "--  context return [set :$key]"
     #set :$key
   }
   

@@ -789,7 +789,7 @@ namespace eval ::xo::db {
 
     CrItem instproc fix_content {revision_id content} {
       [:info class] instvar storage_type
-      # :my msg "--long_text_slots: [[:info class] array get long_text_slots]"
+      # ::msg "--long_text_slots: [[:info class] array get long_text_slots]"
       # foreach {slot_name slot} [[:info class] array get long_text_slots] {
       #   set cls [$slot domain]
       #   set content [set :$slot_name]
@@ -1247,7 +1247,7 @@ namespace eval ::xo::db {
     set page_id ${:item_id}
     set live_revision_id [::xo::db::sql::content_item get_live_revision -item_id $page_id]
     set package_id ${:package_id}
-    set base [$package_id url]
+    set base [::$package_id url]
     set sql [::xo::dc select \
                  -map_function_names true \
                  -vars "ci.name, r.revision_id as version_id,\

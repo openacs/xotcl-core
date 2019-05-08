@@ -87,9 +87,9 @@
 }
 
 ::xotcl::Object setExitHandler {
-  #my log "EXITHANDLER of request thread [pid]"
+  #:log "EXITHANDLER of request thread [pid]"
   #if {[catch {::xotcl::THREAD::Proxy detachAll} m]} {
-  #  #my log "EXITHANDLER error in detachAll $m"
+  #  #:log "EXITHANDLER error in detachAll $m"
   #}
 }
 
@@ -198,7 +198,7 @@ Class create ::xotcl::THREAD \
 
     ad_mutex_eval ${:mutex} {
       #my check_blueprint
-      #my log "after lock"
+      #:log "after lock"
       if {![nsv_exists [self class] [self]]} {
         if {[:lightweight]} {
           :log "CREATE lightweight thread"
@@ -212,7 +212,7 @@ Class create ::xotcl::THREAD \
         } else {
           :log "--created new [self class] as $tid pid=[pid]"
         }
-        #my log "--THREAD DO send [self] epoch = [ns_ictl epoch]"
+        #:log "--THREAD DO send [self] epoch = [ns_ictl epoch]"
         if {[:lightweight]} {
         } elseif {![ns_ictl epoch]} {
           #ns_log notice "--THREAD send [self] no epoch"
@@ -249,7 +249,7 @@ Class create ::xotcl::THREAD \
     }
     set :tid $tid
   }
-  #my log "calling [self class] ($tid, [pid]) $args"
+  #:log "calling [self class] ($tid, [pid]) $args"
   if {$async} {
     return [thread::send -async $tid $args]
   } else {

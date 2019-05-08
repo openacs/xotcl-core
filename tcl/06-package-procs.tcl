@@ -88,7 +88,7 @@ namespace eval ::xo {
     keep_cc true means that the original connection context
     is preserved (i.e. not altered) in case it exists already.
   } {
-    #my msg "--i [self args], URL=$url, init_url=$init_url"
+    #:msg "--i [self args], URL=$url, init_url=$init_url"
 
     if {[info exists ad_doc] && [api_page_documentation_mode_p]} {
       ad_parse_documentation_string $ad_doc doc_elements
@@ -98,7 +98,7 @@ namespace eval ::xo {
 
     if {$url eq "" && $init_url} {
       set url [root_of_host [ad_host]][ns_conn url]
-      #my log "--CONN ns_conn url -> $url"
+      #:log "--CONN ns_conn url -> $url"
     }
 
     # get package_id from url in case it is not known
@@ -133,9 +133,9 @@ namespace eval ::xo {
     # it want to force a refresh of the login, even if some pages 
     # might not require the real user_id.
     #
-    #my msg "force [$package_id force_refresh_login] &&\
+    #:msg "force [::$package_id force_refresh_login] &&\
         #    [::xo::cc set untrusted_user_id] != [::xo::cc user_id]"
-    if {[$package_id force_refresh_login] && 
+    if {[::$package_id force_refresh_login] && 
         [::xo::cc set untrusted_user_id] != [::xo::cc user_id]} {
       auth::require_login
     }
@@ -173,10 +173,10 @@ namespace eval ::xo {
       error "package_id must not be empty"
     }
 
-    #my log "--R $package_id exists? [:isobject ::$package_id] url='$url'"
+    #:log "--R $package_id exists? [:isobject ::$package_id] url='$url'"
 
     if {![:isobject ::$package_id]} {
-      #my log "--R we have to create ::$package_id //url='$url'"
+      #:log "--R we have to create ::$package_id //url='$url'"
       #
       # To make initialization code generic, we obtain from the
       # package_id the class of the package.
@@ -275,7 +275,7 @@ namespace eval ::xo {
   ::xo::Package instproc init args {
     set id ${:id}
     set package_url [lindex [site_node::get_url_from_object_id -object_id $id] 0]
-    #my log "--R creating package_url='$package_url'"
+    #:log "--R creating package_url='$package_url'"
     if {$package_url ne ""} {
       array set info [site_node::get -url $package_url]
       #set package_url $info(url)
@@ -296,13 +296,13 @@ namespace eval ::xo {
       set root [root_of_host [ad_host]]
       regexp "^${root}(.*)$" $package_url _ package_url
     }
-    #my log "--R package_url= $package_url (was $info(url))"
+    #:log "--R package_url= $package_url (was $info(url))"
     :package_url $package_url
 
     if {[info exists :url] && [info exists root]} {
       regexp "^${root}(.*)$" ${:url} _ :url
     } elseif {![info exists :url]} {
-      #my log "--R we have no url, use package_url '$package_url'"
+      #:log "--R we have no url, use package_url '$package_url'"
       # if we have no more information, we use the package_url as actual url
       set :url $package_url
     }
@@ -352,17 +352,17 @@ namespace eval ::xo {
       ::xo::db::CrFolder register_content_types \
           -folder_id $folder_id \
           -content_types $content_types
-      #my log "returning from cache folder_id $folder_id"
+      #:log "returning from cache folder_id $folder_id"
       return $folder_id
     }]
-    #my log "returning from require folder_id $folder_id"
+    #:log "returning from require folder_id $folder_id"
     return $folder_id
   }
 
   ::xo::Package instproc set_url {-url} {
     :url $url
     set :object [string range [:url] [string length [:package_url]] end]
-    #my msg "--R object set to ${:object}, url=$url, [:serialize]"
+    #:msg "--R object set to ${:object}, url=$url, [:serialize]"
   }
 
   ::xo::Package instproc handle_http_caching {} {
@@ -403,7 +403,7 @@ namespace eval ::xo {
   }
 
   ::xo::Package instproc return_page {-adp:required -variables -form} {
-    #my log "--vars=[self args]"
+    #:log "--vars=[self args]"
     set __vars [list]
     foreach _var $variables {
       if {[llength $_var] == 2} {
@@ -443,7 +443,7 @@ namespace eval ::xo {
     if { [lang::util::translator_mode_p] } {
       set text [::xo::localize $text 1]
     }
-    #my log "--after adp $text"
+    #:log "--after adp $text"
 
     return [::xo::remove_escapes $text]
   }

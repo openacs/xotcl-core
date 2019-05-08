@@ -192,7 +192,7 @@ namespace eval ::xo {
       # there).  We simply iterate here of the classes of packages
       # (only a few exist).
       # 
-      #my log "--p looking for $parameter_name in superclass of package_key=$package_key"
+      #:log "--p looking for $parameter_name in superclass of package_key=$package_key"
       set success 0
       set pkg_class [::xo::PackageMgr get_package_class_from_package_key $package_key]
       if {$pkg_class ne ""} {
@@ -309,7 +309,7 @@ namespace eval ::xo {
     set key [:parameter_name]
     set nsv_array_name [:per_package_id_name $package_id]
     if {[nsv_exists $nsv_array_name $key]} {
-      #my log "--parameter get <$key> from $nsv_array_name --> '[nsv_get $nsv_array_name $key]'"
+      #:log "--parameter get <$key> from $nsv_array_name --> '[nsv_get $nsv_array_name $key]'"
       set :__success 1
       return [nsv_get $nsv_array_name $key]
     }
@@ -322,12 +322,12 @@ namespace eval ::xo {
     #     foreach cls $package_class_hierarchy {
     #       set nsv_array_name [:per_package_class_name $cls]
     #       if {[nsv_exists $nsv_array_name $key]} {
-    #         #my log "--parameter get <$key> from $nsv_array_name --> '[nsv_get $nsv_array_name $key]'"
+    #         #:log "--parameter get <$key> from $nsv_array_name --> '[nsv_get $nsv_array_name $key]'"
     #         return [nsv_get $nsv_array_name $key]
     #       }
     #     }
     #
-    #my log "--parameter get <$key> from default of [:package_key] --> '[:default_value]'"
+    #:log "--parameter get <$key> from default of [:package_key] --> '[:default_value]'"
     set :__success 0
     return [:default_value]
   }

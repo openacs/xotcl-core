@@ -42,7 +42,7 @@ namespace eval ::xo {
   library proc doc {comment} {
     ad_library $comment
     nsv_set [self]-loaded [info script] 1
-    #my log "--loaded nsv_set [self]-loaded [info script] 1"
+    #:log "--loaded nsv_set [self]-loaded [info script] 1"
   }
 
   library ad_proc require {{-package ""} filename} {
@@ -58,7 +58,7 @@ namespace eval ::xo {
 
     @param filename filename without path and .tcl suffix
   } {
-    #my log "--loaded nsv_set [self]-loaded [info script] 1"
+    #:log "--loaded nsv_set [self]-loaded [info script] 1"
     nsv_set [self]-loaded [info script] 1
     set myfile [file tail [info script]]
     set dirname [file dirname [info script]]
@@ -68,16 +68,16 @@ namespace eval ::xo {
       set otherfile [acs_root_dir]/packages/$package/tcl/$filename.tcl
     }
     set vn [self]
-    #my log "--exists otherfile $otherfile => [nsv_exists $vn $otherfile]"
+    #:log "--exists otherfile $otherfile => [nsv_exists $vn $otherfile]"
     if {[nsv_exists $vn $otherfile]} {
       nsv_set $vn $otherfile [lsort -unique [concat [nsv_get $vn $otherfile] [info script]]]
-      #my log "--setting nsv_set $vn $otherfile [lsort -unique [concat [nsv_get $vn $otherfile] $myfile]]"
+      #:log "--setting nsv_set $vn $otherfile [lsort -unique [concat [nsv_get $vn $otherfile] $myfile]]"
     } else {
       nsv_set $vn $otherfile [info script]
-      #my log "--setting nsv_set $vn $otherfile $myfile"
+      #:log "--setting nsv_set $vn $otherfile $myfile"
     }
-    #my log "--source when not loaded [self]-loaded $otherfile: [nsv_exists [self]-loaded $otherfile]"
-    #my log "--loaded = [lsort [nsv_array names [self]-loaded]]"
+    #:log "--source when not loaded [self]-loaded $otherfile: [nsv_exists [self]-loaded $otherfile]"
+    #:log "--loaded = [lsort [nsv_array names [self]-loaded]]"
 
     if {![nsv_exists [self]-loaded $otherfile]} {
       :log "--sourcing $otherfile"
@@ -101,7 +101,7 @@ namespace eval ::xo {
     set myfile [file tail [info script]]
     set dirname [file dirname [info script]]
     set vn [self]
-    #my log "--check nsv_exists $vn $dirname/$myfile [nsv_exists $vn $dirname/$myfile]"
+    #:log "--check nsv_exists $vn $dirname/$myfile [nsv_exists $vn $dirname/$myfile]"
     if {[nsv_exists $vn $dirname/$myfile]} {
       foreach file [nsv_get $vn $dirname/$myfile] {
         :log "--sourcing dependent $file"

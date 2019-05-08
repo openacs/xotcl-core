@@ -490,12 +490,12 @@ ad_library {
         if {$isFlag} {
           dict lappend doc switches $name
           dict lappend doc flags $name $flags
-          #my log "default_value $proc_name: $sw -> '[lindex $f 1]' <$pair/$f>"
+          #:log "default_value $proc_name: $sw -> '[lindex $f 1]' <$pair/$f>"
           if {$flags eq "switch" && $default eq ""} {
             set default "false"
           }
         }
-        #my log "default_value $proc_name: $sw -> 'default' <$pair/$f>"
+        #:log "default_value $proc_name: $sw -> 'default' <$pair/$f>"
         if {[llength $def] > 1} {lappend defaults $name $default}
       }
       dict set doc default_values $defaults

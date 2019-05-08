@@ -340,7 +340,7 @@ if {![string match "*contentsentlength*" $msg]} {
     :log ""
     ::sec_handler_reset
     set smsg [::xo::mr::bgdelivery encode_message [:mode] $msg]
-    #my log "-- sending to subscriber for [:key] $smsg ch=[:channel] \
+    #:log "-- sending to subscriber for [:key] $smsg ch=[:channel] \
         #        mode=[:mode], user_id [:user_id]"
     try {
       puts -nonewline [:channel] $smsg
@@ -400,7 +400,7 @@ if {![string match "*contentsentlength*" $msg]} {
     [:info class] instvar subscriptions
     lappend subscriptions([:key]) [self]
     incr ::subscription_count
-    #my log "-- cl=[:info class], subscriptions([:key]) = $subscriptions([:key])"
+    #:log "-- cl=[:info class], subscriptions([:key]) = $subscriptions([:key])"
     fconfigure [:channel] -translation binary
 
     fconfigure [:channel] -encoding utf-8
@@ -442,7 +442,7 @@ if {![string match "*contentsentlength*" $msg]} {
       :log "--enqueue"
       lappend :queue $data $request $encoding
     } else {
-      #my log "--send"
+      #:log "--send"
       set :spooling 1
       # puts -nonewline [:channel] $data
       # :done
@@ -715,13 +715,13 @@ bgdelivery ad_proc returnfile {
     }
 
     if {$use_h264} {
-      #my log "MP4 q=[::xo::cc actual_query], h=[ns_set array [ns_conn outputheaders]]"
+      #:log "MP4 q=[::xo::cc actual_query], h=[ns_set array [ns_conn outputheaders]]"
       :do -async ::h264Spooler spool -delete $delete -channel $ch -filename $filename \
           -context [list [::xo::cc requestor],[::xo::cc url],$query [ns_conn start]] \
           -query $query \
           -client_data $client_data
     } else {
-      #my log "FILE SPOOL $filename"
+      #:log "FILE SPOOL $filename"
       :do -async ::fileSpooler spool -ranges $ranges -delete $delete -channel $ch -filename $filename \
           -context [list [::xo::cc requestor],[::xo::cc url],$query [ns_conn start]] \
           -client_data $client_data

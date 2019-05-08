@@ -21,7 +21,7 @@ namespace eval ::xo {
     -package_id
     privilege object method
   } {
-    #my log "--p [self proc] [self args]"
+    #:log "--p [self proc] [self args]"
     if {$privilege eq "nobody"} {
       return 0
     }
@@ -29,13 +29,13 @@ namespace eval ::xo {
       return 1
     }
 
-    #my log "--login $login user_id=$user_id uid=[::xo::cc user_id] untrusted=[::xo::cc set untrusted_user_id]"
+    #:log "--login $login user_id=$user_id uid=[::xo::cc user_id] untrusted=[::xo::cc set untrusted_user_id]"
     if {$login && $user_id == 0} {
       #
       # The tests below depend on the user_id.
       # The main reason, we call auth:require_login here is to check for exired logins.
       #
-      #my log "--p [self proc] calls require_login"
+      #:log "--p [self proc] calls require_login"
       set user_id [auth::require_login]
     }
 
@@ -66,7 +66,7 @@ namespace eval ::xo {
       if {![info exists package_id]} {set package_id [::xo::cc package_id]}
       set allowed [$object privilege=$privilege -login $login $user_id $package_id $method]
     }
-    #my msg "--check_privilege {$privilege $object $method} ==> $allowed"
+    #:msg "--check_privilege {$privilege $object $method} ==> $allowed"
     return $allowed
   }
 
@@ -76,7 +76,7 @@ namespace eval ::xo {
     # or it might be conditional (primitive or complex) in a list of privileges
 
     foreach p $permission {
-      #my msg "checking permission '$p'"
+      #:msg "checking permission '$p'"
       set condition [lindex $p 0]
       if {[llength $condition]>1} {
         # we have a condition
@@ -136,7 +136,7 @@ namespace eval ::xo {
     if {![info exists package_id]} {
       set package_id [::xo::cc package_id]
     }
-    #my msg [info exists package_id]=>$package_id-[info exists :logical_package_id]
+    #:msg [info exists package_id]=>$package_id-[info exists :logical_package_id]
     set ctx "::xo::cc"
     if {$link ne ""} {
       #
@@ -154,12 +154,12 @@ namespace eval ::xo {
 
     set allowed 0
     set permission [:get_permission $object $method]
-    #my log "--permission for o=$object, m=$method => $permission"
+    #:log "--permission for o=$object, m=$method => $permission"
 
-    #my log "--     user_id=$user_id uid=[::xo::cc user_id] untrusted=[::xo::cc set untrusted_user_id]"
+    #:log "--     user_id=$user_id uid=[::xo::cc user_id] untrusted=[::xo::cc set untrusted_user_id]"
     if {$permission ne ""} {
       lassign [:get_privilege -query_context $ctx $permission $object $method] kind p
-      #my msg "--privilege = $p kind = $kind"
+      #:msg "--privilege = $p kind = $kind"
       switch -- $kind {
         primitive {set allowed [:check_privilege -login false \
                                     -package_id $package_id -user_id $user_id \
@@ -171,7 +171,7 @@ namespace eval ::xo {
         }
       }
     }
-    #my log "--p check_permissions {$object $method} : $permission ==> $allowed"
+    #:log "--p check_permissions {$object $method} : $permission ==> $allowed"
     return $allowed
   }
 
@@ -209,7 +209,7 @@ namespace eval ::xo {
       }
     }
 
-    #my log "--p enforce_permissions {$object $method} : $permission ==> $allowed"
+    #:log "--p enforce_permissions {$object $method} : $permission ==> $allowed"
 
     if {!$allowed} {
       set untrusted_user_id [::xo::cc set untrusted_user_id]
