@@ -1176,7 +1176,7 @@ namespace eval ::xo::db {
       }
     }
     ::xo::db::sql::acs_object_type drop_type \
-        -object_type $object_type -cascade_p $cascade_p
+        -object_type $object_type -drop_children_p $cascade_p
     return ""
   }
 
