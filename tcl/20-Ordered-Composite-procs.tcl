@@ -130,7 +130,7 @@ namespace eval ::xo {
     # implementation of the method contains, that does NOT use try.
     #
     OrderedComposite instproc contains cmds {
-      my requireNamespace ;# legacy for older xotcl versions
+      :requireNamespace ;# legacy for older xotcl versions
       set m [Object info instmixin]
       if {"[self class]::ChildManager" ni $m} {
         set insert 1
@@ -170,7 +170,7 @@ namespace eval ::xo {
     set parent [lindex [[self class] set composite] end]
     $parent lappend __children [self]
     set :__parent $parent
-    #my __after_insert
+    #:__after_insert
     #:log "-- adding __parent  $parent to [self]"
     return $r
   }

@@ -299,7 +299,7 @@ namespace eval ::xo {
     if {[info exists :url]} {
       :parse_url
     } else {
-      if {![info exists port]} {my set_default_port $protocol}
+      if {![info exists port]} {:set_default_port $protocol}
       if {![info exists host]} {
         error "either host or url must be specified"
       }
@@ -315,7 +315,7 @@ namespace eval ::xo {
       #
       :mixin add ::xo::Tls
     }
-    if {[catch {my open_connection} err]} {
+    if {[catch {:open_connection} err]} {
       :cancel "error during open connection via $protocol to $host $port: $err"
     }
   }
@@ -331,7 +331,7 @@ namespace eval ::xo {
         #set tag [string trim $tag]
         puts $S "$tag: $value"
       }
-      my $method
+      :$method
     } err]} {
       :cancel "error send $host [:port]: $err"
       return
@@ -392,7 +392,7 @@ namespace eval ::xo {
       :debug "--premature eof"
       return -2
     }
-    if {$n == -1} {my debug "--input pending, no full line"; return -1}
+    if {$n == -1} {:debug "--input pending, no full line"; return -1}
     return $n
   }
   HttpCore instproc reply_first_line {} {
@@ -400,8 +400,8 @@ namespace eval ::xo {
     fconfigure $S -translation crlf
     set n [:getLine response]
     switch -exact -- $n {
-      -2 {my cancel premature-eof; return}
-      -1 {my finish; return}
+      -2 {:cancel premature-eof; return}
+      -1 {:finish; return}
     }
     if {[regexp {^HTTP/([0-9.]+) +([0-9]+) *} $response _ \
              responseHttpVersion status_code]} {
@@ -417,11 +417,11 @@ namespace eval ::xo {
     while {1} {
       set n [:getLine response]
       switch -exact -- $n {
-        -2 {my cancel premature-eof; return}
+        -2 {:cancel premature-eof; return}
         -1 {continue}
         0 {break}
         default {
-          #my debug "--header $response"
+          #:debug "--header $response"
           if {[regexp -nocase {^content-length:(.+)$} $response _ length]} {
             set :content_length [string trim $length]
           } elseif {[regexp -nocase {^content-type:(.+)$} $response _ type]} {
@@ -647,7 +647,7 @@ namespace eval ::xo {
       set block [read $S]
       :notify reply_data $block
       append :data $block
-      #my debug "reveived [string length $block] bytes"
+      #:debug "reveived [string length $block] bytes"
     }
   }
 

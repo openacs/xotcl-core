@@ -197,7 +197,7 @@ Class create ::xotcl::THREAD \
     # lazy creation of a new slave thread
 
     ad_mutex_eval ${:mutex} {
-      #my check_blueprint
+      #:check_blueprint
       #:log "after lock"
       if {![nsv_exists [self class] [self]]} {
         if {[:lightweight]} {

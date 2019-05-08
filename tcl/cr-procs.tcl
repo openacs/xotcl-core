@@ -1745,7 +1745,7 @@ namespace eval ::xo::db {
 
   CrCache::Item instproc set_non_persistent_vars {vars} {
     lassign $vars arrays scalars
-    foreach {var value} $arrays {my array set $var $value}
+    foreach {var value} $arrays {:array set $var $value}
     :mset $scalars
   }
   CrCache::Item instproc flush_from_cache_and_refresh {} {

@@ -528,7 +528,7 @@ namespace eval ::xo {
   
   ConnectionContext instproc set_parameter {name value} {
     set key [list get_parameter $name]
-    if {[:cache_exists $key]} {my cache_unset $key}
+    if {[:cache_exists $key]} {:cache_unset $key}
     set :perconnectionparam($name) $value
   }
   ConnectionContext instproc get_parameter {name {default ""}} {

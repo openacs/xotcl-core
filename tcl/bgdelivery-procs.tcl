@@ -95,7 +95,7 @@ if {![string match "*contentsentlength*" $msg]} {
       set value [set $k]
       ns_log notice "resubmit: canceling currently running request $context  // closing $value"
       lassign $value fd0 channel0 client_data0 filename0
-      my end-delivery -client_data $client_data0 $filename0 $fd0 $channel0 -1
+      :end-delivery -client_data $client_data0 $filename0 $fd0 $channel0 -1
     }
     set $k [list $fd $channel $client_data $filename]
 
@@ -134,13 +134,13 @@ if {![string match "*contentsentlength*" $msg]} {
       if {[ns_time seconds $t] > 2000} {
         if {[regexp {^([^,]+),([^,]+),(.+)$} $index _ channel fd filename]} {
           ns_log notice "bgdelivery, fileSpooler cleanup after [ns_time seconds $t] seconds, $key"
-          my end-delivery $filename $fd $channel -1
+          :end-delivery $filename $fd $channel -1
         }
       }
     }
   }
   fileSpooler proc tick {} {
-    if {[catch {my cleanup} errorMsg]} {ns_log error "Error during filespooler cleanup: $errorMsg"}
+    if {[catch {:cleanup} errorMsg]} {ns_log error "Error during filespooler cleanup: $errorMsg"}
     set :to [after ${:tick_interval} [list [self] tick]]
   }
   fileSpooler tick
@@ -188,7 +188,7 @@ if {![string match "*contentsentlength*" $msg]} {
       flush $channel
     } errorMsg]} {
       ns_log notice "h264: error writing headers in h264 channel for $filename $query: $errorMsg"
-      my end-delivery -client_data $client_data $filename $handle $channel 0
+      :end-delivery -client_data $client_data $filename $handle $channel 0
     }
     # setup async delivery
     fconfigure $channel -translation binary -blocking false
@@ -199,7 +199,7 @@ if {![string match "*contentsentlength*" $msg]} {
     set bytesVar ::bytes($channel,$handle,$filename)
     #ns_log notice "h264 WRITE BLOCK $channel $handle"
     if {[eof $channel] || [h264eof $handle]} {
-      my end-delivery -client_data $client_data $filename $handle $channel [set $bytesVar]
+      :end-delivery -client_data $client_data $filename $handle $channel [set $bytesVar]
     } else {
       set block [h264read $handle]
       # one should not use "bytelength" on binary data: https://wiki.tcl-lang.org/8455
@@ -208,7 +208,7 @@ if {![string match "*contentsentlength*" $msg]} {
       h264Spooler incr byteCount $len
       if {[catch {puts -nonewline $channel $block} errorMsg]} {
         ns_log notice "h264: error on writing to channel $channel: $errorMsg"
-        my end-delivery -client_data $client_data $filename $handle $channel [set $bytesVar]
+        :end-delivery -client_data $client_data $filename $handle $channel [set $bytesVar]
       }
     }
   }
@@ -428,13 +428,13 @@ if {![string match "*contentsentlength*" $msg]} {
   ::HttpSpooler instproc release {} {
     # release indicates the when running becomes 0, the spooler is finished
     set :release 1
-    if {${:running} == 0} {my all_done}
+    if {${:running} == 0} {:all_done}
   }
   ::HttpSpooler instproc done {reason request} {
     incr :running -1
     :log "--running ${:running}"
     $request destroy
-    if {${:running} == 0 && ${:release}} {my all_done}
+    if {${:running} == 0 && ${:release}} {:all_done}
   }
   ::HttpSpooler instproc deliver {data request {encoding binary}} {
     :log "-- spooling ${:spooling}"
@@ -750,7 +750,7 @@ ad_proc -public ad_returnfile_background {{-client_data ""} status_code mime_typ
 bgdelivery proc -deprecated subscribe {key {initmsg ""} {mode default} } {
   set ch [ns_conn channel]
   thread::transfer [:get_tid] $ch
-  #my do ::Subscriber sweep $key
+  #:do ::Subscriber sweep $key
   :do ::Subscriber new -channel $ch -key $key -user_id [ad_conn user_id] -mode $mode
 }
 
