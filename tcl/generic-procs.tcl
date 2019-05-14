@@ -50,9 +50,11 @@ namespace eval ::Generic {
     set level [template::adp_level]
     :forward var uplevel #$level set
 
-    if {${:package_id} eq ""} {set :package_id [${:data} package_id]}
+    if {${:package_id} eq ""} {
+      set :package_id [${:data} package_id]
+    }
     if {${:folder_id} < 0} {
-      set :folder_id [expr {[${:data} exists parent_id] ? [${:data} parent_id] : [${:package_id} folder_id]}]
+      set :folder_id [expr {[${:data} exists parent_id] ? [${:data} parent_id] : [::${:package_id} folder_id]}]
     }
 
     set class [${:data} info class]
