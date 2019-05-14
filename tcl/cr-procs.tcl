@@ -1227,9 +1227,7 @@ namespace eval ::xo::db {
     ::TableWidget create t1 -volatile \
         -columns {
           Field version_number -label "" -html {align right}
-          ImageAnchorField edit -label "" -src /resources/acs-subsite/Zoom16.gif \
-              -title "View Item" -alt  "view" \
-              -width 16 -height 16 -border 0
+          AnchorField create view -CSSclass view-item-button -label ""
           AnchorField diff -label ""
           AnchorField plain_diff -label ""
           AnchorField author -label [_ file-storage.Author]
@@ -1240,7 +1238,7 @@ namespace eval ::xo::db {
           ImageAnchorField live_revision -label [_ xotcl-core.live_revision] \
               -src /resources/acs-subsite/radio.gif \
               -width 16 -height 16 -border 0 -html {align center}
-          ImageField_DeleteIcon version_delete -label "" -html {align center}
+          AnchorField create version_delete -CSSclass delete-item-button -label ""
         }
 
     set user_id [:current_user_id]
@@ -1287,7 +1285,8 @@ namespace eval ::xo::db {
 
       t1 add \
           -version_number $version_number: \
-          -edit.href [export_vars -base $base {{revision_id $version_id}}] \
+          -view "" \
+          -view.href [export_vars -base $base {{revision_id $version_id}}] \
           -author $author \
           -content_size $content_size_pretty \
           -last_modified_ansi [lc_time_fmt $last_modified_ansi "%x %X"] \
@@ -1297,6 +1296,7 @@ namespace eval ::xo::db {
           -live_revision.href $live_revision_link \
           -version_delete.href [export_vars -base $base \
                                     {{m delete-revision} {revision_id $version_id}}] \
+          -version_delete "" \
           -version_delete.title [_ file-storage.Delete_Version]
 
       [t1 last_child] set payload(revision_id) $version_id
