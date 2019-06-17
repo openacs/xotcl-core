@@ -122,7 +122,7 @@ namespace eval ::xo {
   #
   # HttpRequestTrace can be used to trace one or all requests.
   # If activated, the class writes protocol data into 
-  # /tmp/req-<somenumber>.
+  # [ad_tmpdir]/req-<somenumber>.
   #
   # Use 
   #
@@ -790,7 +790,7 @@ namespace eval ::xo {
     :instvar F post_data
     set :meta [list]
     set :requestCount [nsv_incr HttpRequestTrace count]  ;# make it an instvar to find it in the log file
-    set F [open /tmp/req-[format %.4d ${:requestCount}] w]
+    set F [open [ad_tmpdir]/req-[format %.4d ${:requestCount}] w]
     
     set method [expr {$post_data eq "" ? "GET" : "POST"}]
     puts $F "$method [:path] HTTP/1.0"
