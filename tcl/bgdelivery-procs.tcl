@@ -732,17 +732,65 @@ bgdelivery ad_proc returnfile {
     ns_conn contentsentlength $size       ;# maybe overly optimistic
   }
 
+
+#
+# Check at load time, whether h264open is available. If so, perform
+# detailed checking if h264 streaming for file deliveries is necessary.
+#
+if {[info commands h264open] ne ""} {
+  #
+  # try to use h264 module when required
+  #
+  ns_log notice "... h264open available"
+
+  ad_proc -private ::xo::use_h264 {{-query ""} mime_type} {
+
+    Check, if the file to be delivered can be and has to be delivered
+    via the h264Spooler of bgdelivery
+
+  } {
+    if {$query eq ""} {
+      set query [::xo::cc actual_query]
+    }
+    set use_h264 [expr {[string match "video/mp4*" $mime_type] && $query ne ""
+                        && ([string match {*start=[1-9]*} $query] || [string match {*end=[1-9]*} $query])
+                        && [info commands h264open] ne ""
+                        && ![security::secure_conn_p] }]
+    return $use_h264
+  }
+
+} else {
+  #
+  # no h264
+  #
+  ns_log notice "... no h264open available"
+  ad_proc -private ::xo::use_h264 {{-query ""} mime_type} {
+
+    Check, if the file to be delivered can be and has to be delivered
+    via the h264Spooler of bgdelivery
+
+  } {
+    return 0
+  }
+}
+
+
 ad_proc -public ad_returnfile_background {{-client_data ""} status_code mime_type filename} {
-  Deliver the given file to the requestor in the background. This proc uses the
-  background delivery thread to send the file in an event-driven manner without
-  blocking a request thread. This is especially important when large files are
-  requested over slow (e.g. dial-ip) connections.
+
+  Deliver the given file to the requestor in the background.  When
+  using NaviServer with its writer threads, ns_returnfile is perfectly
+  fine since it delivers its contents already in the background.
+
+  The main reason for using the bgdelivery thread is currently (2019)
+  the support of h264 streaming (when the module is in use). So we
+  check, whether h264 is available and requested, otherwise pass
+  everything to ns_returnfile.
 } {
-  #ns_log notice "driver=[ns_conn driver]"
-  if {[ns_conn driver] ne "nssock"} {
-    ns_returnfile $status_code $mime_type $filename
-  } else {
+  #ns_log notice "ad_returnfile_background xo::use_h264 -> [xo::use_h264 $mime_type]"
+  if {[xo::use_h264 $mime_type]} {
     bgdelivery returnfile -client_data $client_data $status_code $mime_type $filename
+  } else {
+    ns_returnfile $status_code $mime_type $filename
   }
 }
 
