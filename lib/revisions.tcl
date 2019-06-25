@@ -74,11 +74,7 @@ db_multirow -unclobber -extend {
   set version_number $version_number:
   set last_modified_ansi   [lc_time_system_to_conn $last_modified_ansi]
   set last_modified_pretty [lc_time_fmt $last_modified_ansi "%x %X"]
-  if {$content_size < 1024} {
-    set content_size_pretty "[lc_numeric $content_size] [_ file-storage.bytes]"
-  } else {
-    set content_size_pretty "[lc_numeric [format %.2f [expr {$content_size/1024.0}]]] [_ file-storage.kb]"
-  }
+  set content_size_pretty  [util::content_size_pretty -size $content_size]
 
   if {$name eq ""} {set name [_ file-storage.untitled]}
   set live_revision_link [export_vars -base make-live-revision \

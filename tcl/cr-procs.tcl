@@ -1263,12 +1263,7 @@ namespace eval ::xo::db {
                  -orderby "r.revision_id desc"]
 
     ::xo::dc foreach revisions_select $sql {
-      if {$content_length < 1024} {
-        if {$content_length eq ""} {set content_length 0}
-        set content_size_pretty "[lc_numeric $content_length] [_ file-storage.bytes]"
-      } else {
-        set content_size_pretty "[lc_numeric [format %.2f [expr {$content_length/1024.0}]]] [_ file-storage.kb]"
-      }
+      set content_size_pretty [util::content_size_pretty -size $content_length]
 
       set last_modified_ansi [lc_time_system_to_conn $last_modified_ansi]
 
