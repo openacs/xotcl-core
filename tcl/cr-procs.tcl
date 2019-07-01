@@ -1263,7 +1263,7 @@ namespace eval ::xo::db {
                  -orderby "r.revision_id desc"]
 
     ::xo::dc foreach revisions_select $sql {
-      set content_size_pretty [util::content_size_pretty -size $content_length]
+      set content_size_pretty [lc_content_size_pretty -size $content_length]
 
       set last_modified_ansi [lc_time_system_to_conn $last_modified_ansi]
 
