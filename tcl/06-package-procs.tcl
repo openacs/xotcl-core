@@ -408,7 +408,8 @@ namespace eval ::xo {
     foreach _var $variables {
       if {[llength $_var] == 2} {
         #
-        # The variable specification is a pair of name and value
+        # The variable specification "$_var" is a pair of name and
+        # value.
         #
         lappend __vars [lindex $_var 0] [uplevel subst [lindex $_var 1]]
       } else {
