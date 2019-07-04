@@ -145,7 +145,7 @@ namespace eval ::xo::tdom {
       } else {
         set HTMLattribute $attribute
       }
-      #:msg "[:name] check for $attribute => [info exists :$attribute]"
+      #:msg "${:name} check for $attribute => [info exists :$attribute]"
       if {[info exists :$attribute]} {
         lappend pairs $HTMLattribute [set :$attribute]
       }
@@ -169,7 +169,7 @@ namespace eval ::xo::tdom {
       } else {
         set HTMLattribute $attribute
       }
-      #:msg "[:name] check for $attribute => [info exists :$attribute]"
+      #:msg "${:name} check for $attribute => [info exists :$attribute]"
       if {[:uplevel [list info exists $attribute]]} {
         lappend pairs $HTMLattribute [:uplevel [list set $attribute]]
       }
@@ -517,9 +517,9 @@ namespace eval ::xo::Table {
         set :name [namespace tail [self]]
       } \
       -instproc get-slots {} {
-        set slots [list -[:name]]
+        set slots [list -${:name}]
         foreach subfield {richtext CSSclass} {
-          lappend slots [list -[:name].$subfield ""]
+          lappend slots [list -${:name}.$subfield ""]
         }
         return $slots
       }
@@ -545,9 +545,9 @@ namespace eval ::xo::Table {
   Class create AnchorField \
       -superclass ::xo::Table::Field \
       -instproc get-slots {} {
-        set slots [list -[:name]]
+        set slots [list -${:name}]
         foreach subfield {href title CSSclass} {
-          lappend slots [list -[:name].$subfield ""]
+          lappend slots [list -${:name}.$subfield ""]
         }
         return $slots
       }
@@ -555,21 +555,21 @@ namespace eval ::xo::Table {
   Class create HiddenField \
       -superclass ::xo::Table::Field \
       -instproc get-slots {} {
-        return [list -[:name]]
+        return [list -${:name}]
       }
 
   Class create ImageField \
       -parameter {src width height border title alt} \
       -superclass ::xo::Table::Field \
       -instproc get-slots {} {
-        set slots [list -[:name]]
-        lappend slots [list -[:name].src [:src]]
-        lappend slots [list -[:name].CSSclass [:CSSclass]]
+        set slots [list -${:name}]
+        lappend slots [list -${:name}.src [:src]]
+        lappend slots [list -${:name}.CSSclass [:CSSclass]]
         foreach att {width height border title alt} {
           if {[info exists :$att]} {
-            lappend slots [list -[:name].$att [:$att]]
+            lappend slots [list -${:name}.$att [:$att]]
           } else {
-            lappend slots [list -[:name].$att]
+            lappend slots [list -${:name}.$att]
           }
         }
         return $slots
@@ -578,7 +578,7 @@ namespace eval ::xo::Table {
   Class create ImageAnchorField \
       -superclass ::xo::Table::ImageField \
       -instproc get-slots {} {
-        return [concat [next]  -[:name].href ""]
+        return [concat [next]  -${:name}.href ""]
       }
 
   Class create ImageField_EditIcon \
@@ -734,14 +734,14 @@ namespace eval ::xo::Table {
 
   Class create TABLE::Field -superclass ::xo::Drawable
   TABLE::Field instproc render-data {line} {
-    $line instvar [list [:name].richtext richtext]
+    $line instvar [list ${:name}.richtext richtext]
     if {![info exists richtext] || $richtext eq ""} {
       set richtext [:richtext]
     }
     if {$richtext} {
-      html::t -disableOutputEscaping [$line set [:name]]
+      html::t -disableOutputEscaping [$line set ${:name}]
     } else {
-      html::t [$line set [:name]]
+      html::t [$line set ${:name}]
     }
   }
 
@@ -797,11 +797,11 @@ namespace eval ::xo::Table {
   Class create TABLE::AnchorField \
       -superclass TABLE::Field \
       -instproc render-data {line} {
-        if {[$line exists [:name].href] &&
-            [set href [$line set [:name].href]] ne ""} {
+        if {[$line exists ${:name}.href] &&
+            [set href [$line set ${:name}.href]] ne ""} {
           # use the CSS class rather from the Field than not the line
           :instvar CSSclass
-          $line instvar [list [:name].title title]
+          $line instvar [list ${:name}.title title]
           html::a [:get_local_attributes href title {CSSclass class}] {
             return [next]
           }
@@ -817,9 +817,9 @@ namespace eval ::xo::Table {
   Class create TABLE::ImageField \
       -superclass TABLE::Field \
       -instproc render-data {line} {
-        $line instvar [list [:name].CSSclass CSSclass]
+        $line instvar [list ${:name}.CSSclass CSSclass]
         html::a [:get_local_attributes href {style "border-bottom: none;"} {CSSclass class}] {
-          html::img [$line attlist [:name] {src width height border title alt}] {}
+          html::img [$line attlist ${:name} {src width height border title alt}] {}
         }
         $line render_localizer
       }
@@ -827,12 +827,12 @@ namespace eval ::xo::Table {
   Class create TABLE::ImageAnchorField \
       -superclass TABLE::Field \
       -instproc render-data {line} {
-        set href [$line set [:name].href]
+        set href [$line set ${:name}.href]
         if {$href ne ""} {
-          #if {$line exists [:name].CSSclass} {set CSSclass [$line set [:name].CSSclass]}
-          $line instvar [list [:name].CSSclass CSSclass]
+          #if {$line exists ${:name}.CSSclass} {set CSSclass [$line set ${:name}.CSSclass]}
+          $line instvar [list ${:name}.CSSclass CSSclass]
           html::a [:get_local_attributes href {style "border-bottom: none;"} {CSSclass class}] {
-            html::img [$line attlist [:name] {src width height border title alt}] {}
+            html::img [$line attlist ${:name} {src width height border title alt}] {}
           }
           $line render_localizer
         }
@@ -840,7 +840,7 @@ namespace eval ::xo::Table {
 
   Class create TABLE::BulkAction -superclass ::xo::Drawable
   TABLE::BulkAction instproc render {} {
-    set name [:name]
+    set name ${:name}
     #:msg [:serialize]
     html::th -class list {
       html::input -type checkbox -name __bulkaction -id __bulkaction \
@@ -856,7 +856,7 @@ namespace eval ::xo::Table {
 
   TABLE::BulkAction instproc render-data {line} {
     #:msg [:serialize]
-    set name [:name]
+    set name ${:name}
     set value [$line set [:id]]
     html::input -type checkbox -name $name -value $value \
         -id "$name---[string map {/ _} $value]" \

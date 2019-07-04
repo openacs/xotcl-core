@@ -1570,7 +1570,7 @@ namespace eval ::xo::db {
     set package_id ${:package_id}
     [:info class] get_context package_id creation_user creation_ip
     set :folder_id [::xo::db::sql::content_folder new \
-                        -name [:name] -label [:label] \
+                        -name ${:name} -label [:label] \
                         -description [:description] \
                         -parent_id ${:parent_id} \
                         -package_id $package_id \
@@ -1811,7 +1811,7 @@ namespace eval ::xo::db {
     if {[:is_cached_object]} {
       ::xo::xotcl_object_cache flush [string trimleft [self] :]
     }
-    xo::xotcl_object_type_cache flush -partition_key ${:parent_id} ${:parent_id}-[:name]
+    xo::xotcl_object_type_cache flush -partition_key ${:parent_id} ${:parent_id}-${:name}
     next
   }
   CrCache::Item instproc rename {-old_name:required -new_name:required} {

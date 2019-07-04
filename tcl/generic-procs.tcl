@@ -208,13 +208,13 @@ namespace eval ::Generic {
     @param export list of attribute value pairs to be exported to the form (nested list)
   } {
     # set form name for adp file
-    set :$template [:name]
+    set :$template ${:name}
 
     set object_type [[${:data} info class] object_type]
     set object_name [expr {[${:data} exists name] ? [${:data} set name] : ""}]
     # :log "-- ${:data}, cl=[${:data} info class] [[${:data} info class] object_type]"
 
-    # :log "--e [:name] final fields ${:fields}"
+    # :log "--e ${:name} final fields ${:fields}"
     set exports [list \
       [list object_type $object_type] \
                      [list folder_id ${:folder_id}] \
@@ -236,7 +236,7 @@ namespace eval ::Generic {
 
     if {[:with_categories]} {
       set coid [expr {[${:data} exists item_id] ? [${:data} set item_id] : ""}]
-      category::ad_form::add_widgets -form_name [:name] \
+      category::ad_form::add_widgets -form_name ${:name} \
           -container_object_id ${:package_id} \
           -categorized_object_id $coid
 
@@ -263,7 +263,7 @@ namespace eval ::Generic {
     # action blocks must be added last
     # -new_data and -edit_data are enclosed in a transaction only in the end,
     # so eventual additional code from category management is executed safely
-    ad_form -extend -name [:name] \
+    ad_form -extend -name ${:name} \
         -validate [:validate] \
         -new_data "xo::dc transaction \{ $new_data \}" -edit_data "xo::dc transaction \{ $edit_data \}" \
         -on_submit $on_submit -new_request $new_request -edit_request $edit_request \

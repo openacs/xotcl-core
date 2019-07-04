@@ -331,7 +331,7 @@ namespace eval ::xo {
     if {[info exists :untrusted_user_id]} {
       return ${:untrusted_user_id}
     }
-    return [:user_id]
+    return ${:user_id}
   }
 
   ConnectionContext instproc returnredirect {-allow_complete_url:switch url} {
@@ -440,7 +440,7 @@ namespace eval ::xo {
       set granted [permission::permission_p -no_login -party_id $party_id \
                        -object_id $object_id \
                        -privilege $privilege]
-      #:msg "--p lookup $key ==> $granted uid=[:user_id] uuid=${:untrusted_user_id}"
+      #:msg "--p lookup $key ==> $granted uid=${:user_id} uuid=${:untrusted_user_id}"
       if {$granted || ${:user_id} == ${:untrusted_user_id}} {
         return $granted
       }

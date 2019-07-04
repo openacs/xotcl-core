@@ -1,6 +1,6 @@
 ::xo::library doc {
 
-  XOTcl API for low level db abstraction
+  XOTcl API for low-level db abstraction
 
   @author Gustaf Neumann
   @creation-date 2006-12-28
@@ -23,7 +23,7 @@ namespace eval ::xo::db {
   # database context) quite similar to ::xo::cc (the default
   # connection context). In general ::xo::dc can be reconfigured at
   # runtime, and multiple database context can be established,
-  # although there is no high level support to connect to multiple
+  # although there is no high-level support to connect to multiple
   # different OpenACS databases at the same time.
   #
   ##########################################################################
@@ -2824,20 +2824,20 @@ namespace eval ::xo::db {
     # :destroy_on_cleanup
 
     # PRESERVE ROWS means that the data will be available until the end of the SQL session
-    set sql_create "CREATE global temporary table [:name] on commit PRESERVE ROWS as "
+    set sql_create "CREATE global temporary table ${:name} on commit PRESERVE ROWS as "
 
     # When the table exists already, simply insert into it ...
-    if {[::xo::db::require exists_table [:name]]} {
-      ::xo::dc dml . "insert into [:name] ([:vars]) ([:query])"
+    if {[::xo::db::require exists_table ${:name}]} {
+      ::xo::dc dml . "insert into ${:name} ([:vars]) (${:query})"
     } else {
       # ... otherwise, create the table with the data in one step
-      ::xo::dc dml get_n_most_recent_contributions $sql_create[:query]
+      ::xo::dc dml get_n_most_recent_contributions $sql_create${:query}
     }
   }
   ::xo::db::temp_table instproc destroy {} {
     # A session spans multiple connections in OpenACS.
     # We want to get rid the data when we are done.
-    ::xo::dc dml truncate_temp_table "truncate table [:name]"
+    ::xo::dc dml truncate_temp_table "truncate table ${:name}"
     next
   }
 

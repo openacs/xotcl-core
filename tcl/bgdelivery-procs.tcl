@@ -341,7 +341,7 @@ if {![string match "*contentsentlength*" $msg]} {
     ::sec_handler_reset
     set smsg [::xo::mr::bgdelivery encode_message [:mode] $msg]
     #:log "-- sending to subscriber for [:key] $smsg ch=[:channel] \
-        #        mode=[:mode], user_id [:user_id]"
+        #        mode=[:mode], user_id ${:user_id}"
     try {
       puts -nonewline [:channel] $smsg
       flush [:channel]
