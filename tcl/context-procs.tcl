@@ -437,14 +437,11 @@ namespace eval ::xo {
     }
     # :log "--  context permission user_id=$party_id uid=[::xo::cc user_id] untrusted=[::xo::cc set untrusted_user_id]"
     if {$party_id == 0} {
-      set key :permission($object_id,$privilege,$party_id)
-      if {[info exists $key]} {return [set $key]}
       set granted [permission::permission_p -no_login -party_id $party_id \
                        -object_id $object_id \
                        -privilege $privilege]
       #:msg "--p lookup $key ==> $granted uid=[:user_id] uuid=${:untrusted_user_id}"
       if {$granted || ${:user_id} == ${:untrusted_user_id}} {
-        set $key $granted
         return $granted
       }
       # The permission is not granted for the public.
@@ -453,14 +450,12 @@ namespace eval ::xo {
       #auth::require_login
       return 0
     }
-
-    set key :permission($object_id,$privilege,$party_id)
-    if {[info exists $key]} {return [set $key]}
+    
     #:msg "--p lookup $key"
-    set $key [permission::permission_p -no_login \
-                  -party_id $party_id \
-                  -object_id $object_id \
-                  -privilege $privilege]
+    return [permission::permission_p -no_login \
+                -party_id $party_id \
+                -object_id $object_id \
+                -privilege $privilege]
     #:log "--  context return [set :$key]"
     #set :$key
   }
@@ -588,4 +583,5 @@ namespace eval ::xo {
 #    mode: tcl
 #    tcl-indent-level: 2
 #    indent-tabs-mode: nil
+#    eval: (setq tcl-type-alist (remove* "method" tcl-type-alist :test 'equal :key 'car))
 # End:
