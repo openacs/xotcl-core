@@ -734,10 +734,10 @@ namespace eval ::xo::db {
             -references "cr_items on delete cascade"
         ::xo::db::CrAttribute create title \
             -sqltype varchar(1000) \
-            -pretty_name "Title" -pretty_plural "Titles"
+            -pretty_name "#xotcl-core.title#" -pretty_plural "#xotcl-core.titles#"
         ::xo::db::CrAttribute create description \
             -sqltype text \
-            -pretty_name "Description" -pretty_plural "Descriptions"
+            -pretty_name "#xotcl-core.description#" -pretty_plural "#xotcl-core.descriptions#"
         ::xo::db::CrAttribute create publish_date \
             -datatype date
         ::xo::db::CrAttribute create mime_type \
@@ -746,7 +746,7 @@ namespace eval ::xo::db {
             -default text/plain -references cr_mime_types
         ::xo::db::CrAttribute create nls_language \
             -sqltype varchar(50) \
-            -pretty_name "Language" -pretty_plural "Languages" \
+            -pretty_name "#xotcl-core.language#" -pretty_plural "#xotcl-core.languages#" \
             -default en_US
         # lob, content, content_length
         #

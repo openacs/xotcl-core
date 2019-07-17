@@ -6,9 +6,13 @@
   <msg key="add_long">Neue Seite vom Type %type% erzeugen</msg>
   <msg key="create_new_type">Neuen %type% erstellen</msg>
   <msg key="delete_item">Element löschen</msg>
+  <msg key="description">Beschreibung</msg>
+  <msg key="descriptions">Beschreibungen</msg>
   <msg key="edit_item">Editieren</msg>
   <msg key="edit_type">%type% bearbeiten</msg>
   <msg key="has_entered_the_room">has entered the room</msg>
+  <msg key="language">Sprache</msg>
+  <msg key="languages">Sprachen</msg>
   <msg key="live_revision">Aktuelle Version</msg>
   <msg key="No_Data">Keine Daten</msg>
   <msg key="nobody">Gast</msg>
@@ -18,5 +22,7 @@ Sie haben keine ausreichende Berechtigung, um die Methode %method% am Objekt %ob
 &lt;/blockquote&gt;</msg>
   <msg key="revision_title">Versionen des Eintrags</msg>
   <msg key="revisions">Verlauf</msg>
+  <msg key="title">Titel</msg>
+  <msg key="titles">Titel</msg>
   <msg key="view_item">Element anzeigen</msg>
 </message_catalog>

@@ -6,9 +6,13 @@
   <msg key="add_long">Add new item of type %type%</msg>
   <msg key="create_new_type">Create New %type%</msg>
   <msg key="delete_item">Delete Item</msg>
+  <msg key="description">Description</msg>
+  <msg key="descriptions">Descriptions</msg>
   <msg key="edit_item">Edit Item</msg>
   <msg key="edit_type">Edit %type%</msg>
   <msg key="has_entered_the_room">has entered the room</msg>
+  <msg key="language">Language</msg>
+  <msg key="languages">Languages</msg>
   <msg key="live_revision">Live Revision</msg>
   <msg key="nobody">Guest</msg>
   <msg key="No_Data">No Data</msg>
@@ -18,5 +22,7 @@ You don't have sufficient permissions for performing method %method% on object %
 &lt;/blockquote&gt;</msg>
   <msg key="revision_title">Revisions of Entry</msg>
   <msg key="revisions">Revisions</msg>
+  <msg key="title">Title</msg>
+  <msg key="titles">Titles</msg>
   <msg key="view_item">View Item</msg>
 </message_catalog>
