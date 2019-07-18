@@ -750,6 +750,9 @@ if {[info commands h264open] ne ""} {
 
   } {
     if {$query eq ""} {
+      if {![:isobject ::xo::cc]} {
+        ::xo::ConnectionContext require
+      }
       set query [::xo::cc actual_query]
     }
     set use_h264 [expr {[string match "video/mp4*" $mime_type] && $query ne ""
