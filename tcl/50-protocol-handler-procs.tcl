@@ -20,13 +20,21 @@ namespace eval ::xo {
     }
   }
 
+  ProtocolHandler instproc log {message} {
+    #
+    # Comment out the following line to silence the logging.
+    #
+    #next "xo::ProtocolHandler: $message"
+  }
+  
   ProtocolHandler ad_instproc set_user_id {} {
     Set user_id based on authentication header
   } {
-    set ah [ns_set get [ns_conn headers] Authorization]
+    :log "[ns_conn method] request comes with headers [ns_set array [ns_conn headers]]"
+    set ah [ns_set iget [ns_conn headers] Authorization]
     if {$ah ne ""} {
       # should be something like "Basic 29234k3j49a"
-      :debug "auth_check authentication info $ah"
+      :log "auth_check authentication info $ah"
       # get the second bit, the base64 encoded bit
       set up [lindex [split $ah " "] 1]
       # after decoding, it should be user:password; get the username
@@ -35,18 +43,18 @@ namespace eval ::xo {
                     -username $user \
                     -authority_id [::auth::get_register_authority] \
                     -password $password]
-      :debug "auth $user $password returned $auth"
+      :log "auth $user $password returned $auth"
       if {[dict get $auth auth_status] ne "ok"} {
         set auth [auth::authenticate \
                       -email $user \
                       -password $password]
         if {[dict get $auth auth_status] ne "ok"} {
-          :debug "auth status [dict get $auth auth_status]"
+          :log "auth status [dict get $auth auth_status]"
           set :user_id 0
           throw {AUTH UNAUTHORIZED {unauthorized}} [dict get $auth auth_status]
         }
       }
-      :debug "auth_check user_id='[dict get $auth user_id]'"
+      :log "auth_check user_id='[dict get $auth user_id]'"
       ad_conn -set user_id [dict get $auth user_id]
 
     } else {
@@ -107,6 +115,7 @@ namespace eval ::xo {
     try {
       :initialize
     } trap {AUTH UNAUTHORIZED} {errorMsg} {
+      :log "not authorized: $errorMsg"
       ns_returnunauthorized
       return filter_return
     } on error {errorMsg} {
@@ -132,12 +141,15 @@ namespace eval ::xo {
         }
       } else {
         # for now, require for every user authentication
-        ns_returnunauthorized
-        return filter_return
+        :log "not authorized 2 uri ${:uri} conn-url [ns_conn url]"
+        if {${:uri} ne "xxx/principal/"} {
+          ns_returnunauthorized
+          return filter_return
+        }
       }
     }
 
-    #:log "--preauth filter_ok"
+    :log "--preauth filter_ok - user_id ${:user_id}"
     return filter_ok
   }
 
@@ -208,16 +220,16 @@ namespace eval ::xo {
       DELETE LOCK UNLOCK OPTIONS
       REPORT
     } {
-       ns_register_filter preauth $method $filter_url [self]
-       ns_register_filter preauth $method $root       [self]
-       ns_register_proc $method $url  [self] handle_request
-       ns_register_proc $method $root [self] handle_request
+      ns_register_filter preauth $method $filter_url [self]
+      ns_register_filter preauth $method $root       [self]
+      ns_register_proc $method $url  [self] handle_request
+      ns_register_proc $method $root [self] handle_request
 
-       #:log "--ns_register_filter preauth $method $filter_url  [self]"
-       #:log "--ns_register_filter preauth $method $root  [self]"
-       #:log "--ns_register_proc $method $url [self] handle_request"
-       #:log "--ns_register_proc $method $root [self] handle_request"
-     }
+      :log "ns_register_filter preauth $method $filter_url  [self]"
+      :log "ns_register_filter preauth $method $root  [self]"
+      :log "ns_register_proc $method $url [self] handle_request"
+      :log "ns_register_proc $method $root [self] handle_request"
+    }
     ns_register_proc OPTIONS  / ::xo::minimalProctocolHandler OPTIONS
     ns_register_proc PROPFIND / ::xo::minimalProctocolHandler PROPFIND
   }
@@ -227,7 +239,7 @@ namespace eval ::xo {
     @return package_id
   } {
     ${:package} initialize -url ${:uri}
-    #:log "-- ${:package} initialize -url ${:uri}"
+    :log "-- ${:package} initialize -url ${:uri}"
     return $package_id
   }
 
@@ -236,8 +248,8 @@ namespace eval ::xo {
     could be overloaded by the application and
     dispatches the HTTP requests.
   } {
-    #:log "--handle_request method=${:method} uri=$uri\
-         #     userid=${:user_id} -ns_conn query '[ns_conn query]'"
+    :log "--handle_request method=${:method} uri=${:uri}\
+             userid=${:user_id} -ns_conn query '[ns_conn query]'"
     if {[info exists :package] && ${:uri} ne "/"} {
       # We don't call package-initialize for ${:uri} = "/"
       set :package_id [:get_package_id]
@@ -280,7 +292,7 @@ namespace eval ::xo {
     -propstats:required
     {-propstatus true}
   } {
-    #:log "multiStatusResonse href $href propstats $propstats"
+    :log "multiStatusResonse href $href propstats $propstats"
     append reply \n \
         {<D:response xmlns:lp1="DAV:" xmlns:lp2="http://apache.org/dav/props/" xmlns:g0="DAV:">} \
         "\n<D:href>$href</D:href>\n"
@@ -322,7 +334,7 @@ namespace eval ::xo {
     set r [:multiStatus [:multiStatusResonse \
                              -href [ns_urldecode [ns_conn url]] \
                              -propstats [list $davprops $status]]]
-    #:log multiStatusError=$r
+    :log multiStatusError=$r
     ns_return 207 text/xml $r
   }
 
