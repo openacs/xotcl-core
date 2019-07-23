@@ -100,9 +100,9 @@ namespace eval ::xo {
     set permission ""
     set o [self]::[namespace tail $object]
     set key require_permission($method)
-    if {[:isobject $o] && [$o exists $key]} {
+    if {[nsf::is object $o] && [$o exists $key]} {
       set permission [$o set $key]
-    } elseif {[:isobject $o] && [$o exists default_permission]} {
+    } elseif {[nsf::is object $o] && [$o exists default_permission]} {
       set permission [$o set default_permission]
     } elseif {$check_classes} {
       # we have no object specific policy information, check the classes

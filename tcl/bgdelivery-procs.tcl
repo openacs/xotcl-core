@@ -537,7 +537,7 @@ bgdelivery ad_proc returnfile {
     #ns_log notice "expires-set $filename"
     #ns_log notice "status_code = $status_code, filename=$filename"
 
-    if {![:isobject ::xo::cc]} {
+    if {![nsf::is object ::xo::cc]} {
       ::xo::ConnectionContext require
     }
     set query [::xo::cc actual_query]
@@ -750,7 +750,7 @@ if {[info commands h264open] ne ""} {
 
   } {
     if {$query eq ""} {
-      if {![::xotcl::Object isobject ::xo::cc]} {
+      if {![nsf::is object ::xo::cc]} {
         ::xo::ConnectionContext require
       }
       set query [::xo::cc actual_query]

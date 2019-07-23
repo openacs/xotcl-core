@@ -80,7 +80,7 @@ namespace eval ::xo {
     if {[info exists :__children]} {
       #:log "--W destroying children ${:__children}"
       foreach c ${:__children} { 
-        if {[:isobject $c]} {$c destroy}
+        if {[nsf::is object $c]} {$c destroy}
       }
     }
     #show_stack;:log "--W children murdered, now next, chlds=[:info children]"

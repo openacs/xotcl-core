@@ -692,8 +692,8 @@ namespace eval ::xo::Table {
   }
 
   TABLE instproc render {} {
-    if {![:isobject [self]::__actions]} {:actions {}}
-    if {![:isobject [self]::__bulkactions]} {:bulkactions {}}
+    if {![nsf::is object [self]::__actions]} {:actions {}}
+    if {![nsf::is object [self]::__bulkactions]} {:bulkactions {}}
     set bulkactions [[self]::__bulkactions children]
     if {$bulkactions eq ""} {
       html::table -class ${:css.table-class} {
@@ -876,8 +876,8 @@ namespace eval ::xo::Table {
         }
       } \
       -instproc render {} {
-        if {![:isobject [self]::__actions]} {:actions {}}
-        if {![:isobject [self]::__bulkactions]} {:__bulkactions {}}
+        if {![nsf::is object [self]::__actions]} {:actions {}}
+        if {![nsf::is object [self]::__bulkactions]} {:__bulkactions {}}
         set bulkactions [[self]::__bulkactions children]
         html::div  {
           :render-actions

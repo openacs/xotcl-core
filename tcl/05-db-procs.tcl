@@ -1690,7 +1690,7 @@ namespace eval ::xo::db {
       }
 
       set class_name ::xo::db::sql::[string tolower $package_name]
-      if {![:isobject $class_name]} {
+      if {![nsf::is object $class_name]} {
         ::xo::db::Class create $class_name
       } elseif {![$class_name istype ::xo::db::Class]} {
         #
@@ -1751,7 +1751,7 @@ namespace eval ::xo::db {
 
   # Installations with acs-kernel prior to 5.8.1a6 (or later, before running upgrade script)
   # won't have these procs. We define them here if missing to avoid breaking running instances during transition.
-  if {![::xotcl::Class isobject "::xo::db::sql::util"]} {
+  if {![nsf::is object "::xo::db::sql::util"]} {
     ::xotcl::Class create ::xo::db::sql::util
     if {[::xo::db::sql::util info commands table_exists] eq ""} {
       ::xo::db::sql::util ad_proc table_exists {-name:required} {Transitional method} {

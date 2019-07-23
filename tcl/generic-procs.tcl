@@ -120,7 +120,7 @@ namespace eval ::Generic {
   }
 
   Form instproc request {privilege} {
-    if {[:isobject ::${:package_id}] && ![::${:package_id} exists policy]} {
+    if {[nsf::is object ::${:package_id}] && ![::${:package_id} exists policy]} {
       # not needed, if governed by a policy
       auth::require_login
       permission::require_permission \

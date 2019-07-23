@@ -173,9 +173,9 @@ namespace eval ::xo {
       error "package_id must not be empty"
     }
 
-    #:log "--R $package_id exists? [:isobject ::$package_id] url='$url'"
+    #:log "--R $package_id exists? [nsf::is object ::$package_id] url='$url'"
 
-    if {![:isobject ::$package_id]} {
+    if {![nsf::is object ::$package_id]} {
       #:log "--R we have to create ::$package_id //url='$url'"
       #
       # To make initialization code generic, we obtain from the

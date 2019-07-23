@@ -103,7 +103,7 @@ namespace eval ::xo::db {
     @return parent_id
   } {
     # TODO: the following line is deactivated, until we get rid of the "folder object" in xowiki
-    #if {[:isobject ::$item_id]} {return [::$item_id parent_id]}
+    #if {[nsf::is object ::$item_id]} {return [::$item_id parent_id]}
     ::xo::dc 1row -prepare integer get_parent "select parent_id from cr_items where item_id = :item_id"
     return $parent_id
   }
@@ -118,7 +118,7 @@ namespace eval ::xo::db {
     @return parent_id
   } {
     # TODO: the following line is deactivated, until we get rid of the "folder object" in xowiki
-    #if {[:isobject ::$item_id]} {return [::$item_id parent_id]}
+    #if {[nsf::is object ::$item_id]} {return [::$item_id parent_id]}
     ::xo::dc 1row -prepare integer get_name "select name from cr_items where item_id = :item_id"
     return $name
   }
@@ -435,7 +435,7 @@ namespace eval ::xo::db {
     @return cr item object
   } {
     # :log "-- generic fetch_object [self args]"
-    if {![::xotcl::Object isobject $object]} {
+    if {![nsf::is object $object]} {
       # if the object does not yet exist, we have to create it
       :create $object
     }
@@ -549,7 +549,7 @@ namespace eval ::xo::db {
     @return fully qualified object
   } {
     set object ::[expr {$revision_id ? $revision_id : $item_id}]
-    if {![:isobject $object]} {
+    if {![nsf::is object $object]} {
       :fetch_object -object $object \
           -item_id $item_id -revision_id $revision_id \
           -initialize $initialize
@@ -916,7 +916,7 @@ namespace eval ::xo::db {
   }
 
   CrItem instproc current_user_id {} {
-    if {[:isobject ::xo::cc]} {return [::xo::cc user_id]}
+    if {[nsf::is object ::xo::cc]} {return [::xo::cc user_id]}
     if {[ad_conn isconnected]}  {return [ad_conn user_id]}
     return ""
   }
@@ -1517,7 +1517,7 @@ namespace eval ::xo::db {
     "standard naming convention". Instead we create them as ::cr_folder<acs_object_id>
   } {
     set object ::$item_id
-    if {![:isobject $object]} {
+    if {![nsf::is object $object]} {
       :fetch_object -object $object -item_id $item_id -initialize $initialize
       $object destroy_on_cleanup
     }
@@ -1551,7 +1551,7 @@ namespace eval ::xo::db {
     all attributes. The revision_id is completely ignored.
     @see CrClass fetch_object
   } {
-    if {![::xotcl::Object isobject $object]} {
+    if {![nsf::is object $object]} {
       :create $object
     }
 
@@ -1577,7 +1577,7 @@ namespace eval ::xo::db {
                         -creation_user $creation_user \
                         -creation_ip $creation_ip]
     #parent_s has_child_folders attribute could have become outdated
-    if { [:isobject ::${:parent_id}] } {
+    if { [nsf::is object ::${:parent_id}] } {
       ::${:parent_id} set has_child_folders t
     }
     # well, obtaining the allowed content_types this way is not very
@@ -1654,7 +1654,7 @@ namespace eval ::xo::db {
       # The variable serialized_object contains the serialization of
       # the object from the cache; check if the object exists already
       # or create it.
-      if {[:isobject $object]} {
+      if {[nsf::is object $object]} {
         # There would have been no need to call this method. We could
         # raise an error here.
         # :log "--!! $object exists already"

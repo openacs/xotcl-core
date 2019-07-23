@@ -19,14 +19,14 @@ aa_register_case -cats {api smoke db} xotcl_core_tutorial_1 {
 
     set id [$o object_id]
     aa_true "'$o' has a matching object_id" [regexp "^::$id\$" $o]
-    aa_true "$o is an abject" [::xotcl::Object isobject $o]
+    aa_true "$o is an abject" [nsf::is object $o]
 
     $o destroy
-    aa_false "$o is not an abject anymore" [::xotcl::Object isobject $o]
+    aa_false "$o is not an abject anymore" [nsf::is object $o]
 
     # Load the persisted object from the DB
     set o [::xo::db::Class get_instance_from_db -id $id]
-    aa_true "$o is again an abject" [::xotcl::Object isobject $o]
+    aa_true "$o is again an abject" [nsf::is object $o]
 
     # Check, of object exists in the DB
     aa_true "$o exists in the DB" [::xo::db::Class exists_in_db -id $id]
@@ -86,7 +86,7 @@ aa_register_case -cats {api smoke db} xotcl_core_tutorial_2 {
 
     aa_true "'$p' looks like a valid object name" [regexp {^::\d+$} $p]
 
-    aa_true "object $p exists in memory" [::xotcl::Object isobject $p]
+    aa_true "object $p exists in memory" [nsf::is object $p]
     set id [$p object_id]
     aa_true "bject $p exists in the db"  [::xo::db::Class exists_in_db -id $id]
 

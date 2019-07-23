@@ -464,7 +464,7 @@ namespace eval ::xo {
   #proc ::xo::at_create {} {
   #  ns_log notice "--at_create *********"
   #  foreach i [::xo::InstanceManager array names blueprint] {
-  #    if {![::xotcl::Object isobject $i]} {
+  #    if {![nsf::is object $i]} {
   #      ::xo::InstanceManager unset blueprint($i)
   #      ns_log notice "--at_create no such object: $i"
   #    }
@@ -483,7 +483,7 @@ namespace eval ::xo {
     set at_end ""
     foreach {name cmd} [array get ::xo::cleanup] {
       #::trace remove variable ::xotcl_cleanup($name) unset ::xo::cleanup
-      if {![::xotcl::Object isobject $name]} {
+      if {![nsf::is object $name]} {
         #ns_log notice "--D $name already destroyed, nothing to do"
         continue
       }
@@ -499,7 +499,7 @@ namespace eval ::xo {
         ns_log error "Error during ::xo::cleanup: $errorMsg $::errorInfo"
         try {
           ns_log notice "... analyze: cmd = $cmd"
-          ns_log notice "... analyze: $obj is_object? [::xotcl::Object isobject $obj]"
+          ns_log notice "... analyze: $obj is_object? [nsf::is object $obj]"
           ns_log notice "... analyze: class [$obj info class]"
           ns_log notice "... analyze: precedence [$obj info precedence]"
           ns_log notice "... analyze: methods [lsort [$obj info methods]]"
@@ -565,12 +565,12 @@ namespace eval ::xo {
       set objs [::xotcl::Object allinstances]
       ns_log notice "no finalize available, deleting [llength $objs] objects"
       foreach o $objs {
-        if {![::xotcl::Object isobject $o]} continue
+        if {![nsf::is object $o]} continue
         if {[$o istype ::xotcl::Class]} continue
         catch {$o destroy} errorMsg
       }
       foreach o [::xotcl::Class allinstances] {
-        if {![::xotcl::Object isobject $o]} continue
+        if {![nsf::is object $o]} continue
         if {$o eq "::xotcl::Object" || $o eq "::xotcl::Class"} continue
         catch {$o destroy} errorMsg
       }
@@ -1002,7 +1002,7 @@ proc ::xo::getObjectProperty {o what args} {
 
   # search for slot
   foreach c [:info heritage] {
-    if {[info commands ${c}::slot::$name] ne ""} {
+    if {[nsf::is object ${c}::slot::$name]} {
       set slot ${c}::slot::$name
       break
     }

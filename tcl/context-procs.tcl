@@ -227,7 +227,7 @@ namespace eval ::xo {
                                   {-actual_query " "}
                                   {-keep_cc false}
                                 } {
-    set exists_cc [:isobject ::xo::cc]
+    set exists_cc [nsf::is object ::xo::cc]
 
     # if we have a connection context and we want to keep it, do
     # nothing and return.
