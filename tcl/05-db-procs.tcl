@@ -2216,7 +2216,7 @@ namespace eval ::xo::db {
         $ip_var ip
 
     if {![info exists package_id]} {
-      if {[info commands ::xo::cc] ne ""} {
+      if {[nsf::is object ::xo::cc]} {
         set package_id    [::xo::cc package_id]
       } elseif {[ns_conn isconnected]} {
         set package_id    [ad_conn package_id]
@@ -2225,7 +2225,7 @@ namespace eval ::xo::db {
       }
     }
     if {![info exists user_id]} {
-      if {[info commands ::xo::cc] ne ""} {
+      if {[nsf::is object ::xo::cc]} {
         set user_id    [::xo::cc user_id]
       } elseif {[ns_conn isconnected]} {
         set user_id    [ad_conn user_id]
@@ -2370,10 +2370,10 @@ namespace eval ::xo::db {
     foreach selection $sets {
       if {$named_objects} {
         set object_name ::[ns_set get $selection $object_named_after]
-        if {[info commands $object_name] eq ""} {
-          set o [$object_class create $object_name]
-        } else {
+        if {[nsf::is object $object_name]} {
           set o $object_name
+        } else {
+          set o [$object_class create $object_name]
         }
       } else {
         set o [$object_class new]

@@ -54,7 +54,7 @@ namespace eval ::xo {
 
 set ::xo::naviserver [expr {[ns_info name] eq "NaviServer"}]
 
-if {[info commands ::nx::Object] ne ""} {
+if {[nsf::is object ::nx::Object]} {
   ns_log notice "Defining minimal XOTcl 1 compatibility"
   ::nsf::method::alias ::xo::Attribute instvar ::nsf::methods::object::instvar
 
@@ -896,7 +896,7 @@ proc ::xo::getObjectProperty {o what args} {
       return [nsf::is object $o]
     }
     "isbaseclass" {
-      if {[info commands $o] eq ""} {return 0}
+      if {![nsf::is class $o]} {return 0}
       if {[catch {set p [$o info precedence]}]} {return 0}
       return [expr {[lindex $p end] eq $o}]
     }
