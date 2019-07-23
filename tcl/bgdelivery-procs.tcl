@@ -750,7 +750,7 @@ if {[info commands h264open] ne ""} {
 
   } {
     if {$query eq ""} {
-      if {![:isobject ::xo::cc]} {
+      if {![::xotcl::Object isobject ::xo::cc]} {
         ::xo::ConnectionContext require
       }
       set query [::xo::cc actual_query]
