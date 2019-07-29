@@ -646,7 +646,7 @@ namespace eval ::xo::Table {
   TABLE instproc render-bulkactions {} {
     set bulkactions [[self]::__bulkactions children]
     html::div -class "list-button-bar-bottom" {
-      html::t "Bulk-Actions:"
+      html::t "#xotcl-core.Bulk_actions#:"
       set bulkaction_container [[lindex $bulkactions 0] set __parent]
       set name [$bulkaction_container set __identifier]
 
