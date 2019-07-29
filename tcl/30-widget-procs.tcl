@@ -305,28 +305,36 @@ namespace eval ::xo {
 
   Class create Localizer -parameter {type key url}
 
+  #Localizer instproc render {} {
+  #  html::a -title [:key] -href [:url] {
+  #    switch -- [:type] {
+  #      localized {set char o; set style "color: green"}
+  #      us_only   {set char *; set style "background-color: yellow; color: red;"}
+  #      missing   {set char @; set style "background-color: red; color: white;"}
+  #    }
+  #    html::span -style $style {html::t $char}
+  #  }
+  #}
+  #Localizer instproc render {} {
+  #  html::a -title [:key] -href [:url] {
+  #    set path /resources/acs-templating/xinha-nightly/plugins/
+  #    switch -- [:type] {
+  #      localized {set img ImageManager/img/btn_ok.gif}
+  #      us_only  {set img Filter/img/ed_filter.gif}
+  #      missing  {set img LangMarks/img/en.gif}
+  #    }
+  #    html::img -alt [:type] -src $path/$img -width 16 -height 16 -border 0
+  #  }
+  #}
   Localizer instproc render {} {
-    html::a -title [:key] -href [:url] {
-      switch -- [:type] {
-        localized {set char o; set style "color: green"}
-        us_only   {set char *; set style "background-color: yellow; color: red;"}
-        missing   {set char @; set style "background-color: red; color: white;"}
-      }
-      html::span -style $style {html::t $char}
+    switch -- ${:type} {
+      localized {set img ImageManager/img/btn_ok.gif}
+      us_only  {set img Filter/img/ed_filter.gif}
+      missing  {set img LangMarks/img/en.gif}
     }
-  }
-  Localizer instproc render {} {
-    html::a -title [:key] -href [:url] {
-      set path /resources/acs-templating/xinha-nightly/plugins/
-      switch -- [:type] {
-        localized {set img ImageManager/img/btn_ok.gif}
-        us_only  {set img Filter/img/ed_filter.gif}
-        missing  {set img LangMarks/img/en.gif}
-      }
-      html::img -alt [:type] -src $path/$img -width 16 -height 16 -border 0
-    }
-  }
-
+    html::a -class "acs-lang-${:type}" -title ${:key} -href ${:url} {}
+  } 
+  
   ## todo : make these checks only in trn mode (additional mixin)
 
   Class create Drawable \
