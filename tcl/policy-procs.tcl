@@ -212,16 +212,22 @@ namespace eval ::xo {
     #:log "--p enforce_permissions {$object $method} : $permission ==> $allowed"
 
     if {!$allowed} {
-      set untrusted_user_id [::xo::cc set untrusted_user_id]
-      if {$permission eq ""} {
-        ns_log notice "enforce_permissions: no permission for $object->$method defined"
-      } elseif {$user_id == 0 && $untrusted_user_id} {
-        ns_log notice "enforce_permissions: force login, user_id=0 and untrusted_id=$untrusted_user_id"
-        auth::require_login
-      } else {
-        ns_log notice "enforce_permissions: $user_id doesn't have $privilege on $object"
-      }
+      #
+      # In case the request does not come from a connected client
+      # (e.g. via some magic way via background processing) then
+      # just abort in the call (raising an exception).
+      #
       if {[ns_conn isconnected]} {
+        set untrusted_user_id [::xo::cc set untrusted_user_id]
+        if {$permission eq ""} {
+          ns_log notice "enforce_permissions: no permission for $object->$method defined"
+        } elseif {$user_id == 0 && $untrusted_user_id} {
+          ns_log notice "enforce_permissions: force login, user_id=0 and untrusted_id=$untrusted_user_id"
+          auth::require_login
+        } else {
+          ns_log notice "enforce_permissions: $user_id doesn't have $privilege on $object"
+        }
+        
         ad_return_forbidden [_ xotcl-core.permission_denied] \
             [_ xotcl-core.policy-error-insufficient_permissions]
       }
