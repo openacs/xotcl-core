@@ -292,7 +292,6 @@ namespace eval ::xo {
   Class create ::xo::dav -superclass ProtocolHandler -parameter {
     {url /webdav}
   }
-  
 }
 
 ::xo::library source_dependent
