@@ -161,9 +161,11 @@ namespace eval ::xo {
       lassign [:get_privilege -query_context $ctx $permission $object $method] kind p
       #:msg "--privilege = $p kind = $kind"
       switch -- $kind {
-        primitive {set allowed [:check_privilege -login false \
-                                    -package_id $package_id -user_id $user_id \
-                                    $p $object $method]}
+        primitive {
+          set allowed [:check_privilege -login false \
+                           -package_id $package_id -user_id $user_id \
+                           $p $object $method]
+        }
         complex {
           lassign $p attribute privilege
           set id [$object set $attribute]
