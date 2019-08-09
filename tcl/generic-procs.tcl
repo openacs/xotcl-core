@@ -391,7 +391,7 @@ namespace eval ::Generic {
     (see <code>row_code</code> below).
 
     @param rows_per_page Behaves as <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>'s
-    <code>page_size</code> parameter. Pagination is automatical for this class. To turn it off, just
+    <code>page_size</code> parameter. Pagination is automatically for this class. To turn it off, just
     set this parameter to "" .
 
     @param row_code This snippet will be executed for every instance/row in the list, so is similar in spirit to

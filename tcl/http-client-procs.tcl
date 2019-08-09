@@ -653,7 +653,7 @@ namespace eval ::xo {
 
   #
   # SimpleListener defines a mixin class for providing a stub
-  # implementaton for callbacks of the asynchrous HTTP requests. 
+  # implementation for callbacks of the asynchrous HTTP requests. 
   # This class is typically run in the scope of bgdelivery
   #
 

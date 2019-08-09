@@ -202,7 +202,7 @@ if {$isclass} {
   }
 
   # Display just up to two extra two levels of heritage to keep the
-  # class in quesiton in focus.
+  # class in question in focus.
   set heritage [DO xo::getObjectProperty $object heritage]
   set subclasses [DO xo::getObjectProperty $object subclass]
 

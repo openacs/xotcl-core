@@ -343,7 +343,7 @@ namespace eval ::xo {
 
   parameter proc initialize_parameters {} {
     # Get those parameter values, which are different from the default and
-    # remember theses per package_id.
+    # remember these per package_id.
     xo::dc foreach get_non_default_values {
       select p.parameter_id, p.package_key, v.package_id, p.parameter_name, 
       p.default_value, v.attr_value 

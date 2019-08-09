@@ -1759,7 +1759,7 @@ namespace eval ::xo::db {
       #
       # We do not want to cache per object mixins for the
       # time being (some classes might be volatile). So save
-      # mixin-list, cache and resore them later for the current
+      # mixin-list, cache and restore them later for the current
       # session.
       set mixins [$obj info mixin]
       $obj mixin [list]
@@ -1773,7 +1773,7 @@ namespace eval ::xo::db {
       #
       ::xo::xotcl_object_cache flush [string trimleft $canonical_name :]
     }
-    # To be on he safe side, delete the revison as well from the
+    # To be on he safe side, delete the revision as well from the
     # cache, if possible.
     if {[$obj exists revision_id]} {
       set revision_id [$obj revision_id]

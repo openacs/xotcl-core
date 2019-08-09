@@ -731,7 +731,7 @@ namespace eval ::xo::db {
         set $varName 1
       }
     }
-    #ns_log notice "=== pepare done, handle $handle execute $execute session_id $session_id"
+    #ns_log notice "=== prepare done, handle $handle execute $execute session_id $session_id"
     return $execute
   }
 
