@@ -727,7 +727,7 @@ namespace eval ::xo::db {
         select 1 from pg_prepared_statements where name = :prepName
       }] eq ""} {
         #ns_log notice "=== do prepare handle $handle $prepare session_id $session_id"
-        ::db_exec dml $handle qn..create_preapared $prepare
+        ::db_exec dml $handle dbqd..create_preapared $prepare
         set $varName 1
       }
     }
