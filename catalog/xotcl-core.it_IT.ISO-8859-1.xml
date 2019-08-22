@@ -4,11 +4,16 @@
   <msg key="add">Aggiungi %type%</msg>
   <msg key="add_item">Aggiungi Elemento</msg>
   <msg key="add_long">Aggiungi nuovo elemento di tipo %type%</msg>
+  <msg key="Bulk_actions">Oggetti selezionati</msg>
   <msg key="create_new_type">Crea Nuovo %type%</msg>
   <msg key="delete_item">Elimina Elemento</msg>
+  <msg key="description">Descrizione</msg>
+  <msg key="descriptions">Descrizioni</msg>
   <msg key="edit_item">Edita Elemento</msg>
   <msg key="edit_type">Edita %type%</msg>
   <msg key="has_entered_the_room">è entrato nella stanza</msg>
+  <msg key="language">Lingua</msg>
+  <msg key="languages">Lingue</msg>
   <msg key="live_revision">Revisione Corrente</msg>
   <msg key="No_Data">Nessun Dato</msg>
   <msg key="nobody">Ospite</msg>
@@ -16,5 +21,10 @@
   <msg key="policy-error-insufficient_permissions">&lt;blockquote&gt; Non hai permessi sufficienti ad eseguire il metodo %method% sull&#39;oggetto %object%. &lt;/blockquote&gt;</msg>
   <msg key="revision_title">Revisioni della Voce</msg>
   <msg key="revisions">Revisioni</msg>
+  <msg key="Sort_by_this_column">Ordina per questa colonna</msg>
+  <msg key="Sort_by_this_column_ascending">Ordina per questa colonna ascendente</msg>
+  <msg key="Sort_by_this_column_descending">Ordina per questa colonna discendente</msg>
+  <msg key="title">Titolo</msg>
+  <msg key="titles">Titoli</msg>
   <msg key="view_item">Vedi Elemento</msg>
 </message_catalog>

@@ -23,6 +23,9 @@ Sie haben keine ausreichende Berechtigung, um die Methode %method% am Objekt %ob
 &lt;/blockquote&gt;</msg>
   <msg key="revision_title">Versionen des Eintrags</msg>
   <msg key="revisions">Verlauf</msg>
+  <msg key="Sort_by_this_column">Nach dieser Spalte sortieren</msg>
+  <msg key="Sort_by_this_column_ascending">Nach dieser Spalte aufsteigend sortieren</msg>
+  <msg key="Sort_by_this_column_descending">Nach dieser Spalte absteigend sortieren</msg>
   <msg key="title">Titel</msg>
   <msg key="titles">Titel</msg>
   <msg key="view_item">Element anzeigen</msg>

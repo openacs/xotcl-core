@@ -15,14 +15,17 @@
   <msg key="language">Language</msg>
   <msg key="languages">Languages</msg>
   <msg key="live_revision">Live Revision</msg>
-  <msg key="nobody">Guest</msg>
   <msg key="No_Data">No Data</msg>
+  <msg key="nobody">Guest</msg>
   <msg key="permission_denied">Permission Denied</msg>
   <msg key="policy-error-insufficient_permissions">&lt;blockquote&gt;
-You don't have sufficient permissions for performing method %method% on object %object%.
+You don&#39;t have sufficient permissions for performing method %method% on object %object%.
 &lt;/blockquote&gt;</msg>
   <msg key="revision_title">Revisions of Entry</msg>
   <msg key="revisions">Revisions</msg>
+  <msg key="Sort_by_this_column">Sort by this column</msg>
+  <msg key="Sort_by_this_column_ascending">Sort by this column ascending</msg>
+  <msg key="Sort_by_this_column_descending">Sort by this column descending</msg>
   <msg key="title">Title</msg>
   <msg key="titles">Titles</msg>
   <msg key="view_item">View Item</msg>

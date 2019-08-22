@@ -774,15 +774,15 @@ namespace eval ::xo::Table {
     set new_orderby $orderby
     if {$orderby eq "$field,desc"} {
       set new_orderby $field,asc
-      set title "Sort by this column ascending"
+      set title [_ xotcl-core.Sort_by_this_column_ascending]
       set img /resources/acs-templating/sort-ascending.png
     } elseif {$orderby eq "$field,asc"} {
       set new_orderby $field,desc
-      set title "Sort by this column descending"
+      set title [_ xotcl-core.Sort_by_this_column_descending]
       set img /resources/acs-templating/sort-descending.png
     } else {
       set new_orderby $field,asc
-      set title "Sort by this column"
+      set title [_ xotcl-core.Sort_by_this_column]
       set img /resources/acs-templating/sort-neither.png
     }
     set query [list [list orderby $new_orderby]]
