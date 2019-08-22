@@ -511,7 +511,7 @@ Class create Table::Line \
 namespace eval ::xo::Table {
   Class create Action \
       -superclass ::xo::OrderedComposite::Child \
-      -parameter {label url {tooltip {}}}
+      -parameter {label url {tooltip {}} {confirm_message {}}}
   #-proc destroy {} {
   #   :log "-- DESTROY "
   #      show_stack
@@ -667,10 +667,20 @@ namespace eval ::xo::Table {
                   html::t [$ba label]
                 }
           }
+          set script [subst {
+            acs_ListBulkActionClick("$name","[$ba url]");
+          }]
+          if {[$ba confirm_message] ne ""} {
+            set script [subst {
+              if (confirm('[$ba confirm_message]')) {
+                $script
+              }
+            }]
+          }
           template::add_event_listener \
               -id $id \
               -preventdefault=false \
-              -script [subst {acs_ListBulkActionClick("$name","[$ba url]");}]
+              -script $script
         }
       }
     }
@@ -703,7 +713,7 @@ namespace eval ::xo::Table {
     if {![nsf::is object [self]::__actions]} {:actions {}}
     if {![nsf::is object [self]::__bulkactions]} {:bulkactions {}}
     set bulkactions [[self]::__bulkactions children]
-    if {$bulkactions eq ""} {
+    if {[llength $bulkactions] == 0} {
       html::table -class ${:css.table-class} {
         :render-actions
         :render-body
