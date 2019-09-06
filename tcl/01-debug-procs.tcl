@@ -524,7 +524,7 @@ namespace eval ::xo {
     try {
       {*}$at_end
     } on error {errorMsg} {
-      ns_log notice "Error during ::xo::cleanup: $errorMsg $::errorInfo"
+      ns_log Error "Error during ::xo::cleanup: $errorMsg $::errorInfo"
     }
     array unset ::xo::cleanup
     #ns_log notice "*** end of cleanup"
