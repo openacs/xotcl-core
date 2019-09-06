@@ -447,7 +447,7 @@ namespace eval ::xo {
       ns_log Error "ns_ictl trace returned: $errorMsg"
     }
   }
-  
+
   #
   # Register::xo::at_delete function only once
   #
@@ -456,7 +456,7 @@ namespace eval ::xo {
       ns_log Warning "rhe command 'ns_ictl trace delete' returned: $errorMsg"
     }
   }
-  
+
   proc ::xo::freeconn {} {
     catch {::xo::at_cleanup}
   }
@@ -689,7 +689,7 @@ namespace eval ::xo {
         return [list utime [expr {$utime*10}] stime [expr {$stime*10}]]
       }
     }
- 
+
   } else {
     ::xo::system_stats proc thread_info {pid tid} {
       return ""
