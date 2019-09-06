@@ -377,6 +377,9 @@ ad_library {
                  flags $flags \
                 ]
     #ns_log notice "proc_index <$proc_index> -> $doc"
+    if {![nsv_exists api_proc_doc $proc_index]} {
+      nsv_lappend api_proc_doc_scripts [dict get $doc script] $proc_index
+    }
     nsv_set api_proc_doc $proc_index $doc
     nsv_set api_library_doc $proc_index $doc
 
