@@ -331,8 +331,13 @@ namespace eval ::xo {
     {-content_types {}}
     -name:required
   } {
+    
     Make sure, the root folder for the given package exists. If not, 
     create it and register all allowed content types.
+
+    Note that xowiki (and derived packages) define their own version
+    of "require_root_folder" based on form pages. Therefore, this
+    function is just for packages not based on xowiki.
 
     @return folder_id
   } {
@@ -342,13 +347,15 @@ namespace eval ::xo {
       if {$folder_id == 0} {
         :log "folder with name '$name' and parent $parent_id does NOT EXIST"
         set folder_id [::xo::db::sql::content_folder new \
-                           -name $name -label $name \
+                           -name $name \
+                           -label ${:instance_name} \
                            -parent_id $parent_id \
-                           -package_id ${:id} -context_id ${:id}]
+                           -package_id ${:id} \
+                           -context_id ${:id}]
         :log "CREATED folder '$name' and parent $parent_id ==> $folder_id"
       }
 
-      # register all specified content types
+      # Register all specified content types
       ::xo::db::CrFolder register_content_types \
           -folder_id $folder_id \
           -content_types $content_types
