@@ -1,6 +1,6 @@
 ::xo::library doc {
   Definition of a package manager for creating XOTcl package objects
-  
+
   @author Gustaf Neumann (neumann@wu-wien.ac.at)
   @creation-date 2007-09-24
   @cvs-id $Id$
@@ -25,7 +25,7 @@ namespace eval ::xo {
       set sql [::xo::dc select -vars package_id \
                    -from "apm_packages, site_nodes s" \
                    -where {
-                     package_key = :package_key 
+                     package_key = :package_key
                      and s.object_id = package_id
                      and acs_permission.permission_p(package_id, :party_id, :privilege)
                    } -limit 1]
@@ -37,7 +37,7 @@ namespace eval ::xo {
 
   PackageMgr ad_instproc instances {{-include_unmounted false} {-closure false}} {
     @param include_unmounted include unmounted package instances
-    @param closure include instances of subclasses of the package 
+    @param closure include instances of subclasses of the package
     @return list of package_ids of xowiki instances
   } {
     set package_key ${:package_key}
@@ -73,13 +73,13 @@ namespace eval ::xo {
     {-form_parameter}
     {-export_vars true}
   } {
-    Create the connection context ::xo::cc and a package object 
+    Create the connection context ::xo::cc and a package object
     if these are none defined yet. The connection context ::xo::cc
     and the package object will be destroyed on cleanup,
     when the global variables are reclaimed.
-    
+
     As a side effect this method sets in the calling context
-    the query parameters and package_id as variables, using the 
+    the query parameters and package_id as variables, using the
     "defaults" for default values.
 
     init_url false requires the package_id to be specified and
@@ -125,17 +125,17 @@ namespace eval ::xo {
     } else {
       :require -url $url $package_id
     }
-    
+
     #
     # In case the login expired, we can force an early login to
     # prevent later login redirects, which can cause problems
     # from within catch operations. The package can decide, if
-    # it want to force a refresh of the login, even if some pages 
+    # it want to force a refresh of the login, even if some pages
     # might not require the real user_id.
     #
     #:msg "force [::$package_id force_refresh_login] &&\
         #    [::xo::cc set untrusted_user_id] != [::xo::cc user_id]"
-    if {[::$package_id force_refresh_login] && 
+    if {[::$package_id force_refresh_login] &&
         [::xo::cc set untrusted_user_id] != [::xo::cc user_id]} {
       auth::require_login
     }
@@ -149,7 +149,7 @@ namespace eval ::xo {
   } {
     set key ::xo::package_class($package_key)
     if {[info exists $key]} {return [set $key]}
-    
+
     foreach p [::xo::PackageMgr allinstances] {
       # Sanity check for old apps, having not set the package key.
       # TODO: remove this in future versions, when package_keys are enforced
@@ -189,7 +189,7 @@ namespace eval ::xo {
         # to be conservative, behave like in older versions that did
         # not provide a package_key, but required for this call to be
         # invoked on the actual class of the package. We provide
-        # compatibility, but complain in ns_log. 
+        # compatibility, but complain in ns_log.
         #
         # (E.g. hypermail2xowiki uses this)
         ns_log warning "Could not find ::xo::Package with key $package_key ($package_id)"
@@ -213,7 +213,7 @@ namespace eval ::xo {
   #
   # get apm_package class  #### missing in acs_attributes: instance_name, default_locale
   #::xo::db::Class get_class_from_db -object_type apm_package
-  
+
   #ns_log notice [::xo::db::apm_package serialize]
   #ns_log notice =======================================
 
@@ -228,7 +228,7 @@ namespace eval ::xo {
       } \
       -parameter {
         id
-        url 
+        url
         {context ::xo::cc}
         package_url
         {force_refresh_login false}
@@ -271,7 +271,7 @@ namespace eval ::xo {
                    -parameter $attribute \
                    -default $default]
   }
-  
+
   ::xo::Package instproc init args {
     set id ${:id}
     set package_url [lindex [site_node::get_url_from_object_id -object_id $id] 0]
@@ -291,7 +291,7 @@ namespace eval ::xo {
 
     if {[ns_conn isconnected]} {
       # in case of host-node map, simplify the url to avoid redirects
-      # .... but ad_host works only, when we are connected.... 
+      # .... but ad_host works only, when we are connected....
       # TODO: solution for syndication
       set root [root_of_host [ad_host]]
       regexp "^${root}(.*)$" $package_url _ package_url
@@ -313,7 +313,7 @@ namespace eval ::xo {
     if {[:info class] ne $target_class && [:isclass $target_class]} {
       :class $target_class
     }
-    
+
     #
     # Save the relation between class and package_key for fast lookup
     #
@@ -322,17 +322,17 @@ namespace eval ::xo {
     :initialize
   }
 
-  ::xo::Package instproc initialize {} { 
+  ::xo::Package instproc initialize {} {
     # empty hook for user level initialization
   }
 
   Package ad_instproc require_root_folder {
-    {-parent_id -100} 
+    {-parent_id -100}
     {-content_types {}}
     -name:required
   } {
-    
-    Make sure, the root folder for the given package exists. If not, 
+
+    Make sure, the root folder for the given package exists. If not,
     create it and register all allowed content types.
 
     Note that xowiki (and derived packages) define their own version
@@ -342,7 +342,7 @@ namespace eval ::xo {
     @return folder_id
   } {
     set folder_id [::xo::xotcl_package_cache eval root_folder-${:id} {
-      
+
       set folder_id [::xo::db::CrClass lookup -name $name -parent_id $parent_id]
       if {$folder_id == 0} {
         :log "folder with name '$name' and parent $parent_id does NOT EXIST"
@@ -374,7 +374,7 @@ namespace eval ::xo {
 
   ::xo::Package instproc handle_http_caching {} {
     #
-    # Subpackages can overload this method for realizing 
+    # Subpackages can overload this method for realizing
     #
     # a) package specific caching policies
     # b) page-type specific caching policies
@@ -386,7 +386,7 @@ namespace eval ::xo {
     #
     ns_set put [ns_conn outputheaders] "Cache-Control" \
         "max-age=0, no-cache, no-store"
-    # 
+    #
   }
 
   ::xo::Package instproc reply_to_user {text} {
@@ -446,7 +446,7 @@ namespace eval ::xo {
     # Substitute the template with the themed template
     #
     set adp [template::themed_template $adp]
-    
+
     set text [template::adp_include $adp $__vars]
     if { [lang::util::translator_mode_p] } {
       set text [::xo::localize $text 1]
@@ -456,7 +456,7 @@ namespace eval ::xo {
     return [::xo::remove_escapes $text]
   }
 
-        
+
   #ns_log notice [::xo::Package serialize]
 
 }
