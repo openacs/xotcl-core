@@ -1371,6 +1371,11 @@ namespace eval ::xo::db {
   #
   # CrFolder
   #
+  # This class is just intended for legacy application or for working
+  # with the xo::db interface on e.g. folder structures of the file
+  # storage. There is no usage of CrFolder in all of xowiki and
+  # derived classes.
+  #
   ::xo::db::CrClass create ::xo::db::CrFolder \
       -superclass ::xo::db::CrItem  \
       -pretty_name "Folder" -pretty_plural "Folders" \
@@ -1554,14 +1559,17 @@ namespace eval ::xo::db {
     if {![nsf::is object $object]} {
       :create $object
     }
-
-    $object db_1row [:qn fetch_folder] "
+    $object set item_id $item_id
+    $object db_1row [:qn fetch_folder] {
         SELECT * FROM cr_folders
         JOIN cr_items on cr_folders.folder_id = cr_items.item_id
         JOIN acs_objects on cr_folders.folder_id = acs_objects.object_id
-        WHERE folder_id = $item_id"
+        WHERE folder_id = :item_id
+    }
 
-    if {$initialize} {$object initialize_loaded_object}
+    if {$initialize} {
+      $object initialize_loaded_object
+    }
     return $object
   }
 
@@ -1612,12 +1620,20 @@ namespace eval ::xo::db {
     return [expr {${:folder_id} eq [::${:package_id} folder_id]} ? true : false]
   }
 
-  ::xo::db::CrFolder instproc delete {} {
+  ::xo::db::CrFolder ad_instproc delete {} {
+    Delete the CrFolder instance. This method takes the folder_id of
+    the current instance.
+  } {
     if {[:is_package_root_folder]} {
       ad_return_error "Removal denied" "Don't delete the package root folder, delete the package"
       return
     }
-    ::xo::db::sql::content_folder del -folder_id ${:folder_id} -cascade_p t
+    # delegate deletion to the class
+    [:info class] delete -item_id ${:folder_id}
+  }
+
+  ::xo::db::CrFolder proc delete {-item_id} {
+    ::xo::db::sql::content_folder del -folder_id $item_id -cascade_p t
   }
 
 
