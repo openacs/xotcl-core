@@ -1613,7 +1613,7 @@ namespace eval ::xo::db {
                          [list description ${:description}]\
                         ]
     :get_context package_id user_id ip
-    ::xo::dc 1row _ "select acs_object__update_last_modified(:folder_id,$user,'$ip')"
+    ::xo::dc 1row _ "select acs_object__update_last_modified(:folder_id, :user_id, :ip)"
   }
 
   ::xo::db::CrFolder instproc is_package_root_folder {} {
