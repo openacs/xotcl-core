@@ -1612,7 +1612,7 @@ namespace eval ::xo::db {
                          [list label ${:label}] \
                          [list description ${:description}]\
                         ]
-    :get_context package_id user_id ip
+    [:info class] get_context package_id user_id ip
     ::xo::dc 1row _ "select acs_object__update_last_modified(:folder_id, :user_id, :ip)"
   }
 
