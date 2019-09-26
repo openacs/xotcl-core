@@ -21,18 +21,18 @@ namespace eval ::xo {
     @return return first mounted instance of this type
   } {
     set package_key ${:package_key}
-    if {[info exists privilege]} {
-      set sql [::xo::dc select -vars package_id \
-                   -from "apm_packages, site_nodes s" \
-                   -where {
-                     package_key = :package_key
-                     and s.object_id = package_id
-                     and acs_permission.permission_p(package_id, :party_id, :privilege)
-                   } -limit 1]
-      ::xo::dc get_value get_package_id $sql
-    } else {
-      ::xo::parameter get_package_id_from_package_key -package_key $package_key
+    set sql {
+      select min(package_id)
+      from apm_packages, site_nodes s
+      where package_key = :package_key
+        and s.object_id = package_id
     }
+    if {[info exists privilege]} {
+      append sql {
+        and acs_permission.permission_p(package_id, :party_id, :privilege)
+      }
+    }
+    return [::xo::dc get_value get_package_id $sql]
   }
 
   PackageMgr ad_instproc instances {{-include_unmounted false} {-closure false}} {
