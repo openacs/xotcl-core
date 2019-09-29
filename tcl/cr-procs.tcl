@@ -940,14 +940,14 @@ namespace eval ::xo::db {
     }
 
     #
-    # The modifying_user is not maintained by the CR (bug?)
+    # The modifying_user is not maintained by the CR (bug?).
     # xotcl-core handles this by having the modifying user as
     # creation_user of the revision.
     #
-    # Caveat: the creation_user fetched is different if we fetch via
-    # item_id (the creation_user is the creator of the item) or if we
-    # fetch via revision_id (the creation_user is the creator of the
-    # revision)
+    # Caveat: the creation_user fetched can be different if we fetch
+    # via item_id (the creation_user is the creator of the item) or if
+    # we fetch via revision_id (the creation_user is the creator of
+    # the revision).
 
     set creation_user [expr {[info exists modifying_user] ?
                              $modifying_user :
