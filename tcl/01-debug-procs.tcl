@@ -90,6 +90,11 @@ if {[nsf::is object ::nx::Object]} {
         return -code error "Value '$value' of parameter $name is not a valid token."
       }
     }
+    :method type=localurl {name value} {
+      if { $value eq "" || [util::external_url_p $value]} {
+        return -code error "Value '$value' of parameter $name is not a valid local url."
+      }
+    }
   }
 
   ::xotcl::Object proc setExitHandler {code} {::nsf::exithandler set $code}
@@ -104,6 +109,7 @@ if {[nsf::is object ::nx::Object]} {
     ::nx::Slot method set
     ::nx::Slot method type=naturalnum
     ::nx::Slot method type=token
+    ::nx::Slot method type=localurl
     ::nx::Object nsfproc ::nsf::debug::call
     ::nx::Object nsfproc ::nsf::debug::exit
   }
