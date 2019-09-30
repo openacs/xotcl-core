@@ -1,6 +1,6 @@
 xo::library doc  {
   Context handling interface
-  
+
   Definition of a connection context, containing user info, URLs, parameters.
   this is used via "Package initialize"... similar as page_contracts and
   for included content (includelets), and used for per-connection caching as well.
@@ -15,13 +15,13 @@ xo::library doc  {
 namespace eval ::xo {
 
   ::xotcl::Class create Context -ad_doc {
-    This class provides a context for evaluation, somewhat similar to an 
+    This class provides a context for evaluation, somewhat similar to an
     activation record in programming languages. It combines the parameter
     declaration (e.g. of a page, an includelet) with the actual parameters
     (specified in an includelet) and the provided query values (from the url).
     The parameter decaration are actually XOTcl's non positional arguments.
   } -parameter {
-    {parameter_declaration ""} 
+    {parameter_declaration ""}
     {actual_query " "}
     {package_id 0}
     {invoke_object}
@@ -29,7 +29,7 @@ namespace eval ::xo {
   }
 
   #
-  # Syntactic sugar for includelets, to allow the same syntax as 
+  # Syntactic sugar for includelets, to allow the same syntax as
   # for "Package initialize ...."; however, we do not allow currently
   # do switch user or package id etc., just the parameter declaration
   Context instproc initialize {{-parameter ""}} {
@@ -42,9 +42,11 @@ namespace eval ::xo {
     {-caller_parameters}
   } {
     :proc __parse [:parameter_declaration]  {
-      foreach v [info vars] { uplevel [list set :queryparm($v) [set $v]]}
+      foreach v [info vars] {
+        uplevel [list set :queryparm($v) [set $v]]
+      }
     }
-    
+
     foreach v [:parameter_declaration] {
       set ([lindex [split [lindex $v 0] :] 0]) 1
     }
@@ -64,8 +66,8 @@ namespace eval ::xo {
       set name_value_pair [split $querypart =]
       set att_name [{*}$decodeCmd [lindex $name_value_pair 0]]
       if {$att_name eq ""} continue
-      if {[llength $name_value_pair] == 1} { 
-        set att_value 1 
+      if {[llength $name_value_pair] == 1} {
+        set att_value 1
       }  else {
         set att_value [{*}$decodeCmd [lindex $name_value_pair 1]]
       }
@@ -88,17 +90,17 @@ namespace eval ::xo {
         }
       }
     }
-    
+
     # get the caller parameters (e.g. from the includelet call)
     if {[info exists caller_parameters]} {
       #:log "--cc caller_parameters=$caller_parameters"
       array set caller_param $caller_parameters
-      
+
       foreach param [array names caller_param] {
-        if {[info exists ($param)]} { 
-          set passed_args($param) $caller_param($param) 
+        if {[info exists ($param)]} {
+          set passed_args($param) $caller_param($param)
         } elseif {$all_from_caller} {
-          set :queryparm([string range $param 1 end]) $caller_param($param) 
+          set :queryparm([string range $param 1 end]) $caller_param($param)
         }
       }
     }
@@ -107,8 +109,8 @@ namespace eval ::xo {
     foreach param [array names passed_args] {
       lappend parse_args $param $passed_args($param)
     }
-    
-    #:log "--cc calling parser eval [self] __parse $parse_args"
+
+    #:log "--cc calling parser eval [self] __parse <$parse_args>"
     if {[catch {[self] __parse {*}$parse_args} errorMsg]} {
       ad_return_complaint 1 [ns_quotehtml $errorMsg]
       ad_script_abort
@@ -129,10 +131,10 @@ namespace eval ::xo {
   Context instproc query_parameter {name {default ""}} {
     if {[info exists :queryparm($name)]} {
       return [set :queryparm($name)]
-    } 
+    }
     return $default
   }
-  
+
   Context instproc exists_query_parameter {name} {
     #:log "--qp exists $name => [info exists :queryparm($name)]"
     info exists :queryparm($name)
@@ -160,10 +162,10 @@ namespace eval ::xo {
     the values from the url (second priority) and the default
     values from the signature
   } {
-    set source [expr {[info exists :__caller_parameters] ? 
+    set source [expr {[info exists :__caller_parameters] ?
                       [self] : [:info parent]}]
     $source instvar __caller_parameters
-    
+
     if {![info exists :__including_page]} {
       #
       # An includelet is called from the toplevel. The actual_query
@@ -177,7 +179,7 @@ namespace eval ::xo {
     } else {
       :process_query_parameter -all_from_query false
     }
-    :export_vars -level 2 
+    :export_vars -level 2
   }
 
 
@@ -192,7 +194,7 @@ namespace eval ::xo {
     url
     mobile
   }
-  
+
   ConnectionContext proc require_package_id_from_url {{-package_id 0} url} {
     # get package_id from url in case it is not known
     if {$package_id == 0} {
@@ -200,7 +202,7 @@ namespace eval ::xo {
       set package_id $(package_id)
     }
     if {![info exists ::ad_conn(node_id)]} {
-      # 
+      #
       # The following should not be necessary, but is here for
       # cases, where some oacs-code assumes wrongly it is running in a
       # connection thread (e.g. the site master requires to have a
@@ -221,7 +223,7 @@ namespace eval ::xo {
 
   ConnectionContext proc require {
                                   -url
-                                  {-package_id 0} 
+                                  {-package_id 0}
                                   {-parameter ""}
                                   {-user_id -1}
                                   {-actual_query " "}
@@ -248,7 +250,7 @@ namespace eval ::xo {
 
     # get locale; TODO at some time, we should get rid of the ad_conn init problem
     if {[ns_conn isconnected]} {
-      # This can be called, before ad_conn is initialized. 
+      # This can be called, before ad_conn is initialized.
       # Since it is not possible to pass the user_id and ad_conn barfs
       # when it tries to detect it, we try to get it and reset it later
       ad_try {
@@ -262,7 +264,7 @@ namespace eval ::xo {
     if {!$exists_cc} {
       :create ::xo::cc \
           -package_id $package_id \
-          [list -parameter_declaration $parameter] \
+          -parameter_declaration $parameter \
           -user_id $user_id \
           -actual_query $actual_query \
           -locale $locale \
@@ -276,9 +278,9 @@ namespace eval ::xo {
           -url $url \
           -actual_query $actual_query \
           -locale $locale \
-          [list -parameter_declaration $parameter]
+          -parameter_declaration $parameter
 
-      ::xo::cc package_id $package_id 
+      ::xo::cc package_id $package_id
       ::xo::cc set_user_id $user_id
       ::xo::cc process_query_parameter
     }
@@ -291,7 +293,7 @@ namespace eval ::xo {
     }
 
     if {![info exists ::ad_conn(charset)]} {
-      set ::ad_conn(charset) [lang::util::charset_for_locale $locale] 
+      set ::ad_conn(charset) [lang::util::charset_for_locale $locale]
       set ::ad_conn(language) [::xo::cc lang]
       set ::ad_conn(file) ""
     }
@@ -336,8 +338,8 @@ namespace eval ::xo {
 
   ConnectionContext instproc returnredirect {-allow_complete_url:switch url} {
     #:log "--rp"
-    set :__continuation [expr {$allow_complete_url 
-                                 ? [list ad_returnredirect -allow_complete_url $url] 
+    set :__continuation [expr {$allow_complete_url
+                                 ? [list ad_returnredirect -allow_complete_url $url]
                                  : [list ad_returnredirect $url]}]
     return ""
   }
@@ -360,7 +362,7 @@ namespace eval ::xo {
         set :requestor 0
       }
     }
-    
+
     # if user not authorized, use peer address as requestor key
     if {${:requestor} == 0} {
       set :requestor $pa
@@ -370,7 +372,7 @@ namespace eval ::xo {
       set :user "<a href='$user_url'>${:requestor}</a>"
     }
     #:log "--i requestor = ${:requestor}"
-    
+
     :process_query_parameter
   }
 
@@ -450,7 +452,7 @@ namespace eval ::xo {
       #auth::require_login
       return 0
     }
-    
+
     #:msg "--p lookup $key"
     return [permission::permission_p -no_login \
                 -party_id $party_id \
@@ -459,7 +461,7 @@ namespace eval ::xo {
     #:log "--  context return [set :$key]"
     #set :$key
   }
-  
+
   #   ConnectionContext instproc destroy {} {
   #     :log "--i destroy [:url]"
   #     #::xo::show_stack
@@ -514,13 +516,19 @@ namespace eval ::xo {
   # Version of query_parameter respecting set-parameter
   #
   ConnectionContext instproc query_parameter {name {default ""}} {
+    regexp {^(.*):(.*)$} $name . name constraint
     if {[:exists_parameter $name]} {
-      return [:get_parameter $name]
+      set value [:get_parameter $name]
+    } else {
+      set value [next $name $default]
     }
-    next
+    if {[info exists constraint] && $value ne ""} {
+      nsf::parseargs value:$constraint $value
+    }
+    return $value
   }
 
-  
+
   ConnectionContext instproc set_parameter {name value} {
     set key [list get_parameter $name]
     if {[:cache_exists $key]} {:cache_unset $key}
@@ -536,7 +544,7 @@ namespace eval ::xo {
 }
 
 namespace eval ::xo {
-  
+
   proc ::xo::update_query_variable {old_query var value} {
     #
     # Replace in a URL-query old occurrences of var with new value.
