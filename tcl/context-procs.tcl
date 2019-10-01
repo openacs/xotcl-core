@@ -523,7 +523,8 @@ namespace eval ::xo {
       set value [next $name $default]
     }
     if {[info exists constraint] && $value ne ""} {
-      nsf::parseargs value:$constraint $value
+      nsf::parseargs $name:$constraint $value
+      set value [set $name]
     }
     return $value
   }
