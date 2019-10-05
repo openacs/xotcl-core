@@ -230,7 +230,7 @@ aa_register_case -cats {api smoke db} xotcl_core_tutorial_4 {
 
     #
     # Lookup page from CR by name. In general, we do not know, of
-    # which type a page with a certain name is, therefore we use
+    # which type a page with a certain name is, therefore, we use
     # ::xo::db::CrClass as interface.
     #
     set r [::xo::db::CrClass lookup -name page0]

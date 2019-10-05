@@ -32,7 +32,7 @@ if {![::xotcl::Object isclass ::xotcl::RecreationClass]} {
 
     <p>This can be a problem when the class instances are not 
     reloaded and when they should survife the redefinition with the
-    same class relationships. Therefore we define a 
+    same class relationships. Therefore, we define a 
     meta class RecreationClass, which can be used to parameterize 
     the behavior on redefinitions. Alternatively, Classes or objects
     could provide their own recreate methods.</p>

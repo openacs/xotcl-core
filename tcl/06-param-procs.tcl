@@ -397,7 +397,7 @@ namespace eval ::xo {
     @param value      the new value
   } {
     #
-    # In order to use the existing inerface for parameters, we catch
+    # In order to use the existing interface for parameters, we catch
     # all parameter changes and update accordingly the values in the new
     # interface.
     #
