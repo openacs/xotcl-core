@@ -35,10 +35,28 @@ namespace eval ::xo {
     if {$ah ne ""} {
       # should be something like "Basic 29234k3j49a"
       :log "auth_check authentication info $ah"
-      # get the second bit, the base64 encoded bit
-      set up [lindex [split $ah " "] 1]
-      # after decoding, it should be user:password; get the username
-      lassign [split [ns_uudecode $up] ":"] user password
+      #
+      # Get the base64 encoded element auf the authorization
+      # header (2nd element)
+      #
+      set decoded [ns_uudecode [lindex [split $ah " "] 1]]
+      #
+      # $decoded should be of the form "user:password".
+      #
+      # The pair is invalid at least in the following situations:
+      # - the username contains a colon
+      # - the username is empty
+      # - $up contains no colon
+      #
+      set delimiterPos [string first : $decoded]
+      if {$delimiterPos > 0} {
+        set user [string range $decoded 0 $delimiterPos-1]
+        set password [string range $decoded $delimiterPos+1 end]
+      } else {
+        ns_log warning "protocol-handler: invalid user/password pair provided: $decoded"
+        set password ""
+        set user ""
+      }
       set auth [auth::authenticate \
                     -username $user \
                     -authority_id [::auth::get_register_authority] \
