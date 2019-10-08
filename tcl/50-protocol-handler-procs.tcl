@@ -33,10 +33,13 @@ namespace eval ::xo {
     :log "[ns_conn method] request comes with headers [ns_set array [ns_conn headers]]"
     set ah [ns_set iget [ns_conn headers] Authorization]
     if {$ah ne ""} {
-      # should be something like "Basic 29234k3j49a"
+      #
+      # The content of the authorization header should be something
+      # like "Basic 29234k3j49a".
+      #
       :log "auth_check authentication info $ah"
       #
-      # Get the base64 encoded element auf the authorization
+      # Get the base64 encoded element of the authorization
       # header (2nd element)
       #
       set decoded [ns_uudecode [lindex [split $ah " "] 1]]
