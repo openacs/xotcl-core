@@ -26,7 +26,7 @@ namespace eval ::xo {
     #
     #next "xo::ProtocolHandler: $message"
   }
-  
+
   ProtocolHandler ad_instproc set_user_id {} {
     Set user_id based on authentication header
   } {
@@ -34,41 +34,20 @@ namespace eval ::xo {
     set ah [ns_set iget [ns_conn headers] Authorization]
     if {$ah ne ""} {
       #
-      # The content of the authorization header should be something
-      # like "Basic 29234k3j49a".
+      # Get credentials from a basic authentication string like
+      # "Basic 29234k3j49a".
       #
-      :log "auth_check authentication info $ah"
-      #
-      # Get the base64 encoded element of the authorization
-      # header (2nd element)
-      #
-      set decoded [ns_uudecode [lindex [split $ah " "] 1]]
-      #
-      # $decoded should be of the form "user:password".
-      #
-      # The pair is invalid at least in the following situations:
-      # - the username contains a colon
-      # - the username is empty
-      # - $up contains no colon
-      #
-      set delimiterPos [string first : $decoded]
-      if {$delimiterPos > 0} {
-        set user [string range $decoded 0 $delimiterPos-1]
-        set password [string range $decoded $delimiterPos+1 end]
-      } else {
-        ns_log warning "protocol-handler: invalid user/password pair provided: $decoded"
-        set password ""
-        set user ""
-      }
+      set credentials [http_auth::basic_authentication_decode $ah]
       set auth [auth::authenticate \
-                    -username $user \
+                    -username [dict get $credentials user] \
                     -authority_id [::auth::get_register_authority] \
-                    -password $password]
-      :log "auth $user $password returned $auth"
+                    -password [dict get $credentials password]]
+
       if {[dict get $auth auth_status] ne "ok"} {
         set auth [auth::authenticate \
-                      -email $user \
-                      -password $password]
+                      -email [dict get $credentials user] \
+                      -password [dict get $credentials password]]
+
         if {[dict get $auth auth_status] ne "ok"} {
           :log "auth status [dict get $auth auth_status]"
           set :user_id 0
