@@ -244,7 +244,11 @@ if {[nsv_exists api_library_doc $index]} {
   if { [info exists doc_elements(param)] && [llength $doc_elements(param)] > 0} {
     append output "<dt><b>Documented Parameters:</b></dt><dd><dl>\n"
     foreach par $doc_elements(param) {
-      append output "<dt><em>-[lindex $par 0]</em></dt><dd>[lrange $par 1 end]</dd>\n"
+      if {[regexp {^\s*(\S+)\s*(.*)$} $par . param desc]} {
+        append output "<dt><em>$param</em></dt><dd>$desc</dd>\n"
+      } else {
+        ad_log warning "show_object: ignoring invalid parameter description <$par>"
+      }
     }
     append output "</dl></dd>"
   }
