@@ -523,7 +523,17 @@ namespace eval ::xo {
       set value [next $name $default]
     }
     if {[info exists constraint] && $value ne ""} {
-      nsf::parseargs $name:$constraint $value
+
+      try {
+        nsf::parseargs $name:$constraint $value
+      } on error {errorMsg} {
+        if {[ns_conn isconnected]} {
+          ad_return_complaint 1 [ns_quotehtml $errorMsg]
+          ad_script_abort
+        } else {
+          throw $::errorInfo $errorMsg
+        }
+      }
       set value [set $name]
     }
     return $value
