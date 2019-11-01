@@ -815,8 +815,9 @@ namespace eval ::xo::Table {
   Class create TABLE::AnchorField \
       -superclass TABLE::Field \
       -instproc render-data {line} {
-        if {[$line exists ${:name}.href] &&
-            [set href [$line set ${:name}.href]] ne ""} {
+        if {[$line exists ${:name}.href]
+            && [set href [$line set ${:name}.href]] ne ""
+          } {
           # use the CSS class rather from the Field than not the line
           :instvar CSSclass
           $line instvar [list ${:name}.title title]
@@ -845,8 +846,9 @@ namespace eval ::xo::Table {
   Class create TABLE::ImageAnchorField \
       -superclass TABLE::Field \
       -instproc render-data {line} {
-        set href [$line set ${:name}.href]
-        if {$href ne ""} {
+        if {[$line exists ${:name}.href]
+            && [set href [$line set ${:name}.href]] ne ""
+          } {
           #if {$line exists ${:name}.CSSclass} {set CSSclass [$line set ${:name}.CSSclass]}
           $line instvar [list ${:name}.CSSclass CSSclass]
           html::a [:get_local_attributes href {style "border-bottom: none;"} {CSSclass class}] {
