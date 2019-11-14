@@ -143,6 +143,10 @@ namespace eval ::xo {
     return [array get :queryparm]
   }
 
+  Context instproc unset_query_parameter {name} {
+    unset -nocomplain :queryparm($name)
+  }
+
   Context ad_instproc export_vars {{-level 1}} {
     Export the query variables
     @param level target level
@@ -544,6 +548,11 @@ namespace eval ::xo {
     set key [list get_parameter $name]
     if {[:cache_exists $key]} {:cache_unset $key}
     set :perconnectionparam($name) $value
+  }
+  ConnectionContext instproc unset_parameter {name} {
+    set key [list get_parameter $name]
+    if {[:cache_exists $key]} {:cache_unset $key}
+    unset -nocomplain :perconnectionparam($name)
   }
   ConnectionContext instproc get_parameter {name {default ""}} {
     return [expr {[info exists :perconnectionparam($name)] ? [set :perconnectionparam($name)] : $default}]
