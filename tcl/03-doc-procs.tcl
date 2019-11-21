@@ -121,35 +121,29 @@ ad_library {
     # it multiple times).
     #
     if {$::__form_id eq "1"} {
-      #
-      # jquery is just needed for the used ajax call
-      #
-      template::head::add_javascript -src //code.jquery.com/jquery-1.12.4.min.js
-      security::csp::require script-src code.jquery.com
 
       template::add_body_script -script {
         function ajax_submit(form) {
-          //console.log(form);
-          $.ajax({
-            type: "POST",
-            url: "/xotcl/admin/toggle-debug",
-            data: $(form).serialize(),
-            success: function(msg) {},
-            error: function(){alert("failure");}
-          });
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', '/xotcl/admin/toggle-debug', true);
+          xhr.onreadystatechange = function() {
+            if (this.readyState == 4) {
+              if (this.status != 200) {
+                alert('AJAX submit unexpected response: ' + this.status);
+              }
+            }
+          }
+          xhr.send(new FormData(form));
         };
       }
     }
 
     #
-    # Add the required js and CSS. We use here bootstrap + titatoggle.
+    # Add the required js and CSS. We use here bootstrap + titatoggle,
+    # and assume, we have bootstrap3 installed
     #
-    template::head::add_css -href https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css
-    template::head::add_javascript -src https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js -order 1
-
-    security::csp::require style-src maxcdn.bootstrapcdn.com
-    security::csp::require script-src maxcdn.bootstrapcdn.com
-    security::csp::require font-src maxcdn.bootstrapcdn.com
+    #template::head::add_css -href urn:ad:css:bootstrap3
+    #template::head::add_javascript -src urn:ad:js:bootstrap3
 
     template::head::add_css -href "/resources/xotcl-core/titatoggle/titatoggle-dist.css"
     #
