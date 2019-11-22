@@ -147,6 +147,10 @@ namespace eval ::xo {
     unset -nocomplain :queryparm($name)
   }
 
+  Context instproc set_query_parameter {name value} {
+    set :queryparm($name) $value
+  }
+
   Context ad_instproc export_vars {{-level 1}} {
     Export the query variables
     @param level target level
