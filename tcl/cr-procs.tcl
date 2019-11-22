@@ -609,7 +609,7 @@ namespace eval ::xo::db {
     {-base_table "cr_revisions"}
   } {
     returns the SQL-query to select the CrItems of the specified object_type
-    @param select_attributes attributes for the sql query to be retrieved, in addition
+    @param select_attributes attributes for the SQL query to be retrieved, in addition
     to item_id, name, publish_status, object_type, and package_id
     which are always returned
     @param orderby for ordering the solution set
@@ -620,7 +620,7 @@ namespace eval ::xo::db {
     @param folder_id parent_id
     @param publish_status one of 'live', 'ready', or 'production'
     @param base_table typically automatic view, must contain title and revision_id
-    @return sql query
+    @return SQL query
   } {
     if {![info exists folder_id]} {set folder_id ${:folder_id}}
     if {![info exists parent_id]} {set parent_id $folder_id}
@@ -1430,7 +1430,7 @@ namespace eval ::xo::db {
     {-base_table "cr_folders"}
   } {
     returns the SQL-query to select the CrItems of the specified object_type
-    @param select_attributes attributes for the sql query to be retrieved, in addition
+    @param select_attributes attributes for the SQL query to be retrieved, in addition
     to item_id, name, publish_status, object_type which are always returned
     @param orderby for ordering the solution set
     @param where_clause clause for restricting the answer set
@@ -1440,7 +1440,7 @@ namespace eval ::xo::db {
     @param folder_id parent_id
     @param publish_status one of 'live', 'ready', or 'production'
     @param base_table typically automatic view, must contain title and revision_id
-    @return sql query
+    @return SQL query
   } {
     if {![info exists folder_id]} {set folder_id ${:folder_id}}
     if {![info exists parent_id]} {set parent_id $folder_id}

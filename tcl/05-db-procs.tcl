@@ -510,7 +510,7 @@ namespace eval ::xo::db {
     set qn [uplevel [list [self] qn $qn]]
     #
     # The prepare statement in the next line works probably only with
-    # inline sql statements.
+    # inline SQL statements.
     #
     #if {[info exists prepare]} {set sql [:prepare -dbn $dbn -argtypes $prepare $sql]}
     #ns_log notice "### [list ::db_foreach -dbn $dbn $qn $sql $body {*}$bindOpt]"
@@ -646,7 +646,7 @@ namespace eval ::xo::db {
   ::xo::db::DB-postgresql instproc prepare {-handle:required {-argtypes ""} sql} {
     #
     # Define a md5 key for the prepared statement in nsv based on the
-    # sql statement.
+    # SQL statement.
     #
     set key [ns_md5 $sql]
 
@@ -978,7 +978,7 @@ namespace eval ::xo::db {
     -check_function
     sql_file
   } {
-    Load the sql file, if the kernel is older than the specified
+    Load the SQL file, if the kernel is older than the specified
     version, and the version of the specified package is older, and
     the check_function does not exist in function_args.
     <p>
