@@ -97,7 +97,7 @@ namespace eval ::xo {
     }
 
     if {$url eq "" && $init_url} {
-      set url [root_of_host [ad_host]][ns_conn url]
+      set url [acs::root_of_host [ad_host]][ns_conn url]
       #:log "--CONN ns_conn url -> $url"
     }
 
@@ -293,7 +293,7 @@ namespace eval ::xo {
       # in case of host-node map, simplify the url to avoid redirects
       # .... but ad_host works only, when we are connected....
       # TODO: solution for syndication
-      set root [root_of_host [ad_host]]
+      set root [acs::root_of_host [ad_host]]
       regexp "^${root}(.*)$" $package_url _ package_url
     }
     #:log "--R package_url= $package_url (was $info(url))"
