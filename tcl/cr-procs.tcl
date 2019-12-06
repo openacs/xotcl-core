@@ -132,12 +132,29 @@ namespace eval ::xo::db {
 
     @return list of item_ids
   } {
-    set items [list]
-    foreach item_id [::xo::dc list -prepare integer get_child_items \
-                         "select item_id from cr_items where parent_id = :item_id"] {
-      lappend items $item_id {*}[my [self proc] -item_id $item_id]
-    }
-    return $items
+    #
+    # The following construct is fully PostgreSQL and Oracle
+    # compliant.  However, all newer Oracle installations should as
+    # well support the recursive query below as well, which requires
+    # less DB interactions.
+    #
+    # set items [list]
+    # foreach item_id [::xo::dc list -prepare integer get_child_items \
+    #                      "select item_id from cr_items where parent_id = :item_id"] {
+    #   lappend items $item_id {*}[my [self proc] -item_id $item_id]
+    # }
+    # return $items
+
+    return [::xo::dc list -prepare integer get_child_items {
+      WITH RECURSIVE child_items AS (
+           select item_id from cr_items
+           where parent_id = :item_id
+      UNION ALL
+        select i.item_id from cr_items i, child_items
+        where i.parent_id = child_items.item_id
+      )
+      select * from child_items
+    }]
   }
 
   CrClass ad_proc lookup {
