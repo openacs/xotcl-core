@@ -673,7 +673,7 @@ namespace eval ::xo::db {
       #
       set $per_interp_cache $nsv_cached_value
       lassign $nsv_cached_value prepare execute prepName sql
-      
+
     } else {
       #
       # Compute a PREPARE statement and an EXECUTE statement on the
@@ -2390,9 +2390,12 @@ namespace eval ::xo::db {
       $o mset [ns_set array $selection]
 
       if {[$o exists object_type]} {
-        # set the object type if it looks like managed from XOTcl
-        if {[string match "::*" [set ot [$o set object_type]] ]} {
-          $o class $ot
+        #
+        # Set the object type if it looks like managed from XOTcl.
+        #
+        set object_type [$o set object_type]
+        if {[string match "::*" $object_type]} {
+          $o class $object_type
         }
       }
       if {$initialize && [$o istype ::xo::db::Object]} {
@@ -2748,7 +2751,7 @@ namespace eval ::xo::db {
       return
     }
 
-    #:log "check attribute $column_name ot=$object_type, domain=${:domain}"
+    #:log "check attribute $column_name object_type=$object_type, domain=${:domain}"
     if {[::xo::dc get_value check_att {select 0 from acs_attributes where
       attribute_name = :column_name and object_type = :object_type} 1]} {
 
@@ -2817,14 +2820,32 @@ namespace eval ::xo::db {
 
   ::xotcl::Class create ::xo::db::temp_table -parameter {name query vars}
   ::xo::db::temp_table instproc init {} {
+    #
     # The cleanup order is - at least under AOLserver 4.01 - hard to get right.
     # When destroy_on_cleanup is executed, there might be already some global
     # data for the database interaction gone.... So, destroy these objects
     # by hand for now.
     # :destroy_on_cleanup
+    #
+    # The "GLOBAL" keyword on temp tables is deprecated (and currently
+    # ignored) on PostgreSQL. Not sure, what's the state on various
+    # Oracle versions. Therefore, we keep the comment for now.
+    #
 
-    # PRESERVE ROWS means that the data will be available until the end of the SQL session
-    set sql_create "CREATE global temporary table ${:name} on commit PRESERVE ROWS as "
+    if {![info exists :name]} {
+      #
+      # If there is no temp table name provided, create a name
+      # avoiding name clashes. We assume, that the set of variables is
+      # unique for such temp tables.
+      #
+      set :name "temp_table_[ns_md5 $vars]"
+    }
+
+    #
+    # PRESERVE ROWS means that the data will be available until the
+    # end of the SQL session..
+    #
+    set sql_create "CREATE temporary table ${:name} on commit PRESERVE ROWS as "
 
     # When the table exists already, simply insert into it ...
     if {[::xo::db::require exists_table ${:name}]} {

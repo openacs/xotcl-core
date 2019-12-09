@@ -1,6 +1,6 @@
 ::xo::library doc {
 
-  XoTcl - Utility procs for file I/O. Should not be necessary on the
+  XOTcl - Utility procs for file I/O. Should not be necessary on the
   longer run.
 
   @author Gustaf Neumann
