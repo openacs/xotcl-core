@@ -1860,7 +1860,7 @@ namespace eval ::xo::db {
   CrItem instmixin CrCache::Item
 }
 
-#::xo::library source_dependent
+::xo::library source_dependent
 
 
 #
