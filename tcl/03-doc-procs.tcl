@@ -500,7 +500,7 @@ ad_library {
     }
 
     # argument documentation finished
-    set proc_index [::xo::api proc_index $scope $obj ${inst}proc $proc_name]
+    set proc_index [string trimleft [::xo::api proc_index $scope $obj ${inst}proc $proc_name] :]
     if {![nsv_exists api_proc_doc $proc_index]} {
       nsv_lappend api_proc_doc_scripts [dict get $doc script] $proc_index
     }
