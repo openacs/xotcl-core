@@ -1,6 +1,18 @@
 package require tdom
 
-proc require_html_procs {} {
+ad_proc -public -deprecated require_html_procs {} {
+    Deprecated: polluting the root namespace.
+
+    @see ::xo::require_html_procs
+} {
+    ::xo::require_html_procs
+}
+
+ad_proc -public ::xo::require_html_procs {} {
+
+      Declare Tcl commands for building HTML elements
+
+} {
   if {[info commands ::html::a] eq ""} {
     namespace eval ::html {
 
