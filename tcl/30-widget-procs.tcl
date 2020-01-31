@@ -12,7 +12,7 @@
 }
 
 Object instproc asHTML {{-master defaultMaster} -page:switch} {
-  require_html_procs
+  ::xo::require_html_procs
   dom createDocument html doc
   set root [$doc documentElement]
   if {!$page} {
