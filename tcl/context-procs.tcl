@@ -264,6 +264,7 @@ namespace eval ::xo {
       ad_try {
         set locale [lang::conn::locale -package_id $package_id]
       } on error {errorMsg} {
+        ns_log warning "fall back to locale en_US"
         set locale en_US
       }
     } else {
@@ -533,7 +534,8 @@ namespace eval ::xo {
     if {[info exists constraint] && $value ne ""} {
 
       try {
-        nsf::parseargs $name:$constraint $value
+        nsf::parseargs $name:$constraint [list $value]
+        
       } on error {errorMsg} {
         if {[ns_conn isconnected]} {
           ad_return_complaint 1 [ns_quotehtml $errorMsg]
