@@ -333,8 +333,8 @@ namespace eval ::xo {
       missing  {set img LangMarks/img/en.gif}
     }
     html::a -class "acs-lang-${:type}" -title ${:key} -href ${:url} {}
-  } 
-  
+  }
+
   ## todo : make these checks only in trn mode (additional mixin)
 
   Class create Drawable \
@@ -372,21 +372,24 @@ namespace eval ::xo {
   # for the time being, just a proc
   #
   proc get_user_name {uid} {
-    set name [expr {[string is integer -strict $uid] ?
-                    [person::name -person_id $uid] : ""}]
+    set name [expr {[string is integer -strict $uid]
+                    ? [person::name -person_id $uid]
+                    : ""}]
     if {$name eq ""} {
       set name [_ xotcl-core.nobody]
     }
     return $name
   }
+}
 
+namespace eval ::xo {
   #
-  # define an abstract table
+  # Define an abstract ::xo::Table
   #
-  Class create Table -superclass OrderedComposite \
-      -parameter [expr {[apm_version_names_compare [ad_acs_version] 5.3.0] == 1 ?
-                        {{no_data  "#xotcl-core.No_Data#"} {renderer TABLE3} name} :
-                        {{no_data  "#xotcl-core.No_Data#"} {renderer TABLE2} name}
+  Class create ::xo::Table -superclass OrderedComposite \
+      -parameter [expr {[apm_version_names_compare [ad_acs_version] 5.3.0] == 1
+                        ? {{no_data  "#xotcl-core.No_Data#"} {renderer TABLE3} name}
+                        : {{no_data  "#xotcl-core.No_Data#"} {renderer TABLE2} name}
                       }]
 
   Table instproc destroy {} {
@@ -469,47 +472,52 @@ namespace eval ::xo {
       if {[regexp {^#([a-zA-Z0-9_:-]+\.[a-zA-Z0-9_:-]+)#$} $label _ message_key]} {
         set label [_ $message_key]
       }
-      set value [string map {\" \\\" \n \r)} $label]
-    lappend line \"$value\"
-  }
-  append output [join $line $delimiter] \n
-  foreach row [:children] {
-    set line [list]
-    foreach column [[self]::__columns children] {
-      if {[$column exists no_csv]} continue
-      set value [string map {\" \\\" \n \r} [$row set [$column set name]]]
+      set value [string map {\" \\\" \n \r} $label]
       lappend line \"$value\"
     }
     append output [join $line $delimiter] \n
+    foreach row [:children] {
+      set line [list]
+      foreach column [[self]::__columns children] {
+        if {[$column exists no_csv]} continue
+        set value [string map {\" \\\" \n \r} [$row set [$column set name]]]
+        lappend line \"$value\"
+      }
+      append output [join $line $delimiter] \n
+    }
+    #ns_return 200 text/plain $output
+    if {![info exists :name]} {
+      set :name "table"
+    }
+    set fn [xo::backslash_escape \" ${:name}.csv]
+    ns_set put [ns_conn outputheaders] Content-Disposition "attachment;filename=\"$fn\""
+    ns_return 200 text/csv $output
+    ad_script_abort
   }
-  #ns_return 200 text/plain $output
-  if {![info exists :name]} {set :name "table"}
-  set fn [xo::backslash_escape \" ${:name}.csv]
-  ns_set put [ns_conn outputheaders] Content-Disposition "attachment;filename=\"$fn\""
-  ns_return 200 text/csv $output
-  ad_script_abort
+
 }
 
-Class create Table::Line \
-    -superclass ::xo::Drawable \
-    -instproc attlist {name atts {extra ""}} {
-      set result [list]
-      foreach att $atts {
-        set varname $name.$att
-        if {[info exists :$varname]} {
-          lappend result $att [::xo::localize [set :$varname]]
-        }
-      }
-      foreach {att val} $extra {lappend result $att $val}
-      return $result
-    }
-
-
-#
-# Define elements of a Table
-#
 namespace eval ::xo::Table {
-  Class create Action \
+
+  #
+  # Define elements of a ::xo::Table
+  #
+
+  Class create ::xo::Table::Line \
+      -superclass ::xo::Drawable \
+      -instproc attlist {name atts {extra ""}} {
+        set result [list]
+        foreach att $atts {
+          set varname $name.$att
+          if {[info exists :$varname]} {
+            lappend result $att [::xo::localize [set :$varname]]
+          }
+        }
+        foreach {att val} $extra {lappend result $att $val}
+        return $result
+      }
+
+  Class create ::xo::Table::Action \
       -superclass ::xo::OrderedComposite::Child \
       -parameter {label url {tooltip {}} {confirm_message {}}}
   #-proc destroy {} {
@@ -518,7 +526,7 @@ namespace eval ::xo::Table {
   #      next
   #    }
 
-  Class create Field \
+  Class create ::xo::Table::Field \
       -superclass ::xo::OrderedComposite::Child \
       -parameter {label {html {}} {orderby ""} name {richtext false} no_csv {CSSclass ""} {hide 0}} \
       -instproc init {} {
@@ -532,7 +540,7 @@ namespace eval ::xo::Table {
         return $slots
       }
 
-  Class create BulkAction \
+  Class create ::xo::Table::BulkAction \
       -superclass ::xo::OrderedComposite::Child \
       -parameter {name id {html {}} {hide 0}} \
       -instproc actions {cmd} {
@@ -550,7 +558,7 @@ namespace eval ::xo::Table {
         ;
       }
 
-  Class create AnchorField \
+  Class create ::xo::Table::AnchorField \
       -superclass ::xo::Table::Field \
       -instproc get-slots {} {
         set slots [list -${:name}]
@@ -560,13 +568,13 @@ namespace eval ::xo::Table {
         return $slots
       }
 
-  Class create HiddenField \
+  Class create ::xo::Table::HiddenField \
       -superclass ::xo::Table::Field \
       -instproc get-slots {} {
         return [list -${:name}]
       }
 
-  Class create ImageField \
+  Class create ::xo::Table::ImageField \
       -parameter {src width height border title alt} \
       -superclass ::xo::Table::Field \
       -instproc get-slots {} {
@@ -583,41 +591,43 @@ namespace eval ::xo::Table {
         return $slots
       }
 
-  Class create ImageAnchorField \
+  Class create ::xo::Table::ImageAnchorField \
       -superclass ::xo::Table::ImageField \
       -instproc get-slots {} {
         return [concat [next]  -${:name}.href ""]
       }
 
-  Class create ImageField_EditIcon \
+  Class create ::xo::Table::ImageField_EditIcon \
       -superclass ImageAnchorField -parameter {
         {src /resources/acs-subsite/Edit16.gif} {width 16} {height 16} {border 0}
         {title "[_ xotcl-core.edit_item]"} {alt "edit"}
       }
 
-  Class create ImageField_AddIcon \
+  Class create ::xo::Table::ImageField_AddIcon \
       -superclass ImageAnchorField -parameter {
         {src /resources/acs-subsite/Add16.gif} {width 16} {height 16} {border 0}
         {title "[_ xotcl-core.add_item]"} {alt "add"}
       }
 
-  Class create ImageField_ViewIcon \
+  Class create ::xo::Table::ImageField_ViewIcon \
       -superclass ImageAnchorField -parameter {
         {src /resources/acs-subsite/Zoom16.gif} {width 16} {height 16} {border 0}
         {title "[_ xotcl-core.view_item]"} {alt "view"}
       }
-  Class create ImageField_DeleteIcon \
+  Class create ::xo::Table::ImageField_DeleteIcon \
       -superclass ImageAnchorField -parameter {
         {src /resources/acs-subsite/Delete16.gif} {width 16} {height 16} {border 0}
         {title "[_ xotcl-core.delete_item]"} {alt "delete"}
       }
+}
 
-  # export table elements
+namespace eval ::xo::Table {
+  #
+  # Export ::xo::Table elements
+  #
   namespace export Field AnchorField HiddenField Action ImageField ImageAnchorField \
       ImageField_EditIcon ImageField_ViewIcon ImageField_DeleteIcon ImageField_AddIcon \
       BulkAction
-}
-
 }
 
 
@@ -983,9 +993,9 @@ Object create defaultMaster -proc decorate {node} {
 Object create pageMaster -proc decorate {node} {
   $node appendFromScript {
     html::div -class defaultMasterClass {
-      html::t "hello header"
+      #html::t "hello header"
       set slave [tmpl::body]
-      html::t "hello footer"
+      #html::t "hello footer"
     }
   }
   return $slave
@@ -994,14 +1004,14 @@ Object create pageMaster -proc decorate {node} {
 
 namespace eval ::xo {
   #
-  # templating and CSS
+  # xo::Page: Templating and CSS
   #
   Class create Page
   Page proc requireCSS {{-order 1} name} {
-    set ::_xo_need_css($name) [expr {[array size ::_xo_need_css]+1000*$order}]
+    set ::_xo_need_css($name) [expr {[array size ::_xo_need_css] + 1000 * $order}]
   }
   Page proc requireStyle {{-order 1} s} {
-    set ::_xo_need_style($s) [expr {[array size ::_xo_need_style]+1000*$order}]
+    set ::_xo_need_style($s) [expr {[array size ::_xo_need_style] + 1000 * $order}]
   }
   Page proc requireJS  name {
     if {![info exists ::_xo_need_js($name)]} {lappend ::_xo_js_order $name}
@@ -1059,8 +1069,8 @@ namespace eval ::xo {
     return ""
   }
 }
-::xo::library source_dependent
 
+::xo::library source_dependent
 #
 # Local variables:
 #    mode: tcl
