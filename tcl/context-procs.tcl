@@ -566,7 +566,13 @@ namespace eval ::xo {
   ConnectionContext instproc exists_parameter {name} {
     info exists :perconnectionparam($name)
   }
-
+  ConnectionContext instproc perconnection_parameter_get_all {} {
+    array get :perconnectionparam
+  }
+  ConnectionContext instproc perconnection_parameter_set_all {pairs} {
+    array unset :perconnectionparam
+    array set :perconnectionparam $pairs
+  }
 }
 
 namespace eval ::xo {
