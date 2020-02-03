@@ -528,7 +528,16 @@ namespace eval ::xo::Table {
 
   Class create ::xo::Table::Field \
       -superclass ::xo::OrderedComposite::Child \
-      -parameter {label {html {}} {orderby ""} name {richtext false} no_csv {CSSclass ""} {hide 0}} \
+      -parameter {
+        label
+        {html {}}
+        {orderby ""}
+        name
+        {richtext false}
+        no_csv
+        {CSSclass ""}
+        {hide 0}
+      } \
       -instproc init {} {
         set :name [namespace tail [self]]
       } \
@@ -579,8 +588,8 @@ namespace eval ::xo::Table {
       -superclass ::xo::Table::Field \
       -instproc get-slots {} {
         set slots [list -${:name}]
-        lappend slots [list -${:name}.src [:src]]
-        lappend slots [list -${:name}.CSSclass [:CSSclass]]
+        lappend slots [list -${:name}.src ${:src}]
+        lappend slots [list -${:name}.CSSclass ${:CSSclass}]
         foreach att {width height border title alt} {
           if {[info exists :$att]} {
             lappend slots [list -${:name}.$att [:$att]]
@@ -710,7 +719,8 @@ namespace eval ::xo::Table {
         #:log "--LINE vars=[:info vars] cL: [[self class] info vars] r=[:renderer]"
         html::tr -class [expr {[incr :__rowcount]%2 ? ${:css.tr.odd-class} : ${:css.tr.even-class}}] {
           foreach field [[self]::__columns children] {
-            html::td  [concat [list class list] [$field html]] {
+            set CSSclass [list "list" {*}[$field CSSclass]]
+            html::td  [concat [list class $CSSclass] [$field html]] {
               $field render-data $line
             }
           }
