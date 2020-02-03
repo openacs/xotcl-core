@@ -784,7 +784,8 @@ namespace eval ::xo::Table {
   }
 
   TABLE::Field instproc render {} {
-    html::th [concat [list class list] [:html]] {
+    set CSSclass [list "list" ${:CSSclass}]
+    html::th [concat [list class $CSSclass] ${:html}] {
       if {${:orderby} eq ""} {
         html::t [:_ label]
       } else {
@@ -838,8 +839,8 @@ namespace eval ::xo::Table {
         if {[$line exists ${:name}.href]
             && [set href [$line set ${:name}.href]] ne ""
           } {
-          # use the CSS class rather from the Field than not the line
-          :instvar CSSclass
+          # Use the CSS class from the Field and not from the Line
+          if {[info exists :CSSclass]} {set CSSclass ${:CSSclass}}
           $line instvar [list ${:name}.title title]
           html::a [:get_local_attributes href title {CSSclass class}] {
             return [next]
@@ -878,7 +879,7 @@ namespace eval ::xo::Table {
         }
       }
 
-  Class create TABLE::BulkAction -superclass ::xo::Drawable
+  Class create TABLE::BulkAction -superclass ::xo::Drawable -parameter {{CSSclass ""}}
   TABLE::BulkAction instproc render {} {
     set name ${:name}
     #:msg [:serialize]
