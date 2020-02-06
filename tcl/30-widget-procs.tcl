@@ -551,7 +551,7 @@ namespace eval ::xo::Table {
 
   Class create ::xo::Table::BulkAction \
       -superclass ::xo::OrderedComposite::Child \
-      -parameter {name id {html {}} {hide 0}} \
+      -parameter {{CSSclass ""} name id {html {}} {hide 0}} \
       -instproc actions {cmd} {
         #:init
         set grandParent [[:info parent] info parent]
@@ -719,6 +719,11 @@ namespace eval ::xo::Table {
         #:log "--LINE vars=[:info vars] cL: [[self class] info vars] r=[:renderer]"
         html::tr -class [expr {[incr :__rowcount]%2 ? ${:css.tr.odd-class} : ${:css.tr.even-class}}] {
           foreach field [[self]::__columns children] {
+            if {![$field exists CSSclass]} {
+              # TODO: remove me when message does not show up
+              ns_log warning "CSSclass missing $field\n[$field serialize]"
+              $field set CSSclass ""
+            }
             set CSSclass [list "list" {*}[$field CSSclass]]
             html::td  [concat [list class $CSSclass] [$field html]] {
               $field render-data $line
