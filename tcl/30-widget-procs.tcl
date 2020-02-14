@@ -802,9 +802,11 @@ namespace eval ::xo::Table {
 
   TABLE::Field instproc renderSortLabels {} {
     set field ${:orderby}
+    set table_ref [namespace tail [[:info parent] info parent]]
+    set table_id [::xowiki::Includelet html_id $table_ref]
     set lvl [template::adp_level]
     if {$lvl ne ""} {
-      upvar #$lvl orderby orderby
+      upvar #$lvl ${table_id}_orderby orderby
     }
     if {![info exists orderby]} {set orderby ""}
     set new_orderby $orderby
@@ -821,7 +823,7 @@ namespace eval ::xo::Table {
       set title [_ xotcl-core.Sort_by_this_column]
       set img /resources/acs-templating/sort-neither.png
     }
-    set query [list [list orderby $new_orderby]]
+    set query [list [list ${table_id}_orderby $new_orderby]]
     if {[catch {set actual_query [ns_conn query]}]} {
       set actual_query ""
     }
