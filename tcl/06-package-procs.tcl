@@ -10,11 +10,14 @@ namespace eval ::xo {
   #
   # Meta-Class for Application Package Classes
   #
-
   Class create ::xo::PackageMgr \
       -superclass ::xo::db::Class \
       -parameter {
         package_key
+        {default_package_parameters ""}
+        {default_package_parameter_page_info ""}
+        {site_wide_package_parameters ""}
+        {site_wide_package_parameter_page_info ""}
       }
 
   PackageMgr ad_instproc first_instance {-privilege -party_id} {
@@ -59,6 +62,196 @@ namespace eval ::xo {
     }
     return [lsort -integer $result]
   }
+
+  PackageMgr instproc import_prototype_page {
+    -package_key:required
+    -name:required
+    -parent_id:required
+    -package_id:required
+    {-lang en}
+    {-add_revision:boolean true}
+  } {
+    set page ""
+    set fn [acs_root_dir]/packages/$package_key/www/prototypes/$name.page
+    #:log "--W check $fn"
+    if {[file readable $fn]} {
+      #
+      # We have the file of the prototype page. We try to create
+      # either a new item or a revision from definition in the file
+      # system.
+      #
+      if {[regexp {^(..):(.*)$} $name _ lang local_name]} {
+        set fullName $name
+      } else {
+        set fullName en:$name
+      }
+      :log "--sourcing page definition $fn, using name '$fullName'"
+      set page [source $fn]
+      $page configure \
+          -name $fullName \
+          -parent_id $parent_id \
+          -package_id $package_id
+      #
+      # xowiki::File has a different interface for build-name to
+      # derive the "name" from a file-name. This is not important for
+      # prototype pages, so we skip it
+      #
+      if {![$page istype ::xowiki::File]} {
+        set nls_language [:get_nls_language_from_lang $lang]
+        $page name [$page build_name -nls_language $nls_language]
+        #:log "--altering name of page $page to '[$page name]'"
+        set fullName [$page name]
+      }
+      if {![$page exists title]} {
+        $page set title $object
+      }
+      $page destroy_on_cleanup
+      $page set_content [string trim [$page text] " \n"]
+      $page initialize_loaded_object
+
+      set p [::$package_id get_page_from_name -name $fullName -parent_id $parent_id]
+      #:log "--get_page_from_name --> '$p'"
+      if {$p eq ""} {
+        #
+        # We have to create the page new. The page is completed with
+        # missing vars on save_new.
+        #
+        #:log "--save_new of $page class [$page info class]"
+        $page save_new
+      } else {
+        #:log "--save revision $add_revision"
+        if {$add_revision} {
+          #
+          # An old page exists already, create a revision.  Update the
+          # existing page with all scalar variables from the prototype
+          # page (which is just partial)
+          #
+          foreach v [$page info vars] {
+            if {[$page array exists $v]} continue ;# don't copy arrays
+            $p set $v [$page set $v]
+          }
+          #:log "--save of $p class [$p info class]"
+          $p save
+        }
+        set page $p
+      }
+      if {$page ne ""} {
+        # we want to be able to address the page via the canonical name ::$item_id
+        set page [::xo::db::CrClass get_instance_from_db -item_id [$page item_id]]
+      }
+    }
+    return $page
+  }
+
+  PackageMgr instproc require_site_wide_info {} {
+    if {![info exists :site_wide_info]} {
+      if {${:site_wide_package_parameter_page_info} ne ""} {
+        set cmd [list ::xowf::require_parameter_page \
+                     -name [dict get ${:site_wide_package_parameter_page_info} name] \
+                     -title [dict get ${:site_wide_package_parameter_page_info} title] \
+                     -instance_attributes [dict get ${:site_wide_package_parameter_page_info} instance_attributes]]
+      } else {
+        set cmd ""
+      }
+      set site_wide_instance_id [acs_admin::require_site_wide_package \
+                                     -package_key ${:package_key} \
+                                     -parameters ${:site_wide_package_parameters} \
+                                     -configuration_command $cmd ]
+      ::xowiki::Package require $site_wide_instance_id
+      dict set :site_wide_info folder_id [::$site_wide_instance_id folder_id]
+      dict set :site_wide_info instance_id $site_wide_instance_id
+    }
+    return ${:site_wide_info}
+  }
+
+  PackageMgr instproc require_site_wide_info {} {
+    if {![info exists :site_wide_info]} {
+      set cmd [list [self] configure_fresh_instance \
+                   -parameter_page_info ${:site_wide_package_parameter_page_info} \
+                   -parameters ${:site_wide_package_parameters} \
+                  ]
+      set site_wide_instance_id [acs_admin::require_site_wide_package \
+                                     -package_key ${:package_key} \
+                                     -configuration_command $cmd]
+      ::xowiki::Package require $site_wide_instance_id
+      dict set :site_wide_info folder_id [::$site_wide_instance_id folder_id]
+      dict set :site_wide_info instance_id $site_wide_instance_id
+    }
+    return ${:site_wide_info}
+  }
+
+  PackageMgr instproc configure_fresh_instance {
+    {-package_id:required}
+    {-parameter_page_info ""}
+    {-parameters ""}
+  } {
+    if {[llength $parameter_page_info] > 0} {
+      ::xowf::require_parameter_page \
+          -package_id $package_id \
+          -name [dict get $parameter_page_info name] \
+          -title [dict get $parameter_page_info title] \
+          -instance_attributes [dict get $parameter_page_info instance_attributes]
+    }
+    #
+    # Configuring of the parameters is performed after the optional
+    # configuration of the parameter page, since by setting the
+    # package parameter "parameter_page" to a page that does not exist
+    # yet, would lead to errors.
+    #
+    if {[llength $parameters] > 0} {
+      foreach {parameter value} $parameters {
+        ::parameter::set_value \
+            -package_id $package_id \
+            -parameter $parameter \
+            -value $value
+      }
+    }
+  }
+
+  PackageMgr instproc require_site_wide_pages {
+    {-refetch:boolean false}
+  } {
+    set info [:require_site_wide_info]
+    foreach n {folder.form link.form page.form import-archive.form photo.form} {
+      set item_id [::xo::db::CrClass lookup -name en:$n -parent_id [dict get $info folder_id]]
+      #:log "lookup en:$n => $item_id"
+      if {!$item_id || $refetch} {
+        set page [:import_prototype_page \
+                      -name $n \
+                      -package_key ${:package_key} \
+                      -parent_id [dict get $info folder_id] \
+                      -package_id [dict get $info instance_id] ]
+        :log "Page en:$n loaded as '$page'"
+      }
+    }
+  }
+
+  PackageMgr instproc lookup_side_wide_page {-name:required} {
+    set id [::xo::db::CrClass lookup \
+                -name $name \
+                -parent_id [dict get [:require_site_wide_info] folder_id]]
+    :log "lookup_side_wide_page <$name> uses [:require_site_wide_info] => $id"
+    return $id
+  }
+
+  PackageMgr instproc get_site_wide_page {-name:required} {
+    set item_id [:lookup_side_wide_page -name $name]
+    # :ds "lookup from base objects $name => $item_id"
+    if {$item_id} {
+      set page [::xo::db::CrClass get_instance_from_db -item_id $item_id]
+      set package_id [$page package_id]
+      if {$package_id ne ""} {
+        #$form set_resolve_context -package_id $package_id -parent_id $parent_id
+        ::xo::Package require $package_id
+      }
+
+      return $page
+    }
+    return ""
+  }
+
+
+
 
   PackageMgr ad_instproc initialize {
     -ad_doc
