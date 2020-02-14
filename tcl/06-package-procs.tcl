@@ -146,7 +146,7 @@ namespace eval ::xo {
   PackageMgr instproc require_site_wide_info {} {
     if {![info exists :site_wide_info]} {
       if {${:site_wide_package_parameter_page_info} ne ""} {
-        set cmd [list ::xowf::require_parameter_page \
+        set cmd [list ::xowiki::require_parameter_page \
                      -name [dict get ${:site_wide_package_parameter_page_info} name] \
                      -title [dict get ${:site_wide_package_parameter_page_info} title] \
                      -instance_attributes [dict get ${:site_wide_package_parameter_page_info} instance_attributes]]
@@ -186,7 +186,7 @@ namespace eval ::xo {
     {-parameters ""}
   } {
     if {[llength $parameter_page_info] > 0} {
-      ::xowf::require_parameter_page \
+      ::xowiki::require_parameter_page \
           -package_id $package_id \
           -name [dict get $parameter_page_info name] \
           -title [dict get $parameter_page_info title] \
