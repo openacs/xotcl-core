@@ -230,7 +230,7 @@ namespace eval ::xo {
     set id [::xo::db::CrClass lookup \
                 -name $name \
                 -parent_id [dict get [:require_site_wide_info] folder_id]]
-    :log "lookup_side_wide_page <$name> uses [:require_site_wide_info] => $id"
+    #:log "lookup_side_wide_page <$name> uses [:require_site_wide_info] => $id"
     return $id
   }
 
