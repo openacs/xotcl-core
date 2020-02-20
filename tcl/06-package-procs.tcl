@@ -18,6 +18,7 @@ namespace eval ::xo {
         {default_package_parameter_page_info ""}
         {site_wide_package_parameters ""}
         {site_wide_package_parameter_page_info ""}
+        {site_wide_pages ""}
       }
 
   PackageMgr ad_instproc first_instance {-privilege -party_id} {
@@ -210,9 +211,17 @@ namespace eval ::xo {
 
   PackageMgr instproc require_site_wide_pages {
     {-refetch:boolean false}
+    {-pages}
   } {
+    #
+    # If no pages are provided, take the default of the definition of
+    # the package class.
+    #
+    if {$pages eq ""} {
+      set pages ${:site_wide_pages}
+    }
     set info [:require_site_wide_info]
-    foreach n {folder.form link.form page.form import-archive.form photo.form} {
+    foreach n $pages {
       set item_id [::xo::db::CrClass lookup -name en:$n -parent_id [dict get $info folder_id]]
       #:log "lookup en:$n => $item_id"
       if {!$item_id || $refetch} {
