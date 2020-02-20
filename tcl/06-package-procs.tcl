@@ -64,6 +64,22 @@ namespace eval ::xo {
     return [lsort -integer $result]
   }
 
+  PackageMgr instproc get_nls_language_from_lang {lang} {
+    #
+    # Return the first nls_language matching the provided lang
+    # prefix. This method is not precise (when e.g. two nls_languages
+    # are defined with the same lang), but the only thing relevant is
+    # the lang anyhow.  If nothing matches return empty.
+    #
+    foreach nls_language [lang::system::get_locales] {
+      if {[string range $nls_language 0 1] eq $lang} {
+        return $nls_language
+      }
+    }
+    return ""
+  }
+
+  
   PackageMgr instproc import_prototype_page {
     -package_key:required
     -name:required
