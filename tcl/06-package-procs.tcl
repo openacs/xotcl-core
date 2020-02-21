@@ -126,6 +126,7 @@ namespace eval ::xo {
       $page set_content [string trim [$page text] " \n"]
       $page initialize_loaded_object
 
+      xo::Package require $package_id
       set p [::$package_id get_page_from_name -name $fullName -parent_id $parent_id]
       #:log "--get_page_from_name --> '$p'"
       if {$p eq ""} {
@@ -227,7 +228,7 @@ namespace eval ::xo {
 
   PackageMgr instproc require_site_wide_pages {
     {-refetch:boolean false}
-    {-pages}
+    {-pages ""}
   } {
     #
     # If no pages are provided, take the default of the definition of
