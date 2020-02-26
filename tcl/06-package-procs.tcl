@@ -79,7 +79,7 @@ namespace eval ::xo {
     return ""
   }
 
-  
+
   PackageMgr instproc import_prototype_page {
     -package_key:required
     -name:required
@@ -163,27 +163,6 @@ namespace eval ::xo {
 
   PackageMgr instproc require_site_wide_info {} {
     if {![info exists :site_wide_info]} {
-      if {${:site_wide_package_parameter_page_info} ne ""} {
-        set cmd [list ::xowiki::require_parameter_page \
-                     -name [dict get ${:site_wide_package_parameter_page_info} name] \
-                     -title [dict get ${:site_wide_package_parameter_page_info} title] \
-                     -instance_attributes [dict get ${:site_wide_package_parameter_page_info} instance_attributes]]
-      } else {
-        set cmd ""
-      }
-      set site_wide_instance_id [acs_admin::require_site_wide_package \
-                                     -package_key ${:package_key} \
-                                     -parameters ${:site_wide_package_parameters} \
-                                     -configuration_command $cmd ]
-      ::xowiki::Package require $site_wide_instance_id
-      dict set :site_wide_info folder_id [::$site_wide_instance_id folder_id]
-      dict set :site_wide_info instance_id $site_wide_instance_id
-    }
-    return ${:site_wide_info}
-  }
-
-  PackageMgr instproc require_site_wide_info {} {
-    if {![info exists :site_wide_info]} {
       set cmd [list [self] configure_fresh_instance \
                    -parameter_page_info ${:site_wide_package_parameter_page_info} \
                    -parameters ${:site_wide_package_parameters} \
@@ -192,6 +171,14 @@ namespace eval ::xo {
                                      -package_key ${:package_key} \
                                      -configuration_command $cmd]
       ::xowiki::Package require $site_wide_instance_id
+      #
+      # During bootstrap, no xo::cc is available, but it seems to be
+      # needed for instantiating prototype pages. So provide a best
+      # effort initialization in such cases.
+      #
+      if {![nsf::is object ::xo::cc]} {
+        ::xowiki::Package initialize -package_id $site_wide_instance_id -init_url false
+      }
       dict set :site_wide_info folder_id [::$site_wide_instance_id folder_id]
       dict set :site_wide_info instance_id $site_wide_instance_id
     }
@@ -242,6 +229,7 @@ namespace eval ::xo {
       set item_id [::xo::db::CrClass lookup -name en:$n -parent_id [dict get $info folder_id]]
       #:log "lookup en:$n => $item_id"
       if {!$item_id || $refetch} {
+        :log "require_site_wide_pages tries to load en:$n"
         set page [:import_prototype_page \
                       -name $n \
                       -package_key ${:package_key} \
