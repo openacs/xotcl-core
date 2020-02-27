@@ -170,16 +170,25 @@ namespace eval ::xo {
       set site_wide_instance_id [acs_admin::require_site_wide_package \
                                      -package_key ${:package_key} \
                                      -configuration_command $cmd]
-      ::xowiki::Package require $site_wide_instance_id
-      #
-      # During bootstrap, no xo::cc is available, but it seems to be
-      # needed for instantiating prototype pages. So provide a best
-      # effort initialization in such cases.
-      #
-      if {![nsf::is object ::xo::cc]} {
-        ::xowiki::Package initialize -package_id $site_wide_instance_id -init_url false
+      #ns_log notice "======require_site_wide_info site_wide_instance_id -> <$site_wide_instance_id>"
+      if {$site_wide_instance_id eq ""} {
+        if {[info exists :__currently_intiating]} {
+          set site_wide_instance_id ${:__currently_intiating}
+          dict set :site_wide_info folder_id [::$site_wide_instance_id folder_id]
+        }
+
+      } else {
+        :require $site_wide_instance_id
+        #
+        # During install, no xo::cc is available, but it seems to be
+        # needed for instantiating prototype pages. So provide a best
+        # effort initialization in such cases.
+        #
+        if {![nsf::is object ::xo::cc]} {
+          :initialize -package_id $site_wide_instance_id -init_url false
+        }
+        dict set :site_wide_info folder_id [::$site_wide_instance_id folder_id]
       }
-      dict set :site_wide_info folder_id [::$site_wide_instance_id folder_id]
       dict set :site_wide_info instance_id $site_wide_instance_id
     }
     return ${:site_wide_info}
@@ -190,6 +199,12 @@ namespace eval ::xo {
     {-parameter_page_info ""}
     {-parameters ""}
   } {
+    set :__currently_intiating $package_id
+    #
+    # The parameter pages are an xowiki thing, so - for the time
+    # being, we keep it here. since there is no higher-level
+    # counterpart for it.
+    #
     if {[llength $parameter_page_info] > 0} {
       ::xowiki::require_parameter_page \
           -package_id $package_id \
@@ -211,6 +226,7 @@ namespace eval ::xo {
             -value $value
       }
     }
+    unset -nocomplain :__currently_intiating
   }
 
   PackageMgr instproc require_site_wide_pages {
