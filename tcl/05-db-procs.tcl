@@ -42,7 +42,7 @@ namespace eval ::xo::db {
   ::xo::db::SQL instproc map_datatype {type} {
     # If a mapping is not found we keep the type unaltered, but this
     # will currently break acs_attributes_datatype_fk when creating
-    # acs_attributes with a unmapped type.
+    # acs_attributes with an unmapped type.
     return [::xo::dc get_value map "
      select database_type from acs_datatypes
       where datatype = :type" $type]
@@ -1790,7 +1790,7 @@ namespace eval ::xo::db {
     # new procs
     if {[::xo::db::sql::util info commands get_default] ne ""} {
       require proc unique {-table -col} {
-        # Unique could be there by a index too
+        # Unique could be there by an index too
         set idxname [::xo::dc mk_sql_constraint_name $table $col un_idx]
         if {[::xo::db::sql::util index_exists -name $idxname]} return
         if {![::xo::db::sql::util unique_exists -table $table -column $col]} {
