@@ -79,19 +79,49 @@ namespace eval ::xo {
     return ""
   }
 
+  PackageMgr instproc prototype_page_file_name {
+    -package_key
+    -name:required
+  } {
+    if {![info exists package_key] && [info exists :package_key]} {
+      set package_key ${:package_key}
+    }
+    return [acs_root_dir]/packages/$package_key/www/prototypes/$name.page
+  }
 
-  PackageMgr instproc import_prototype_page {
-    -package_key:required
+
+  PackageMgr ad_instproc import_prototype_page {
+    -package_key
     -name:required
     -parent_id:required
     -package_id:required
     {-lang en}
     {-add_revision:boolean true}
   } {
+
+    Import a named page from the prototypes folder of the package,
+    i.e. under www/prototypes/*.page of the package.
+
+    @param name name of the page to be loaded (not including the language prefix)
+    @param package_key when provided, the package_key used to locate the page. When
+           not provided, use the package_key of the class, on which this function
+           is called.
+    @param package_id package instance to which the page should be loaded
+    @param parent_id place to where the page should be loaded
+    @param When the page to be loaded exists already, add a new
+           revision. When the page exists already, and the flag is not
+           set, no change happens.
+
+  } {
+    if {![info exists package_key] && [info exists :package_key]} {
+      set package_key ${:package_key}
+    }
     set page ""
-    set fn [acs_root_dir]/packages/$package_key/www/prototypes/$name.page
+    set fn [:prototype_page_file_name -name $name -package_key $package_key]
     #:log "--W check $fn"
-    if {[file readable $fn]} {
+    if {![file readable $fn]} {
+      ns_log into "no such prototype page $fn"
+    } else {
       #
       # We have the file of the prototype page. We try to create
       # either a new item or a revision from definition in the file
@@ -142,7 +172,7 @@ namespace eval ::xo {
           #
           # An old page exists already, create a revision.  Update the
           # existing page with all scalar variables from the prototype
-          # page (which is just partial)
+          # page (which does not have always all instance variables set)
           #
           foreach v [$page info vars] {
             if {[$page array exists $v]} continue ;# don't copy arrays
@@ -229,12 +259,25 @@ namespace eval ::xo {
     unset -nocomplain :__currently_intiating
   }
 
-  PackageMgr instproc require_site_wide_pages {
+  PackageMgr ad_instproc require_site_wide_pages {
     {-refetch:boolean false}
+    {-refetch_if_modified:boolean false}
     {-pages ""}
   } {
+
+    Load site-wide pages from the prototype page directory. The pages
+    are loaded into to site-wide instance. When a page to be loaded
+    exists already, a new revision is added. If no pages are provided,
+    use the list of pages as defined for the package.
+
+    @param refetch force fresh loading of prototype pages
+    @param refetch_if_modified refetch when modification date
+           of file is new than the version in the content repository
+    @param pages list of pages (without languages prefix) or empty
+           to refer to per-package definition.
+  } {
     #
-    # If no pages are provided, take the default of the definition of
+    # When no pages are provided, take the default of the definition of
     # the package class.
     #
     if {$pages eq ""} {
@@ -244,11 +287,20 @@ namespace eval ::xo {
     foreach n $pages {
       set item_id [::xo::db::CrClass lookup -name en:$n -parent_id [dict get $info folder_id]]
       #:log "lookup en:$n => $item_id"
-      if {!$item_id || $refetch} {
+      set refetch_this_page $refetch
+      if {!$refetch_this_page && $item_id != 0 && $refetch_if_modified} {
+        set existing_page [::xo::db::CrClass get_instance_from_db -item_id $item_id]
+        set fn [:prototype_page_file_name -name $n -package_key ${:package_key}]
+        set time [clock scan [::xo::db::tcl_date [::$item_id last_modified] tz_var]]
+        if {[file mtime $fn] > $time} {
+          set refetch_this_page true
+        }
+        ns_log notice "page $n: prototype file is [expr {$refetch_this_page ? {NEWER} : {OLDER}}]"
+      }
+      if {$item_id == 0 || $refetch_this_page} {
         :log "require_site_wide_pages tries to load en:$n"
         set page [:import_prototype_page \
                       -name $n \
-                      -package_key ${:package_key} \
                       -parent_id [dict get $info folder_id] \
                       -package_id [dict get $info instance_id] ]
         :log "Page en:$n loaded as '$page'"
