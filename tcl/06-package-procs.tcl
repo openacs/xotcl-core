@@ -120,7 +120,7 @@ namespace eval ::xo {
     set fn [:prototype_page_file_name -name $name -package_key $package_key]
     #:log "--W check $fn"
     if {![file readable $fn]} {
-      ns_log into "no such prototype page $fn"
+      ns_log info "no such prototype page $fn"
     } else {
       #
       # We have the file of the prototype page. We try to create
