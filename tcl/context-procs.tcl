@@ -344,6 +344,30 @@ namespace eval ::xo {
     }
     return ${:user_id}
   }
+  ConnectionContext ad_instproc eval_as_user {-user_id:integer cmd} {
+
+    Run a command as the specified different user. Essentially, this
+    method updates xo::cc and the ad_conn array array with the
+    specified user, runs the command and resets the user to the
+    previous value.
+
+    @param user_id switch temporarily to this user
+    @param cmd command to be exevuted
+
+  } {
+    #ns_log notice "RUN AS USER $user_id $cmd"
+    set result ""
+    set current_user_id [:get_user_id]
+    try  {
+      :set_user_id $user_id
+      :uplevel $cmd
+    } on ok {r} {
+      set result $r
+    } finally {
+      :set_user_id $current_user_id
+    }
+    return $result
+  }
 
   ConnectionContext instproc returnredirect {-allow_complete_url:switch url} {
     #:log "--rp"
@@ -535,7 +559,7 @@ namespace eval ::xo {
 
       try {
         nsf::parseargs $name:$constraint [list $value]
-        
+
       } on error {errorMsg} {
         if {[ns_conn isconnected]} {
           ad_return_complaint 1 [ns_quotehtml $errorMsg]
