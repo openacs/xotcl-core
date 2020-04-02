@@ -356,21 +356,21 @@ namespace eval ::xo {
     } else {
       set parse_level ""
     }
-    set msg "### tid=[::thread::id] <$parse_level> connected=[ns_conn isconnected] "
+    set msg "### template::parse_level <$parse_level> connected=[ns_conn isconnected] "
     if {[ns_conn isconnected]} {
       append msg "flags=[ad_conn flags] status=[ad_conn status] req=[ad_conn request]"
     }
-    ::xotcl::Object log $msg
+    ns_log notice $msg
     set max [info level]
     if {$m<$max} {set max $m}
-    ::xotcl::Object  log "### Call Stack (level: command)"
+    ns_log notice "### Call Stack (level: command)"
     for {set i 0} {$i < $max} {incr i} {
       try {
         set s [uplevel $i self]
       } on error {errorMsg} {
         set s ""
       }
-      ::xotcl::Object  log "### [format %5d -$i]:\t$s [info level [expr {-$i}]]"
+      ns_log notice "### [format %5d -$i]:   $s [info level [expr {-$i}]]"
     }
   }
 
