@@ -1292,8 +1292,9 @@ namespace eval ::xo::db {
         set live_revision_icon /resources/acs-subsite/radiochecked.gif
       }
 
-      set live_revision_link [export_vars -base $base \
-                                  {{m make-live-revision} {revision_id $version_id}}]
+      set live_revision_link [export_vars -base $base {
+        {m make-live-revision} {revision_id $version_id}
+      }]
 
       t1 add \
           -version_number $version_number: \

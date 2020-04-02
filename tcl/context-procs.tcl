@@ -170,8 +170,8 @@ namespace eval ::xo {
     the values from the url (second priority) and the default
     values from the signature
   } {
-    set source [expr {[info exists :__caller_parameters] ?
-                      [self] : [:info parent]}]
+    set source [expr {[info exists :__caller_parameters]
+                      ? [self] : [:info parent]}]
     $source instvar __caller_parameters
 
     if {![info exists :__including_page]} {
