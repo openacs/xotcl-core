@@ -2863,17 +2863,24 @@ namespace eval ::xo::db {
   }
 
   ##############
-  ad_proc tcl_date {timestamp tz_var} {
+  ad_proc tcl_date {timestamp tz_var {secfrac_var ""}} {
     Convert the time stamp (coming from the database) into a format, which
     can be passed to Tcl's "clock scan".
   } {
     upvar $tz_var tz
+    if {$secfrac_var ne ""} {
+      upvar $secfrac_var secfrac
+    }
     set tz 00
-    # Oracle style format like 2008-08-25 (no TZ)
+    set secfrac 0
+    # Oracle style format like 2008-08-25 (no TZ, no sec frac)
     if {![regexp {^([0-9]+-[0-9]+-[0-9]+)$} $timestamp _ timestamp]} {
-      # PostgreSQL type ANSI format
-      if {![regexp {^([^.]+)[.][0-9]*([+-][0-9]*)$} $timestamp _ timestamp tz]} {
-        regexp {^([^.]+)([+-][0-9]*)$} $timestamp _ timestamp tz
+      # PostgreSQL type ANSI format secfrac and TZ
+      if {![regexp {^([^.]+)[.]([0-9]*)([+-][0-9]*)$} $timestamp _ timestamp secfrac tz]} {
+        # no TZ
+        if {![regexp {^([^.]+)[.]([0-9]+)$} $timestamp _ timestamp secfrac]} {
+          regexp {^([^.]+)([+-][0-9]*)$} $timestamp _ timestamp tz
+        }
       }
     }
     return $timestamp
