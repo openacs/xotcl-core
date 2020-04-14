@@ -1,4 +1,3 @@
-
 if {$::tcl_version < 8.5
     || ([regexp {8[.]5[.]([0-9]+)$} $::tcl_patchLevel _ minor] && $minor < 4)
   } {
@@ -482,9 +481,33 @@ namespace eval ::xo {
     set ::xo::cleanup([self]) [list [self] destroy]
   }
 
+  #
+  # Activate/deactivate the following line to track (unexpected)
+  # memory size changes in the system log.
+  #
+  #set ::xo::rss 0
+
   proc at_cleanup {args} {
     ::xo::dc profile off
     ::xo::broadcast receive
+
+    if {[info exists ::xo::rss]} {
+      #
+      # The following code works just for Linux, since it depends on
+      # the /proc file system and the order of values in the resulting
+      # line.
+      #
+      if {[file readable /proc/[pid]/statm]} {
+        set F [open /proc/[pid]/statm]; set c [read $F]; close $F
+        lassign $c size rss shared
+        set size [format %.2f [expr {$rss*4.096/1048576}]]
+        if {$::xo::rss != $size} {
+          ns_log notice "=== RSS size change to: $size GB"
+          set ::xo::rss $size
+        }
+      }
+    }
+
     #ns_log notice "*** start of cleanup <$args> ([array get ::xo::cleanup])"
     set at_end ""
     foreach {name cmd} [array get ::xo::cleanup] {
