@@ -29,10 +29,10 @@ if {[info commands ::thread::mutex] eq ""} {
 }
 #return ;# DON'T COMMIT
 
-# catch {ns_conn contentsentlength} alone does not work, since we do not have
-# a connection yet, and the bgdelivery won't be activated
-catch {ns_conn xxxxx} msg
-if {![string match "*contentsentlength*" $msg]} {
+#
+# Old style bgdelivery requires "ns_conn contentsentlength"
+#
+if {![::acs::icanuse "ns_conn contentsentlength"]} {
   ns_log notice "AOLserver is not patched for bgdelivery, NOT loading bgdelivery"
 
   ad_proc -public ad_returnfile_background {-client_data status_code mime_type filename} {
