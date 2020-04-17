@@ -485,13 +485,13 @@ namespace eval ::xo {
   # Activate/deactivate the following line to track (unexpected)
   # memory size changes in the system log.
   #
-  #set ::xo::rss 0
+  set ::xo::rss 0 ;# set it to one to activate it
 
   proc at_cleanup {args} {
     ::xo::dc profile off
     ::xo::broadcast receive
 
-    if {[info exists ::xo::rss]} {
+    if {$::xo::rss} {
       #
       # The following code works just for Linux, since it depends on
       # the /proc file system and the order of values in the resulting
