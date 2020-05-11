@@ -12,7 +12,7 @@ namespace eval ::xo {
 
   Policy instproc defined_methods {class} {
     set c [self]::$class
-    expr {[:isclass $c] ? [$c array names require_permission] : [list]}
+    expr {[:isclass $c] ? [$c array names require_permission] : {}}
   }
 
   Policy instproc check_privilege {
