@@ -232,7 +232,7 @@ namespace eval ::xo {
     set :__currently_intiating $package_id
     #
     # The parameter pages are an xowiki thing, so - for the time
-    # being, we keep it here. since there is no higher-level
+    # being, we keep it here. Since there is no higher-level
     # counterpart for it.
     #
     if {[llength $parameter_page_info] > 0} {
