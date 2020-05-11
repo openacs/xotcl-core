@@ -1748,139 +1748,91 @@ namespace eval ::xo::db {
   # The object require provides an interface to create certain
   # resources in case they are not created already.
   #
-
-  # Installations with acs-kernel prior to 5.8.1a6 (or later, before running upgrade script)
-  # won't have these procs. We define them here if missing to avoid breaking running instances during transition.
-  if {![nsf::is object "::xo::db::sql::util"]} {
-    ::xotcl::Class create ::xo::db::sql::util
-    if {[::xo::db::sql::util info commands table_exists] eq ""} {
-      ::xo::db::sql::util ad_proc table_exists {-name:required} {Transitional method} {
-        set query [expr {[db_driverkey ""] eq "oracle" ?
-                         {select 1 from user_tables  where table_name = :name} :
-                         {select 1 from pg_class where relname = :name and pg_table_is_visible(oid)}}]
-        ::xo::dc 0or1row query $query
-      }
-    }
-    if {[::xo::db::sql::util info commands view_exists] eq ""} {
-      ::xo::db::sql::util ad_proc view_exists {-name:required} {Transitional method} {
-        set query [expr {[db_driverkey ""] eq "oracle" ?
-                         {select 1 from user_views   where view_name  = :name} :
-                         {select 1 from pg_views     where viewname   = :name}}]
-        ::xo::dc 0or1row query $query
-      }
-    }
-    if {[::xo::db::sql::util info commands index_exists] eq ""} {
-      ::xo::db::sql::util ad_proc index_exists {-name:required} {Transitional method} {
-        set query [expr {[db_driverkey ""] eq "oracle" ?
-                         {select 1 from user_indexes where index_name = :name} :
-                         {select 1 from pg_indexes   where indexname  = :name}}]
-        ::xo::dc 0or1row query $query
-      }
-    }
-    if {[::xo::db::sql::util info commands table_column_exists] eq ""} {
-      ::xo::db::sql::util ad_proc table_column_exists {-t_name:required -c_name:required} {Transitional method} {
-        set query [expr {[db_driverkey ""] eq "oracle" ?
-                         {select 1 from user_tab_columns where table_name = :t_name and column_name = :c_name} :
-                         {select 1 from information_schema.columns where table_name = :t_name and column_name = :c_name}}]
-        ::xo::dc 0or1row query $query
-      }
-    }
-  } else {
-    # If we have the proper utils, require object can be enhanced with
-    # new procs
-    if {[::xo::db::sql::util info commands get_default] ne ""} {
-      require proc unique {-table -col} {
-        # Unique could be there by an index too
-        set idxname [::xo::dc mk_sql_constraint_name $table $col un_idx]
-        if {[::xo::db::sql::util index_exists -name $idxname]} return
-        if {![::xo::db::sql::util unique_exists -table $table -column $col]} {
-          ::xo::dc dml alter-table-$table \
-              "alter table $table add unique ($col)"
-        }
-      }
-
-      require proc not_null {-table -col} {
-        if {![::xo::db::sql::util not_null_exists -table $table -column $col]} {
-          ::xo::dc dml alter-table-$table \
-              "alter table $table alter column $col set not null"
-        }
-      }
-
-      require proc default {-table -col -value} {
-        set default [::xo::db::sql::util get_default -table $table -column $col]
-        #
-        # Newer versions of PostgreSQL return default values with type
-        # casts (e.g. 'en_US'::character varying). In these cases, we
-        # remove the type cast from the returned default value before
-        # comparison.
-        #
-        # Depending on the generation and real datatype of the DBMS,
-        # certain datatype values are reported differently from the
-        # DBMS. Therefore, we use a type cast to check whether
-        # specified default value (e.g. '1900-01-01') is in fact
-        # equivalent to default stored in db (e.g. '1900-01-01
-        # 00:00:00+01'::timestamp with time zone).
-        #
-        # Booleans can be normalized in advance without involving the
-        # database
-        if {
-            ($default eq "f" && $value eq "false")
-            || ($default eq "t" && $value eq "true")
-          } {
-          set value $default
-        }
-        if {$default ne $value} {
-          if {[regexp {^'(.*)'::(.*)$} $default match default_value default_datatype]} {
-            set clause "$default <> cast(:value as $default_datatype)"
-          } else {
-            set datatype [db_column_type $table $col]
-            set clause "cast(:default as $datatype) <> cast(:value as $datatype)"
-          }
-          # This last coalesce is in case one of the compared values
-          # was null: as we know they were different, this is
-          # certainly a new default
-          if {[::xo::dc get_value check_default "
-             select coalesce($clause, true) from dual"]} {
-            ::xo::dc dml alter-table-$table \
-                "alter table $table alter column $col set default :value"
-          }
-        }
-      }
-
-      require proc references {-table -col -ref} {
-        # Check for already existing foreign keys.
-        set ref [string trim $ref]
-        # try to match the full reftable(refcol) syntax...
-        if {![regexp {^(\w*)\s*\(\s*(\w*)\s*\)\s*(.*)$} $ref match reftable refcol rest]} {
-          # if fails only table was given, assume refcol is reftable's
-          # primary key
-          set reftable [lindex $ref 0]
-          set refcol [::xo::db::sql::util get_primary_keys -table $reftable]
-          # only one primary key is supported for the table
-          if {[llength $refcol] != 1} return
-        }
-        if {[::xo::db::sql::util foreign_key_exists \
-                 -table $table -column $col \
-                 -reftable $reftable -refcolumn $refcol]} {
-          ns_log debug "foreign key already exists for table $table column $col to ${reftable}(${refcol})"
-          return
-        }
+  #
+  # Most of ::xo::db::sql::util is coming from acs-kernel / utilities.create.sql
+  #
+  # But still, we add here more procs
+  if {[::xo::db::sql::util info commands get_default] ne ""} {
+    require proc unique {-table -col} {
+      # Unique could be there by an index too
+      set idxname [::xo::dc mk_sql_constraint_name $table $col un_idx]
+      if {[::xo::db::sql::util index_exists -name $idxname]} return
+      if {![::xo::db::sql::util unique_exists -table $table -column $col]} {
         ::xo::dc dml alter-table-$table \
-            "alter table $table add foreign key ($col) references $ref"
+            "alter table $table add unique ($col)"
       }
-    } else {
-      # some features for this object require kernel to be >=
-      # 5.9.1d20, so some database checking utils are present. Create
-      # only stubs if we have the code but still have to run the
-      # upgrade scripts.
-      require proc unique {-table -col} {}
-      require proc not_null {-table -col} {}
-      require proc default {-table -col -value} {}
-      require proc references {-table -col -ref} {}
+    }
+
+    require proc not_null {-table -col} {
+      if {![::xo::db::sql::util not_null_exists -table $table -column $col]} {
+        ::xo::dc dml alter-table-$table \
+            "alter table $table alter column $col set not null"
+      }
+    }
+
+    require proc default {-table -col -value} {
+      set default [::xo::db::sql::util get_default -table $table -column $col]
+      #
+      # Newer versions of PostgreSQL return default values with type
+      # casts (e.g. 'en_US'::character varying). In these cases, we
+      # remove the type cast from the returned default value before
+      # comparison.
+      #
+      # Depending on the generation and real datatype of the DBMS,
+      # certain datatype values are reported differently from the
+      # DBMS. Therefore, we use a type cast to check whether
+      # specified default value (e.g. '1900-01-01') is in fact
+      # equivalent to default stored in db (e.g. '1900-01-01
+      # 00:00:00+01'::timestamp with time zone).
+      #
+      # Booleans can be normalized in advance without involving the
+      # database
+      if {
+          ($default eq "f" && $value eq "false")
+          || ($default eq "t" && $value eq "true")
+        } {
+        set value $default
+      }
+      if {$default ne $value} {
+        if {[regexp {^'(.*)'::(.*)$} $default match default_value default_datatype]} {
+          set clause "$default <> cast(:value as $default_datatype)"
+        } else {
+          set datatype [db_column_type $table $col]
+          set clause "cast(:default as $datatype) <> cast(:value as $datatype)"
+        }
+        # This last coalesce is in case one of the compared values
+        # was null: as we know they were different, this is
+        # certainly a new default
+        if {[::xo::dc get_value check_default "
+                select coalesce($clause, true) from dual"]} {
+          ::xo::dc dml alter-table-$table \
+              "alter table $table alter column $col set default :value"
+        }
+      }
+    }
+
+    require proc references {-table -col -ref} {
+      # Check for already existing foreign keys.
+      set ref [string trim $ref]
+      # try to match the full reftable(refcol) syntax...
+      if {![regexp {^(\w*)\s*\(\s*(\w*)\s*\)\s*(.*)$} $ref match reftable refcol rest]} {
+        # if fails only table was given, assume refcol is reftable's
+        # primary key
+        set reftable [lindex $ref 0]
+        set refcol [::xo::db::sql::util get_primary_keys -table $reftable]
+        # only one primary key is supported for the table
+        if {[llength $refcol] != 1} return
+      }
+      if {[::xo::db::sql::util foreign_key_exists \
+               -table $table -column $col \
+               -reftable $reftable -refcolumn $refcol]} {
+        ns_log debug "foreign key already exists for table $table column $col to ${reftable}(${refcol})"
+        return
+      }
+      ::xo::dc dml alter-table-$table \
+          "alter table $table add foreign key ($col) references $ref"
     }
   }
-  ###
-
 
   #
   # Methods for instances of the meta class (methods for object_types)
