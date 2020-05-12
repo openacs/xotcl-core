@@ -1223,6 +1223,19 @@ namespace eval ::xo::db {
     :update_item_index
   }
 
+  CrItem ad_instproc is_package_root_folder {} {
+    # In general, every cr_item may be in the role of a
+    # "root-folder" of a package.
+  } {
+    # e.g. the -100 folder has no package_id
+    # if {$package_id eq ""} {return false}
+    if {![info exists :item_id]} {
+      return false
+    }
+    #::xo::Package require ${:package_id}
+    return [expr {${:item_id} eq [::${:package_id} folder_id]} ? true : false]
+  }
+  
   CrItem instproc is_cached_object {} {
     return [info exists :__cached_object]
   }
@@ -1632,10 +1645,6 @@ namespace eval ::xo::db {
                         ]
     [:info class] get_context package_id user_id ip
     ::xo::dc 1row _ "select acs_object__update_last_modified(:folder_id, :user_id, :ip)"
-  }
-
-  ::xo::db::CrFolder instproc is_package_root_folder {} {
-    return [expr {${:folder_id} eq [::${:package_id} folder_id]} ? true : false]
   }
 
   ::xo::db::CrFolder ad_instproc delete {} {
