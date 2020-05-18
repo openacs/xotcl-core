@@ -415,7 +415,7 @@ namespace eval ::xo {
     # Return 2 digit version number (suitable for number compare
     # operations) from PostgreSQL or 0.0 if not available
     #
-    return [acs::per_thread_cache -key xo:pg_version {
+    return [acs::per_thread_cache -key xotcl-core.pg_version {
       set version 0.0
       if {[db_driverkey {}] eq "postgresql"} {
         set version_string [db_string dbqd.null.get_version {select version() from dual}]

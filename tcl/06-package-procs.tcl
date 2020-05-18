@@ -422,7 +422,7 @@ namespace eval ::xo {
   PackageMgr ad_proc get_package_class_from_package_key {package_key} {
     Obtain the package class from a package key
   } {
-    return [acs::per_thread_cache eval -key xo:get_package_class_from_package_key($package_key) {
+    return [acs::per_thread_cache eval -key xotcl-core.get_package_class_from_package_key($package_key) {
       set result ""
       foreach p [::xo::PackageMgr allinstances] {
         if {[$p package_key] eq $package_key} {
