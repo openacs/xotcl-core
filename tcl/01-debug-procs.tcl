@@ -415,16 +415,14 @@ namespace eval ::xo {
     # Return 2 digit version number (suitable for number compare
     # operations) from PostgreSQL or 0.0 if not available
     #
-    set key ::xo::pg_version
-    if {[info exists $key]} {
-      return [set $key]
-    }
-    set version 0.0
-    if {[db_driverkey {}] eq "postgresql"} {
-      set version_string [db_string dbqd.null.get_version {select version() from dual}]
-      regexp {PostgreSQL ([0-9]+[.][0-9+])} $version_string . version
-    }
-    return [set $key $version]
+    return [acs::per_thread_cache -key xo:pg_version {
+      set version 0.0
+      if {[db_driverkey {}] eq "postgresql"} {
+        set version_string [db_string dbqd.null.get_version {select version() from dual}]
+        regexp {PostgreSQL ([0-9]+[.][0-9+])} $version_string . version
+      }
+      set version
+    }]
   }
 }
 
@@ -726,6 +724,9 @@ namespace eval ::xo {
   }
 
   ::xo::system_stats proc gettid {} {
+    #
+    # Get name and tid of the current thread
+    #
     set hex [ns_thread id]
     foreach t [ns_info threads] {
       if {[lindex $t 2] eq $hex} {
@@ -744,6 +745,10 @@ namespace eval ::xo {
       "-driver:*" { set group drivers }
       "-asynclogwriter*" { set group logwriter }
       "-writer*"  { set group writers }
+      "-spooler*" { set group spoolers }
+      "-socks-"   { set group socks }
+      "-nsproxy*" { set group nsproxy }
+      "-ns_job_*" { set group ns_job }      
       default     { set group others  }
     }
     return $group
@@ -752,12 +757,11 @@ namespace eval ::xo {
   ::xo::system_stats proc recordtimes {} {
     set threadInfo [:gettid]
     if {$threadInfo ne ""} {
-      array set i $threadInfo
-      array set i [:thread_info [pid] $i(tid)]
-      if {[info exists i(stime)]} {
-        set group [:thread_classify $i(name)]
-        nsv_incr [self] $group,stime $i(stime)
-        nsv_incr [self] $group,utime $i(utime)
+      set i [:thread_info [pid] [dict get $threadInfo tid]]
+      if {[dict exists $i stime]} {
+        set group [:thread_classify [dict get $i name]]
+        nsv_incr [self] $group,stime [dict get $i stime]
+        nsv_incr [self] $group,utime [dict get $i utime]
       }
     }
   }
@@ -771,20 +775,19 @@ namespace eval ::xo {
   ::xo::system_stats proc aggcpuinfo {utime stime ttime} {
     upvar $utime utimes $stime stimes $ttime ttimes
     set pid [pid]
-    array set varnames {utime utimes stime stimes}
+    set varnames {utime utimes stime stimes}
     foreach index [nsv_array names [self]] {
       lassign [split $index ,] group kind
-      :aggregate $group $varnames($kind) [nsv_get [self] $index]
+      :aggregate $group [dict get $varnames $kind] [nsv_get [self] $index]
     }
     set threadInfo [ns_info threads]
     if {[file readable /proc/$pid/statm] && [llength [lindex $threadInfo 0]] > 7} {
       foreach t $threadInfo {
-        array unset s
-        array set s [:thread_info $pid [lindex $t 7]]
-        if {[info exists s(stime)]} {
+        set s [:thread_info $pid [lindex $t 7]]
+        if {[dict exists $s stime]} {
           set group [:thread_classify [lindex $t 0]]
-          :aggregate $group $varnames(utime) $s(utime)
-          :aggregate $group $varnames(stime) $s(stime)
+          :aggregate $group [dict get $varnames utime] [dict get $s utime]
+          :aggregate $group [dict get $varnames stime] [dict get $s stime]
         }
       }
     }

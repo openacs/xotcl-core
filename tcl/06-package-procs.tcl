@@ -422,22 +422,16 @@ namespace eval ::xo {
   PackageMgr ad_proc get_package_class_from_package_key {package_key} {
     Obtain the package class from a package key
   } {
-    set key ::xo::package_class($package_key)
-    if {[info exists $key]} {return [set $key]}
-
-    foreach p [::xo::PackageMgr allinstances] {
-      # Sanity check for old apps, having not set the package key.
-      # TODO: remove this in future versions, when package_keys are enforced
-      #if {![$p exists package_key]} {
-      #  ns_log notice "!!! You should provide a package_key for $p [$p info class] !!!"
-      #  continue
-      #}
-      if {[$p package_key] eq $package_key} {
-        return [set $key $p]
+    return [acs::per_thread_cache eval -key xo:get_package_class_from_package_key($package_key) {
+      set result ""
+      foreach p [::xo::PackageMgr allinstances] {
+        if {[$p package_key] eq $package_key} {
+          set result $p
+          break
+        }
       }
-    }
-
-    return ""
+      set result
+    }]
   }
 
   PackageMgr ad_instproc require {{-url ""} package_id} {
