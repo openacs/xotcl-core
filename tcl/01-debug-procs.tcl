@@ -758,6 +758,7 @@ namespace eval ::xo {
     set threadInfo [:gettid]
     if {$threadInfo ne ""} {
       set i [:thread_info [pid] [dict get $threadInfo tid]]
+      lappend i {*}$threadInfo
       if {[dict exists $i stime]} {
         set group [:thread_classify [dict get $i name]]
         nsv_incr [self] $group,stime [dict get $i stime]
