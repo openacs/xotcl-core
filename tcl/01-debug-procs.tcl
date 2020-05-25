@@ -748,7 +748,7 @@ namespace eval ::xo {
       "-spooler*" { set group spoolers }
       "-socks-"   { set group socks }
       "-nsproxy*" { set group nsproxy }
-      "-ns_job_*" { set group ns_job }      
+      "-ns_job_*" { set group ns_job }
       default     { set group others  }
     }
     return $group
