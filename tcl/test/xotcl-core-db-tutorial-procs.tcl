@@ -163,9 +163,12 @@ aa_register_case -cats {api smoke db} xotcl_core_tutorial_3 {
     set cl [::xo::db::Class get_class_from_db -object_type person]
     aa_equals "fetched class is named ::xo::db::person" "::xo::db::person" $cl
 
-    aa_equals "the SQL attributes are slot names" \
-        [lsort [$cl array names db_slot]] \
-        {first_names last_name person_id}
+    set attributes [lsort [$cl array names db_slot]]
+    aa_equals "the SQL attributes $attributes are in slot names" \
+        {1 1 1} \
+        [lmap a {first_names last_name person_id} {
+          expr {$a in $attributes}
+        }]
   }
 }
 
