@@ -835,7 +835,10 @@ namespace eval ::xo::db {
     }
 
     CrItem instproc update_attribute_from_slot {-revision_id slot value} {
-      if {![info exists revision_id]} {set revision_id ${:revision_id}}
+      set :[$slot name] $value
+      if {![info exists revision_id]} {
+        set revision_id ${:revision_id}
+      }
       set domain [$slot domain]
       set sql "update [$domain table_name] \
                 set [$slot column_name] = :value \
@@ -905,6 +908,7 @@ namespace eval ::xo::db {
     }
 
     CrItem instproc update_attribute_from_slot {-revision_id slot value} {
+      set :[$slot name] $value
       if {![info exists revision_id]} {set revision_id ${:revision_id}}
       set domain [$slot domain]
       set att [$slot column_name]
@@ -1765,10 +1769,10 @@ namespace eval ::xo::db {
     set scalars {}
     set non_cached_vars {}
     foreach pattern [[:info class] non_cached_instance_var_patterns] {
-      lappend non_cached_vars {*}[info vars :$pattern]
+      lappend non_cached_vars {*}[:info vars $pattern]
     }
 
-    #puts stderr "pattern [[:info class] non_cached_instance_var_patterns], non_cached_vars=$non_cached_vars"
+    #ns_log notice "pattern [[:info class] non_cached_instance_var_patterns], non_cached_vars <$non_cached_vars>"
     foreach x $non_cached_vars {
       if {[array exists :$x]} {
         lappend arrays $x [array get :$x]
@@ -1794,9 +1798,9 @@ namespace eval ::xo::db {
       ::xo::xotcl_object_cache flush [string trimleft $obj :]
     }
     if {$obj eq $canonical_name} {
-      # :log "--CACHE saving $obj in cache"
+      #:log "--CACHE saving $obj in cache"
       #
-      # The object name is eq to the item_id; we assume, this is a
+      # The object name is equal to the item_id; we assume, this is a
       # fully loaded object, containing all relevant instance
       # variables. We can restore it. After the flash
       #
