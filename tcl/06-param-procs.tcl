@@ -310,51 +310,112 @@ namespace eval ::xo {
   #
   # Methods for parameter instances
   #
-  parameter instproc set_per_package_instance_value {package_id value} {
-    set array [:per_package_id_name $package_id]
-    nsv_set $array [:parameter_name] $value
-  }
-  parameter instproc clear_per_package_instance_value {package_id} {
-    set array [:per_package_id_name $package_id]
-    if {[nsv_exists $array [:parameter_name]]} {
-      nsv_unset $array [:parameter_name]
+  if {[::acs::icanuse "nsv_dict"]} {
+    #
+    # Basic model:
+    #
+    #   nsv_dict CFG-X $package_id [list $parameter $value ...]
+    #
+    # The value X is just used for partitioning to avoid all
+    # configuration values on a single mutex. This can be used for
+    # fine-tuning mutex locks on such nsvs in the future.
+    #
+    parameter instproc per_package_id_name {package_id} {
+      return CFG-[expr {$package_id % 2}]
     }
+    parameter instproc set_per_package_instance_value {package_id value} {
+      set array [:per_package_id_name $package_id]
+      ns_log notice "[list nsv_dict set $array $package_id ${:parameter_name} $value]"
+      nsv_dict set $array $package_id ${:parameter_name} $value
+    }
+    parameter instproc clear_per_package_instance_value {package_id} {
+      set array [:per_package_id_name $package_id]
+      nsv_dict unset $array $package_id ${:parameter_name} $value
+    }
+    parameter instproc get {-package_id:required} {
+      set array [:per_package_id_name $package_id]
+      #
+      # Try to get the variable from the nsv. On success,
+      #
+      if {[nsv_dict get -varname result $array $package_id ${:parameter_name}]} {
+        #:log "--parameter get <${:parameter_name}> for $package_id -> '$result'"
+        set :__success 1
+        return $result
+      }
+      # We could as well store per-package-key values,
+      # but most probably, this is not needed if we use
+      # the parameter default (which is per package-key).
+      # With additional  per-package-key values, we could implement
+      # a very simple "reset to default" for package-key values.
+      #
+      #     foreach cls $package_class_hierarchy {
+      #       set nsv_array_name [:per_package_class_name $cls]
+      #       if {[nsv_exists $nsv_array_name $key]} {
+      #         #:log "--parameter get <$key> from $nsv_array_name --> '[nsv_get $nsv_array_name $key]'"
+      #         return [nsv_get $nsv_array_name $key]
+      #       }
+      #     }
+      #
+      #:log "--parameter get <$key> from default of [:package_key] --> '[:default_value]'"
+      set :__success 0
+      return ${:default_value}
+    }
+
+  } else {
+    #
+    # Basic model:
+    #
+    #   ns_set CFG-$package_id $parameter $value
+    #
+    parameter instproc per_package_id_name {package_id} {
+      return "CFG-$package_id"
+    }
+    parameter instproc set_per_package_instance_value {package_id value} {
+      set array [:per_package_id_name $package_id]
+      nsv_set $array [:parameter_name] $value
+    }
+    parameter instproc clear_per_package_instance_value {package_id} {
+      set array [:per_package_id_name $package_id]
+      if {[nsv_exists $array [:parameter_name]]} {
+        nsv_unset $array [:parameter_name]
+      }
+    }
+    #   parameter instproc per_package_class_name {package_class} {
+    #     return "CFG-$package_class"
+    #   }
+    parameter instproc get {-package_id:required} {
+      set key [:parameter_name]
+      set nsv_array_name [:per_package_id_name $package_id]
+      if {[nsv_exists $nsv_array_name $key]} {
+        #:log "--parameter get <$key> from $nsv_array_name --> '[nsv_get $nsv_array_name $key]'"
+        set :__success 1
+        return [nsv_get $nsv_array_name $key]
+      }
+      # We could as well store per-package-key values,
+      # but most probably, this is not needed if we use
+      # the parameter default (which is per package-key).
+      # With additional  per-package-key values, we could implement
+      # a very simple "reset to default" for package-key values.
+      #
+      #     foreach cls $package_class_hierarchy {
+      #       set nsv_array_name [:per_package_class_name $cls]
+      #       if {[nsv_exists $nsv_array_name $key]} {
+      #         #:log "--parameter get <$key> from $nsv_array_name --> '[nsv_get $nsv_array_name $key]'"
+      #         return [nsv_get $nsv_array_name $key]
+      #       }
+      #     }
+      #
+      #:log "--parameter get <$key> from default of [:package_key] --> '[:default_value]'"
+      set :__success 0
+      return [:default_value]
+    }
+
   }
+
   parameter instproc initialize_loaded_object {} {
     [self class] set Parameter_id(${:package_key},${:parameter_name}) [self]
   }
-  parameter instproc per_package_id_name {package_id} {
-    return "CFG-$package_id"
-  }
-  #   parameter instproc per_package_class_name {package_class} {
-  #     return "CFG-$package_class"
-  #   }
-  parameter instproc get {-package_id:required} {
-    set key [:parameter_name]
-    set nsv_array_name [:per_package_id_name $package_id]
-    if {[nsv_exists $nsv_array_name $key]} {
-      #:log "--parameter get <$key> from $nsv_array_name --> '[nsv_get $nsv_array_name $key]'"
-      set :__success 1
-      return [nsv_get $nsv_array_name $key]
-    }
-    # We could as well store per-package-key values,
-    # but most probably, this is not needed if we use
-    # the parameter default (which is per package-key).
-    # With additional  per-package-key values, we could implement
-    # a very simple "reset to default" for package-key values.
-    #
-    #     foreach cls $package_class_hierarchy {
-    #       set nsv_array_name [:per_package_class_name $cls]
-    #       if {[nsv_exists $nsv_array_name $key]} {
-    #         #:log "--parameter get <$key> from $nsv_array_name --> '[nsv_get $nsv_array_name $key]'"
-    #         return [nsv_get $nsv_array_name $key]
-    #       }
-    #     }
-    #
-    #:log "--parameter get <$key> from default of [:package_key] --> '[:default_value]'"
-    set :__success 0
-    return [:default_value]
-  }
+
 
   # get apm_parameter objects
   ::xo::db::apm_parameter instantiate_objects \
