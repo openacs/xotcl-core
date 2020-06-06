@@ -427,14 +427,19 @@ namespace eval ::xo {
   #foreach p [::xo::db::apm_parameter info instances] { ns_log notice [$p serialize] }
 
   parameter proc initialize_parameters {} {
-    # Get those parameter values, which are different from the default and
-    # remember these per package_id.
+    #
+    # Get those parameter values, which are different from the default
+    # and remember these per package_id. For site-wide parameters -
+    # which we do not handle here - the package_id is NULL, so we skip
+    # it.
+    #
     xo::dc foreach get_non_default_values {
       select p.parameter_id, p.package_key, v.package_id, p.parameter_name,
       p.default_value, v.attr_value
       from apm_parameters p, apm_parameter_values v
       where p.parameter_id = v.parameter_id
       and coalesce(attr_value,'') <> coalesce(p.default_value,'')
+      and package_id is not null
     } {
       #      ns_log notice "--p $parameter_id $package_key $package_id $parameter_name <$attr_value>"
       $parameter_id set_per_package_instance_value $package_id $attr_value
