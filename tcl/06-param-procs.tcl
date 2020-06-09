@@ -330,7 +330,7 @@ namespace eval ::xo {
     }
     parameter instproc clear_per_package_instance_value {package_id} {
       set array [:per_package_id_name $package_id]
-      nsv_dict unset $array $package_id ${:parameter_name} $value
+      nsv_dict unset $array $package_id ${:parameter_name}
     }
     parameter instproc get {-package_id:required} {
       set array [:per_package_id_name $package_id]
