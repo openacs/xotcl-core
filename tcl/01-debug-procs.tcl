@@ -1047,7 +1047,14 @@ proc ::xo::getObjectProperty {o what args} {
 
   $slot copy $newSlot
   $newSlot configure -domain [self] -manager $newSlot -create_acs_attribute false -create_table_attribute false {*}$config
-  $newSlot domain [$slot domain]
+  #
+  # When the following line is not commented, then
+  # "update_attribute_from_slot" works for "title", "description"
+  # etc. But then the accessor methods (for "title", "description")
+  # are NOT registered for the classes. This needs some work.
+  #
+  #$newSlot domain [$slot domain]
+  #
   set :db_slot($name) $newSlot
 }
 
