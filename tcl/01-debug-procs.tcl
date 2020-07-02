@@ -492,7 +492,7 @@ namespace eval ::xo {
     if {$::xo::rss} {
       #
       # The following code works just for Linux, since it depends on
-      # the /proc file system and the order of values in the resulting
+      # the /proc filesystem and the order of values in the resulting
       # line.
       #
       if {[file readable /proc/[pid]/statm]} {

@@ -304,7 +304,7 @@ if {![::acs::icanuse "ns_conn contentsentlength"]} {
   Subscriber instproc close {} {
     set channel [:channel]
     #
-    # It is important to make the channel non-blocking for the close,
+    # It is important to make the channel nonblocking for the close,
     # since otherwise the close operation might block and bring all of
     # bgdelivery to a halt.
     #
@@ -572,7 +572,7 @@ bgdelivery ad_proc returnfile {
         # we have to obtain the size from the file; unfortunately, this
         # requires a duplicate open+close of the h264 stream. If the
         # application is performance sensitive, one might consider to use
-        # the possibly incorrect size form the file system instead (works
+        # the possibly incorrect size form the filesystem instead (works
         # perfectly for e.g. flowplayer)
         if {[catch {set handle [h264open $filename $query]} errorMsg]} {
           ns_log error "h264: error opening h264 channel for $filename $query: $errorMsg"
@@ -605,7 +605,7 @@ bgdelivery ad_proc returnfile {
         if {$from eq ""} {
           # The last $to bytes, $to must be specified; 'to' is
           # differently interpreted as in the case, where from is
-          # non-empty
+          # nonempty
           set from [expr {$size - $to}]
         } else {
           if {$to eq ""} {set to [expr {$size-1}]}

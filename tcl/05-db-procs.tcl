@@ -22,7 +22,7 @@ namespace eval ::xo::db {
   # database connection is configured in an object ::xo::dc (for
   # database context) quite similar to ::xo::cc (the default
   # connection context). In general ::xo::dc can be reconfigured at
-  # runtime, and multiple database context can be established,
+  # run time, and multiple database context can be established,
   # although there is no high-level support to connect to multiple
   # different OpenACS databases at the same time.
   #
@@ -1201,8 +1201,8 @@ namespace eval ::xo::db {
 
     @return class name of the created XOTcl class
   } {
-    # some table_names and id_columns in acs_object_types are unfortunately upper case,
-    # so we have to convert to lower case here....
+    # some table_names and id_columns in acs_object_types are unfortunately uppercase,
+    # so we have to convert to lowercase here....
     ::xo::dc 1row fetch_class {
       select object_type, supertype, pretty_name, lower(id_column) as id_column, lower(table_name) as table_name
       from acs_object_types where object_type = :object_type
@@ -2816,7 +2816,7 @@ namespace eval ::xo::db {
 
   ##############
   ad_proc tcl_date {timestamp tz_var {secfrac_var ""}} {
-    Convert the time stamp (coming from the database) into a format, which
+    Convert the timestamp (coming from the database) into a format, which
     can be passed to Tcl's "clock scan".
   } {
     upvar $tz_var tz

@@ -26,7 +26,7 @@ namespace eval ::xo {
   # Defined classes
   #  1) HttpCore (common base class)
   #  2) HttpRequest (for blocking requests + timeout support)
-  #  3) AsyncHttpRequest (for non-blocking requests + timeout support)
+  #  3) AsyncHttpRequest (for nonblocking requests + timeout support)
   #  4) HttpRequestTrace (mixin class)
   #  5) Tls (mixin class, applicable to various protocols)
   #
@@ -197,7 +197,7 @@ namespace eval ::xo {
     set trl [expr {[string match "text/*" $content_type] ? $text_translation : "binary"}]
     
     #
-    # 3. In the following, I realise a IANA/MIME charset resolution
+    # 3. In the following, I realize a IANA/MIME charset resolution
     # scheme which is compliant with RFC 3023 which deals with
     # treating XML media types properly.
     #
@@ -540,7 +540,7 @@ namespace eval ::xo {
   }
   
   #
-  # Asynchronous (non-blocking) requests
+  # Asynchronous (nonblocking) requests
   #
 
   Class create AsyncHttpRequest -superclass HttpCore -slots {

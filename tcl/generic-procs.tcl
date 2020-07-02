@@ -108,7 +108,7 @@ namespace eval ::Generic {
         ${:data} rename -old_name $old_name -new_name $new_name
         #
         # Check, whether we have to change the redirect url due to
-        # renaming. When the method returns non-empty use this value.
+        # renaming. When the method returns nonempty use this value.
         #
         set url [${:data} changed_redirect_url]
         if {$url ne ""} {
