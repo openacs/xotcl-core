@@ -176,7 +176,7 @@ namespace eval ::xo {
     # as lists.
     #
     #
-    # All date/time stamps are provided either by
+    # All date/timestamps are provided either by
     # the ANSI date (from postgres) or by a date
     # which can be processed via clock scan
     #
