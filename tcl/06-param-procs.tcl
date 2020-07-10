@@ -325,7 +325,7 @@ namespace eval ::xo {
     }
     parameter instproc set_per_package_instance_value {package_id value} {
       set array [:per_package_id_name $package_id]
-      ns_log notice "[list nsv_dict set $array $package_id ${:parameter_name} $value]"
+      #ns_log notice "[list nsv_dict set $array $package_id ${:parameter_name} $value]"
       nsv_dict set $array $package_id ${:parameter_name} $value
     }
     parameter instproc clear_per_package_instance_value {package_id} {
@@ -443,7 +443,7 @@ namespace eval ::xo {
       and coalesce(attr_value,'') <> coalesce(p.default_value,'')
       and package_id is not null
     } {
-      #      ns_log notice "--p $parameter_id $package_key $package_id $parameter_name <$attr_value>"
+      # ns_log notice "--p $parameter_id $package_key $package_id $parameter_name <$attr_value>"
       $parameter_id set_per_package_instance_value $package_id $attr_value
     }
   }
