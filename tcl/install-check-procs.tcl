@@ -38,7 +38,7 @@ namespace eval ::xotcl-core {
         tcl/10-recreation-procs.tcl-old
         tcl/thread_mod-procs.tcl 
       } {
-        if {[file exists $dir/$file]} {
+        if {[ad_file exists $dir/$file]} {
           ns_log notice "Deleting obsolete file $dir/$file"
           file delete -- $dir/$file
         }

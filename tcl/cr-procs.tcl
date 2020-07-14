@@ -814,7 +814,7 @@ namespace eval ::xo::db {
       # }
       if {$storage_type eq "file"} {
         ::xo::dc dml fix_content_length "update cr_revisions \
-                set content_length = [file size ${:import_file}] \
+                set content_length = [ad_file size ${:import_file}] \
                 where revision_id = :revision_id"
       }
     }
@@ -878,7 +878,7 @@ namespace eval ::xo::db {
       [:info class] instvar storage_type
       if {$storage_type eq "file"} {
         ::xo::dc dml fix_content_length "update cr_revisions \
-                set content_length = [file size ${:import_file}] \
+                set content_length = [ad_file size ${:import_file}] \
                 where revision_id = :revision_id"
       } elseif {$storage_type eq "text"} {
         ::xo::dc dml fix_content "update cr_revisions \

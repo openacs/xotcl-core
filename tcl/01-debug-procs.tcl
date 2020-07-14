@@ -681,7 +681,7 @@ namespace eval ::xo {
     ::xo::system_stats proc thread_info {pid tid} {
       set s ""
       set fn /proc/$pid/task/$tid/stat
-      if {[file readable $fn]} {
+      if {[ad_file readable $fn]} {
         try {
           set f [open $fn]
           set s [read $f]

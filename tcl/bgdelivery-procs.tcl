@@ -581,10 +581,10 @@ bgdelivery ad_proc returnfile {
         set size [h264length $handle]
         h264close $handle
       } else {
-        set size [file size $filename]
+        set size [ad_file size $filename]
       }
     } else {
-      set size [file size $filename]
+      set size [ad_file size $filename]
     }
 
     # Make sure to set "connection close" for the requests (in other

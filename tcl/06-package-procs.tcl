@@ -119,7 +119,7 @@ namespace eval ::xo {
     set page ""
     set fn [:prototype_page_file_name -name $name -package_key $package_key]
     #:log "--W check $fn"
-    if {![file readable $fn]} {
+    if {![ad_file readable $fn]} {
       ns_log notice "no such prototype page $fn"
     } else {
       #
@@ -292,7 +292,7 @@ namespace eval ::xo {
         set existing_page [::xo::db::CrClass get_instance_from_db -item_id $item_id]
         set fn [:prototype_page_file_name -name $n -package_key ${:package_key}]
         set time [clock scan [::xo::db::tcl_date [::$item_id last_modified] tz_var]]
-        if {[file mtime $fn] > $time} {
+        if {[ad_file mtime $fn] > $time} {
           set refetch_this_page true
         }
         ns_log notice "page $n: prototype file is [expr {$refetch_this_page ? {NEWER} : {OLDER}}]"

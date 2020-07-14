@@ -1023,7 +1023,7 @@ namespace eval ::xo::db {
         }
       }
 
-      if {[file readable $sql_file]} {
+      if {[ad_file readable $sql_file]} {
         :log "Sourcing '$sql_file'"
         db_source_sql_file $sql_file
         ::xo::db::Class create_all_functions
