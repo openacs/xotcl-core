@@ -2272,6 +2272,7 @@ namespace eval ::xo::db {
     {-named_objects:boolean false}
     {-object_named_after ""}
     {-destroy_on_cleanup:boolean true}
+    {-keep_existing_objects:boolean false}
     {-ignore_missing_package_ids:boolean false}
     {-initialize true}
   } {
@@ -2324,10 +2325,13 @@ namespace eval ::xo::db {
         set object_name ::[ns_set get $selection $object_named_after]
         if {[nsf::is object $object_name]} {
           set o $object_name
+          set new 0
         } else {
           set o [$object_class create $object_name]
+          set new 1
         }
       } else {
+        set new 0
         set o [$object_class new]
       }
       if {$as_ordered_composite} {
@@ -2338,7 +2342,11 @@ namespace eval ::xo::db {
         }
         lappend __result $o
       }
-      #foreach {att val} [ns_set array $selection] {$o set $att $val}
+
+      if {!$new && $keep_existing_objects} {
+        #ns_log notice "+++ instantiate_objects keep existing object $o"
+        continue
+      }
       $o mset [ns_set array $selection]
 
       if {[$o exists object_type]} {
