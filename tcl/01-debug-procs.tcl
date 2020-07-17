@@ -808,21 +808,33 @@ namespace eval ::xo {
   # after a request was processed (defined in this file).
   #
   ::xotcl::Object create ::xo::broadcast
+
   ::xo::broadcast proc send {-thread_pattern cmd} {
+
+    set tids {}
     foreach thread_info [ns_info threads] {
       set tn [lindex $thread_info 0]
+      set tid [lindex $thread_info 2]
+      dict set tids $tid 1
       if { [info exists thread_name] && ![string match $thread_pattern $tn] } {
         continue
       }
       switch -glob -- $tn {
         -conn:* -
         -sched:* {
-          set tid [lindex $thread_info 2]
           nsv_lappend broadcast $tid $cmd
         }
       }
     }
+
+    foreach tid [nsv_array names broadcast] {
+      if {![dict exists $tids $tid]} {
+        nsv_unset broadcast $tid
+        ns_log notice "xo::broadcast cleanup of TID $tid (thread does not exist anymore)"
+      }
+    }
   }
+
   ::xo::broadcast proc blueprint {cmd} {
     foreach t [::xotcl::THREAD info instances] {
       $t do eval $cmd
