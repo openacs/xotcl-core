@@ -938,7 +938,7 @@ namespace eval ::xo::db {
 
   CrItem instproc current_user_id {} {
     if {[nsf::is object ::xo::cc]} {return [::xo::cc user_id]}
-    if {[ad_conn isconnected]}  {return [ad_conn user_id]}
+    if {[ns_conn isconnected]}  {return [ad_conn user_id]}
     return ""
   }
 

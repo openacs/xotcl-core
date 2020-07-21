@@ -450,7 +450,11 @@ namespace eval ::xo {
       ns_log Error "ns_ictl trace returned: $errorMsg"
     }
   }
-
+  ns_ictl trace idle {
+    ns_log notice =====IDLE=====START    
+    ::xo::broadcast receive
+    ns_log notice =====IDLE=====END
+  }
   #
   # Register::xo::at_delete function only once
   #
