@@ -133,10 +133,10 @@ namespace eval ::xo::db {
     @return list of item_ids
   } {
     #
-    # The following construct is fully PostgreSQL and Oracle
-    # compliant.  However, all newer Oracle installations should as
-    # well support the recursive query below as well, which requires
-    # less DB interactions.
+    # The following construct (commented out) is fully PostgreSQL and
+    # Oracle compliant.  However, all newer Oracle installations
+    # should as well support the recursive query below as well, which
+    # requires less DB interactions.
     #
     # set items [list]
     # foreach item_id [::xo::dc list -prepare integer get_child_items \
@@ -1239,7 +1239,7 @@ namespace eval ::xo::db {
     #::xo::Package require ${:package_id}
     return [expr {${:item_id} eq [::${:package_id} folder_id]} ? true : false]
   }
-  
+
   CrItem instproc is_cached_object {} {
     return [info exists :__cached_object]
   }
