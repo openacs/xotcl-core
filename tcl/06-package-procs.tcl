@@ -332,9 +332,36 @@ namespace eval ::xo {
     return ""
   }
 
-
-
-
+  PackageMgr instproc fix_site_wide_package_ids {} {
+    #
+    # In case, site-wide pages were moved to the global instance, fix
+    # the package ids.
+    #
+    set site_info [:require_site_wide_info]
+    set package_id [dict get $site_info instance_id]
+    set item_ids [xo::db::CrClass get_child_item_ids \
+                      -item_id [dict get $site_info folder_id]]
+    if {[llength $item_ids] > 0} {
+      xo::dc transaction {
+        #
+        # Fix items
+        #
+        xo::dc dml fix_package_ids1 [subst {
+          update acs_objects set package_id = :package_id
+          where object_id in ([ns_dbquotelist $item_ids])
+        }]
+        #
+        # Fix revisions
+        #       
+        xo::dc dml fix_package_ids2 [subst {
+          update acs_objects set package_id = :package_id
+          where object_id in (select revision_id from cr_revisions
+                              where item_id in ([ns_dbquotelist $item_ids]))
+        }]
+      }
+    }
+  }
+  
   PackageMgr ad_instproc initialize {
     -ad_doc
     {-parameter ""}
