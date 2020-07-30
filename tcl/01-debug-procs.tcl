@@ -451,7 +451,7 @@ namespace eval ::xo {
     }
   }
 
-  if {![::acs::icanuse "ns_ictl trace idle"]} {
+  if {[::acs::icanuse "ns_ictl trace idle"]} {
     #
     # In case the server has way to many connection threads defined,
     # broadcast messages might pile up. In these situations, the idle
