@@ -845,9 +845,24 @@ namespace eval ::xo::db {
       set table_name  [string tolower $table_name]
       set column_name [string tolower $column_name]
     }
-    ::xo::db::sql::util table_column_exists \
-        -p_table $table_name \
-        -p_column $column_name
+    #
+    # The following "try" operation is a transitional code: When
+    # someone upgrades from OpenACS 5.9.1 to OpenACS 5.10, and the
+    # upgrade script of 5.10 were not yet executed, the SQL function
+    # definition is still the one of 5.9.1 have no -p_table and
+    # p_column attributes defined (still the old names). A end user is
+    # lost in this situation. Therefore, we provide as a fallback the
+    # interface to the 5.9.1 parameter names.
+    #
+    try {
+      ::xo::db::sql::util table_column_exists \
+          -p_table $table_name \
+          -p_column $column_name
+    } on error {errorMsg} {
+      ::xo::db::sql::util table_column_exists \
+          -t_name $table_name \
+          -c_name $column_name
+    }
   }
 
   require proc table {name definition {populate ""}} {
