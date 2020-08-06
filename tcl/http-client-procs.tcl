@@ -197,8 +197,8 @@ namespace eval ::xo {
     set trl [expr {[string match "text/*" $content_type] ? $text_translation : "binary"}]
     
     #
-    # 3. In the following, I realize a IANA/MIME charset resolution
-    # scheme which is compliant with RFC 3023 which deals with
+    # 3. In the following, an IANA/MIME charset resolution scheme is
+    # implemented which is compliant with RFC 3023 which deals with
     # treating XML media types properly.
     #
     # see http://tools.ietf.org/html/rfc3023
