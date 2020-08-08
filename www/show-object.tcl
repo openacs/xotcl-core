@@ -1,5 +1,5 @@
 ad_page_contract {
-  Show an xotcl class or object
+  Show an XOTcl class or object
 
   @author Gustaf Neumann
   @cvs-id $Id$

@@ -203,7 +203,10 @@ ad_library {
 
   :public object method scope {} {
     if {[info exists ::xotcl::currentThread]} {
-      # we are in an xotcl thread; the body won't be accessible directly
+      #
+      # We are in an XOTcl thread; the body won't be accessible
+      # by default without the explicit scope.
+      #
       return $::xotcl::currentThread
     }
     return ""
