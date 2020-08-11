@@ -362,6 +362,115 @@ namespace eval ::xo {
     }
   }
   
+  PackageMgr instproc form_usages {
+    {-forms {}}
+  } {
+
+    if {$forms eq ""} {
+      set forms [:site_wide_pages]
+    }
+    foreach form $forms {
+      set sql [subst {
+        select item_id, i.name,  i.parent_id, o.package_id, site_node__url(sn.node_id),
+        (select count(*) from xowiki_form_instance_item_index where i.item_id = page_template),
+        (select count(*) from xowiki_page_instance where i.item_id=page_template)
+        from cr_items i, acs_objects o, site_nodes sn
+        where i.name like '%$form%'
+        and o.object_id = i.item_id and o.package_id = sn.object_id order by 3
+      }]
+      append msg "==== Form: $form [string repeat = [expr {90-[string length $form]}]]\n"
+      append msg \
+          [format %7s item_id] " " [format %-30s name] " " \
+          [format %6s count1]  " " [format %6s count2] " " \
+          [format %9s parent_id] " " [format %11s package_id] " " \
+          url \n
+
+      foreach tuple [xo::dc list_of_lists form-usages $sql] {
+        lassign $tuple item_id name parent_id package_id url count1 count2
+        append msg \
+            [format %7d $item_id] " " [format %-30s $name] " " \
+            [format %6d $count1]  " " [format %6d $count2] " " \
+            [format %9d $parent_id] " " [format %11d $package_id] " " \
+            $url \n
+      }
+      append msg \n
+    }
+    return $msg
+  }
+
+  PackageMgr instproc form_unify {
+    {-doit:boolean false}
+    {-forms {en:folder.form en:folder.form en:folder.form en:import-archive.form en:photo.form}}
+  } {
+    set site_info [:require_site_wide_info]
+    set parent_id [dict get $site_info folder_id]
+    #
+    # Change the page template the former global forms and other forms
+    # (having parent_id != $parent_id) to the global instance forms.
+    #
+    set source_list [concat {*}[::xo::dc list_of_lists get_forms [subst {
+      select name,item_id from cr_items
+      where parent_id != :parent_id
+      and content_type like '::%'
+      and name in ([ns_dbquotelist $forms])
+    }]]]
+
+    set target_list {*}[::xo::dc list_of_lists get_forms [subst {
+      select name,item_id from cr_items
+      where parent_id = :parent_id
+      and name in ([ns_dbquotelist $forms])
+    }]]
+
+    foreach {form id} $source_list {
+      ns_log notice "WORK ON form <$form> id <$id>"
+      if {[dict exist $target_list $form]} {
+        #
+        # Change page template to site_wide page except for site_wide
+        # instance folder itself (chicken/egg problem).
+        #
+        set where_clause [subst {
+          where page_template = $id
+          and name != 'xowiki: [dict get $site_info instance_id]'
+        }]
+        #
+        # Update xowiki_form_instance_item_index.
+        #
+        set cmd1 [list xo::dc dml change_page_template [subst {
+            update xowiki_form_instance_item_index
+            set page_template = '[dict get $target_list $form]' $where_clause
+        }]]
+        #
+        # Update revisions.
+        #
+        set cmd2 [list xo::dc dml change_page_template [subst {
+          update xowiki_page_instance
+          set page_template = '[dict get $target_list $form]'
+          where page_instance_id in (
+                                     select page_instance_id
+                                     from xowiki_page_instance x, cr_revisions cr, cr_items ci
+                                     $where_clause and cr.revision_id = page_instance_id
+                                     and cr.item_id = ci.item_id
+                                     )
+        }]]
+
+        if {$doit} {
+          {*}$cmd1
+          {*}$cmd2
+        } else {
+          ns_log notice "unify_forms would do: $cmd1"
+          ns_log notice "unify_forms would do: $cmd2"
+          set item_ids [::xo::dc list get_items [subst {
+            select item_id from xowiki_form_instance_item_index
+            $where_clause
+          }]]
+          ns_log notice "affected items $item_ids"
+        }
+      } else {
+        error "no such target form"
+      }
+    }
+  }  
+  
   PackageMgr ad_instproc initialize {
     -ad_doc
     {-parameter ""}
