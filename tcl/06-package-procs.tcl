@@ -352,7 +352,7 @@ namespace eval ::xo {
         }]
         #
         # Fix revisions
-        #       
+        #
         xo::dc dml fix_package_ids2 [subst {
           update acs_objects set package_id = :package_id
           where object_id in (select revision_id from cr_revisions
@@ -361,7 +361,7 @@ namespace eval ::xo {
       }
     }
   }
-  
+
   PackageMgr instproc form_usages {
     {-forms {}}
   } {
@@ -400,8 +400,12 @@ namespace eval ::xo {
 
   PackageMgr instproc form_unify {
     {-doit:boolean false}
-    {-forms {en:folder.form en:folder.form en:folder.form en:import-archive.form en:photo.form}}
+    {-forms {}}
   } {
+    if {$forms eq ""} {
+      set forms [:site_wide_pages]
+    }
+
     set site_info [:require_site_wide_info]
     set parent_id [dict get $site_info folder_id]
     #
@@ -469,8 +473,8 @@ namespace eval ::xo {
         error "no such target form"
       }
     }
-  }  
-  
+  }
+
   PackageMgr ad_instproc initialize {
     -ad_doc
     {-parameter ""}
