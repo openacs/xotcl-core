@@ -373,25 +373,34 @@ namespace eval ::xo {
       set sql [subst {
         select item_id, i.name,  i.parent_id, o.package_id, site_node__url(sn.node_id),
         (select count(*) from xowiki_form_instance_item_index where i.item_id = page_template),
-        (select count(*) from xowiki_page_instance where i.item_id=page_template)
+        (select count(*) from xowiki_page_instance where i.item_id=page_template),
+        (select count(revision_id) from cr_revisions r where i.item_id=r.item_id)
         from cr_items i, acs_objects o, site_nodes sn
         where i.name like '%$form%'
         and o.object_id = i.item_id and o.package_id = sn.object_id order by 3
       }]
       append msg "==== Form: $form [string repeat = [expr {90-[string length $form]}]]\n"
       append msg \
-          [format %7s item_id] " " [format %-30s name] " " \
+          [format %7s item_id] " " [format %4s revs] " " [format %-30s name] " " \
           [format %6s count1]  " " [format %6s count2] " " \
           [format %9s parent_id] " " [format %11s package_id] " " \
-          url \n
+          path \n
 
       foreach tuple [xo::dc list_of_lists form-usages $sql] {
-        lassign $tuple item_id name parent_id package_id url count1 count2
+        lassign $tuple item_id name parent_id package_id url count1 count2 revs
+        if {$parent_id ne 0} {
+          xo::Package require $package_id
+          set form [::xo::db::CrClass get_instance_from_db -item_id $item_id]
+          set fullPath [$form pretty_link]
+          set path [file join {*}[lrange [file split $fullPath] 0 end-1]]
+        } else {
+          set path $url
+        }
         append msg \
-            [format %7d $item_id] " " [format %-30s $name] " " \
+            [format %7d $item_id] " " [format %4d $revs] " " [format %-30s $name] " " \
             [format %6d $count1]  " " [format %6d $count2] " " \
             [format %9d $parent_id] " " [format %11d $package_id] " " \
-            $url \n
+            $path \n
       }
       append msg \n
     }
