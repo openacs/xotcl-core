@@ -23,19 +23,19 @@ namespace eval ::xo {
 
   Class create Cluster -parameter {host {port 80}}
   Cluster set allowed_host_patterns [list]
-  Cluster set url /xotcl-cluster-do 
+  Cluster set url /xotcl-cluster-do
   Cluster array set allowed_host {
     "127.0.0.1" 1
   }
-  # 
-  # The allowed commands are of the form 
-  #   - command names followed by 
+  #
+  # The allowed commands are of the form
+  #   - command names followed by
   #   - optional "except patterns"
   #
   Cluster array set allowed_command {
-    set "" 
-    unset "" 
-    nsv_set "" 
+    set ""
+    unset ""
+    nsv_set ""
     nsv_unset ""
     nsv_incr ""
     bgdelivery ""
@@ -44,7 +44,7 @@ namespace eval ::xo {
     xo::cache_flush_all ""
   }
   #
-  # Prevent unwanted object generations for unknown 
+  # Prevent unwanted object generations for unknown
   # arguments of ::xo::Cluster.
   #
   Cluster proc unknown args {
@@ -120,7 +120,7 @@ namespace eval ::xo {
     }
   }
   Cluster instproc message args {
-    :log "--cluster outgoing request to [:host]:[:port] // $args" 
+    :log "--cluster outgoing request to [:host]:[:port] // $args"
     #     set r [::xo::HttpRequest new -volatile \
     #                -host [:host] -port [:port] \
     #                -path [Cluster set url]?cmd=[ns_urlencode $args]]
@@ -129,7 +129,7 @@ namespace eval ::xo {
     set r [::xo::AsyncHttpRequest new -volatile \
                -host [:host] -port [:port] \
                -path [Cluster set url]?cmd=[ns_urlencode $args]]
-    
+
     #     ::bgdelivery do ::xo::AsyncHttpRequest new \
     #         -host [:host] -port [:port] \
     #         -path [Cluster set url]?cmd=[ns_urlencode $args] \

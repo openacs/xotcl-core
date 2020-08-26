@@ -1,7 +1,7 @@
 ::xo::library doc {
 
   Handling ordered Composites
-  
+
   ::xo::OrderedComposite to create tree structures with aggregated
   objects. This is similar to object aggregations, but
   preserves the order. The OrderedComposite supports
@@ -13,7 +13,7 @@
 }
 
 namespace eval ::xo {
-  Class create OrderedComposite 
+  Class create OrderedComposite
 
   OrderedComposite instproc show {} {
     next
@@ -70,7 +70,7 @@ namespace eval ::xo {
     set :__children [lreplace ${:__children} $p $p]
     $obj destroy
   }
-  
+
   OrderedComposite instproc last_child {} {
     lindex ${:__children} end
   }
@@ -88,7 +88,7 @@ namespace eval ::xo {
     # destroy all children of the ordered composite
     if {[info exists :__children]} {
       #:log "--W destroying children ${:__children}"
-      foreach c ${:__children} { 
+      foreach c ${:__children} {
         if {[nsf::is object $c]} {$c destroy}
       }
     }
@@ -103,7 +103,7 @@ namespace eval ::xo {
     if {"[self class]::ChildManager" ni $m} {
       set insert 1
       Object instmixin add [self class]::ChildManager
-    } else { 
+    } else {
       set insert 0
     }
     #
@@ -111,7 +111,7 @@ namespace eval ::xo {
     # push the active composite
     lappend composite [self]
     set errorOccurred 0
-    # check, if we have Tcl's apply available    
+    # check, if we have Tcl's apply available
     if {[info procs ::apply] eq ""} {
       set applyCmd [list ::apply [list {} $cmds [self]]]
     } else {
@@ -166,7 +166,7 @@ namespace eval ::xo {
       }
       if {$errorOccurred} {error $errorMsg}
     }
-  } 
+  }
 
   Class create OrderedComposite::ChildManager -instproc init args {
     set r [next]
@@ -220,7 +220,7 @@ namespace eval ::xo {
       } elseif {$xh > $yh} {
         return 1
       } else {
-        incr xp 
+        incr xp
         incr yp
         #puts "rest [string range $x $xp end] [string range $y $yp end]"
         return [:__value_compare [string range $x $xp end] [string range $y $yp end] $def]

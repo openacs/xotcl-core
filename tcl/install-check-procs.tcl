@@ -1,9 +1,9 @@
 namespace eval ::xotcl-core {
 
   ad_proc -private ::xotcl-core::before-install {} {
-  
+
     Callback for checking whether xotcl is installed for OpenACS
-    
+
     @author Gustaf Neumann (neumann@wu-wien.ac.at)
   } {
     ns_log notice "-- before-install callback"
@@ -17,14 +17,14 @@ namespace eval ::xotcl-core {
       ns_log notice "XOTcl $::xotcl::version$::xotcl::patchlevel is installed on your system."
     }
   }
-  
+
   ad_proc -private ::xotcl-core::after-upgrade {
     {-from_version_name:required}
     {-to_version_name:required}
   } {
-    
+
     Callback for upgrading
-    
+
     @author Gustaf Neumann (neumann@wu-wien.ac.at)
   } {
     ns_log notice "-- UPGRADE $from_version_name -> $to_version_name"
@@ -34,9 +34,9 @@ namespace eval ::xotcl-core {
       ns_log notice "-- upgrading to $v"
       set dir [acs_package_root_dir xotcl-core]
       foreach file {
-        tcl/05-doc-procs.tcl 
+        tcl/05-doc-procs.tcl
         tcl/10-recreation-procs.tcl-old
-        tcl/thread_mod-procs.tcl 
+        tcl/thread_mod-procs.tcl
       } {
         if {[ad_file exists $dir/$file]} {
           ns_log notice "Deleting obsolete file $dir/$file"

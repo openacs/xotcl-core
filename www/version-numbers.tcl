@@ -1,6 +1,6 @@
 ad_page_contract {
   View version numbers of XOTcl and related packages
-} {    
+} {
 } -properties {
     title:onevalue
     context:onevalue

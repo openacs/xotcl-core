@@ -10,7 +10,7 @@ aa_register_case -cats {api smoke db} xotcl_core_tutorial_1 {
 
   aa_run_with_teardown -rollback -test_code {
     #
-    # 1) Create new ACS Objects, destroy it in memory, 
+    # 1) Create new ACS Objects, destroy it in memory,
     #    load it from the database, delete it in the database.
     #
 
@@ -46,7 +46,7 @@ aa_register_case -cats {api smoke db} xotcl_core_tutorial_2 {
 
     ############################################################
     #
-    # 2) Create new ACS Object Types, ACS Attributes and 
+    # 2) Create new ACS Object Types, ACS Attributes and
     #    SQL Tables from XOTcl Classes with slot definitions.
     #
     # Create a new ACS Object type and an XOTcl class named ::demo::Person.
@@ -74,14 +74,14 @@ aa_register_case -cats {api smoke db} xotcl_core_tutorial_2 {
     aa_equals "the SQL attributes are slot names" \
         [lsort [::demo::Person array names db_slot]] \
         {age name person_id projects}
-    
+
     #
     # Create a new instance of ::demo::Person with name 'Gustaf'
     #
     # The method 'new_persistent_object' of a database class (instance of ::xo::db::Class)
-    # creates an ACS Object with a fresh id in the database and 
+    # creates an ACS Object with a fresh id in the database and
     # creates as well an XOTcl object in memory
-    
+
     set p [::demo::Person new_persistent_object -name Gustaf -age 105]
 
     aa_true "'$p' looks like a valid object name" [regexp {^::\d+$} $p]
@@ -114,10 +114,10 @@ aa_register_case -cats {api smoke db} xotcl_core_tutorial_2 {
     # which has a few more attributes. Again, we define an XOTcl class
     # ::demo::Employee which creates the ACS Object Type, the ACS
     # attributes and the table, if necessary.
-    
+
     aa_false "Does the ACS Object type ::demo::Employee exist in the database" \
         [::xo::db::Class object_type_exists_in_db -object_type ::demo::Employee]
-    
+
     set cl [::xo::db::Class create ::demo::Employee  \
                 -superclass ::demo::Person  \
                 -table_name demo_employee  \
@@ -159,7 +159,7 @@ aa_register_case -cats {api smoke db} xotcl_core_tutorial_3 {
         [lsort [$cl array names db_slot]] \
         {email party_id url}
 
-    
+
     set cl [::xo::db::Class get_class_from_db -object_type person]
     aa_equals "fetched class is named ::xo::db::person" "::xo::db::person" $cl
 
@@ -180,7 +180,7 @@ aa_register_case -cats {api smoke db} xotcl_core_tutorial_4 {
 
   aa_run_with_teardown -rollback -test_code {
     ############################################################
-    # 4) Create new application classes by sub-typing the 
+    # 4) Create new application classes by sub-typing the
     # Content Repository, adding additional attributes
     #
     # We create a subclass of ::xo::db::CrItem called ::demo::Page
@@ -226,8 +226,8 @@ aa_register_case -cats {api smoke db} xotcl_core_tutorial_4 {
     # Fetch item per item_id from the database
     set o [::demo::Page get_instance_from_db -item_id $item_id]
     aa_true "the fetched object ($o) has the same item_id as before ($item_id)" {[$o item_id] eq $item_id}
-    
-    aa_log "o: <pre>[$o serialize]</pre>"    
+
+    aa_log "o: <pre>[$o serialize]</pre>"
     set creator [$o creator]
     aa_true "the fetched creator is $creator" {$creator == "GN"}
 

@@ -66,7 +66,7 @@ foreach cl [lsort $classes] {
   if {!$all_classes && ([string match "::xotcl::*" $cl] || [string match "::nx::*" $cl])} {
     continue
   }
-  
+
   append output "<li><b><a name='$cl'></a>[::xo::api object_link {} $cl]</b> <ul>"
 
   append output [info_classes $cl superclass]
@@ -81,7 +81,7 @@ foreach cl [lsort $classes] {
     if {$infos ne ""} {
       append output "<li><em>$key:</em> $infos</li>\n"
     }
-    
+
   }
 
   set infos ""
