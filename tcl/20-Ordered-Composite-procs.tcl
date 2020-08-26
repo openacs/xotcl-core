@@ -53,7 +53,7 @@ namespace eval ::xo {
         }
       }
       set order [expr {[info exists :__order] ? ${:__order} : "increasing"}]
-      return [lsort -command [list my __compare] -$order ${:__children}]
+      return [lsort -command :__compare -$order ${:__children}]
     } else {
       return ${:__children}
     }
