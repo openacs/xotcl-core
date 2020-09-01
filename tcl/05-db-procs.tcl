@@ -937,9 +937,13 @@ namespace eval ::xo::db {
   } {
     if {[db_driverkey ""] eq "oracle"} {
       set name [string toupper $name]
-      if {[::xo::dc 0or1row exists "
-         SELECT 1 FROM user_sequences
-          WHERE sequence_name = :name limit 1"]} return
+      if {[::xo::dc 0or1row exists {
+        select case when exists
+         (SELECT 1 FROM user_sequences
+           WHERE sequence_name = :name)
+        then 1 else 0 end
+        from dual
+      }]} return
     } else {
       #
       # PostgreSQL could avoid this check and use 'if not exists' in
