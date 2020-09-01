@@ -164,10 +164,12 @@ namespace eval ::xo {
   }
   parameter proc get_package_id_from_package_key {-package_key:required} {
     return [ns_cache eval xotcl_package_cache package_id-$package_key {
-      ::xo::dc get_value get_package_id \
-          [::xo::dc select -vars package_id -from apm_packages \
-               -where "package_key = :package_key" -limit 1]
-    }]
+      ::xo::dc get_value get_package_id {
+        select min(package_id)
+        from apm_packages
+        where package_key = :package_key
+      }
+    }
   }
 
   parameter proc get_parameter_object {
