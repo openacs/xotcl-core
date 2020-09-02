@@ -1033,9 +1033,10 @@ namespace eval ::xo::db {
       if {[info exists check_function]} {
         set check_function [string toupper $check_function]
         set function_exists [::xo::dc get_value query_version {
-          select 1 from acs_function_args where function = :check_function
-          limit 1
-        } 0]
+          select case when exists
+          (select 1 from acs_function_args where function = :check_function)
+          then 1 else 0 end from dual
+        }]
         if {$function_exists} {
           # nothing to do
           return
