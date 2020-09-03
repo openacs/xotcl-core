@@ -423,7 +423,7 @@ namespace eval ::xo {
           # calendar::item::delete_recurrence -recurrence_id $recurrence_id
 
           lassign [::xo::dc list -prepare integer get_old_start_date_and_event_id {
-            select start_date,
+            select start_date, e.event_id
             from  acs_events e, timespans t, time_intervals i
             where recurrence_id = :recurrence_id
             and   e.timespan_id = t.timespan_id
