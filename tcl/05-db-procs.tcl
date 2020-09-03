@@ -142,7 +142,7 @@ namespace eval ::xo::db {
       #ns_log notice "-- found $sequence"
       set sequenceName $sequence
       set nextval [::xo::dc get_value nextval "select nextval(:sequenceName)"]
-    } elseif { [::xo::dc db_0or1row nextval_sequence {
+    } elseif { [::xo::dc 0or1row nextval_sequence {
       select nextval(:sequence) as nextval
       where (select relkind
              from pg_class
@@ -937,12 +937,9 @@ namespace eval ::xo::db {
   } {
     if {[db_driverkey ""] eq "oracle"} {
       set name [string toupper $name]
+      # sequences have a unique name, no "exists" necessary
       if {[::xo::dc 0or1row exists {
-        select case when exists
-         (SELECT 1 FROM user_sequences
-           WHERE sequence_name = :name)
-        then 1 else 0 end
-        from dual
+        SELECT 1 FROM user_sequences WHERE sequence_name = :name
       }]} return
     } else {
       #
@@ -1032,10 +1029,9 @@ namespace eval ::xo::db {
       }
       if {[info exists check_function]} {
         set check_function [string toupper $check_function]
-        set function_exists [::xo::dc get_value query_version {
-          select case when exists
-          (select 1 from acs_function_args where function = :check_function)
-          then 1 else 0 end from dual
+        set function_exists [::xo::dc 0or1row function_exists {        
+          select 1 from dual where exists
+          (SELECT 1 FROM acs_function_args WHERE function = :check_function)
         }]
         if {$function_exists} {
           # nothing to do
