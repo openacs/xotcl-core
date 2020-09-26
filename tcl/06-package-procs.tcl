@@ -157,8 +157,11 @@ namespace eval ::xo {
       $page initialize_loaded_object
 
       xo::Package require $package_id
-      set p [::$package_id get_page_from_name -name $fullName -parent_id $parent_id]
-      #:log "--get_page_from_name --> '$p'"
+      set p [::$package_id get_page_from_name \
+                 -name $fullName \
+                 -assume_folder [$page is_folder_page] \
+                 -parent_id $parent_id]
+      #:log "--get_page_from_name '$fullName' -parent_id $parent_id --> '$p'"
       if {$p eq ""} {
         #
         # We have to create the page new. The page is completed with
@@ -287,6 +290,16 @@ namespace eval ::xo {
     foreach n $pages {
       set item_id [::xo::db::CrClass lookup -name en:$n -parent_id [dict get $info folder_id]]
       #:log "lookup en:$n => $item_id"
+      if {$item_id == 0} {
+        #
+        # Try to refetch without prefix to support loading of
+        # prefix-less pages.
+        #
+        set item_id [::xo::db::CrClass lookup -name $n -parent_id [dict get $info folder_id]]
+        if {$item_id != 0} {
+          :log "Page $n was already loaded without a prefix"
+        }
+      }
       set refetch_this_page $refetch
       if {!$refetch_this_page && $item_id != 0 && $refetch_if_modified} {
         set existing_page [::xo::db::CrClass get_instance_from_db -item_id $item_id]
