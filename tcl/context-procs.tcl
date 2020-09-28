@@ -297,7 +297,7 @@ namespace eval ::xo {
     # simple mobile detection
     ::xo::cc mobile 0
     if {[ns_conn isconnected]} {
-      set user_agent [string tolower [ns_set get [ns_conn headers] User-Agent]]
+      set user_agent [string tolower [ns_set iget [ns_conn headers] User-Agent]]
       ::xo::cc mobile [regexp (android|webos|iphone|ipad) $user_agent]
     }
 
