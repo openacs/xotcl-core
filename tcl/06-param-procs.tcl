@@ -479,7 +479,7 @@ namespace eval ::xo {
 
     if {$parameter_obj eq ""} {
       # We have still no parameter. There must be something significantly wrong.
-      error "--parameter $parameter for package $package_key, package_id $package_id does not exist"
+      ns_log warning "parameter $parameter for package $package_key, package_id $package_id does not exist (yet)"
     } else {
       $parameter_obj clear_per_package_instance_value $package_id
       if {[$parameter_obj default_value] ne $value} {
