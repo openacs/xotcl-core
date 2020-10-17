@@ -1058,14 +1058,23 @@ proc ::xo::getObjectProperty {o what args} {
   set newSlot [self]::slot::$name
 
   $slot copy $newSlot
-  $newSlot configure -domain [self] -manager $newSlot -create_acs_attribute false -create_table_attribute false {*}$config
+  $newSlot configure \
+      -domain [self] \
+      -manager $newSlot \
+      -create_acs_attribute false \
+      -create_table_attribute false \
+      {*}$config
   #
-  # When the following line is not commented, then
-  # "update_attribute_from_slot" works for "title", "description"
-  # etc. But then the accessor methods (for "title", "description")
-  # are NOT registered for the classes. This needs some work.
+  # Changing the domain is neccessary for "update_attribute_from_slot"
+  # for the extended slots like "title", "description" etc. But then
+  # the accessor methods (for "title", "description") have to be
+  # installed manually for the classes, on which the extension
+  # happens.
   #
-  #$newSlot domain [$slot domain]
+  ::nsf::method::setter [$newSlot domain] $name
+  ns_log notice "=== change domain of $name from [$newSlot domain] to [$slot domain]"
+  $newSlot domain [$slot domain]
+
   #
   set :db_slot($name) $newSlot
 }
