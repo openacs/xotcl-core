@@ -485,6 +485,21 @@ namespace eval ::xo {
   #
   set ::xo::rss 0 ;# set it to one to activate it
 
+  #
+  # Experimental low-level cleanup handlers, which are similar to
+  # ::xo::cleanup, but which survive per-request cleanup and which
+  # have to be manually deregistered.
+  #
+  proc add_cleanup {key cmd} {
+    set ::xo::cleanup_always($key) $cmd
+  }
+  proc remove_cleanup {key} {
+    unset ::xo::cleanup_always($key)
+  }
+
+  #
+  # Per-request cleanup handler.
+  #
   proc at_cleanup {args} {
     ::xo::dc profile off
     ::xo::broadcast receive
@@ -498,7 +513,7 @@ namespace eval ::xo {
       if {[file readable /proc/[pid]/statm]} {
         set F [open /proc/[pid]/statm]; set c [read $F]; close $F
         lassign $c size rss shared
-        set size [format %.2f [expr {$rss*4.096/1048576}]]
+        set size [format %.2f [expr {$rss * 4.096 / 1048576}]]
         if {$::xo::rss != $size} {
           ns_log notice "=== RSS size change to: $size GB"
           set ::xo::rss $size
@@ -508,7 +523,7 @@ namespace eval ::xo {
 
     #ns_log notice "*** start of cleanup <$args> ([array get ::xo::cleanup])"
     set at_end ""
-    foreach {name cmd} [array get ::xo::cleanup] {
+    foreach {name cmd} [list {*}[array get ::xo::cleanup] {*}[array get ::xo::cleanup_always]] {
       #::trace remove variable ::xotcl_cleanup($name) unset ::xo::cleanup
       if {![nsf::is object $name]} {
         #ns_log notice "--D $name already destroyed, nothing to do"
@@ -850,7 +865,7 @@ namespace eval ::xo {
       foreach cmd [nsv_get broadcast $tid] {
         ns_log notice "broadcast received {$cmd}"
         try {
-          {*}$cmd
+          eval $cmd
         } on error {errorMsg} {
           ns_log notice "broadcast receive error: $errorMsg for cmd $cmd"
         }
