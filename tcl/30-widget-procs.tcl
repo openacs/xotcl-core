@@ -719,6 +719,7 @@ namespace eval ::xo::Table {
         #:log "--LINE vars=[:info vars] cL: [[self class] info vars] r=[:renderer]"
         html::tr -class [expr {[incr :__rowcount]%2 ? ${:css.tr.odd-class} : ${:css.tr.even-class}}] {
           foreach field [[self]::__columns children] {
+            if {[$field istype HiddenField]} continue
             if {![$field exists CSSclass]} {
               # TODO: remove me when message does not show up
               ns_log warning "CSSclass missing $field\n[$field serialize]"
