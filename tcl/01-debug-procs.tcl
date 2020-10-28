@@ -388,7 +388,8 @@ namespace eval ::xo {
       append _ [db_driverkey {}]\n
     }
     append _ "Server:    [ns_info patchlevel] ([ns_info name] [ns_info tag])\n"
-    append _ "Tcl:       $::tcl_patchLevel\n"
+    append _ "NSF:       $::nsf::patchLevel\n"
+    append _ "Tcl:       $::tcl_patchLevel\n"    
     append _ "XOTcl:     $::xotcl::version$::xotcl::patchlevel\n"
     append _ "Tdom:      [package req tdom]\n"
     append _ "libthread: [ns_config ns/server/[ns_info server]/modules libthread]\n"
