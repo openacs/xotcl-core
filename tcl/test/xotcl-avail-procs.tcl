@@ -41,6 +41,17 @@ aa_register_case -cats {api smoke} check_xotcl {
   }
 
 }
+
+aa_register_case -cats {
+    api
+    smoke
+    production_safe
+} check_xotcl_xocc {
+    Basic test of the availability of ::xo::cc.
+} {
+    aa_true "::xo::cc exists"  {[namespace which ::xo::cc] ne ""}
+}
+
 # Local variables:
 #    mode: tcl
 #    tcl-indent-level: 2
