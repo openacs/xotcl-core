@@ -94,6 +94,16 @@ if {[nsf::is object ::nx::Object]} {
         return -code error "Value '$value' of parameter $name is not a valid local url."
       }
     }
+    :method type=nohtml {name value} {
+      if {[ad_page_contract_filter_proc_nohtml name value] == 0} {
+        return -code error "Value '$value' of parameter $name contains HTML."
+      }
+    }
+    :method type=html {name value} {
+      if {[ad_page_contract_filter_proc_html name value] == 0} {
+        return -code error "Value '$value' of parameter $name contains unsafe HTML."
+      }
+    }
   }
 
   ::xotcl::Object proc setExitHandler {code} {::nsf::exithandler set $code}
@@ -109,6 +119,8 @@ if {[nsf::is object ::nx::Object]} {
     ::nx::Slot method type=naturalnum
     ::nx::Slot method type=token
     ::nx::Slot method type=localurl
+    ::nx::Slot method type=html
+    ::nx::Slot method type=nohtml
     ::nx::Object nsfproc ::nsf::debug::call
     ::nx::Object nsfproc ::nsf::debug::exit
   }
@@ -389,7 +401,7 @@ namespace eval ::xo {
     }
     append _ "Server:    [ns_info patchlevel] ([ns_info name] [ns_info tag])\n"
     append _ "NSF:       $::nsf::patchLevel\n"
-    append _ "Tcl:       $::tcl_patchLevel\n"    
+    append _ "Tcl:       $::tcl_patchLevel\n"
     append _ "XOTcl:     $::xotcl::version$::xotcl::patchlevel\n"
     append _ "Tdom:      [package req tdom]\n"
     append _ "libthread: [ns_config ns/server/[ns_info server]/modules libthread]\n"
