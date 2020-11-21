@@ -232,6 +232,8 @@ namespace eval ::xo {
 
         ad_return_forbidden [_ xotcl-core.permission_denied] \
             [_ xotcl-core.policy-error-insufficient_permissions]
+      } else {
+        ns_log warning "enforce_permissions: $user_id has no right $method for $object in background operation"
       }
       ad_script_abort
     }
