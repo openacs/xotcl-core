@@ -1550,7 +1550,7 @@ namespace eval ::xo::db {
 
     Usually, the id of the item that is fetched from the database is used. However,
     XoWiki's "folder objects" (i.e. an ::xowiki::Object instance that can be used
-                               to configure the respective instance) are created using the acs_object_id of the
+    to configure the respective instance) are created using the acs_object_id of the
     root folder of the xowiki instance, which is actually the id of another acs_object.
 
     Because of this, we cannot simply create the instances of CrFolder using the
