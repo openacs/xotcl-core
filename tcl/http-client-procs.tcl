@@ -10,7 +10,7 @@ xo::library doc {
 
 
 #
-# The xotcl HTTP client procs are deprecated.
+# The XOTcl HTTP client procs are deprecated.
 # Use util::http::get/post/... etc. instead
 #
 

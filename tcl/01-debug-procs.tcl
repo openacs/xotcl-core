@@ -1093,7 +1093,7 @@ proc ::xo::getObjectProperty {o what args} {
       -create_table_attribute false \
       {*}$config
   #
-  # Changing the domain is neccessary for "update_attribute_from_slot"
+  # Changing the domain is necessary for "update_attribute_from_slot"
   # for the extended slots like "title", "description" etc. But then
   # the accessor methods (for "title", "description") have to be
   # installed manually for the classes, on which the extension

@@ -2,7 +2,7 @@ namespace eval ::xotcl-core {
 
   ad_proc -private ::xotcl-core::before-install {} {
 
-    Callback for checking whether xotcl is installed for OpenACS
+    Callback for checking whether XOTcl is installed for OpenACS
 
     @author Gustaf Neumann (neumann@wu-wien.ac.at)
   } {

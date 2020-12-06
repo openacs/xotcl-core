@@ -1638,7 +1638,7 @@ namespace eval ::xo::db {
 
   ::xo::db::Class instproc dbproc_nonposargs {object_name} {
     #
-    # This method compiles a stored procedure into a xotcl method
+    # This method compiles a stored procedure into an XOTcl method
     # using a classic nonpositional argument style interface.
     #
     # The current implementation should work on PostgreSQL and Oracle

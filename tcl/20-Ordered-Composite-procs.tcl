@@ -98,7 +98,7 @@ namespace eval ::xo {
   }
 
   OrderedComposite instproc contains cmds {
-    :requireNamespace ;# legacy for older xotcl versions
+    :requireNamespace ;# legacy for older XOTcl versions
     set m [Object info instmixin]
     if {"[self class]::ChildManager" ni $m} {
       set insert 1
@@ -139,7 +139,7 @@ namespace eval ::xo {
     # implementation of the method contains, that does NOT use try.
     #
     OrderedComposite instproc contains cmds {
-      :requireNamespace ;# legacy for older xotcl versions
+      :requireNamespace ;# legacy for older XOTcl versions
       set m [Object info instmixin]
       if {"[self class]::ChildManager" ni $m} {
         set insert 1
