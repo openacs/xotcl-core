@@ -196,32 +196,40 @@ namespace eval ::xo {
 
   PackageMgr instproc require_site_wide_info {} {
     if {![info exists :site_wide_info]} {
-      set cmd [list [self] configure_fresh_instance \
-                   -parameter_page_info ${:site_wide_package_parameter_page_info} \
-                   -parameters ${:site_wide_package_parameters} \
-                  ]
-      set site_wide_instance_id [acs_admin::require_site_wide_package \
-                                     -package_key ${:package_key} \
-                                     -configuration_command $cmd]
-      #ns_log notice "======require_site_wide_info site_wide_instance_id -> <$site_wide_instance_id>"
-      if {$site_wide_instance_id eq ""} {
-        if {[info exists :__currently_intiating]} {
-          set site_wide_instance_id ${:__currently_intiating}
-          dict set :site_wide_info folder_id [::$site_wide_instance_id folder_id]
-        }
 
-      } else {
-        :require $site_wide_instance_id
-        #
-        # During install, no xo::cc is available, but it seems to be
-        # needed for instantiating prototype pages. So provide a best
-        # effort initialization in such cases.
-        #
-        if {![nsf::is object ::xo::cc]} {
-          :initialize -package_id $site_wide_instance_id -init_url false
-        }
+      if {[info exists :__currently_intiating]} {
+        set site_wide_instance_id ${:__currently_intiating}
         dict set :site_wide_info folder_id [::$site_wide_instance_id folder_id]
+      } else {
+
+        set cmd [list [self] configure_fresh_instance \
+                     -parameter_page_info ${:site_wide_package_parameter_page_info} \
+                     -parameters ${:site_wide_package_parameters} \
+                    ]
+        #
+        # The call "require_site_wide_package" causes a flush in
+        # site_nodes_id_cache-* (which might be overly
+        # cautious). Since site_wide_info is required often, we cache
+        # the call and result.
+        #
+        set site_wide_instance_id [::xo::xotcl_package_cache eval site_wide_package-${:package_key} {
+          acs_admin::require_site_wide_package \
+              -package_key ${:package_key} \
+              -configuration_command $cmd}]
       }
+
+      #ns_log notice "======require_site_wide_info site_wide_instance_id -> <$site_wide_instance_id>"
+
+      :require $site_wide_instance_id
+      #
+      # During install, no xo::cc is available, but it seems to be
+      # needed for instantiating prototype pages. So provide a best
+      # effort initialization in such cases.
+      #
+      if {![nsf::is object ::xo::cc]} {
+        :initialize -package_id $site_wide_instance_id -init_url false
+      }
+      dict set :site_wide_info folder_id [::$site_wide_instance_id folder_id]
       dict set :site_wide_info instance_id $site_wide_instance_id
     }
     return ${:site_wide_info}
