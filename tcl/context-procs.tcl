@@ -251,7 +251,7 @@ namespace eval ::xo {
 
     if {![info exists url]} {
       #:log "--CONN ns_conn url"
-      set url [ns_conn url]
+      set url [expr {[ns_conn isconnected] ? [ns_conn url] : ""}]
     }
     set package_id [:require_package_id_from_url -package_id $package_id $url]
     #:log "--i [self args] URL='$url', pkg=$package_id"
