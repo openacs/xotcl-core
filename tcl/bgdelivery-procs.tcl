@@ -538,7 +538,7 @@ bgdelivery ad_proc returnfile {
     #ns_log notice "status_code = $status_code, filename=$filename"
 
     if {![nsf::is object ::xo::cc]} {
-      ::xo::ConnectionContext require
+      ::xo::ConnectionContext require -url [ad_conn url]
     }
     set query [::xo::cc actual_query]
     set secure_conn_p [security::secure_conn_p]
@@ -751,7 +751,7 @@ if {[info commands h264open] ne ""} {
   } {
     if {$query eq ""} {
       if {![nsf::is object ::xo::cc]} {
-        ::xo::ConnectionContext require
+        ::xo::ConnectionContext require -url [ad_conn url]
       }
       set query [::xo::cc actual_query]
     }
