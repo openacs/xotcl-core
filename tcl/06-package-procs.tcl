@@ -220,7 +220,6 @@ namespace eval ::xo {
 
       #ns_log notice "======require_site_wide_info site_wide_instance_id -> <$site_wide_instance_id>"
 
-      :require $site_wide_instance_id
       #
       # During install, no xo::cc is available, but it seems to be
       # needed for instantiating prototype pages. So provide a best
@@ -228,7 +227,14 @@ namespace eval ::xo {
       #
       if {![nsf::is object ::xo::cc]} {
         :initialize -package_id $site_wide_instance_id -init_url false
+        ns_log notice "require_site_wide_info gets own xo::cc"
       }
+      
+      #
+      # Require the package to be available
+      #
+      :require $site_wide_instance_id
+      
       dict set :site_wide_info folder_id [::$site_wide_instance_id folder_id]
       dict set :site_wide_info instance_id $site_wide_instance_id
     }
@@ -544,20 +550,38 @@ namespace eval ::xo {
     }
 
     if {$url eq "" && $init_url} {
-      set url [acs::root_of_host [ad_host]][ns_conn url]
+      if {[ns_conn isconnected]} {
+        set url [acs::root_of_host [ad_host]][ns_conn url]
+      } else {
+        #
+        # In case, we are not connected and no URL path is provided,
+        # we do a best effort job to set the "url" variable to a path
+        # belonging to the right package. The is no way to provide
+        # here a better approximation. Note that if e.g. a batch job
+        # needs a more precise (object_specific) url, this has to be
+        # generated on the caller side with [$object_id pretty_link]
+        # or similar means.
+        #
+        set url [lindex [site_node::get_url_from_object_id -object_id $package_id] 0]
+        ns_log warning "PackageMgr initialize sets best-effort URL <$url>"
+      }
       #:log "--CONN ns_conn url -> $url"
     }
 
-    # get package_id from url in case it is not known
+    #
+    # Get package_id from url in case it is not known. When the
+    # package_id is already known, this is a noop.
+    #
     set package_id [ConnectionContext require_package_id_from_url \
                         -package_id $package_id $url]
-
-    # require connection context if needed
+    #
+    # Require connection context if needed
+    #
     ConnectionContext require \
         -keep_cc $keep_cc \
         -package_id $package_id -user_id $user_id \
         -parameter $parameter -url $url -actual_query $actual_query
-
+    
     if {[info exists original_url_and_query]} {
       ::xo::cc original_url_and_query $original_url_and_query
     }
@@ -587,7 +611,9 @@ namespace eval ::xo {
       auth::require_login
     }
 
-    if {$export_vars} {::xo::cc export_vars -level 2}
+    if {$export_vars} {
+      ::xo::cc export_vars -level 2
+    }
     return $package_id
   }
 
