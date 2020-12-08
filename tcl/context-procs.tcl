@@ -204,27 +204,29 @@ namespace eval ::xo {
   }
 
   ConnectionContext proc require_package_id_from_url {{-package_id 0} url} {
-    # get package_id from url in case it is not known
+    #
+    # Get package_id from url in case it is not known
+    #
     if {$package_id == 0} {
-      array set "" [site_node::get_from_url -url $url]
-      set package_id $(package_id)
+      set node_info [site_node::get_from_url -url $url]
+      set package_id [dict get $node_info package_id]
     }
-    if {![info exists ::ad_conn(node_id)]} {
+    if {![info exists ::ad_conn(node_id)] && [info exists node_info]} {
       #
       # The following should not be necessary, but is here for
       # cases, where some oacs-code assumes wrongly it is running in a
       # connection thread (e.g. the site master requires to have a
       # node_id and a URL accessible via ad_conn)
       #
-      if {![info exists (node_id)]} {
+      if {![dict exists $node_info node_id]} {
         if {$url eq ""} {
           set url [lindex [site_node::get_url_from_object_id -object_id $package_id] 0]
         }
-        array set "" [site_node::get_from_url -url $url]
+        set node_info [site_node::get_from_url -url $url]
       }
-      set ::ad_conn(node_id) $(node_id)
+      set ::ad_conn(node_id) [dict get $node_info node_id]
       set ::ad_conn(url) $url
-      set ::ad_conn(extra_url) [string range $url [string length $(url)] end]
+      set ::ad_conn(extra_url) [string range $url [string length [dict get $node_info url]] end]
     }
     return $package_id
   }
@@ -237,6 +239,11 @@ namespace eval ::xo {
                                   {-actual_query " "}
                                   {-keep_cc false}
                                 } {
+    #
+    # This is a private method used for low-level connection context
+    # creation. This function has to be called either with a valid
+    # "-url" when being used outside connection threads. 
+    #
     set exists_cc [nsf::is object ::xo::cc]
 
     # if we have a connection context and we want to keep it, do
@@ -251,7 +258,12 @@ namespace eval ::xo {
 
     if {![info exists url]} {
       #:log "--CONN ns_conn url"
-      set url [expr {[ns_conn isconnected] ? [ns_conn url] : ""}]
+      if {[ns_conn isconnected]} {
+        set url [ad_conn url]
+      } else {
+        set url ""
+        ad_log error "fallback to empty url"
+      }
     }
     set package_id [:require_package_id_from_url -package_id $package_id $url]
     #:log "--i [self args] URL='$url', pkg=$package_id"
