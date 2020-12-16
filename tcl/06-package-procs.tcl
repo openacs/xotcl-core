@@ -108,9 +108,9 @@ namespace eval ::xo {
            is called.
     @param package_id package instance to which the page should be loaded
     @param parent_id place to where the page should be loaded
-    @param When the page to be loaded exists already, add a new
-           revision. When the page exists already, and the flag is not
-           set, no change happens.
+    @param add_revision When the page to be loaded exists already, add
+           a new revision. When the page exists already, and the flag
+           is not set, no change happens.
 
   } {
     if {![info exists package_key] && [info exists :package_key]} {
