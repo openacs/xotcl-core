@@ -205,7 +205,9 @@ namespace eval ::xo {
 
   ConnectionContext proc require_package_id_from_url {{-package_id 0} url} {
     #
-    # Get package_id from url in case it is not known
+    # Get package_id from URL in case it is not known. In case, the
+    # package_id is known, this method is essentially a no-op, but
+    # takes care about ::ad_conn initialization.
     #
     if {$package_id == 0} {
       set node_info [site_node::get_from_url -url $url]

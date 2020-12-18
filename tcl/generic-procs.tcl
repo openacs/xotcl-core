@@ -94,7 +94,7 @@ namespace eval ::Generic {
     return [${:data} set [:get_id_field]]
   }
   Form instproc edit_data {} {
-    #:log "--- edit_data --- setting form vars=[:form_vars]"
+    #:log "--- edit_data --- setting form vars=[:form_vars] on ${:data}"
     ${:data} save
     # Renaming is meant for cr_items and such
     if {[${:data} istype ::xo::db::CrItem]} {
@@ -157,10 +157,15 @@ namespace eval ::Generic {
   }
 
   Form instproc on_submit {item_id} {
+    # :log "-- on_submit data"
+    #
     # On redirects after a submit to the same page, ensure
-    # the setting of edit_form_page_title and context
+    # the setting of edit_form_page_title and context.
+    #
     :request write
-    # Put form content into data object
+    #
+    # Put form content into data object.
+    #
     foreach __var [:form_vars] {
       ${:data} set $__var [:var $__var]
     }
@@ -209,12 +214,12 @@ namespace eval ::Generic {
   } {
     # set form name for adp file
     set :$template ${:name}
-
+    
     set object_type [[${:data} info class] object_type]
     set object_name [expr {[${:data} exists name] ? [${:data} set name] : ""}]
     # :log "-- ${:data}, cl=[${:data} info class] [[${:data} info class] object_type]"
 
-    # :log "--e ${:name} final fields ${:fields}"
+    #:log "--e ${:name} final fields ${:fields}"
     set exports [list \
       [list object_type $object_type] \
                      [list folder_id ${:folder_id}] \
@@ -225,6 +230,8 @@ namespace eval ::Generic {
 
     ad_form -name ${:name} -form ${:fields} -mode $mode \
         -export $exports -action [:action] -html [:html]
+
+    :log "--- generate: setup methods on data ${:data} (page_order [${:data} set page_order])"
 
     set new_data            "set item_id \[[self] new_data\]"
     set edit_data           "set item_id \[[self] edit_data\]"
@@ -258,11 +265,12 @@ namespace eval ::Generic {
                               -container_object_id ${:package_id}]
       }
     }
-    #ns_log notice "-- ad_form new_data=<$new_data> edit_data=<$edit_data> edit_request=<$edit_request>"
-
-    # action blocks must be added last
-    # -new_data and -edit_data are enclosed in a transaction only in the end,
-    # so eventual additional code from category management is executed safely
+    ns_log notice "-- ad_form new_data=<$new_data> edit_data=<$edit_data> edit_request=<$edit_request>"
+    #
+    # Action blocks must be added last. "-new_data" and "-edit_data"
+    # are enclosed in a transaction, such that optional additional
+    # code from category management is executed safely
+    #
     ad_form -extend -name ${:name} \
         -validate [:validate] \
         -new_data "xo::dc transaction \{ $new_data \}" -edit_data "xo::dc transaction \{ $edit_data \}" \
