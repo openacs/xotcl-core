@@ -811,7 +811,9 @@ namespace eval ::xo::Table {
     if {$lvl ne ""} {
       upvar #$lvl $orderby_name orderby
     }
-    if {![info exists orderby]} {set orderby ""}
+    if {![info exists orderby]} {
+      set orderby ""
+    }
     set new_orderby $orderby
     if {$orderby eq "$field,desc"} {
       set new_orderby $field,asc
@@ -827,15 +829,24 @@ namespace eval ::xo::Table {
       set img /resources/acs-templating/sort-neither.png
     }
     set query [list [list $orderby_name $new_orderby]]
-    if {[catch {set actual_query [ns_conn query]}]} {
-      set actual_query ""
+    if {[ns_conn isconnected]} {
+      #
+      # Called interactively
+      #
+      set actual_query [ns_conn query]
+      foreach pair [split $actual_query &] {
+        lassign [split $pair =] key value
+        if {$key in {"orderby" "__csrf_token"}} continue
+        lappend query [list [ns_urldecode $key] [ns_urldecode $value]]
+      }
+      set base [ad_conn url]
+    } else {
+      #
+      # Called in the background (e.g. from search renderer)
+      #      
+      set base .
     }
-    foreach pair [split $actual_query &] {
-      lassign [split $pair =] key value
-      if {$key in {"orderby" "__csrf_token"}} continue
-      lappend query [list [ns_urldecode $key] [ns_urldecode $value]]
-    }
-    set href [export_vars -base [ad_conn url] $query]
+    set href [export_vars -base $base $query]
     html::a -href $href -title $title {
       html::t [:_ label]
       html::img -src $img -alt ""
