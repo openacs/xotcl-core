@@ -469,7 +469,7 @@ namespace eval ::xo {
   #
   if {"::xo::at_delete" ni [ns_ictl gettraces delete]} {
     if {[catch {ns_ictl trace delete ::xo::at_delete} errorMsg]} {
-      ns_log Warning "rhe command 'ns_ictl trace delete' returned: $errorMsg"
+      ns_log Warning "The command 'ns_ictl trace delete' returned: $errorMsg"
     }
   }
 
