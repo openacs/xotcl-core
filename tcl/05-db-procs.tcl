@@ -75,7 +75,7 @@ namespace eval ::xo::db {
     switch -- $type {
       string    { set type text }
       long_text { set type text }
-      date      { set type "timestamp with time zone" }
+      date      { set type "timestamp with timezone" }
       ltree     { set type [expr {[:has_ltree] ? "ltree" : "text" }] }
       default   { return [next] }
     }
@@ -706,7 +706,7 @@ namespace eval ::xo::db {
     # Cache the information, whether the prepared statement was
     # defined per pg session. Depending on the version of the driver,
     # we can obtain a session_id from the db driver. If we can't,
-    # we fall back to a per request-cache (via toplevel variable).
+    # we fall back to a per request-cache (via top-level variable).
     #
     try {
       set session_id [ns_db session_id $handle]
@@ -1799,7 +1799,7 @@ namespace eval ::xo::db {
       # DBMS. Therefore, we use a type cast to check whether
       # specified default value (e.g. '1900-01-01') is in fact
       # equivalent to default stored in db (e.g. '1900-01-01
-      # 00:00:00+01'::timestamp with time zone).
+      # 00:00:00+01'::timestamp with timezone).
       #
       # Booleans can be normalized in advance without involving the
       # database

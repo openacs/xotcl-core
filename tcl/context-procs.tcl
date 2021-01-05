@@ -176,7 +176,7 @@ namespace eval ::xo {
 
     if {![info exists :__including_page]} {
       #
-      # An includelet is called from the toplevel. The actual_query
+      # An includelet is called from the top-level. The actual_query
       # might be cached, so we reset it here.
       #
       set :actual_query [::xo::cc actual_query]
