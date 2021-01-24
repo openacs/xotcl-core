@@ -295,6 +295,7 @@ namespace eval ::xo::db {
   ::xo::db::Driver abstract instproc list           {{-dbn ""} {-bind ""} -prepare qn sql}
   ::xo::db::Driver abstract instproc dml            {{-dbn ""} {-bind ""} -prepare qn sql}
   ::xo::db::Driver abstract instproc foreach        {{-dbn ""} {-bind ""} -prepare qn sql {script}}
+  ::xo::db::Driver abstract instproc row_lock       {{-dbn ""} {-bind ""} {-for "UPDATE"} -prepare qn sql}  
   ::xo::db::Driver abstract instproc transaction    {{-dbn ""} script args}
   ::xo::db::Driver abstract instproc ds {onOff}
   ::xo::db::Driver abstract instproc prepare        {-handle {-argtypes ""} sql}
@@ -553,6 +554,16 @@ namespace eval ::xo::db {
     uplevel [list ::db_list [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
   }
 
+  ::xo::db::DB instproc row_lock {{-dbn ""} {-bind ""} {-for "UPDATE"} -prepare qn sql} {
+    #
+    # PostgreSQL has several variants of row-level lock modes (the
+    # "for" part), but other database systems just support only "FOR
+    # UPDATE", which should work always. Therefore, ignore for other
+    # DB-systems the specified value and use just "FOR UPDATE".
+    #
+    :uplevel [list ::xo::dc list -dbn $dbn -bind $bind $qn "$sql FOR UPDATE"]
+  }
+
   proc ::xo::db::pg_0or1row {sql} {
     ns_log notice "::xo::db::pg_0or1row deprecated"
     ::db_with_handle h {
@@ -643,6 +654,11 @@ namespace eval ::xo::db {
     return [db_resultrows]
   }
 
+  ::xo::db::DB-postgresql instproc row_lock {{-dbn ""} {-bind ""} {-for "UPDATE"} -prepare qn sql} {
+    set prepareOpt [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
+    :uplevel [list ::xo::dc list -dbn $dbn -bind $bind {*}$prepareOpt $qn "$sql FOR $for"]
+  }
+  
   ::xo::db::DB-postgresql instproc prepare {-handle:required {-argtypes ""} sql} {
     #
     # Define a md5 key for the prepared statement in nsv based on the

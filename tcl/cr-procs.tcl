@@ -1001,6 +1001,10 @@ namespace eval ::xo::db {
     }
 
     ::xo::dc transaction {
+      ::xo::dc row_lock -for "no key update" -prepare integer item_lock {
+        select item_id from cr_items where item_id = :item_id
+      }
+      
       [:info class] instvar storage_type
       set revision_id [xo::dc nextval acs_object_id_seq]
       if {$storage_type eq "file"} {
@@ -1036,18 +1040,27 @@ namespace eval ::xo::db {
         # If we do not make the revision live, use the old
         # revision_id, and let CrCache save it ......
         #
-        # TODO: is this still needed? comment out for testing
-        #
-        #set revision_id $old_revision_id
       }
+      
+      #
+      # Update instance variables "modifying_user" and "last_modified"
+      # from potentially changed DB values.
+      #
       set :modifying_user $creation_user
       ::xo::dc 1row -prepare integer get_metadata {
         select context_id, last_modified
         from acs_objects where object_id = :revision_id
       }
       set :last_modified $last_modified
-      if {[info exists :context_id] &&
-          $context_id != ${:context_id}} {
+      
+      #
+      # In case the context_id has in the DB is different as in the
+      # instance variable, push the value from the instance variable
+      # to the DB as well.
+      #
+      if {[info exists :context_id]
+          && $context_id != ${:context_id}
+        } {
         set context_id ${:context_id}
         ::xo::dc dml update_context {
           update acs_objects
