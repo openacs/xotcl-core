@@ -1004,7 +1004,7 @@ namespace eval ::xo::db {
       ::xo::dc row_lock -for "no key update" -prepare integer item_lock {
         select item_id from cr_items where item_id = :item_id
       }
-      
+
       [:info class] instvar storage_type
       set revision_id [xo::dc nextval acs_object_id_seq]
       if {$storage_type eq "file"} {
@@ -1041,7 +1041,7 @@ namespace eval ::xo::db {
         # revision_id, and let CrCache save it ......
         #
       }
-      
+
       #
       # Update instance variables "modifying_user" and "last_modified"
       # from potentially changed DB values.
@@ -1052,7 +1052,7 @@ namespace eval ::xo::db {
         from acs_objects where object_id = :revision_id
       }
       set :last_modified $last_modified
-      
+
       #
       # In case the context_id has in the DB is different as in the
       # instance variable, push the value from the instance variable
@@ -1742,13 +1742,28 @@ namespace eval ::xo::db {
     {-parent_id -100}
     {-content_type}
   } {
-    # We need here the strange logic to avoid caching of lookup fails.
-    # In order to cache fails as well, we would have to flush the fail
-    # on new added items and renames.
+    #
+    # We need here the strange logic to avoid caching of lookup fails
+    # (when lookup returns 0). Adding cache-fails to the shared cache
+    # would lead to a high number of cache entries. Therefore, we add
+    # these to a per-request cache and (i.e. flush) these in sync with
+    # the xo::xotcl_object_type_cache. The avoids a high number of
+    # cache queries (and cache locks), since these lookups are
+    # performed often many times per request.
+    #
+    if {[acs::per_request_cache get -key xo-type-$parent_id-$name value]} {
+      return $value
+    }
+
     while {1} {
       set item_id [xo::xotcl_object_type_cache eval -partition_key $parent_id $parent_id-$name {
         set item_id [next]
         if {$item_id == 0} {
+          #
+          # Not found, perform per-thread caching. This has to be
+          # invalidated like the xotcl_object_type_cache.
+          #
+          acs::per_request_cache eval -key xo-type-$parent_id-$name {set key 0}
           #ns_log notice ".... lookup $parent_id-$name => 0 -> break and don't cache"
           break
         }
@@ -1842,6 +1857,7 @@ namespace eval ::xo::db {
         ::xo::xotcl_object_cache flush $revision_id
       }
     }
+    acs::per_request_cache flush -pattern xo-type-${:parent_id}-${:name}
   }
   CrCache::Item instproc update_attribute_from_slot args {
     set r [next]
@@ -1859,6 +1875,7 @@ namespace eval ::xo::db {
   }
   CrCache::Item instproc save_new args {
     set item_id [next]
+    acs::per_request_cache flush -pattern xo-type-${:parent_id}-${:name}
     return $item_id
   }
   CrCache::Item instproc delete args {
@@ -1872,10 +1889,12 @@ namespace eval ::xo::db {
       ::xo::xotcl_object_cache flush [string trimleft [self] :]
     }
     xo::xotcl_object_type_cache flush -partition_key ${:parent_id} ${:parent_id}-${:name}
+    acs::per_request_cache flush -pattern xo-type-${:parent_id}-${:name}
     next
   }
   CrCache::Item instproc rename {-old_name:required -new_name:required} {
     ::xo::xotcl_object_type_cache flush -partition_key ${:parent_id} ${:parent_id}-$old_name
+    acs::per_request_cache flush -pattern xo-type-${:parent_id}-$old_name
     next
   }
 
