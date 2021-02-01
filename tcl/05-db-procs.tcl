@@ -922,13 +922,13 @@ namespace eval ::xo::db {
 
     if {[info exists col]} {
       set colExpSQL $col
-      regsub -all ", *" $col _ colExpName
+      regsub -all -- ", *" $col _ colExpName
     } else {
       set colExpSQL ($expression)
       if {[info exists expression_name]} {
         set colExpName $expression_name
       } else {
-        regsub -all {[^[:alnum:]]} $expression "" colExpName
+        regsub -all -- {[^[:alnum:]]} $expression "" colExpName
       }
     }
     set suffix [expr {$unique ? "un_idx" : "idx"}]

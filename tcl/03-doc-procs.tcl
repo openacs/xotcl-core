@@ -299,7 +299,7 @@ ad_library {
     }
     set string [join $lines \n]
     set html [ns_quotehtml $string]
-    regsub -all {(\n[\t ]*)(\#[^\n]*)} $html \\1<it>\\2</it> html
+    regsub -all -- {(\n[\t ]*)(\#[^\n]*)} $html \\1<it>\\2</it> html
     return "<pre class='code'>$html</pre>"
   }
 
