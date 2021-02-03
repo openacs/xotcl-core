@@ -466,8 +466,13 @@ namespace eval ::xo {
   } {
     set output ""
     set line [list]
-    foreach column [[self]::__columns children] {
+    set displayColumns [lmap column [[self]::__columns children] {
       if {[$column exists no_csv]} continue
+      if {[$column istype ::xo::Table::BulkAction]} continue
+      if {[$column istype ::xo::Table::HiddenField]} continue          
+      set column
+    }]
+    foreach column $displayColumns {
       set label [$column label]
       if {[regexp {^#([a-zA-Z0-9_:-]+\.[a-zA-Z0-9_:-]+)#$} $label _ message_key]} {
         set label [_ $message_key]
@@ -478,14 +483,12 @@ namespace eval ::xo {
     append output [join $line $delimiter] \n
     foreach row [:children] {
       set line [list]
-      foreach column [[self]::__columns children] {
-        if {[$column exists no_csv]} continue
+      foreach column $displayColumns {
         set value [string map {\" \\\" \n \r} [$row set [$column set name]]]
         lappend line \"$value\"
       }
       append output [join $line $delimiter] \n
     }
-    #ns_return 200 text/plain $output
     if {![info exists :name]} {
       set :name "table"
     }
