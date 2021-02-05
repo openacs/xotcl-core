@@ -1751,7 +1751,7 @@ namespace eval ::xo::db {
     # cache queries (and cache locks), since these lookups are
     # performed often many times per request.
     #
-    if {[acs::per_request_cache get -key xo-type-$parent_id-$name value]} {
+    if {[acs::per_request_cache get -key xotcl-core.lookup($parent_id-$name) value]} {
       return $value
     }
 
@@ -1763,7 +1763,7 @@ namespace eval ::xo::db {
           # Not found, perform per-thread caching. This has to be
           # invalidated like the xotcl_object_type_cache.
           #
-          acs::per_request_cache eval -key xo-type-$parent_id-$name {set key 0}
+          acs::per_request_cache eval -key xotcl-core.lookup($parent_id-$name) {set key 0}
           #ns_log notice ".... lookup $parent_id-$name => 0 -> break and don't cache"
           break
         }
@@ -1857,7 +1857,7 @@ namespace eval ::xo::db {
         ::xo::xotcl_object_cache flush $revision_id
       }
     }
-    acs::per_request_cache flush -pattern xo-type-${:parent_id}-${:name}
+    acs::per_request_cache flush -pattern xotcl-core.lookup(${:parent_id}-${:name})
   }
   CrCache::Item instproc update_attribute_from_slot args {
     set r [next]
@@ -1875,7 +1875,7 @@ namespace eval ::xo::db {
   }
   CrCache::Item instproc save_new args {
     set item_id [next]
-    acs::per_request_cache flush -pattern xo-type-${:parent_id}-${:name}
+    acs::per_request_cache flush -pattern xotcl-core.lookup(${:parent_id}-${:name})
     return $item_id
   }
   CrCache::Item instproc delete args {
@@ -1889,12 +1889,12 @@ namespace eval ::xo::db {
       ::xo::xotcl_object_cache flush [string trimleft [self] :]
     }
     xo::xotcl_object_type_cache flush -partition_key ${:parent_id} ${:parent_id}-${:name}
-    acs::per_request_cache flush -pattern xo-type-${:parent_id}-${:name}
+    acs::per_request_cache flush -pattern xotcl-core.lookup(${:parent_id}-${:name})
     next
   }
   CrCache::Item instproc rename {-old_name:required -new_name:required} {
     ::xo::xotcl_object_type_cache flush -partition_key ${:parent_id} ${:parent_id}-$old_name
-    acs::per_request_cache flush -pattern xo-type-${:parent_id}-$old_name
+    acs::per_request_cache flush -pattern xotcl-core.lookup(${:parent_id}-$old_name)
     next
   }
 
