@@ -947,8 +947,10 @@ namespace eval ::xo::db {
     {-live_p:boolean true}
     {-use_given_publish_date:boolean false}
   } {
-    Updates an item in the content repository. We insert a new revision instead of
-    changing the current revision.
+
+    Updates an item in the content repository. We insert a new
+    revision instead of changing the current revision.
+
     @param modifying_user
     @param live_p make this revision the live revision
   } {
@@ -1107,7 +1109,8 @@ namespace eval ::xo::db {
     {-live_p:boolean true}
     {-use_given_publish_date:boolean false}
   } {
-    Insert a new item to the content repository
+    Insert a new item to the content repository.
+
     @param package_id
     @param creation_user user_id if the creating user
     @param live_p make this revision the live revision
@@ -1883,7 +1886,7 @@ namespace eval ::xo::db {
     acs::per_request_cache flush -pattern xotcl-core.lookup-${:parent_id}-${:name}
 
 
-    
+
     return $item_id
   }
   CrCache::Item instproc delete args {
