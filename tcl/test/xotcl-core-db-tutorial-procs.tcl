@@ -3,7 +3,14 @@ ad_library {
 }
 
 
-aa_register_case -cats {api smoke db} xotcl_core_tutorial_1 {
+aa_register_case -cats {
+  api smoke db
+} -procs {
+  "::xo::db::Class instproc new_persistent_object"
+  "::xo::db::Class instproc get_instance_from_db"
+  "::xo::db::Class proc exists_in_db"
+  "::xo::db::Object instproc delete"
+} xotcl_core_tutorial_1 {
   Basic test cases based on the XOTcl core tutorial,
   test case set (1): create/fetch/delete/destroy objects
 } {
@@ -37,7 +44,18 @@ aa_register_case -cats {api smoke db} xotcl_core_tutorial_1 {
   }
 }
 
-aa_register_case -cats {api smoke db} xotcl_core_tutorial_2 {
+aa_register_case -cats {
+  api smoke db
+} -procs {
+  " Class ::xo::db::Attribute"
+  " Class ::xo::db::Class"
+  "::xo::db::Class instproc get_instance_from_db"
+  "::xo::db::Class instproc new_persistent_object"
+  "::xo::db::Class instproc create_object_type"
+  "::xo::db::Class proc exists_in_db"
+  "::xo::db::Class proc object_type_exists_in_db"
+  "::xo::db::Object instproc save"
+} xotcl_core_tutorial_2 {
   Basic test cases based on the XOTcl core tutorial,
   test case set (2): Create new types from XOTcl objects
 } {
@@ -138,7 +156,11 @@ aa_register_case -cats {api smoke db} xotcl_core_tutorial_2 {
   }
 }
 
-aa_register_case -cats {api smoke db} xotcl_core_tutorial_3 {
+aa_register_case -cats {
+  api smoke db
+} -procs {
+  "::xo::db::Class proc get_class_from_db"
+} xotcl_core_tutorial_3 {
   Basic test cases based on the XOTcl core tutorial,
   test case set (3): create classes from DB
 } {
@@ -173,7 +195,16 @@ aa_register_case -cats {api smoke db} xotcl_core_tutorial_3 {
 }
 
 
-aa_register_case -cats {api smoke db} xotcl_core_tutorial_4 {
+aa_register_case -cats {
+  api smoke db
+} -procs {
+  "::xo::db::Class proc object_type_exists_in_db"
+  "::xo::db::CrClass instproc create_object_type"
+  "::xo::db::CrClass instproc get_instance_from_db"
+  "::xo::db::CrClass proc lookup"
+  "::xo::db::CrItem instproc save"
+  "::xo::db::CrItem instproc save_new"
+} xotcl_core_tutorial_4 {
   Basic test cases based on the XOTcl core tutorial,
   test case set (4): extending CR with application class
 } {

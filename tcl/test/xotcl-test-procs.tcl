@@ -3,7 +3,15 @@ ad_library {
 }
 
 
-aa_register_case -cats {api smoke} test_xo_db_object {
+aa_register_case -cats {
+    api smoke
+} -procs {
+    "::xo::db::Class proc get_instance_from_db"
+    "::xo::db::Object instproc save"
+    "::xo::db::Object instproc save_new"
+    "::xo::db::Object instproc delete"
+    "::xo::db::Class proc exists_in_db"
+} test_xo_db_object {
    Test basic ::xo::db::Object ORM features
 } {
     aa_run_with_teardown -test_code {
@@ -136,7 +144,15 @@ aa_register_case -cats {api smoke} test_xo_db_object {
     }
 }
 
-aa_register_case -cats {api smoke} test_cr_items {
+aa_register_case -cats {
+    api smoke
+} -procs {
+    "::xo::db::CrClass proc get_instance_from_db"
+    "::xo::db::CrItem instproc save"
+    "::xo::db::CrItem instproc save_new"
+    "::xo::db::CrItem instproc delete"
+    "::xo::db::Class proc exists_in_db"
+} test_cr_items {
    Test basic ::xo::db::CrItem ORM features
 } {
     aa_run_with_teardown -test_code {
@@ -299,6 +315,36 @@ aa_register_case -cats {api smoke} test_cr_items {
         }]
         aa_true "Object is not there anymore" {!$orm_exists_p && !$db_exists_p}
     }
+}
+
+aa_register_case -cats {
+    api smoke
+} -procs {
+    "::xo::require_html_procs"
+    "::xo::db::list_to_values"
+    "::xo::db::tcl_date"
+} test_misc_core {
+    Test various small xotcl-core functionalities.
+} {
+    ::xo::require_html_procs
+    aa_true "html::a exists" {[info commands ::html::a] ne ""}
+
+    aa_equals "xo::db::list_to_values" [xo::db::list_to_values {1 2 3}] {(VALUES ('1'),('2'),('3'))}
+
+    aa_equals "tcl_date from oracle" [::xo::db::tcl_date 2008-08-25 tz_var secfrac_var] 2008-08-25
+    aa_equals "tcl_date from oracle TZ and secfrac" "$tz_var $secfrac_var" "00 0"
+
+    aa_equals "tcl_date from PostgreSQL type ANSI format secfrac and TZ" \
+        [::xo::db::tcl_date "2017-08-08 13:19:33.264032+02" tz_var secfrac_var] "2017-08-08 13:19:33"
+    aa_equals "tcl_date from PostgreSQL TZ and secfrac" "$tz_var $secfrac_var" "+02 264032"
+
+    aa_equals "tcl_date from PostgreSQL type ANSI format secfrac no TC" \
+        [::xo::db::tcl_date "2017-08-08 13:19:33.264032" tz_var secfrac_var] "2017-08-08 13:19:33"
+    aa_equals "tcl_date from PostgreSQL TZ and secfrac" "$tz_var $secfrac_var" "00 264032"
+
+    aa_equals "tcl_date from PostgreSQL type ANSI format no TC" \
+        [::xo::db::tcl_date "2017-08-08 13:19:33" tz_var secfrac_var] "2017-08-08 13:19:33"
+    aa_equals "tcl_date from PostgreSQL TZ and secfrac" "$tz_var $secfrac_var" "00 0"
 }
 
 
