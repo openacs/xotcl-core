@@ -7,7 +7,7 @@ aa_register_case -cats {
   api smoke db
 } -procs {
   "::xo::db::Class instproc new_persistent_object"
-  "::xo::db::Class instproc get_instance_from_db"
+  "::xo::db::Class proc get_instance_from_db"
   "::xo::db::Class proc exists_in_db"
   "::xo::db::Object instproc delete"
 } xotcl_core_tutorial_1 {
@@ -49,7 +49,7 @@ aa_register_case -cats {
 } -procs {
   " Class ::xo::db::Attribute"
   " Class ::xo::db::Class"
-  "::xo::db::Class instproc get_instance_from_db"
+  "::xo::db::Class proc get_instance_from_db"
   "::xo::db::Class instproc new_persistent_object"
   "::xo::db::Class instproc create_object_type"
   "::xo::db::Class proc exists_in_db"
