@@ -147,11 +147,15 @@ aa_register_case -cats {
 aa_register_case -cats {
     api smoke
 } -procs {
+    "::xo::db::Class proc exists_in_db"
+    "::xo::db::CrClass instproc get_instance_from_db"
     "::xo::db::CrClass proc get_instance_from_db"
+    "::xo::db::CrItem instproc delete"
     "::xo::db::CrItem instproc save"
     "::xo::db::CrItem instproc save_new"
-    "::xo::db::CrItem instproc delete"
-    "::xo::db::Class proc exists_in_db"
+    "::xo::db::DB-postgresql instproc 0or1row"
+    "::xo::db::DB-postgresql instproc 1row"
+    "::xo::db::DB-postgresql instproc get_value"
 } test_cr_items {
    Test basic ::xo::db::CrItem ORM features
 } {
