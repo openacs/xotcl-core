@@ -327,16 +327,17 @@ ad_library {
     return $docBlock
   }
 
-  :public object method update_object_doc {scope obj doc_string} {
-    ns_log notice "update_object_doc $scope $obj ..."
+  :public object method update_object_doc {scope obj doc_string} { 
     #
     # Update the API browser nsvs with information about the provided
     # object.
     #
-
     # If no doc string is provided, try to get it from the object
     # definition.
     #
+    
+    #ns_log notice "update_object_doc $scope $obj ..."    
+
     if {$doc_string eq ""} {
       set doc_string [:get_doc_block [:get_init_block $scope $obj]]
     }

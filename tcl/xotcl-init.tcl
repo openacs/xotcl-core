@@ -6,7 +6,7 @@ if {[::acs::icanuse "ns_ictl trace idle"]} {
   # up to date.
   #
   ns_ictl trace idle {
-    ns_log notice =====IDLE=====
+    #ns_log notice =====IDLE=====
     ::xo::broadcast receive
   }
 }
