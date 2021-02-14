@@ -513,7 +513,7 @@ namespace eval ::xo {
   #
   # Per-request cleanup handler.
   #
-  proc at_cleanup {args} {
+  ad_proc -private at_cleanup {args} {
     ::xo::dc profile off
     ::xo::broadcast receive
 

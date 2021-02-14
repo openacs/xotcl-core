@@ -86,7 +86,17 @@ namespace eval ::xo {
     if {![info exists package_key] && [info exists :package_key]} {
       set package_key ${:package_key}
     }
-    return [acs_root_dir]/packages/$package_key/www/prototypes/$name.page
+    foreach location {www resources} {
+      set fn [acs_root_dir]/packages/$package_key/$location/prototypes/$name.page      
+      if {[file exists $fn]} {
+        if {$location eq "www"} {
+          ns_log warning "deprecated location: you should move protoype page" \
+              "'$fn' to /packages/$package_key/resources/prototypes/"
+        }
+        break
+      }
+    }
+    return $fn
   }
 
 
@@ -121,75 +131,75 @@ namespace eval ::xo {
     #:log "--W check $fn"
     if {![ad_file readable $fn]} {
       ns_log notice "no such prototype page $fn"
+      return ""
+    }
+    #
+    # We have the file of the prototype page. We try to create
+    # either a new item or a revision from definition in the file
+    # system.
+    #
+    if {[regexp {^(..):(.*)$} $name _ lang local_name]} {
+      set fullName $name
     } else {
-      #
-      # We have the file of the prototype page. We try to create
-      # either a new item or a revision from definition in the file
-      # system.
-      #
-      if {[regexp {^(..):(.*)$} $name _ lang local_name]} {
-        set fullName $name
-      } else {
-        set fullName en:$name
-      }
-      :log "--sourcing page definition $fn, using name '$fullName'"
-      set page [source $fn]
-      $page configure \
-          -name $fullName \
-          -parent_id $parent_id \
-          -package_id $package_id
-      #
-      # xowiki::File has a different interface for build-name to
-      # derive the "name" from a file-name. This is not important for
-      # prototype pages, so we skip it
-      #
-      if {![$page istype ::xowiki::File]} {
-        set nls_language [:get_nls_language_from_lang $lang]
-        $page name [$page build_name -nls_language $nls_language]
-        #:log "--altering name of page $page to '[$page name]'"
-        set fullName [$page name]
-      }
-      if {![$page exists title]} {
-        $page set title $object
-      }
-      $page destroy_on_cleanup
-      $page set_content [string trim [$page text] " \n"]
-      $page initialize_loaded_object
+      set fullName en:$name
+    }
+    :log "--sourcing page definition $fn, using name '$fullName'"
+    set page [source $fn]
+    $page configure \
+        -name $fullName \
+        -parent_id $parent_id \
+        -package_id $package_id
+    #
+    # xowiki::File has a different interface for build-name to
+    # derive the "name" from a file-name. This is not important for
+    # prototype pages, so we skip it
+    #
+    if {![$page istype ::xowiki::File]} {
+      set nls_language [:get_nls_language_from_lang $lang]
+      $page name [$page build_name -nls_language $nls_language]
+      #:log "--altering name of page $page to '[$page name]'"
+      set fullName [$page name]
+    }
+    if {![$page exists title]} {
+      $page set title $object
+    }
+    $page destroy_on_cleanup
+    $page set_content [string trim [$page text] " \n"]
+    $page initialize_loaded_object
 
-      xo::Package require $package_id
-      set p [::$package_id get_page_from_name \
-                 -name $fullName \
-                 -assume_folder [$page is_folder_page] \
-                 -parent_id $parent_id]
-      #:log "--get_page_from_name '$fullName' -parent_id $parent_id --> '$p'"
-      if {$p eq ""} {
+    xo::Package require $package_id
+    set p [::$package_id get_page_from_name \
+               -name $fullName \
+               -assume_folder [$page is_folder_page] \
+               -parent_id $parent_id]
+    #:log "--get_page_from_name '$fullName' -parent_id $parent_id --> '$p'"
+    if {$p eq ""} {
+      #
+      # We have to create the page new. The page is completed with
+      # missing vars on save_new.
+      #
+      #:log "--save_new of $page class [$page info class]"
+      $page save_new
+    } else {
+      #:log "--save revision $add_revision"
+      if {$add_revision} {
         #
-        # We have to create the page new. The page is completed with
-        # missing vars on save_new.
+        # An old page exists already, create a revision.  Update the
+        # existing page with all scalar variables from the prototype
+        # page (which does not have always all instance variables set)
         #
-        #:log "--save_new of $page class [$page info class]"
-        $page save_new
-      } else {
-        #:log "--save revision $add_revision"
-        if {$add_revision} {
-          #
-          # An old page exists already, create a revision.  Update the
-          # existing page with all scalar variables from the prototype
-          # page (which does not have always all instance variables set)
-          #
-          foreach v [$page info vars] {
-            if {[$page array exists $v]} continue ;# don't copy arrays
-            $p set $v [$page set $v]
-          }
-          #:log "--save of $p class [$p info class]"
-          $p save
+        foreach v [$page info vars] {
+          if {[$page array exists $v]} continue ;# don't copy arrays
+          $p set $v [$page set $v]
         }
-        set page $p
+        #:log "--save of $p class [$p info class]"
+        $p save
       }
-      if {$page ne ""} {
-        # we want to be able to address the page via the canonical name ::$item_id
-        set page [::xo::db::CrClass get_instance_from_db -item_id [$page item_id]]
-      }
+      set page $p
+    }
+    if {$page ne ""} {
+      # we want to be able to address the page via the canonical name ::$item_id
+      set page [::xo::db::CrClass get_instance_from_db -item_id [$page item_id]]
     }
     return $page
   }
