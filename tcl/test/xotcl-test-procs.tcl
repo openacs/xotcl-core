@@ -11,6 +11,14 @@ aa_register_case -cats {
     "::xo::db::Object instproc save_new"
     "::xo::db::Object instproc delete"
     "::xo::db::Class proc exists_in_db"
+
+    "::xo::db::Class proc object_type_to_class"
+    "::xo::db::DB-postgresql instproc 0or1row"
+    "::xo::db::DB-postgresql instproc 1row"
+    "::xo::db::DB-postgresql instproc get_value"
+    "::xo::db::DB instproc transaction"
+    "::xo::db::sql::acs_object proc delete"
+    "::xo::db::Object instproc update"
 } test_xo_db_object {
    Test basic ::xo::db::Object ORM features
 } {
@@ -156,6 +164,17 @@ aa_register_case -cats {
     "::xo::db::DB-postgresql instproc 0or1row"
     "::xo::db::DB-postgresql instproc 1row"
     "::xo::db::DB-postgresql instproc get_value"
+
+    "::cr_check_mime_type"
+    "::cr_create_content_file"
+    "::xo::db::Class proc object_type_to_class"
+    "::xo::db::DB instproc transaction"
+    "::xo::db::DB-postgresql instproc dml"
+    "::xo::db::DB-postgresql instproc insert-view-operation"
+    "::xo::db::DB-postgresql instproc row_lock"
+    "::xo::db::postgresql instproc nextval"
+    "::xo::db::sql::content_item proc new"
+    "::xo::db::sql::content_item proc set_live_revision"
 } test_cr_items {
    Test basic ::xo::db::CrItem ORM features
 } {

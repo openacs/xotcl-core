@@ -10,6 +10,10 @@ aa_register_case -cats {
   "::xo::db::Class proc get_instance_from_db"
   "::xo::db::Class proc exists_in_db"
   "::xo::db::Object instproc delete"
+
+  "::xo::db::Class proc object_type_to_class"
+  "::xo::db::DB instproc transaction"
+  "::xo::db::DB-postgresql instproc get_value"
 } xotcl_core_tutorial_1 {
   Basic test cases based on the XOTcl core tutorial,
   test case set (1): create/fetch/delete/destroy objects
@@ -55,6 +59,38 @@ aa_register_case -cats {
   "::xo::db::Class proc exists_in_db"
   "::xo::db::Class proc object_type_exists_in_db"
   "::xo::db::Object instproc save"
+
+  "::acs::Cache instproc eval"
+  "::xo::ConnectionContext instproc user_id"
+  "::xo::Context instproc package_id"
+  "::xo::db::Class proc class_to_object_type"
+  "::xo::db::Class proc get_table_name"
+  "::xo::db::Class proc object_type_to_class"
+  "::xo::db::DB instproc sets"
+  "::xo::db::DB instproc transaction"
+  "::xo::db::DB-postgresql instproc dml"
+  "::xo::db::DB-postgresql instproc generate_psql"
+  "::xo::db::DB-postgresql instproc get_value"
+  "::xo::db::DB-postgresql instproc list"
+  "::xo::db::DB-postgresql instproc list_of_lists"
+  "::xo::db::SQL instproc datatype_constraint"
+  "::xo::db::postgresql instproc get_all_package_functions"
+  "::xo::db::postgresql instproc map_datatype"
+  "::xo::db::postgresql instproc select"
+  "::xo::db::require proc default"
+  "::xo::db::require proc exists_column"
+  "::xo::db::require proc index"
+  "::xo::db::require proc not_null"
+  "::xo::db::require proc references"
+  "::xo::db::require proc table"
+  "::xo::db::require proc unique"
+  "::xo::db::sql::acs_attribute proc create_attribute"
+  "::xo::db::sql::acs_object proc delete"
+  "::xo::db::sql::acs_object proc new"
+  "::xo::db::sql::acs_object_type proc create_type"
+  "::xo::db::sql::acs_object_type proc drop_type"
+  "::xo::db::Class instproc check_table_atts"
+  "::xo::db::Object instproc update"
 } xotcl_core_tutorial_2 {
   Basic test cases based on the XOTcl core tutorial,
   test case set (2): Create new types from XOTcl objects
@@ -160,6 +196,10 @@ aa_register_case -cats {
   api smoke db
 } -procs {
   "::xo::db::Class proc get_class_from_db"
+
+  "::xo::db::DB-postgresql instproc 1row"
+  "::xo::db::DB-postgresql instproc list_of_lists"
+  "::xo::db::Class instproc check_table_atts"
 } xotcl_core_tutorial_3 {
   Basic test cases based on the XOTcl core tutorial,
   test case set (3): create classes from DB
@@ -204,6 +244,22 @@ aa_register_case -cats {
   "::xo::db::CrClass proc lookup"
   "::xo::db::CrItem instproc save"
   "::xo::db::CrItem instproc save_new"
+
+  "::cr_check_mime_type"
+  "::cr_create_content_file"
+  "::xo::db::DB instproc transaction"
+  "::xo::db::DB-postgresql instproc dml"
+  "::xo::db::DB-postgresql instproc get_value"
+  "::xo::db::DB-postgresql instproc insert-view-operation"
+  "::xo::db::DB-postgresql instproc row_lock"
+  "::xo::db::postgresql instproc nextval"
+  "::xo::db::sql::acs_object proc delete"
+  "::xo::db::sql::content_item proc new"
+  "::xo::db::sql::content_item proc set_live_revision"
+  "::xo::db::sql::content_type proc create_type"
+  "::xo::db::Class instproc check_table_atts"
+  "::xo::db::CrClass instproc folder_type"
+
 } xotcl_core_tutorial_4 {
   Basic test cases based on the XOTcl core tutorial,
   test case set (4): extending CR with application class
