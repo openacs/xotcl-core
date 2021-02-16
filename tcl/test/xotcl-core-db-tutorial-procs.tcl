@@ -7,13 +7,16 @@ aa_register_case -cats {
   api smoke db
 } -procs {
   "::xo::db::Class instproc new_persistent_object"
-  "::xo::db::Class proc get_instance_from_db"
   "::xo::db::Class proc exists_in_db"
-  "::xo::db::Object instproc delete"
+  "::xo::db::Class proc get_instance_from_db"
 
+  "::xo::db::Object instproc delete"
   "::xo::db::Class proc object_type_to_class"
   "::xo::db::DB instproc transaction"
   "::xo::db::DB-postgresql instproc get_value"
+  "::xo::db::Class proc get_object_type"
+  "::throttle proc check"
+
 } xotcl_core_tutorial_1 {
   Basic test cases based on the XOTcl core tutorial,
   test case set (1): create/fetch/delete/destroy objects
@@ -51,15 +54,15 @@ aa_register_case -cats {
 aa_register_case -cats {
   api smoke db
 } -procs {
+  "::xo::db::Class proc exists_in_db"
+  "::xo::db::Class proc get_instance_from_db"
+  "::xo::db::Class proc object_type_exists_in_db"
+
   " Class ::xo::db::Attribute"
   " Class ::xo::db::Class"
-  "::xo::db::Class proc get_instance_from_db"
   "::xo::db::Class instproc new_persistent_object"
   "::xo::db::Class instproc create_object_type"
-  "::xo::db::Class proc exists_in_db"
-  "::xo::db::Class proc object_type_exists_in_db"
   "::xo::db::Object instproc save"
-
   "::acs::Cache instproc eval"
   "::xo::ConnectionContext instproc user_id"
   "::xo::Context instproc package_id"
@@ -91,6 +94,8 @@ aa_register_case -cats {
   "::xo::db::sql::acs_object_type proc drop_type"
   "::xo::db::Class instproc check_table_atts"
   "::xo::db::Object instproc update"
+  "::xo::db::Class proc get_object_type"
+  "::throttle proc check"
 } xotcl_core_tutorial_2 {
   Basic test cases based on the XOTcl core tutorial,
   test case set (2): Create new types from XOTcl objects
@@ -239,14 +244,16 @@ aa_register_case -cats {
   api smoke db
 } -procs {
   "::xo::db::Class proc object_type_exists_in_db"
-  "::xo::db::CrClass instproc create_object_type"
-  "::xo::db::CrClass instproc get_instance_from_db"
   "::xo::db::CrClass proc lookup"
-  "::xo::db::CrItem instproc save"
-  "::xo::db::CrItem instproc save_new"
 
   "::cr_check_mime_type"
   "::cr_create_content_file"
+  "::xo::db::Class instproc check_table_atts"
+  "::xo::db::CrClass instproc create_object_type"
+  "::xo::db::CrClass instproc folder_type"
+  "::xo::db::CrClass instproc get_instance_from_db"
+  "::xo::db::CrItem instproc save"
+  "::xo::db::CrItem instproc save_new"
   "::xo::db::DB instproc transaction"
   "::xo::db::DB-postgresql instproc dml"
   "::xo::db::DB-postgresql instproc get_value"
@@ -257,8 +264,6 @@ aa_register_case -cats {
   "::xo::db::sql::content_item proc new"
   "::xo::db::sql::content_item proc set_live_revision"
   "::xo::db::sql::content_type proc create_type"
-  "::xo::db::Class instproc check_table_atts"
-  "::xo::db::CrClass instproc folder_type"
 
 } xotcl_core_tutorial_4 {
   Basic test cases based on the XOTcl core tutorial,
