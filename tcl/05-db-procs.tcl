@@ -76,7 +76,7 @@ namespace eval ::xo::db {
       string    { set type text }
       long_text { set type text }
       date      { set type "timestamp with time zone" }
-      ltree     { set type [expr {[:has_ltree] ? "ltree" : "text" }] }
+      ltree     { set type [expr {[::xo::dc has_ltree] ? "ltree" : "text" }] }
       default   { return [next] }
     }
     return $type
