@@ -510,10 +510,13 @@ namespace eval ::xo {
     unset ::xo::cleanup_always($key)
   }
 
-  #
-  # Per-request cleanup handler.
-  #
-  ad_proc -private at_cleanup {args} {
+  ad_proc at_cleanup {args} {
+    #
+    # Per-request cleanup handler. The handler is as well called by
+    # the xowiki-datasource and must be therefore public.
+    #
+
+  } {
     ::xo::dc profile off
     ::xo::broadcast receive
 
