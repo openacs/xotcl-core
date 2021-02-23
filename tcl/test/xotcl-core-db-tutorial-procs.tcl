@@ -54,6 +54,8 @@ aa_register_case -cats {
 aa_register_case -cats {
   api smoke db
 } -procs {
+  "::xo::db::Class instproc object_types"
+  "::xo::db::Class proc delete"
   "::xo::db::Class proc exists_in_db"
   "::xo::db::Class proc get_instance_from_db"
   "::xo::db::Class proc object_type_exists_in_db"
@@ -147,7 +149,7 @@ aa_register_case -cats {
 
     aa_true "object $p exists in memory" [nsf::is object $p]
     set id [$p object_id]
-    aa_true "bject $p exists in the db"  [::xo::db::Class exists_in_db -id $id]
+    aa_true "object $p exists in the db"  [::xo::db::Class exists_in_db -id $id]
 
     # modify some attributes of the XOTcl object
     set new_age [$p incr age]
@@ -168,6 +170,11 @@ aa_register_case -cats {
     set age [$p age]
     aa_true "age equals the modified age" {$age eq $new_age}
 
+    #"::xo::db::Class proc delete"
+    ::xo::db::Class delete -id $id
+    aa_false "check, if object $p is deleted in the database" \
+        [::xo::db::Class exists_in_db -id $id]
+
     #
     # Now, we create a subclass of ::demo::Person called ::demo::Employee
     # which has a few more attributes. Again, we define an XOTcl class
@@ -185,8 +192,6 @@ aa_register_case -cats {
                   ::xo::db::Attribute create salary -datatype integer
                   ::xo::db::Attribute create dept_nr -datatype integer -default "0"
                 }]
-    ::demo::Employee
-
     aa_equals "created class has name ::demo::Employee" $cl "::demo::Employee"
     aa_true "the object_type ::demo::Employee exists" \
         [::xo::db::Class object_type_exists_in_db -object_type ::demo::Employee]
@@ -194,6 +199,9 @@ aa_register_case -cats {
     aa_equals "the SQL attributes are slot names" \
         [lsort [::demo::Employee array names db_slot]] \
         {dept_nr employee_id salary}
+
+    set ot [::demo::Employee object_types]
+    aa_true "demo::Employee has object_types <$ot>" {$ot eq "::demo::Employee"}
   }
 }
 
@@ -243,7 +251,12 @@ aa_register_case -cats {
 aa_register_case -cats {
   api smoke db
 } -procs {
+  "::xo::db::Class instproc object_types"
+  "::xo::db::Class proc exists_in_db"
   "::xo::db::Class proc object_type_exists_in_db"
+  "::xo::db::CrClass ad_instproc delete"
+  "::xo::db::CrClass instproc new_persistent_object"
+  "::xo::db::CrClass proc delete"
   "::xo::db::CrClass proc lookup"
 
   "::cr_check_mime_type"
@@ -346,6 +359,50 @@ aa_register_case -cats {
     aa_true "we fetched an object with the new title" {
       [$o title] eq "Kilroy was here"
     }
+
+    set name en:ppage1
+    set object [::demo::Page new_persistent_object -name $name]
+    aa_true "new_persistent_object returned <$object>" [nsf::is object $object]
+    aa_true "name correct" {[$object name] eq $name}
+    aa_log "<pre>[$object serialize]</pre>"
+
+    set r [::xo::db::CrClass lookup -name $name]
+    aa_true "lookup $name returned the item_id" {$r eq [$object item_id]}
+
+    set o [::demo::Page get_instance_from_db -item_id [$object item_id]]
+    aa_true "the fetched object has the same item_id as before" {[$o item_id] eq [$object item_id]}
+
+    set item_id [$object item_id]
+
+    #
+    # delete the object only in the database (different to plain xo::db::Objects)
+    # calls: ::xo::db::CrCache::Item, ::xo::db::CrItem
+    #
+    aa_log "delete method: [$object procsearch delete]"
+    $object delete
+    aa_true "persistent_object deleted in memory" [nsf::is object $object]
+
+    $object destroy
+    aa_false "persistent_object deleted in memory" [nsf::is object $object]
+
+    set r [::xo::db::Class exists_in_db -id $item_id]
+    aa_true "exists in db $item_id -> <$r>" {$r eq "0"}
+
+    set ot [::demo::Page object_types]
+    aa_true "demo::Page has object_types <$ot>" {$ot eq "::demo::Page"}
+
+    #
+    # Delete a fresh object via " xo::db::CrClass delete"
+    #
+    set name en:ppage2
+    set object [::demo::Page new_persistent_object -name $name]
+    aa_true "new_persistent_object returned <$object>" [nsf::is object $object]
+    set item_id [$object item_id]
+    xo::db::CrClass delete -item_id $item_id
+    aa_true "persistent_object deleted in memory" [nsf::is object $object]
+
+    set r [::xo::db::Class exists_in_db -id $item_id]
+    aa_true "exists in db $item_id -> <$r>" {$r eq "0"}
   }
 }
 
