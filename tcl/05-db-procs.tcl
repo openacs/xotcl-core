@@ -1116,9 +1116,9 @@ namespace eval ::xo::db {
 
     @return 0 or 1
   } {
-    return [::xo::dc get_value select_object {
+    return [::xo::dc 0or1row -prepare integer select_object {
       select 1 from acs_objects where object_id = :id
-    } 0]
+    }]
   }
 
   ::xo::db::Class ad_proc delete {
@@ -1183,9 +1183,9 @@ namespace eval ::xo::db {
 
     @return 0 or 1
   } {
-    return [::xo::dc get_value check_type {
+    return [::xo::dc 0or1row check_type {
       select 1 from acs_object_types where object_type = :object_type
-    } 0]
+    }]
   }
 
   ::xo::db::Class ad_proc drop_type {
