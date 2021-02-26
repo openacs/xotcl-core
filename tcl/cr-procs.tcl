@@ -718,6 +718,9 @@ namespace eval ::xo::db {
     The tuples are instances of the class, on which the
     method was called.
   } {
+    if {![info exists folder_id]} {
+      set folder_id ${:folder_id}
+    }
     set s [:instantiate_objects -sql \
                [:instance_select_query \
                     -select_attributes $select_attributes \
