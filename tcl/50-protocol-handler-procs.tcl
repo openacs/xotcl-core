@@ -4,7 +4,7 @@ namespace eval ::xo {
     {package}
   }
 
-  ProtocolHandler ad_instproc unknown {method args} {
+  ProtocolHandler ad_instproc -private unknown {method args} {
     Return connection information similar to ad_conn
   } {
     :log "--[self class] unknown called with '$method' <$args>"

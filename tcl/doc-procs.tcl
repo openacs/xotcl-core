@@ -18,7 +18,7 @@ namespace eval ::xo {
         return $result
     }
 
-    ad_proc dot_append_method {{-documented_methods 1} e methods_ref kind} {
+    ad_proc -private dot_append_method {{-documented_methods 1} e methods_ref kind} {
     } {
         upvar $methods_ref methods
         set infokind $kind
@@ -38,7 +38,7 @@ namespace eval ::xo {
         }
     }
 
-    ad_proc dotclass {{-is_focus 0} {-documented_methods 1} e} {
+    ad_proc -private dotclass {{-is_focus 0} {-documented_methods 1} e} {
     } {
         set definition ""
         if {$is_focus} {
@@ -65,13 +65,13 @@ namespace eval ::xo {
         append definition "\}\"\];\n"
     }
 
-    ad_proc dotobject {e} {
+    ad_proc -private dotobject {e} {
     } {
         set url [export_vars -base show-object {{object $e}}]
         set definition "[dotquote $e] \[URL=\"$url\"\];\n";
     }
 
-    ad_proc dotcode {
+    ad_proc -private dotcode {
         {-with_children 0}
         {-with_instance_relations 0}
         {-omit_base_classes 1}

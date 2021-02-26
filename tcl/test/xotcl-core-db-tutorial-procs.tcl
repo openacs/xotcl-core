@@ -277,6 +277,10 @@ aa_register_case -cats {
   "::xo::db::sql::content_item proc new"
   "::xo::db::sql::content_item proc set_live_revision"
   "::xo::db::sql::content_type proc create_type"
+  "::xo::db::CrItem instproc update_item_index"
+  "::xo::db::CrClass instproc fetch_object"
+  "::xo::db::CrClass instproc drop_object_type"
+  "::xo::db::CrClass instproc get_instances_from_db"
 
 } xotcl_core_tutorial_4 {
   Basic test cases based on the XOTcl core tutorial,
@@ -403,6 +407,29 @@ aa_register_case -cats {
 
     set r [::xo::db::Class exists_in_db -id $item_id]
     aa_true "exists in db $item_id -> <$r>" {$r eq "0"}
+
+    #
+    # Manual cleanup
+    #
+    aa_true "Does the ACS Object type ::demo::Page exist in the database" \
+        [::xo::db::Class object_type_exists_in_db -object_type ::demo::Page]
+    aa_log "call [::demo::Page procsearch get_instances_from_db]"
+
+    set instances [::demo::Page get_instances_from_db]
+    aa_equals "get instances from demo page " [llength [$instances children]] 1
+
+    foreach o [$instances children] {
+      aa_log "delete $o [$o info precedence]"
+      xo::db::CrClass delete -item_id [$o item_id]
+    }
+
+    set instances [::demo::Page get_instances_from_db]
+    aa_equals "get instances from demo page " [llength [$instances children]] 0
+
+    ::demo::Page drop_object_type
+
+    aa_false "Does the ACS Object type ::demo::Page exist in the database" \
+        [::xo::db::Class object_type_exists_in_db -object_type ::demo::Page]
   }
 }
 
