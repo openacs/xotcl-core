@@ -295,7 +295,7 @@ namespace eval ::xo::db {
   ::xo::db::Driver abstract instproc list           {{-dbn ""} {-bind ""} -prepare qn sql}
   ::xo::db::Driver abstract instproc dml            {{-dbn ""} {-bind ""} -prepare qn sql}
   ::xo::db::Driver abstract instproc foreach        {{-dbn ""} {-bind ""} -prepare qn sql {script}}
-  ::xo::db::Driver abstract instproc row_lock       {{-dbn ""} {-bind ""} {-for "UPDATE"} -prepare qn sql}  
+  ::xo::db::Driver abstract instproc row_lock       {{-dbn ""} {-bind ""} {-for "UPDATE"} -prepare qn sql}
   ::xo::db::Driver abstract instproc transaction    {{-dbn ""} script args}
   ::xo::db::Driver abstract instproc ds {onOff}
   ::xo::db::Driver abstract instproc prepare        {-handle {-argtypes ""} sql}
@@ -658,7 +658,7 @@ namespace eval ::xo::db {
     set prepareOpt [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
     :uplevel [list ::xo::dc list -dbn $dbn -bind $bind {*}$prepareOpt $qn "$sql FOR $for"]
   }
-  
+
   ::xo::db::DB-postgresql instproc prepare {-handle:required {-argtypes ""} sql} {
     #
     # Define a md5 key for the prepared statement in nsv based on the
@@ -1045,7 +1045,7 @@ namespace eval ::xo::db {
       }
       if {[info exists check_function]} {
         set check_function [string toupper $check_function]
-        set function_exists [::xo::dc 0or1row function_exists {        
+        set function_exists [::xo::dc 0or1row function_exists {
           select 1 from dual where exists
           (SELECT 1 FROM acs_function_args WHERE function = :check_function)
         }]
