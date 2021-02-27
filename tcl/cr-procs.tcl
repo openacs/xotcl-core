@@ -343,7 +343,6 @@ namespace eval ::xo::db {
   }
 
 
-
   CrClass ad_instproc drop_object_type {} {
     Delete the object type and remove the table for the attributes.
     This method should be called when all instances are deleted. It
@@ -357,14 +356,6 @@ namespace eval ::xo::db {
           -drop_children_p t \
           -drop_table_p t
     }
-  }
-
-  CrClass ad_proc require_folder_object {
-    -folder_id
-    -package_id
-  } {
-    Dummy stub; let specializations define it
-  } {
   }
 
   CrClass instproc getFormClass {-data:required} {
