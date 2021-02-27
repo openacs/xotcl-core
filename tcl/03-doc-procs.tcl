@@ -337,11 +337,11 @@ ad_library {
     #
     
     #ns_log notice "update_object_doc $scope $obj ..."    
-
+    
     if {$doc_string eq ""} {
       set doc_string [:get_doc_block [:get_init_block $scope $obj]]
     }
-
+    
     ad_parse_documentation_string $doc_string doc_elements
     #
     # Initialize dictionary with default values and update it with the
@@ -370,7 +370,8 @@ ad_library {
     set proc_index [::xo::api object_index $scope $obj]
     set doc [dict replace $doc \
                  default_values "" \
-                 switches $switches \
+                 switches0 $switches \
+                 switches1 "" \
                  positionals "" \
                  flags $flags \
                 ]
@@ -380,7 +381,7 @@ ad_library {
     }
     nsv_set api_proc_doc $proc_index $doc
     nsv_set api_library_doc $proc_index $doc
-
+    
     set file_index [dict get $doc script]
     if {[nsv_exists api_library_doc $file_index]} {
       array set elements [nsv_get api_library_doc $file_index]
@@ -397,7 +398,7 @@ ad_library {
     set elements(main) [list $oldDoc]
     #ns_log notice "elements = [array get elements]"
     nsv_set api_library_doc $file_index [array get elements]
-
+    
     if {[::nsf::dispatch $obj ::nsf::methods::object::info::hastype ::nx::Class]} {
       #
       # nx classes
@@ -434,21 +435,21 @@ ad_library {
         }
       }
     }
-
+    
   }
 
   :public object method update_method_doc {
-                                           {-protection "public"}
-                                           {-deprecated:switch false}
-                                           {-debug:switch false}
-                                           {-warn:switch false}
-                                           scope obj inst proc_name
-                                           docString
-                                         } {
+    {-protection "public"}
+    {-deprecated:switch false}
+    {-debug:switch false}
+    {-warn:switch false}
+    scope obj inst proc_name
+    docString
+  } {
     set methodType [::xo::getObjectProperty $obj ${inst}methodtype $proc_name]
     set varargs_p [expr {$methodType eq "scripted"
                          && "args" in [::xo::getObjectProperty $obj ${inst}args $proc_name]}]
-
+    
     set doc [dict create \
                  param "" \
                  protection $protection \
@@ -458,7 +459,8 @@ ad_library {
                  script [::xo::api script_name $scope] \
                  main "" \
                  flags "" \
-                 switches "" \
+                 switches0 "" \
+                 switches1 "" \
                 ]
 
     if {$docString ne ""} {
@@ -489,7 +491,7 @@ ad_library {
           set name $flaggedName
         }
         if {$isFlag} {
-          dict lappend doc switches $name
+          dict lappend doc switches0 $name
           dict lappend doc flags $name $flags
           #:log "default_value $proc_name: $sw -> '[lindex $f 1]' <$pair/$f>"
           if {$flags eq "switch" && $default eq ""} {
@@ -497,12 +499,14 @@ ad_library {
           }
         }
         #:log "default_value $proc_name: $sw -> 'default' <$pair/$f>"
-        if {[llength $def] > 1} {lappend defaults $name $default}
+        if {[llength $def] > 1} {
+          lappend defaults $name $default
+        }
       }
       dict set doc default_values $defaults
       dict set doc positionals [::xo::getObjectProperty $obj ${inst}args $proc_name]
     }
-
+    
     # argument documentation finished
     set proc_index [string trimleft [::xo::api proc_index $scope $obj ${inst}proc $proc_name] :]
     if {![nsv_exists api_proc_doc $proc_index]} {
