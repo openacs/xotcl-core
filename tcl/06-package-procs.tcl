@@ -332,7 +332,9 @@ namespace eval ::xo {
         if {[ad_file mtime $fn] > $time} {
           set refetch_this_page true
         }
-        ns_log notice "page $n: prototype file is [expr {$refetch_this_page ? {NEWER} : {OLDER}}]"
+        if {$refetch_this_page} {
+          ns_log notice "page $n: refetch newer-than-installed prototype file"
+        }
       }
       if {$item_id == 0 || $refetch_this_page} {
         :log "require_site_wide_pages tries to load en:$n"
