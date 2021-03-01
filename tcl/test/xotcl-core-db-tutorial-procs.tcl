@@ -254,7 +254,7 @@ aa_register_case -cats {
   "::xo::db::Class instproc object_types"
   "::xo::db::Class proc exists_in_db"
   "::xo::db::Class proc object_type_exists_in_db"
-  "::xo::db::CrClass ad_instproc delete"
+  "::xo::db::CrClass instproc delete"
   "::xo::db::CrClass instproc new_persistent_object"
   "::xo::db::CrClass proc delete"
   "::xo::db::CrClass proc lookup"
