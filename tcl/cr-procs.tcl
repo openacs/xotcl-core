@@ -1876,11 +1876,8 @@ namespace eval ::xo::db {
   }
   CrCache::Item instproc save_new args {
     set item_id [next]
-    ns_log notice "=====  save_new acs::per_request_cache flush -pattern xotcl-core.lookup-${:parent_id}-${:name}"
+    #ns_log notice "===== save_new acs::per_request_cache flush -pattern xotcl-core.lookup-${:parent_id}-${:name}"
     acs::per_request_cache flush -pattern xotcl-core.lookup-${:parent_id}-${:name}
-
-
-
     return $item_id
   }
   CrCache::Item instproc delete args {
