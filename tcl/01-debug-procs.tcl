@@ -304,16 +304,20 @@ if {[info commands ::xotcl::nonposArgs] ne ""} {
   return "${ms}ms$diff"
 }
 
-::xotcl::Object instproc log msg {
+::xotcl::Object instproc log args {
+  set msg [join $args { }]
   ns_log notice "$msg, [self] [self callingclass]->[self callingproc] ([:__timediff])"
 }
-::xotcl::Object instproc ds msg {
+::xotcl::Object instproc ds args {
+  set msg [join $args { }]
   ds_comment "[self]: $msg, ([self callingclass]->[self callingproc] [:__timediff])"
 }
 ::xotcl::Object instproc debug msg {
+  set msg [join $args { }]
   ns_log debug "[self] [self callingclass]->[self callingproc]: $msg"
 }
-::xotcl::Object instproc msg {{-html false} msg} {
+::xotcl::Object instproc msg {{-html false} args} {
+  set msg [join $args { }]
   if {[ns_conn isconnected]} {
     set msg "[self]: $msg  ([self callingclass]->[self callingproc])"
     if {$html} {
