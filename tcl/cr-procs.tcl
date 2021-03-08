@@ -259,12 +259,10 @@ namespace eval ::xo::db {
 
 
   CrClass set common_query_atts {
-    object_type
+    object_type package_id
     creation_user creation_date
-    publish_status last_modified
-  }
-  if {[apm_version_names_compare [ad_acs_version] 5.2] > -1} {
-    CrClass lappend common_query_atts package_id
+    publish_status storage_type
+    last_modified
   }
 
   CrClass instproc edit_atts {} {
@@ -448,12 +446,13 @@ namespace eval ::xo::db {
       :create $object
     }
     set raw_atts [::xo::db::CrClass set common_query_atts]
-    # :log "-- raw_atts = '$raw_atts'"
+    #:log "-- raw_atts = '$raw_atts'"
 
     set atts [list]
     foreach v $raw_atts {
       switch -glob -- $v {
         publish_status {set fq i.$v}
+        storage_type   {set fq i.$v}
         creation_date  {set fq o.$v}
         creation_user  {set fq o.$v}
         package_id     {set fq o.$v}
@@ -497,7 +496,7 @@ namespace eval ::xo::db {
       $object set revision_id $revision_id
       set sql [subst {
         select [join $atts ,], i.parent_id
-          from ${:table_name}i n, cr_items i,acs_objects o
+          from ${:table_name}i n, cr_items i, acs_objects o
          where n.revision_id = :revision_id
            and i.item_id = n.item_id
            and o.object_id = n.revision_id
@@ -806,6 +805,9 @@ namespace eval ::xo::db {
       #   set content [set :$slot_name]
       #   :msg "$slot_name [$cls table_name] [$cls id_column] length=[string length $content]"
       # }
+      if {![info exists :storage_type] || $storage_type ne ${:storage_type}} {
+        ad_log warning "we cannot get rid of the instvar storage_type yet"
+      }
       if {$storage_type eq "file"} {
         ::xo::dc dml fix_content_length "update cr_revisions \
                 set content_length = [ad_file size ${:import_file}] \
@@ -1048,7 +1050,7 @@ namespace eval ::xo::db {
       #
       set :modifying_user $creation_user
       ::xo::dc 1row -prepare integer get_metadata {
-        select context_id, last_modified
+        select last_modified
         from acs_objects where object_id = :revision_id
       }
       set :last_modified $last_modified
@@ -1058,14 +1060,14 @@ namespace eval ::xo::db {
       # instance variable, push the value from the instance variable
       # to the DB as well.
       #
-      if {[info exists :context_id]
-          && $context_id != ${:context_id}
-        } {
+      if {[info exists :context_id]} {
         set context_id ${:context_id}
+
         ::xo::dc dml update_context {
-          update acs_objects
-          set context_id = :context_id
-          where object_id = :item_id
+          UPDATE acs_objects
+          SET context_id = :context_id
+          WHERE object_id = :item_id
+          AND   context_id != :context_id
         }
       }
     }
