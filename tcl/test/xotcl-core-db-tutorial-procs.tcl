@@ -1,7 +1,6 @@
-ad_library {
-  Test the availability of xotcl
+ad_library {  
+  Tests for the XOTcl db abstraction based on the XOTcl core tutorial.
 }
-
 
 aa_register_case -cats {
   api smoke db
