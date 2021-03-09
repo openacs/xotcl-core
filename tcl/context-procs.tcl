@@ -57,20 +57,9 @@ namespace eval ::xo {
       #:log "--CONN ns_conn query = <$actual_query>"
     }
 
-    set decodeCmd ns_urldecode
-    if {$::xo::naviserver} {lappend decodeCmd --}
-
-    # get the query parameters (from the url)
     #:log "--P processing actual query ${:actual_query}"
-    foreach querypart [split ${:actual_query} &] {
-      set name_value_pair [split $querypart =]
-      set att_name [{*}$decodeCmd [lindex $name_value_pair 0]]
+    foreach {att_name att_value} [ns_set array [ns_parsequery ${:actual_query}]] {
       if {$att_name eq ""} continue
-      if {[llength $name_value_pair] == 1} {
-        set att_value 1
-      }  else {
-        set att_value [{*}$decodeCmd [lindex $name_value_pair 1]]
-      }
       if {[info exists (-$att_name)]} {
         lappend passed_args(-$att_name) $att_value
       } elseif {$all_from_query} {
@@ -244,7 +233,7 @@ namespace eval ::xo {
     #
     # This is a private method used for low-level connection context
     # creation. This function has to be called either with a valid
-    # "-url" when being used outside connection threads. 
+    # "-url" when being used outside connection threads.
     #
     set exists_cc [nsf::is object ::xo::cc]
 
@@ -615,39 +604,33 @@ namespace eval ::xo {
 
 namespace eval ::xo {
 
-  proc ::xo::update_query_variable {old_query var value} {
-    #
-    # Replace in a URL-query old occurrences of var with new value.
-    #
-    # @return pairs in a form suitable for export_vars
-    #
-    set decodeCmd ns_urldecode
-    if {$::xo::naviserver} {lappend decodeCmd --}
+  ad_proc -private ::xo::update_query_variable {old_query var value} {
 
+     Replace in a URL-query old occurrences of var with new value.
+
+     @return pairs in a form suitable for export_vars
+   } {
     set query [list [list $var $value]]
-    foreach pair [split $old_query &] {
-      lassign [split $pair =] key value
+    foreach {key value} [ns_set array [ns_parsequery $old_query]] {
       if {$key eq $var} continue
-      lappend query [list [{*}$decodeCmd $key] [{*}$decodeCmd $value]]
+      lappend query [list $key $value]
     }
     return $query
-  }
+   }
 
-  proc ::xo::update_query {old_query var value} {
-    #
-    # Replace in a URL-query old occurrences of var with new value.
-    #
-    # @return encoded HTTP query
-    #
-    set decodeCmd ns_urldecode
+  ad_proc -private ::xo::update_query {old_query var value} {
+
+     Replace in a URL-query old occurrences of var with new value.
+
+     @return encoded HTTP query
+   } {
     set encodeCmd ns_urlencode
-    if {$::xo::naviserver} {lappend decodeCmd --; lappend encodeCmd --}
+    if {$::xo::naviserver} {lappend encodeCmd --}
 
     set query [{*}$encodeCmd $var]=[{*}$encodeCmd $value]
-    foreach pair [split $old_query &] {
-      lassign [split $pair =] key value
-      if {[{*}$decodeCmd $key] eq $var} continue
-      append query &$pair
+    foreach {key value} [ns_set array [ns_parsequery $old_query]] {
+      if {$key eq $var} continue
+      append query &[{*}$encodeCmd $key]=[{*}$encodeCmd $value]
     }
     return $query
   }
