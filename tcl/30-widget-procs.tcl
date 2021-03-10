@@ -836,11 +836,9 @@ namespace eval ::xo::Table {
       #
       # Called interactively
       #
-      set actual_query [ns_conn query]
-      foreach pair [split $actual_query &] {
-        lassign [split $pair =] key value
+      foreach {key value} [ns_set array [ns_parsequery [ns_conn query]]] {
         if {$key in {"orderby" "__csrf_token"}} continue
-        lappend query [list [ns_urldecode $key] [ns_urldecode $value]]
+        lappend query [list $key $value]
       }
       set base [ad_conn url]
     } else {
