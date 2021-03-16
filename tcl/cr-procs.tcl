@@ -775,6 +775,7 @@ namespace eval ::xo::db {
         package_id
         {parent_id -100}
         {publish_status ready}
+        {storage_type text}        
       }
 
   CrItem::slot::revision_id default 0
@@ -806,7 +807,7 @@ namespace eval ::xo::db {
       #   :msg "$slot_name [$cls table_name] [$cls id_column] length=[string length $content]"
       # }
       if {![info exists :storage_type] || $storage_type ne ${:storage_type}} {
-        ad_log warning "we cannot get rid of the instvar storage_type yet"
+        ad_log warning "we cannot get rid of the instvar storage_type yet (exists [info exists :storage_type])"
       }
       if {$storage_type eq "file"} {
         ::xo::dc dml fix_content_length "update cr_revisions \
