@@ -681,6 +681,29 @@ namespace eval ::xo::db {
       set offset ""
     }
 
+    if {!$count} {
+      #
+      # In case the query is not explicitly referring to a context_id,
+      # return the context_id of the item. The problem are queries
+      # using "*" in the attribute list, which should be deprecated.
+      # Before that we should walk through the common call patterns of
+      # this function to check, if this is feasible.
+      #
+      # This local hack was necessary to deal with a recent fix that
+      # honors now correctly changes in the context_id. Before this
+      # change, e.g. "get_all_children" was returning due to the
+      # nature of the call the context_id of the revision (not of the
+      # item), although it was returning items. A following bug-fix
+      # actually triggered this change.
+      # https://cvs.openacs.org/changelog/OpenACS?cs=oacs-5-10%3Agustafn%3A20210308161117
+      #
+      # TODO: remove me, when not necessary anymore.
+      #
+      if {[lsearch -glob $attributes *context_id*] == -1} {
+        append attribute_selection {,(select context_id from acs_objects where object_id = ci.item_id)}
+      }
+    }
+    
     set sql [::xo::dc select \
                  -vars $attribute_selection \
                  -from "$acs_objects_table cr_items ci, $base_table bt $from_clause" \
