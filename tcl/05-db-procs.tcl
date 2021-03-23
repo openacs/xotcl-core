@@ -21,7 +21,7 @@ namespace eval ::xo::db {
   # connection objects based on these two aspects. The default
   # database connection is configured in an object ::xo::dc (for
   # database context) quite similar to ::xo::cc (the default
-  # connection context). In general ::xo::dc can be reconfigured at
+  # connection context). In general, ::xo::dc can be reconfigured at
   # run time, and multiple database context can be established,
   # although there is no high-level support to connect to multiple
   # different OpenACS databases at the same time.
@@ -2497,7 +2497,6 @@ namespace eval ::xo::db {
       set limit ""
       set offset ""
     }
-
     set sql [::xo::dc select \
                  -vars   [join $select_attributes ,] \
                  -from  "[join $tables ,] $from_clause" \
