@@ -312,7 +312,7 @@ if {[info commands ::xotcl::nonposArgs] ne ""} {
   set msg [join $args { }]
   ds_comment "[self]: $msg, ([self callingclass]->[self callingproc] [:__timediff])"
 }
-::xotcl::Object instproc debug msg {
+::xotcl::Object instproc debug args {
   set msg [join $args { }]
   ns_log debug "[self] [self callingclass]->[self callingproc]: $msg"
 }
