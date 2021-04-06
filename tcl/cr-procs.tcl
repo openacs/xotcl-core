@@ -485,13 +485,13 @@ namespace eval ::xo::db {
           lappend atts i.[$slot column_name]
         }
         ::xo::db::Object::slot::context_id {
-          # In case we fetch the item by revision, we would get the
-          # item_id as contex_id and the resulting object would result
-          # having object_id = context_id. Make sure the context_id is
-          # always fetched from the item.
-          lappend atts {
-            (select context_id from acs_objects
-             where object_id = i.item_id) as context_id
+          # If we are fetching by revision_id, skip the context_id:
+          # for revisions, this is always the item_id and if the
+          # object is persisted, would be set as the context_id for
+          # the item. This creates a permission loop context_id =
+          # object_id that we have a constraint for now.
+          if {!$revision_id} {
+            lappend atts o.[$slot column_name]
           }
         }
         ::xo::db::Object::slot::* {
