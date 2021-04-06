@@ -466,9 +466,10 @@ namespace eval ::xo::db {
         ::xo::db::CrItem::slot::text {
           #
           # We need the rule, since insert the handling of the sql
-          # attribute "text" is somewhat magic. On insert, one can use the
-          # automatic view with column_name "text, on queries, one has to use
-          # "data". Therefore, we cannot use simply -column_name for the slot.
+          # attribute "text" is somewhat magic. On insert, one can use
+          # the automatic view with column_name "text, on queries, one
+          # has to use "data". Therefore, we cannot use simply
+          # -column_name for the slot.
           #
           lappend atts "n.data AS text"
         }
@@ -485,12 +486,16 @@ namespace eval ::xo::db {
           lappend atts i.[$slot column_name]
         }
         ::xo::db::Object::slot::context_id {
-          # If we are fetching by revision_id, skip the context_id:
-          # for revisions, this is always the item_id and if the
-          # object is persisted, would be set as the context_id for
-          # the item. This creates a permission loop context_id =
-          # object_id that we have a constraint for now.
-          if {!$revision_id} {
+          #
+          # If we are fetching by revision_id, skip the context_id,
+          # since on object-save-operations, we want to keep the
+          # context_id of the item, and not the context_id from the
+          # revision.
+          #
+          if {$revision_id == 0} {
+            #
+            # Fetch by item_id.
+            #
             lappend atts o.[$slot column_name]
           }
         }
@@ -713,7 +718,7 @@ namespace eval ::xo::db {
         append attribute_selection {,(select context_id from acs_objects where object_id = ci.item_id)}
       }
     }
-    
+
     set sql [::xo::dc select \
                  -vars $attribute_selection \
                  -from "$acs_objects_table cr_items ci, $base_table bt $from_clause" \
@@ -808,7 +813,7 @@ namespace eval ::xo::db {
         package_id
         {parent_id -100}
         {publish_status ready}
-        {storage_type text}        
+        {storage_type text}
       }
 
   CrItem::slot::revision_id default 0
