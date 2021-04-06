@@ -484,6 +484,16 @@ namespace eval ::xo::db {
         ::xo::db::CrItem::slot::name {
           lappend atts i.[$slot column_name]
         }
+        ::xo::db::Object::slot::context_id {
+          # In case we fetch the item by revision, we would get the
+          # item_id as contex_id and the resulting object would result
+          # having object_id = context_id. Make sure the context_id is
+          # always fetched from the item.
+          lappend atts {
+            (select context_id from acs_objects
+             where object_id = i.item_id) as context_id
+          }
+        }
         ::xo::db::Object::slot::* {
           lappend atts o.[$slot column_name]
         }
