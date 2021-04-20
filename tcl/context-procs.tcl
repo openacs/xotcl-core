@@ -620,17 +620,20 @@ namespace eval ::xo {
 
   ad_proc -private ::xo::update_query {old_query var value} {
 
-     Replace in a URL-query old occurrences of var with new value.
+    Replace in a URL-query old occurrences of var with new value.
 
-     @return encoded HTTP query
-   } {
+    @return encoded HTTP query
+  } {
     set encodeCmd ns_urlencode
     if {$::xo::naviserver} {lappend encodeCmd --}
 
     set query [{*}$encodeCmd $var]=[{*}$encodeCmd $value]
-    foreach {key value} [ns_set array [ns_parsequery $old_query]] {
-      if {$key eq $var} continue
-      append query &[{*}$encodeCmd $key]=[{*}$encodeCmd $value]
+
+    if {$old_query ne ""} {
+      foreach {key value} [ns_set array [ns_parsequery $old_query]] {
+        if {$key eq $var} continue
+        append query &[{*}$encodeCmd $key]=[{*}$encodeCmd $value]
+      }
     }
     return $query
   }

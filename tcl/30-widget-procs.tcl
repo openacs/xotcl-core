@@ -836,10 +836,6 @@ namespace eval ::xo::Table {
       #
       # Called interactively
       #
-      foreach {key value} [ns_set array [ns_parsequery [ns_conn query]]] {
-        if {$key in {"orderby" "__csrf_token"}} continue
-        lappend query [list $key $value]
-      }
       set base [ad_conn url]
     } else {
       #
@@ -847,7 +843,8 @@ namespace eval ::xo::Table {
       #      
       set base .
     }
-    set href [export_vars -base $base $query]
+    set href $base?[::xo::update_query [ns_conn query] $orderby_name $new_orderby]
+    
     html::a -href $href -title $title {
       html::t [:_ label]
       html::img -src $img -alt ""
