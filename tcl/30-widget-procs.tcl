@@ -469,7 +469,7 @@ namespace eval ::xo {
     set displayColumns [lmap column [[self]::__columns children] {
       if {[$column exists no_csv]} continue
       if {[$column istype ::xo::Table::BulkAction]} continue
-      if {[$column istype ::xo::Table::HiddenField]} continue          
+      if {[$column istype ::xo::Table::HiddenField]} continue
       set column
     }]
     foreach column $displayColumns {
@@ -837,14 +837,16 @@ namespace eval ::xo::Table {
       # Called interactively
       #
       set base [ad_conn url]
+      set query [ns_conn query]
     } else {
       #
       # Called in the background (e.g. from search renderer)
-      #      
+      #
       set base .
+      set query ""
     }
-    set href $base?[::xo::update_query [ns_conn query] $orderby_name $new_orderby]
-    
+    set href $base?[::xo::update_query $query $orderby_name $new_orderby]
+
     html::a -href $href -title $title {
       html::t [:_ label]
       html::img -src $img -alt ""
