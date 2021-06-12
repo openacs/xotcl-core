@@ -878,7 +878,25 @@ namespace eval ::xo::db {
       set sql "update [$domain table_name] \
                 set [$slot column_name] = :value \
         where [$domain id_column] = $revision_id"
-      ::xo::dc dml update_attribute_from_slot $sql
+      ::xo::dc dml update_attribute_from_slot [subst {
+        update [$domain table_name]
+        set [$slot column_name] = :value
+        where [$domain id_column] = :revision_id
+      }]
+      #
+      # Probably we should call here update_last_modified, but for
+      # that we would need the modifying_user and the modifying IP
+      # address.
+      #
+      # ::xo::db::sql::acs_object update_last_modified \
+      #      -object_id $revision_id \
+      #      -modifying_user ${:publish_status} \
+      #      -modifying_ip ...
+
+      ::xo::dc dml update_attribute_from_slot_last_modified {
+        update acs_objects set last_modified = now()
+        where object_id = :revision_id
+      }
     }
   } else {
     #
@@ -958,6 +976,10 @@ namespace eval ::xo::db {
         where [$domain id_column] = $revision_id"
         ::xo::dc dml $att $sql
       }
+      ::xo::dc dml update_attribute_from_slot_last_modified {
+        update acs_objects set last_modified = now()
+        where object_id = :revision_id
+      }      
     }
   }
 
