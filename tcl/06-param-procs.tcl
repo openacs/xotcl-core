@@ -170,7 +170,7 @@ namespace eval ::xo {
         where package_key = :package_key
         fetch first 1 rows only
       }
-    }
+    }]
   }
 
   parameter proc get_parameter_object {
