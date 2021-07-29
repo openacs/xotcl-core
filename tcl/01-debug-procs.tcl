@@ -84,6 +84,18 @@ if {[nsf::is object ::nx::Object]} {
         return -code error "Value '$value' of parameter $name is not a natural number."
       }
     }
+    :method type=object_id {name value} {
+      #
+      # Object ID has SQL integers, which have a different value range
+      # than Tcl integers. SQL integers are classical 32-bit quantities.
+      #
+      if {![string is integer -strict $value]
+          || $value < -2147483648
+          || $value > 2147483647
+        } {
+        return -code error "Value '$value' of parameter $name is not a valid object ID."
+      }
+    }
     :method type=token {name value} {
       if {![regexp {^[\w.,: -]+$} $value]} {
         return -code error "Value '$value' of parameter $name is not a valid token."
@@ -117,6 +129,7 @@ if {[nsf::is object ::nx::Object]} {
     ::nx::Slot method exists
     ::nx::Slot method set
     ::nx::Slot method type=naturalnum
+    ::nx::Slot method type=object_id
     ::nx::Slot method type=token
     ::nx::Slot method type=localurl
     ::nx::Slot method type=html
