@@ -729,7 +729,7 @@ namespace eval ::xo::Table {
               $field set CSSclass ""
             }
             set CSSclass [list "list" {*}[$field CSSclass]]
-            html::td  [concat [list class $CSSclass] [$field html]] {
+            html::td [concat [list class $CSSclass] [$field html]] {
               $field render-data $line
             }
           }
