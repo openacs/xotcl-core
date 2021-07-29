@@ -706,7 +706,7 @@ namespace eval ::xo {
         ::xo::db::Attribute create default_locale -datatype string -sqltype varchar(30)
       } \
       -parameter {
-        id
+        {id:integer}
         url
         {context ::xo::cc}
         package_url
@@ -738,6 +738,7 @@ namespace eval ::xo {
                     -use_prototype_pages true \
                     -use_package_path true \
                     -parent_id $parent_id \
+                    -default_lang $default_lang \
                     $item_ref]
       #:log "weblog form $item_ref => $page"
       if {$page ne ""} {
