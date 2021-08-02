@@ -446,16 +446,17 @@ if {![::acs::icanuse "ns_conn contentsentlength"]} {
       set :spooling 1
       # puts -nonewline [:channel] $data
       # :done
-      set filename [ad_tmpnam]
-      set fd [open $filename w]
+
+      set fd [file tempfile spool_filename [ad_tmpdir]/nsd-spool-XXXXXX]
       fconfigure $fd -translation binary -encoding $encoding
       puts -nonewline $fd $data
       close $fd
-      set fd [open $filename]
+
+      set fd [open $spool_filename]
       fconfigure $fd -translation binary -encoding $encoding
       fconfigure [:channel] -translation binary  -encoding $encoding
       fcopy $fd [:channel] -command \
-          [list [self] end-delivery $filename $fd [:channel] $request]
+          [list [self] end-delivery $spool_filename $fd [:channel] $request]
     }
   }
   ::HttpSpooler instproc end-delivery {filename fd ch request bytes args} {

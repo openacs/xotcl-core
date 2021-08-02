@@ -23,7 +23,6 @@ if {$dot eq ""} {ns_return 404 plain/text "dot not found"; ad_script_abort}
 
 set tmpnam [ad_tmpnam]
 set tmpfile $tmpnam.$format
-set f [open $tmpnam.$format w]; puts $f $dot_code; close $f
 
 #ns_log notice "png $tmpnam dot $tmpnam.dot"
 set f [open "|$dot  -T$format -o $tmpfile" w]; puts $f $dot_code; close $f

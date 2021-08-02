@@ -428,18 +428,16 @@ if {!$as_img} {
     #ad_script_abort
   } else {
 
-    set tmpnam [ad_tmpnam]
-    set tmpfile $tmpnam.svg
-    set f [open $tmpnam.dot w]; puts $f $dot_code; close $f
+    set svgfile [ad_tmpnam].svg
+    #ns_log notice "svg $svgfile"
 
-    #ns_log notice "svg $tmpnam dot $tmpnam.dot"
-    set f [open "|$dot  -Tsvg -o $tmpfile" w]; puts $f $dot_code
+    set f [open "|$dot  -Tsvg -o $svgfile" w]; puts $f $dot_code
     try {
       close $f
     } on error {errorMsg} {
       ns_log warning "dot returned $errorMsg"
     }
-    set f [open  $tmpfile]; set svg [read $f]; close $f
+    set f [open $svgfile]; set svg [read $f]; close $f
 
     # delete the first three lines generated from dot
     regsub {^[^\n]+\n[^\n]+\n[^\n]+\n} $svg "" svg
@@ -449,8 +447,8 @@ if {!$as_img} {
     }
     set svg "<style>$css</style><div><div class='inner'>$svg</div></div>"
 
-    file delete -- $tmpfile
-    file delete -- $tmpnam.dot
+    file delete -- $svgfile
+    #file delete -- $dotfile
   }
 }
 
