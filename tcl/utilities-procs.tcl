@@ -22,6 +22,14 @@ namespace eval ::xo {
     ::puts -nonewline $F $content
     ::close $F
   }
+
+  proc write_tmp_file {varFilename content} {
+    upvar $varFilename tmpFileName
+    set F [file tempfile tmpFileName]
+    fconfigure $F -translation binary -encoding binary
+    puts -nonewline $F $content
+    close $F
+  }
 }
 
 #
