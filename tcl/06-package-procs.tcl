@@ -21,22 +21,50 @@ namespace eval ::xo {
         {site_wide_pages ""}
       }
 
-  PackageMgr ad_instproc first_instance {-privilege -party_id} {
-    @return return first mounted instance of this type
+  PackageMgr ad_instproc first_instance {
+    -privilege
+    -party_id
+  } {
+    Returns the first mounted instance of this Package. When a
+    privilege and a party are specified, will return the first
+    instance where the party has such privilege.
+
+    @param party_id the party we are checking the privilege for
+    @param privilege
+
+    @return integer package_id, empty string when none is found
   } {
     set package_key ${:package_key}
-    set sql {
-      select min(package_id)
-      from apm_packages, site_nodes s
-      where package_key = :package_key
-        and s.object_id = package_id
-    }
-    if {[info exists privilege]} {
-      append sql {
-        and acs_permission.permission_p(package_id, :party_id, :privilege)
+    if {![info exists privilege]} {
+      return [::xo::dc get_value -prepare text get_first_package_id {
+        select min(package_id)
+          from apm_packages, site_nodes s
+         where package_key = :package_key
+           and s.object_id = package_id
+      }]
+    } elseif {[db_driverkey ""] eq "postgresql"} {
+      # On Postgres we can use a recursive database function to check
+      # for permissions on many objects more efficiently.
+      set sql {
+        select min(orig_object_id)
+          from acs_permission.permission_p_recursive_array(array(
+                select package_id
+                  from apm_packages, site_nodes s
+                 where package_key = :package_key
+                   and s.object_id = package_id
+                ), :party_id, :privilege)
+      }
+    } else {
+      set sql {
+        select min(package_id)
+        from apm_packages, site_nodes s
+       where package_key = :package_key
+         and s.object_id = package_id
+         and acs_permission.permission_p(package_id, :party_id, :privilege)
       }
     }
-    return [::xo::dc get_value get_package_id $sql]
+
+    return [::xo::dc get_value -prepare {text integer text} get_first_package_id_with_privilege $sql]
   }
 
   PackageMgr ad_instproc instances {{-include_unmounted false} {-closure false}} {
