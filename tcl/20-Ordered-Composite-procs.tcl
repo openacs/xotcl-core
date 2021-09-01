@@ -77,9 +77,11 @@ namespace eval ::xo {
 
   OrderedComposite instproc deep_copy {} {
     set copy [:copy [::xotcl::Object new]]
-    $copy set __children {}
-    foreach c ${:__children} {
-      $copy add [$c copy [::xotcl::Object new]]
+    if {[info exists :__children]} {
+      $copy set __children {}
+      foreach c ${:__children} {
+        $copy add [$c copy [::xotcl::Object new]]
+      }
     }
     return $copy
   }
