@@ -71,7 +71,11 @@ namespace eval ::xo::db {
 
   ::xotcl::Class create ::xo::db::postgresql -superclass ::xo::db::SQL
 
-  ::xo::db::postgresql instproc map_datatype {type} {
+  ::xo::db::postgresql ad_instproc map_datatype {type} {
+    Maps supplied abstract type to the real Postgres datatype
+
+    @return the name of a supported Postgres datatype
+  } {
     switch -- $type {
       string    { set type text }
       long_text { set type text }
