@@ -40,6 +40,11 @@ namespace eval ::xo::db {
   # generic (fallback) methods
   #
   ::xo::db::SQL instproc map_datatype {type} {
+    #
+    # Map a generic datatype to a real datatype of the underlying
+    # database management system. This function is typically refined
+    # for concrete database systems.
+    #
     # If a mapping is not found we keep the type unaltered, but this
     # will currently break acs_attributes_datatype_fk when creating
     # acs_attributes with an unmapped type.
@@ -71,10 +76,7 @@ namespace eval ::xo::db {
 
   ::xotcl::Class create ::xo::db::postgresql -superclass ::xo::db::SQL
 
-  ::xo::db::postgresql ad_instproc map_datatype {type} {
-    Maps supplied abstract type to the real Postgres datatype
-
-    @return the name of a supported Postgres datatype
+  ::xo::db::postgresql instproc map_datatype {type} {
   } {
     switch -- $type {
       string    { set type text }
