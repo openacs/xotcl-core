@@ -44,20 +44,26 @@ namespace eval ::xo {
     if {![info exists :__children]} {
       return ""
     }
-    set children [expr {[info exists :__children] ? ${:__children} : ""}]
-    if {[info exists :__orderby]} {
-      if {[llength ${:__children}] > 0} {
-        set firstChild [lindex ${:__children} 0]
-        if {![$firstChild exists ${:__orderby}]} {
-          error "invalid sorting criterion '${:__orderby}'"
-        }
+
+    set sort_p false
+
+    if {[info exists :__orderby] && [llength ${:__children}] > 0} {
+      set firstChild [lindex ${:__children} 0]
+      if {[$firstChild exists ${:__orderby}]} {
+        set sort_p true
+      } else {
+        ad_log warning "invalid sorting criterion '${:__orderby}'"
       }
+    }
+
+    if {$sort_p} {
       set order [expr {[info exists :__order] ? ${:__order} : "increasing"}]
       return [lsort -command :__compare -$order ${:__children}]
     } else {
       return ${:__children}
     }
   }
+
   OrderedComposite instproc add obj {
     lappend :__children $obj
     $obj set __parent [self]
