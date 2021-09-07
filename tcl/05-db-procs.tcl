@@ -75,7 +75,7 @@ namespace eval ::xo::db {
     switch -- $type {
       string    { set type text }
       long_text { set type text }
-      date      { set type "timestamp with timezone" }
+      date      { set type "timestamp with time zone" }
       ltree     { set type [expr {[::xo::dc has_ltree] ? "ltree" : "text" }] }
       default   { return [next] }
     }
