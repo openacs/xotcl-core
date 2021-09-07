@@ -77,7 +77,6 @@ namespace eval ::xo::db {
   ::xotcl::Class create ::xo::db::postgresql -superclass ::xo::db::SQL
 
   ::xo::db::postgresql instproc map_datatype {type} {
-  } {
     switch -- $type {
       string    { set type text }
       long_text { set type text }
