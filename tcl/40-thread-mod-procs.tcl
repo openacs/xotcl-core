@@ -206,7 +206,6 @@ Class create ::xotcl::THREAD \
         } else {
           set tid [::thread::create]
         }
-        nsv_set [self class] [self] $tid
         if {[:persistent]} {
           :log "--created new persistent [self class] as $tid pid=[pid]"
         } else {
@@ -225,6 +224,12 @@ Class create ::xotcl::THREAD \
         append initcmd ${:initcmd}
         #ns_log notice "INIT $initcmd"
         ::thread::send $tid $initcmd
+        
+        #
+        # Tell the world about the thread only once it is fully
+        # working to avoid potential race-conditions during startup.
+        #
+        nsv_set [self class] [self] $tid
       } else {
         set tid [nsv_get [self class] [self]]
       }
