@@ -75,7 +75,7 @@ if {[nsf::is object ::nx::Object]} {
     return "dbqd.[:uplevel [list current class]]-[:uplevel [list current method]].$query_name"
   }
   #
-  # Allow the use of types "naturalnum" and "token" e.g. in
+  # Allow the use of types "naturalnum", "token", "localurl", "html", "nohtml" e.g. in
   # ::xowiki::Package initialize.
   #
   ::nx::Slot eval {
@@ -116,6 +116,24 @@ if {[nsf::is object ::nx::Object]} {
         return -code error "Value '$value' of parameter $name contains unsafe HTML."
       }
     }
+    :method type=range {name value arg} {
+      lassign [split $arg -] min max
+      if {$min eq ""} {
+        unset min
+      }
+      if {$max eq ""} {
+        unset max
+      }
+      if {[info exists min] && [info exists max] &&
+        ($value < $min || $value > $max)} {
+        error "value '$value' of parameter $name not between $min and $max"
+      } elseif {[info exists min] && $value < $min} {
+        error "value '$value' of parameter $name must not be smaller than $min"
+      } elseif {[info exists max] && $value > $max} {
+        error "value '$value' of parameter $name must not be larger than $max"
+      }
+      return $value
+  }
   }
 
   ::xotcl::Object proc setExitHandler {code} {::nsf::exithandler set $code}
@@ -134,6 +152,7 @@ if {[nsf::is object ::nx::Object]} {
     ::nx::Slot method type=localurl
     ::nx::Slot method type=html
     ::nx::Slot method type=nohtml
+    ::nx::Slot method type=range    
     ::nx::Object nsfproc ::nsf::debug::call
     ::nx::Object nsfproc ::nsf::debug::exit
   }
