@@ -18,7 +18,7 @@ namespace eval ::xo {
   ad_proc -deprecated cache_flush_all {cache pattern} {
     Provide means to perform a wildcard-based cache flushing on
     (cluster) machines.
-  }
+  } {
     ::acs::cache_flush_all $cache $pattern
   }
 
