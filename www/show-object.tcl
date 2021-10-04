@@ -1,7 +1,10 @@
 ad_page_contract {
   Show an XOTcl class or object
 
+  @param as_img do NOT include svg content in the HTML rendering
+
   @author Gustaf Neumann
+
   @cvs-id $Id$
 } -query {
   {object:nohtml,trim ::xotcl::Object}
@@ -403,9 +406,13 @@ if {$isclass && $with_instances} {
   }
 }
 
-if {$as_img} {
+#
+# "as_img" true means: do not include SVG in the code.
+#
+if {!$as_img} {
   #
-  # Construct the dot code from the provided classes.
+  # Construct the dot code from the provided classes as embedded svg
+  # code.
   #
   # TODO: it would be nice to pass the selected options from the
   # dimensional slider to dotcode, since with svg, the dot code
@@ -421,19 +428,22 @@ if {$as_img} {
   set dot ""
   catch {set dot [::util::which dot]}
   # final resort for cases, where ::util::which is not available
-  if {$dot eq "" && [file executable /usr/bin/dot]} {set dot /usr/bin/dot}
+  if {$dot eq "" && [file executable /usr/bin/dot]} {
+    set dot /usr/bin/dot
+  }
   if {$dot eq ""} {
     #ns_return 404 plain/text "dot not found"
     ns_log warning "program 'dot' is not available"
     #ad_script_abort
   } else {
 
-    set svgfile [ad_tmpnam].svg
-    #ns_log notice "svg $svgfile"
+    set stem [ad_tmpnam]
+    set svgfile $stem.svg
+    set dotfile $stem.dot
 
-    set f [open "|$dot  -Tsvg -o $svgfile" w]; puts $f $dot_code
+    set f [open $dotfile w]; puts $f $dot_code; close $f
     try {
-      close $f
+      exec $dot -Tsvg -o $svgfile $dotfile
     } on error {errorMsg} {
       ns_log warning "dot returned $errorMsg"
     }
@@ -448,7 +458,7 @@ if {$as_img} {
     set svg "<style>$css</style><div><div class='inner'>$svg</div></div>"
 
     file delete -- $svgfile
-    #file delete -- $dotfile
+    file delete -- $dotfile
   }
 }
 

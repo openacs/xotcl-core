@@ -152,7 +152,7 @@ if {[nsf::is object ::nx::Object]} {
     ::nx::Slot method type=localurl
     ::nx::Slot method type=html
     ::nx::Slot method type=nohtml
-    ::nx::Slot method type=range    
+    ::nx::Slot method type=range
     ::nx::Object nsfproc ::nsf::debug::call
     ::nx::Object nsfproc ::nsf::debug::exit
   }
@@ -263,6 +263,7 @@ if {[::package vcompare [package require xotcl::serializer] 2.0] < -1} {
   ns_set update $form show_source    [::xo::cc query_parameter show_source:integer 1]
   ns_set update $form show_methods   [::xo::cc query_parameter show_methods:integer 2]
   ns_set update $form show_variables [::xo::cc query_parameter show_variables:integer 1]
+  ns_set update $form as_img 1
   rp_internal_redirect /packages/xotcl-core/www/show-object
   ad_script_abort
 }
