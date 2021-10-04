@@ -403,7 +403,7 @@ if {$isclass && $with_instances} {
   }
 }
 
-if {!$as_img} {
+if {$as_img} {
   #
   # Construct the dot code from the provided classes.
   #
