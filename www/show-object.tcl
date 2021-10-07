@@ -416,7 +416,7 @@ if {!$as_img} {
   #
   # TODO: it would be nice to pass the selected options from the
   # dimensional slider to dotcode, since with svg, the dot code
-  # constructs URLS for navigation in the class tree.
+  # constructs URLs for navigation in the class tree.
   #
   set dot_code [::xo::dotcode -dpi 72 \
                     -with_children $with_children \
@@ -425,41 +425,11 @@ if {!$as_img} {
                     -current_object $object \
                     -documented_methods $documented_only \
                     $class_hierarchy]
-  set dot ""
-  catch {set dot [::util::which dot]}
-  # final resort for cases, where ::util::which is not available
-  if {$dot eq "" && [file executable /usr/bin/dot]} {
-    set dot /usr/bin/dot
-  }
-  if {$dot eq ""} {
-    #ns_return 404 plain/text "dot not found"
-    ns_log warning "program 'dot' is not available"
-    #ad_script_abort
-  } else {
 
-    set stem [ad_tmpnam]
-    set svgfile $stem.svg
-    set dotfile $stem.dot
-
-    set f [open $dotfile w]; puts $f $dot_code; close $f
-    try {
-      exec $dot -Tsvg -o $svgfile $dotfile
-    } on error {errorMsg} {
-      ns_log warning "dot returned $errorMsg"
-    }
-    set f [open $svgfile]; set svg [read $f]; close $f
-
-    # delete the first three lines generated from dot
-    regsub {^[^\n]+\n[^\n]+\n[^\n]+\n} $svg "" svg
-    set css {
-      svg g a:link {text-decoration: none;}
-      div.inner svg {width: 100%; margin: 0 auto;}
-    }
-    set svg "<style>$css</style><div><div class='inner'>$svg</div></div>"
-
-    file delete -- $svgfile
-    file delete -- $dotfile
-  }
+  set svg [util::inline_svg_from_dot -css {
+    svg g a:link {text-decoration: none;}
+    div.inner svg {width: 100%; margin: 0 auto;}
+  } $dot_code]
 }
 
 if {$isclass} {
