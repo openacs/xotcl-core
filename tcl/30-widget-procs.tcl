@@ -902,7 +902,7 @@ namespace eval ::xo::Table {
 
   Class create TABLE::BulkAction -superclass ::xo::Drawable -parameter {{CSSclass ""}}
   TABLE::BulkAction instproc render {} {
-    set name ${:name}
+    ns_log notice "TABLE::BulkAction render name = ${:name}"
     #:msg [:serialize]
     html::th -class list {
       html::input -type checkbox -name __bulkaction -id __bulkaction \
@@ -911,7 +911,7 @@ namespace eval ::xo::Table {
     }
     template::add_body_script -script [subst {
       document.getElementById('__bulkaction').addEventListener('click', function (event) {
-        acs_ListCheckAll('$name', this.checked);
+        acs_ListCheckAll('${:name}', this.checked);
       }, false);
     }]
   }
@@ -920,6 +920,8 @@ namespace eval ::xo::Table {
     #:msg [:serialize]
     set name ${:name}
     set value [$line set [:id]]
+    ns_log notice "TABLE::BulkAction render-data name = ${:name}"
+
     html::input -type checkbox -name $name -value $value \
         -id "$name---[string map {/ _} $value]" \
         -title "Mark/Unmark this row"
@@ -929,6 +931,7 @@ namespace eval ::xo::Table {
       -superclass TABLE \
       -instproc render-actions {} {
         set actions [[self]::__actions children]
+        ns_log notice "TABLE2 has actions: $actions"
         if {[llength $actions] > 0} {
           html::div -class "actions" -style "float: left;" {
             html::ul -style "list-style:none; padding: 10px;" {
@@ -938,12 +941,15 @@ namespace eval ::xo::Table {
         }
       } \
       -instproc render {} {
+        ns_log notice "TABLE2 render"
         if {![nsf::is object [self]::__actions]} {:actions {}}
         if {![nsf::is object [self]::__bulkactions]} {:__bulkactions {}}
         set bulkactions [[self]::__bulkactions children]
         html::div  {
           :render-actions
-          if {$bulkactions eq ""} {
+          ns_log notice "TABLE2 have identifier [[self]::__bulkactions exists __identifier]"
+
+          if {![[self]::__bulkactions exists __identifier]} {
             html::div -class table {
               html::table -class ${:css.table-class} {:render-body}
             }
