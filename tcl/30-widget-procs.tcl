@@ -902,7 +902,6 @@ namespace eval ::xo::Table {
 
   Class create TABLE::BulkAction -superclass ::xo::Drawable -parameter {{CSSclass ""}}
   TABLE::BulkAction instproc render {} {
-    ns_log notice "TABLE::BulkAction render name = ${:name}"
     #:msg [:serialize]
     html::th -class list {
       html::input -type checkbox -name __bulkaction -id __bulkaction \
@@ -920,7 +919,6 @@ namespace eval ::xo::Table {
     #:msg [:serialize]
     set name ${:name}
     set value [$line set [:id]]
-    ns_log notice "TABLE::BulkAction render-data name = ${:name}"
 
     html::input -type checkbox -name $name -value $value \
         -id "$name---[string map {/ _} $value]" \
@@ -931,7 +929,6 @@ namespace eval ::xo::Table {
       -superclass TABLE \
       -instproc render-actions {} {
         set actions [[self]::__actions children]
-        ns_log notice "TABLE2 has actions: $actions"
         if {[llength $actions] > 0} {
           html::div -class "actions" -style "float: left;" {
             html::ul -style "list-style:none; padding: 10px;" {
@@ -941,13 +938,11 @@ namespace eval ::xo::Table {
         }
       } \
       -instproc render {} {
-        ns_log notice "TABLE2 render"
         if {![nsf::is object [self]::__actions]} {:actions {}}
         if {![nsf::is object [self]::__bulkactions]} {:__bulkactions {}}
         set bulkactions [[self]::__bulkactions children]
         html::div  {
           :render-actions
-          ns_log notice "TABLE2 have identifier [[self]::__bulkactions exists __identifier]"
 
           if {![[self]::__bulkactions exists __identifier]} {
             html::div -class table {
