@@ -884,7 +884,7 @@ namespace eval ::xo {
       set tn [lindex $thread_info 0]
       set tid [lindex $thread_info 2]
       dict set tids $tid 1
-      if { [info exists thread_name] && ![string match $thread_pattern $tn] } {
+      if { [info exists thread_pattern] && ![string match $thread_pattern $tn] } {
         continue
       }
       switch -glob -- $tn {
