@@ -945,11 +945,11 @@ proc ::xo::getObjectProperty {o what args} {
 
     "instproc" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instprocs {*}$args]}
-      return [$o info methods -type scripted -callprotection all {*}$args]
+      return [$o info methods -path -type scripted -callprotection all {*}$args]
     }
     "instcommand" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instcommands {*}$args]}
-      return [$o info methods {*}$args]
+      return [$o info methods -path {*}$args]
     }
     "instforward" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info instforward {*}$args]}
@@ -963,7 +963,7 @@ proc ::xo::getObjectProperty {o what args} {
     }
     "proc" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}$args]}
-      return [$o info object methods -type scripted {*}$args]
+      return [$o info object methods -path -type scripted {*}$args]
     }
     "command" {
       return [$o ::nsf::methods::object::info::methods {*}$args]

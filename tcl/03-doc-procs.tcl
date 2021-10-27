@@ -263,9 +263,9 @@ ad_library {
 
   :public object method proc_index {scope obj instproc proc_name} {
     if {$scope eq ""} {
-      return "$obj $instproc $proc_name"
+      return [list [string trimleft $obj :] $instproc $proc_name]
     } else {
-      return "$scope $obj $instproc $proc_name"
+      return [list $scope $obj $instproc $proc_name]
     }
   }
 
@@ -336,8 +336,6 @@ ad_library {
     # definition.
     #
     
-    #ns_log notice "update_object_doc $scope $obj ..."    
-    
     if {$doc_string eq ""} {
       set doc_string [:get_doc_block [:get_init_block $scope $obj]]
     }
@@ -405,7 +403,7 @@ ad_library {
       #
       foreach protection {public protected private} {
         foreach m [::nsf::dispatch $obj ::nsf::methods::class::info::methods \
-                       -callprotection $protection -type scripted] {
+                       -path -callprotection $protection -type scripted] {
           set docBlock [:get_doc_block \
                             [::nsf::dispatch $obj ::nsf::methods::class::info::method body $m]]
           ::xo::api update_method_doc \
@@ -508,7 +506,7 @@ ad_library {
     }
     
     # argument documentation finished
-    set proc_index [string trimleft [::xo::api proc_index $scope $obj ${inst}proc $proc_name] :]
+    set proc_index [::xo::api proc_index $scope $obj ${inst}proc $proc_name]
     if {![nsv_exists api_proc_doc $proc_index]} {
       nsv_lappend api_proc_doc_scripts [dict get $doc script] $proc_index
     }
