@@ -321,7 +321,7 @@ ad_library {
     }
     if {$restVar ne ""} {
       upvar $restVar rest
-      set rest [join [lrange $lines $i end] \n]
+      set rest [join [lrange $lines $i-1 end] \n]
     }
     #ns_log notice "=================== get_doc_block RETURNS <$docBlock>"
     return $docBlock
@@ -526,6 +526,9 @@ ad_library {
   }
 
   :public object method get_object_source {scope obj} {
+    #
+    # Return the full object definition
+    #    
     if {![nsf::is object $obj]} {
       ns_log warning "[self] get_object_source: argument passed as obj is not an object: $obj"
       return ""
@@ -540,10 +543,24 @@ ad_library {
   }
 
   :public object method get_method_source {scope obj prefix method} {
+    #
+    # Return the full method definition
+    #    
     :scope_eval $scope ::Serializer methodSerialize $obj $method $prefix
   }
 
+  :public object method get_method_body {scope obj prefix method} {
+    #
+    # Return the method body ("prefix" is ignored)
+    #
+    :scope_eval $scope ::nsf::dispatch $obj ::nsf::methods::class::info::method body $method
+  }
+
   :public object method update_nx_docs {{objects ""}} {
+    #
+    # Update for the provided (or all) nx::Object instances the
+    # internal documentation structures.
+    #
     if {[llength $objects] == 0} {
       set objects [nx::Object info instances -closure]
     }
@@ -576,7 +593,7 @@ ad_library {
   }
 }
 
-::nx::Class public method init {} {
+::nx::Class method init {} {
   set r [next]
   #
   # When loading the blueprint, ::xo::api might not be available yet
