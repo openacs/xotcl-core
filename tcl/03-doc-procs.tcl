@@ -306,7 +306,7 @@ ad_library {
   :public object method get_doc_block {text {restVar ""}} {
     #
     # Get the (first) documentation block of the provided text (which
-    # might be e.g. the body of a method)
+    # might be e.g. the body of a method).
     #
     set lines [split $text \n]
     set docBlock ""
@@ -327,7 +327,7 @@ ad_library {
     return $docBlock
   }
 
-  :public object method update_object_doc {scope obj doc_string} { 
+  :public object method update_object_doc {scope obj doc_string} {
     #
     # Update the API browser nsvs with information about the provided
     # object.
@@ -335,11 +335,11 @@ ad_library {
     # If no doc string is provided, try to get it from the object
     # definition.
     #
-    
+
     if {$doc_string eq ""} {
       set doc_string [:get_doc_block [:get_init_block $scope $obj]]
     }
-    
+
     ad_parse_documentation_string $doc_string doc_elements
     #
     # Initialize dictionary with default values and update it with the
@@ -379,7 +379,7 @@ ad_library {
     }
     nsv_set api_proc_doc $proc_index $doc
     nsv_set api_library_doc $proc_index $doc
-    
+
     set file_index [dict get $doc script]
     if {[nsv_exists api_library_doc $file_index]} {
       array set elements [nsv_get api_library_doc $file_index]
@@ -396,7 +396,7 @@ ad_library {
     set elements(main) [list $oldDoc]
     #ns_log notice "elements = [array get elements]"
     nsv_set api_library_doc $file_index [array get elements]
-    
+
     if {[::nsf::dispatch $obj ::nsf::methods::object::info::hastype ::nx::Class]} {
       #
       # nx classes
@@ -433,7 +433,7 @@ ad_library {
         }
       }
     }
-    
+
   }
 
   :public object method update_method_doc {
@@ -447,7 +447,7 @@ ad_library {
     set methodType [::xo::getObjectProperty $obj ${inst}methodtype $proc_name]
     set varargs_p [expr {$methodType eq "scripted"
                          && "args" in [::xo::getObjectProperty $obj ${inst}args $proc_name]}]
-    
+
     set doc [dict create \
                  param "" \
                  protection $protection \
@@ -504,7 +504,7 @@ ad_library {
       dict set doc default_values $defaults
       dict set doc positionals [::xo::getObjectProperty $obj ${inst}args $proc_name]
     }
-    
+
     # argument documentation finished
     set proc_index [::xo::api proc_index $scope $obj ${inst}proc $proc_name]
     if {![nsv_exists api_proc_doc $proc_index]} {
@@ -528,7 +528,7 @@ ad_library {
   :public object method get_object_source {scope obj} {
     #
     # Return the full object definition
-    #    
+    #
     if {![nsf::is object $obj]} {
       ns_log warning "[self] get_object_source: argument passed as obj is not an object: $obj"
       return ""
@@ -544,16 +544,19 @@ ad_library {
 
   :public object method get_method_source {scope obj prefix method} {
     #
-    # Return the full method definition
-    #    
+    # Return the full method definition.
+    #
     :scope_eval $scope ::Serializer methodSerialize $obj $method $prefix
   }
 
   :public object method get_method_body {scope obj prefix method} {
     #
-    # Return the method body ("prefix" is ignored)
+    # Return the method body on object (when "prefix" is empty) or
+    # class (when "prefix" is "inst").
     #
-    :scope_eval $scope ::nsf::dispatch $obj ::nsf::methods::class::info::method body $method
+    :scope_eval $scope ::nsf::dispatch $obj \
+        ::nsf::methods::[expr {$prefix eq "inst" ? "class" : "object"}]::info::method \
+        body $method
   }
 
   :public object method update_nx_docs {{objects ""}} {
@@ -567,7 +570,7 @@ ad_library {
 
     foreach o $objects {
       #
-      # check general per-object documentation
+      # Check general per-object documentation.
       #
       if {[string match ::nx::* $o]} continue
       ::xo::api update_object_doc "" $o ""
@@ -596,7 +599,7 @@ ad_library {
 ::nx::Class method init {} {
   set r [next]
   #
-  # When loading the blueprint, ::xo::api might not be available yet
+  # When loading the blueprint, ::xo::api might not be available yet.
   #
   if {[info commands ::xo::api] ne ""} {
     ::xo::api update_object_doc "" [self] ""
