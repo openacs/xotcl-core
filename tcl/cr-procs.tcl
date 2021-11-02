@@ -534,7 +534,7 @@ namespace eval ::xo::db {
        select [join $atts ,], i.parent_id \
        from   ${:table_name}i n, cr_items i, acs_objects o \
        where  i.item_id = :item_id \
-       and    n.[:id_column] = coalesce(i.live_revision, i.latest_revision) \
+       and    n.${:id_column} = coalesce(i.live_revision, i.latest_revision) \
        and    o.object_id = i.item_id"
     }
     #
@@ -542,12 +542,21 @@ namespace eval ::xo::db {
     # instance variables, so we can see vars like "__db_sql",
     # "__db_lst" that we do not want to keep.
     #
-    foreach v [$object info vars __db_*] {$object unset $v}
-
-    if {[apm_version_names_compare [ad_acs_version] 5.2] <= -1} {
-      $object set package_id [::xo::dc get_value get_pid \
-                                  "select package_id from cr_folders where folder_id = [$object set parent_id]"]
+    foreach v [$object info vars __db_*] {
+      $object unset $v
     }
+
+    #
+    # Deactivate compatibility with versions before OpenACS 5.2
+    # (2005), since this is a busy code, but leave it here for easy
+    # reactivating in legacy applications.
+    #
+    #if {[apm_version_names_compare [ad_acs_version] 5.2] <= -1} {
+    #  set parent_id [$object set parent_id]
+    #  $object set package_id [::xo::dc get_value get_pid {
+    #    select package_id from cr_folders where folder_id = :parent_id
+    #  }
+    #}
 
     # :log "--AFTER FETCH\n[$object serialize]"
     if {$initialize} {$object initialize_loaded_object}
