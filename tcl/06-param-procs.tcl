@@ -228,7 +228,9 @@ namespace eval ::xo {
         #
         # seems as if this parameter was newly defined
         #
-        if {![info exists package_id]} {set package_id ""}
+        if {![info exists package_id]} {
+          set package_id ""
+        }
         return [:get_parameter_object \
                     -retry false \
                     -parameter_name $parameter_name \
@@ -247,7 +249,9 @@ namespace eval ::xo {
                                        -parameter:required
                                        -default
                                      } {
-    set parameter_obj [:get_parameter_object -package_key $package_key -parameter_name $parameter]
+    set parameter_obj [:get_parameter_object \
+                           -package_key $package_key \
+                           -parameter_name $parameter]
     if {$parameter_obj eq ""} {
       if {[info exists default]} {return $default}
       error "No parameter '$parameter' for package_key '$package_key' defined"
@@ -274,12 +278,17 @@ namespace eval ::xo {
       #
       set package_id [expr {[nsf::is object ::xo::cc] ?
                             [::xo::cc package_id] :
-                            [ns_conn isconnected] ? [ad_conn package_id] : [ad_acs_kernel_id]}]
+                            [ns_conn isconnected] ? [ad_conn package_id] : $::acs::kernel_id}]
     }
-    set parameter_obj [:get_parameter_object -parameter_name $parameter -package_id $package_id -retry $retry]
+    set parameter_obj [:get_parameter_object \
+                           -parameter_name $parameter \
+                           -package_id $package_id \
+                           -retry $retry]
     if {$parameter_obj ne ""} {
       set value [$parameter_obj get -package_id $package_id]
-      if {$value eq "" && [$parameter_obj set __success] == 0} {return $default}
+      if {$value eq "" && [$parameter_obj set __success] == 0} {
+        return $default
+      }
       return $value
     } else {
       return $default
@@ -299,7 +308,7 @@ namespace eval ::xo {
       #
       set package_id [expr {[nsf::is object ::xo::cc] ?
                             [::xo::cc package_id] :
-                            [ns_conn isconnected] ? [ad_conn package_id] : [ad_acs_kernel_id]}]
+                            [ns_conn isconnected] ? [ad_conn package_id] : $::acs::kernel_id}]
     }
     set parameter_obj [:get_parameter_object -parameter_name $parameter -package_id $package_id]
     if {$parameter_obj ne ""} {
@@ -315,7 +324,7 @@ namespace eval ::xo {
   #
   if {[::acs::icanuse "nsv_dict"]} {
     #
-    # Basic model:
+    # Basic model (with nsv_dict):
     #
     #   nsv_dict CFG-X $package_id [list $parameter $value ...]
     #
@@ -368,7 +377,7 @@ namespace eval ::xo {
 
   } else {
     #
-    # Basic model:
+    # Basic model (without nsv_dict):
     #
     #   ns_set CFG-$package_id $parameter $value
     #
