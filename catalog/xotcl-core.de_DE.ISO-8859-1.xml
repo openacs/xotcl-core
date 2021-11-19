@@ -3,7 +3,7 @@
 
   <msg key="add">Neu: %type%</msg>
   <msg key="add_item">Element hinzufügen</msg>
-  <msg key="add_long">Neue Seite vom Type %type% erzeugen</msg>
+  <msg key="add_long">Neue Seite vom Typ %type% erzeugen</msg>
   <msg key="Bulk_actions">Ausgewählte</msg>
   <msg key="create_new_type">Neuen %type% erstellen</msg>
   <msg key="delete_item">Element löschen</msg>
@@ -11,7 +11,7 @@
   <msg key="descriptions">Beschreibungen</msg>
   <msg key="edit_item">Editieren</msg>
   <msg key="edit_type">%type% bearbeiten</msg>
-  <msg key="has_entered_the_room">has entered the room</msg>
+  <msg key="has_entered_the_room">hat den Raum betreten</msg>
   <msg key="language">Sprache</msg>
   <msg key="languages">Sprachen</msg>
   <msg key="live_revision">Aktuelle Version</msg>
