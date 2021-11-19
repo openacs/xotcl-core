@@ -777,31 +777,38 @@ namespace eval ::xo {
     return $form_item_ids
   }
   ::xo::Package instproc get_parameter {attribute {default ""}} {
-    set package_id ${:id}
-    set parameter_obj [::xo::parameter get_parameter_object \
-                           -parameter_name $attribute \
-                           -package_id $package_id \
-                           -retry false]
-    set success 0
+    # set package_id ${:id}
+    # set parameter_obj [::xo::parameter get_parameter_object \
+    #                        -parameter_name $attribute \
+    #                        -package_id $package_id \
+    #                        -retry false]
+    # set success 0
 
-    if {$parameter_obj ne "" && [$parameter_obj set scope] ne "global"} {
-      set value [$parameter_obj get -package_id $package_id]
-      #ns_log notice "core: get_param for $attribute after GET: [$parameter_obj serialize] -> '$value'"
-      #if {$value ne "" || [$parameter_obj set __success]} {return $value}
-      #
-      # The returned '$value' might be a value set for the actual
-      # package instance, or the default for the package_parameter as
-      # defined by the package parameter definition in the XML file. If
-      # the value was not specified explicitly, and the provided
-      # default for this command is not empty, return the provided
-      # default.
-      #
-      if {![$parameter_obj set __success] && $value eq "" && $default ne ""} {
-        return $default
-      } else {
-        return $value
-      }
+    # if {$parameter_obj ne "" && [$parameter_obj set scope] ne "global"} {
+    #   set value [$parameter_obj get -package_id $package_id]
+    #   #ns_log notice "core: get_param for $attribute after GET: [$parameter_obj serialize] -> '$value'"
+    #   #if {$value ne "" || [$parameter_obj set __success]} {return $value}
+    #   #
+    #   # The returned '$value' might be a value set for the actual
+    #   # package instance, or the default for the package_parameter as
+    #   # defined by the package parameter definition in the XML file. If
+    #   # the value was not specified explicitly, and the provided
+    #   # default for this command is not empty, return the provided
+    #   # default.
+    #   #
+    #   if {![$parameter_obj set __success] && $value eq "" && $default ne ""} {
+    #     return $default
+    #   } else {
+    #     return $value
+    #   }
+    # }
+    set value [::parameter::get -package_id ${:id} -parameter $attribute -default $default]    
+    if {$value ne $default} {
+      return $value
     }
+    #
+    # make a second attempt from the global value.
+    #
     return [parameter::get_global_value \
                    -package_key ${:package_key} \
                    -parameter $attribute \

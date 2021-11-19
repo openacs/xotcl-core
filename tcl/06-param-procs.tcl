@@ -280,6 +280,10 @@ namespace eval ::xo {
                             [::xo::cc package_id] :
                             [ns_conn isconnected] ? [ad_conn package_id] : $::acs::kernel_id}]
     }
+    ns_log notice "deprecated xo::parameter get -parameter $parameter called (replaced by ::parameter::get)"
+    return [::parameter::get -parameter $parameter -package_id $package_id \
+                {*}[expr {[info exists default] ? [list -default $default] : ""}]]
+
     set parameter_obj [:get_parameter_object \
                            -parameter_name $parameter \
                            -package_id $package_id \
@@ -310,10 +314,13 @@ namespace eval ::xo {
                             [::xo::cc package_id] :
                             [ns_conn isconnected] ? [ad_conn package_id] : $::acs::kernel_id}]
     }
+    ns_log notice "deprecated xo::parameter set_value -parameter $parameter called " \
+        "(replaced by ::parameter::set_value)"
+    return [::parameter::set_value -package_id $package_id -parameter $parameter -value $value]
+
     set parameter_obj [:get_parameter_object -parameter_name $parameter -package_id $package_id]
     if {$parameter_obj ne ""} {
       $parameter_obj set_per_package_instance_value $package_id $value
-      ::parameter::set_value -package_id $package_id -parameter MenuBar -value $value
     } else {
       error "could not create parameter object"
     }
@@ -337,7 +344,8 @@ namespace eval ::xo {
     }
     parameter instproc set_per_package_instance_value {package_id value} {
       set array [:per_package_id_name $package_id]
-      #ns_log notice "[list nsv_dict set $array $package_id ${:parameter_name} $value]"
+      ns_log notice "[list nsv_dict set $array $package_id ${:parameter_name} $value]"
+      xo::show_stack
       nsv_dict set $array $package_id ${:parameter_name} $value
     }
     parameter instproc clear_per_package_instance_value {package_id} {
@@ -460,7 +468,7 @@ namespace eval ::xo {
     }
   }
 
-  parameter initialize_parameters
+  #parameter initialize_parameters
 
   #
   # For the time being: catch changed parameter values
