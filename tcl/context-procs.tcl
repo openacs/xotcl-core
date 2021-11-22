@@ -552,14 +552,22 @@ namespace eval ::xo {
   # Version of query_parameter respecting set-parameter
   #
   ConnectionContext instproc query_parameter {name {default ""}} {
-    regexp {^(.*):(.*)$} $name . name constraint
+    #
+    # Try to split up provided name argument into name and value
+    # constraint.
+    #
+    regexp {^([^:]+):(.*)$} $name . name constraint
     if {[:exists_parameter $name]} {
       set value [:get_parameter $name]
     } else {
       set value [next $name $default]
     }
-    if {[info exists constraint] && $value ne ""} {
-
+    #
+    # If we have a value-constraint, we check for empty values only in
+    # cases, where multiplicity is specified. This means effectively
+    # that the default multiplicity is "0..1".
+    #
+    if {[info exists constraint] && ([string first . constraint] || $value ne "")} {
       try {
         nsf::parseargs $name:$constraint [list $value]
 
