@@ -567,7 +567,7 @@ namespace eval ::xo {
     # cases, where multiplicity is specified. This means effectively
     # that the default multiplicity is "0..1".
     #
-    if {[info exists constraint] && ([string first . constraint] || $value ne "")} {
+    if {[info exists constraint] && ([string first . $constraint] > -1 || $value ne "")} {
       try {
         nsf::parseargs $name:$constraint [list $value]
 
