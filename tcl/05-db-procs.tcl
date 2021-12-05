@@ -623,7 +623,7 @@ namespace eval ::xo::db {
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     db_with_handle db {
       if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
-      set result [list]
+      set result {}
       set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
       while { [db_getrow $db $answers] } {
         set row [list]
@@ -639,7 +639,7 @@ namespace eval ::xo::db {
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     db_with_handle db {
       if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
-      set result [list]
+      set result {}
       set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
       while { [::db_getrow $db $answers] } {
         lappend result [ns_set value $answers 0]
@@ -1625,7 +1625,7 @@ namespace eval ::xo::db {
       return $function_args
     }
     array set additional_defaults [::xo::db::SQL set fallback_defaults(${package_name}__$object_name)]
-    set result [list]
+    set result {}
     foreach arg $function_args {
       lassign $arg arg_name default_value
       if {$default_value eq "" && [info exists additional_defaults($arg_name)]} {
@@ -2895,11 +2895,8 @@ namespace eval ::xo::db {
     (VALUES (1), (2), (3), (4), (5))</pre>
 
   } {
-    set result {}
-    foreach e $list {
-      lappend result "([ns_dbquotevalue $e $type])"
-    }
-    return "(VALUES [join $result ,])"
+    set valueList [lmap e $list {set _ ([ns_dbquotevalue $e $type])}]
+    return "(VALUES [join $valueList ,])"
   }
 }
 
