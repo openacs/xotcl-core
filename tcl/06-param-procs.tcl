@@ -339,10 +339,11 @@ namespace eval ::xo {
     # configuration values on a single mutex. This can be used for
     # fine-tuning mutex locks on such nsvs in the future.
     #
-    parameter instproc per_package_id_name {package_id} {
+    parameter instproc -deprecated per_package_id_name {package_id} {
+      xo::show_stack
       return CFG-[expr {$package_id % 2}]
     }
-    parameter instproc set_per_package_instance_value {package_id value} {
+    parameter instproc -deprecated set_per_package_instance_value {package_id value} {
       set array [:per_package_id_name $package_id]
       ns_log notice "[list nsv_dict set $array $package_id ${:parameter_name} $value]"
       xo::show_stack
