@@ -339,11 +339,11 @@ if {[info commands ::xotcl::nonposArgs] ne ""} {
 
 ::xotcl::Object instproc log args {
   set msg [join $args { }]
-  ns_log notice "$msg, [self] [self callingclass]->[self callingproc] ([:__timediff])"
+  ns_log notice "[self] [self callingclass]->[self callingproc]: $msg ([:__timediff])"
 }
 ::xotcl::Object instproc ds args {
   set msg [join $args { }]
-  ds_comment "[self]: $msg, ([self callingclass]->[self callingproc] [:__timediff])"
+  ds_comment "[self] [self callingclass]->[self callingproc]: $msg ([:__timediff])"
 }
 ::xotcl::Object instproc debug args {
   set msg [join $args { }]
