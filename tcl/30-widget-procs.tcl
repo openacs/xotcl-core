@@ -387,10 +387,11 @@ namespace eval ::xo {
   # Define an abstract ::xo::Table
   #
   Class create ::xo::Table -superclass OrderedComposite \
-      -parameter [expr {[apm_version_names_compare [ad_acs_version] 5.3.0] == 1
-                        ? {{no_data  "#xotcl-core.No_Data#"} {renderer TABLE3} name}
-                        : {{no_data  "#xotcl-core.No_Data#"} {renderer TABLE2} name}
-                      }]
+      -parameter {
+        {no_data  "#xotcl-core.No_Data#"}
+        {renderer TABLE3}
+        name
+      }
 
   Table instproc destroy {} {
     #:log "-- "
@@ -461,7 +462,7 @@ namespace eval ::xo {
     :init_renderer
   }
 
-  Table instproc write_csv {
+  Table instproc format_csv {
     {-delimiter ","}
   } {
     set output ""
@@ -489,12 +490,18 @@ namespace eval ::xo {
       }
       append output [join $line $delimiter] \n
     }
+    return $output
+  }
+
+  Table instproc write_csv {
+    {-delimiter ","}
+  } {
     if {![info exists :name]} {
       set :name "table"
     }
     set fn [xo::backslash_escape \" ${:name}.csv]
     ns_set put [ns_conn outputheaders] Content-Disposition "attachment;filename=\"$fn\""
-    ns_return 200 text/csv $output
+    ns_return 200 "text/csv; charset=utf-8" [:format_csv -delimiter $delimiter]
     ad_script_abort
   }
 
