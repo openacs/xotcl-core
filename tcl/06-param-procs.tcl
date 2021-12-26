@@ -474,37 +474,37 @@ namespace eval ::xo {
   #
   # For the time being: catch changed parameter values
   #
-  ad_proc -public -callback subsite::parameter_changed -impl xotcl-param-procs {
-    -package_id:required
-    -parameter:required
-    -value:required
-  } {
-    Implementation of subsite::parameter_changed for xotcl param procs
-
-    @param package_id the package_id of the package the parameter was changed for
-    @param parameter  the parameter name
-    @param value      the new value
-  } {
-    #
-    # In order to use the existing interface for parameters, we catch
-    # all parameter changes and update accordingly the values in the new
-    # interface.
-    #
-    set package_key [apm_package_key_from_id $package_id]
-    set parameter_obj [::xo::parameter get_parameter_object \
-                           -package_key $package_key \
-                           -parameter_name $parameter]
-
-    if {$parameter_obj eq ""} {
-      # We have still no parameter. There must be something significantly wrong.
-      ns_log warning "parameter $parameter for package $package_key, package_id $package_id does not exist (yet)"
-    } else {
-      $parameter_obj clear_per_package_instance_value $package_id
-      if {[$parameter_obj default_value] ne $value} {
-        $parameter_obj set_per_package_instance_value $package_id $value
-      }
-    }
-  }
+  # ad_proc -public -callback subsite::parameter_changed -impl xotcl-param-procs {
+  #   -package_id:required
+  #   -parameter:required
+  #   -value:required
+  # } {
+  #   Implementation of subsite::parameter_changed for xotcl param procs
+  #
+  #   @param package_id the package_id of the package the parameter was changed for
+  #   @param parameter  the parameter name
+  #   @param value      the new value
+  # } {
+  #   #
+  #   # In order to use the existing interface for parameters, we catch
+  #   # all parameter changes and update accordingly the values in the new
+  #   # interface.
+  #   #
+  #   set package_key [apm_package_key_from_id $package_id]
+  #   set parameter_obj [::xo::parameter get_parameter_object \
+  #                          -package_key $package_key \
+  #                          -parameter_name $parameter]
+  #
+  #   if {$parameter_obj eq ""} {
+  #     # We have still no parameter. There must be something significantly wrong.
+  #     ns_log warning "parameter $parameter for package $package_key, package_id $package_id does not exist (yet)"
+  #   } else {
+  #     $parameter_obj clear_per_package_instance_value $package_id
+  #     if {[$parameter_obj default_value] ne $value} {
+  #       $parameter_obj set_per_package_instance_value $package_id $value
+  #     }
+  #   }
+  # }
 
 
   #

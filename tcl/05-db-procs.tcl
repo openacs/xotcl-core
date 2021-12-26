@@ -744,6 +744,7 @@ namespace eval ::xo::db {
       # We have to check for the prepared statement in the current
       # session and we have to create it if necessary there.
       #
+      ns_log notice "select 1 from pg_prepared_statements where name = $prepName"
       if {[ns_pg_bind 0or1row $handle {
         select 1 from pg_prepared_statements where name = :prepName
       }] eq ""} {
