@@ -115,7 +115,7 @@ namespace eval ::xo {
       set package_key ${:package_key}
     }
     foreach location {www resources} {
-      set fn [acs_root_dir]/packages/$package_key/$location/prototypes/$name.page      
+      set fn [acs_root_dir]/packages/$package_key/$location/prototypes/$name.page
       if {[file exists $fn]} {
         if {$location eq "www"} {
           ns_log warning "deprecated location: you should move prototype page" \
@@ -220,13 +220,16 @@ namespace eval ::xo {
           if {[$page array exists $v]} continue ;# don't copy arrays
           $p set $v [$page set $v]
         }
-        #:log "--save of $p class [$p info class]"
+        #:log "--save of $p [$p name] class [$p info class]"
         $p save
       }
       set page $p
     }
     if {$page ne ""} {
-      # we want to be able to address the page via the canonical name ::$item_id
+      #
+      # We want to be able to address the page after this call via the
+      # canonical name ::$item_id
+      #
       set page [::xo::db::CrClass get_instance_from_db -item_id [$page item_id]]
     }
     return $page
@@ -267,12 +270,12 @@ namespace eval ::xo {
         :initialize -package_id $site_wide_instance_id -init_url false
         ns_log notice "require_site_wide_info gets own xo::cc"
       }
-      
+
       #
       # Require the package to be available
       #
       :require $site_wide_instance_id
-      
+
       dict set :site_wide_info folder_id [::$site_wide_instance_id folder_id]
       dict set :site_wide_info instance_id $site_wide_instance_id
     }
@@ -343,6 +346,8 @@ namespace eval ::xo {
       set item_id [::xo::db::CrClass lookup -name en:$n -parent_id [dict get $info folder_id]]
       #:log "lookup en:$n => $item_id"
       if {$item_id == 0} {
+        #:log "require_site_wide_pages lookup for 'en:$n' failed"
+
         #
         # Try to refetch without prefix to support loading of
         # prefix-less pages.
@@ -353,10 +358,15 @@ namespace eval ::xo {
         }
       }
       set refetch_this_page $refetch
+
+      #
+      # Check, if we have to refetch the page, since it was changed in
+      # the meantime on the disk.
+      #
       if {!$refetch_this_page && $item_id != 0 && $refetch_if_modified} {
         set existing_page [::xo::db::CrClass get_instance_from_db -item_id $item_id]
         set fn [:prototype_page_file_name -name $n -package_key ${:package_key}]
-        set time [clock scan [::xo::db::tcl_date [::$item_id last_modified] tz_var]]
+        set time [clock scan [::xo::db::tcl_date [$existing_page publish_date] tz_var]]
         if {[ad_file mtime $fn] > $time} {
           set refetch_this_page true
         }
@@ -621,7 +631,7 @@ namespace eval ::xo {
         -keep_cc $keep_cc \
         -package_id $package_id -user_id $user_id \
         -parameter $parameter -url $url -actual_query $actual_query
-    
+
     if {[info exists original_url_and_query]} {
       ::xo::cc original_url_and_query $original_url_and_query
     }
@@ -802,7 +812,7 @@ namespace eval ::xo {
     #     return $value
     #   }
     # }
-    set value [::parameter::get -package_id ${:id} -parameter $attribute -default $default]    
+    set value [::parameter::get -package_id ${:id} -parameter $attribute -default $default]
     if {$value ne $default} {
       return $value
     }
