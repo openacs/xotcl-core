@@ -361,7 +361,7 @@ namespace eval ::xo {
 
       #
       # Check, if we have to refetch the page, since it was changed in
-      # the meantime on the disk.
+      # the meantime in the file-system.
       #
       if {!$refetch_this_page && $item_id != 0 && $refetch_if_modified} {
         set existing_page [::xo::db::CrClass get_instance_from_db -item_id $item_id]
