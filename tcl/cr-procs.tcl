@@ -88,11 +88,17 @@ namespace eval ::xo::db {
 
     @return fully qualified object containing the attributes of the CrItem
   } {
-    set object_type [:get_object_type -item_id $item_id -revision_id $revision_id]
-    set class [::xo::db::Class object_type_to_class $object_type]
-    return [$class get_instance_from_db -item_id $item_id -revision_id $revision_id -initialize $initialize]
+    set object ::[expr {$revision_id ? $revision_id : $item_id}]
+    if {![::nsf::is object $object]} {
+      set object_type [:get_object_type -item_id $item_id -revision_id $revision_id]
+      set class [::xo::db::Class object_type_to_class $object_type]
+      set object [$class get_instance_from_db -item_id $item_id -revision_id $revision_id -initialize $initialize]
+    }
+    return $object
   }
-
+  #{4.544836 microseconds per iteration}
+  #{1.310991 microseconds per iteration}
+  
   CrClass ad_proc get_parent_id {
     -item_id:required
   } {
