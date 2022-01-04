@@ -762,28 +762,38 @@ namespace eval ::xo {
     {-default_lang ""}
     {-parent_id ""}
   } {
-    set form_item_ids [list]
-    foreach item_ref [split $forms |] {
-      #
-      # The following regexp should include the majority of valid
-      # items refs.
-      #
-      if {![regexp {^[[:alnum:]:./_-]+$} $item_ref]} {
-        error "invalid form specification '$item_ref'"
-      }
-      #:log "trying to get $item_ref // parent_id $parent_id"
-      set page [:get_page_from_item_ref \
-                    -use_prototype_pages true \
-                    -use_package_path true \
-                    -parent_id $parent_id \
-                    -default_lang $default_lang \
-                    $item_ref]
-      #:log "weblog form $item_ref => $page"
-      if {$page ne ""} {
-        lappend form_item_ids [$page item_id]
-      }
-    }
+    #set t0 [clock clicks -microseconds]
+    set form_item_ids \
+        [acs::per_request_cache eval \
+             -key xotcl-core.instantiate_forms-$forms-$default_lang-$parent_id \
+             {
+               set form_item_ids {}
+               foreach item_ref [split $forms |] {
+                 #
+                 # The following regexp should include the majority of valid
+                 # items refs.
+                 #
+                 if {![regexp {^[[:alnum:]:./_-]+$} $item_ref]} {
+                   error "invalid form specification '$item_ref'"
+                 }
+                 #:log "trying to get $item_ref // parent_id $parent_id"
+                 set page [:get_page_from_item_ref \
+                               -use_prototype_pages true \
+                               -use_package_path true \
+                               -parent_id $parent_id \
+                               -default_lang $default_lang \
+                               $item_ref]
+                 #:log "weblog form $item_ref => $page"
+                 if {$page ne ""} {
+                   lappend form_item_ids [$page item_id]
+                 }
+               }
+               set form_item_ids
+             }]
+
     #:log "instantiate: parent_id=$parent_id-forms=$forms -> $form_item_ids"
+    #set t1 [clock clicks -microseconds]
+    #ns_log notice "instantiate_forms parent_id $parent_id $forms -> $form_item_ids [expr {($t1-$t0)/1000.0}]ms "
     return $form_item_ids
   }
   ::xo::Package instproc get_parameter {attribute {default ""}} {
