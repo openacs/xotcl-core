@@ -867,8 +867,15 @@ namespace eval ::xo::Table {
         if {[$line exists ${:name}.href]
             && [set href [$line set ${:name}.href]] ne ""
           } {
-          # Use the CSS class from the Field and not from the Line
-          if {[info exists :CSSclass]} {set CSSclass ${:CSSclass}}
+          # Default class is from the field definition. To it we
+          # append the class coming from the line.
+          set CSSclass ${:CSSclass}
+          if {[$line exists ${:name}.CSSclass]} {
+            set lineCSSclass [$line set ${:name}.CSSclass]
+            if {$lineCSSclass ne ""} {
+              append CSSclass " " $lineCSSclass
+            }
+          }
           $line instvar [list ${:name}.title title]
           html::a [:get_local_attributes href title {CSSclass class}] {
             return [next]
