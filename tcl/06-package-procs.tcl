@@ -765,7 +765,7 @@ namespace eval ::xo {
     #set t0 [clock clicks -microseconds]
     set form_item_ids \
         [acs::per_request_cache eval \
-             -key xotcl-core.instantiate_forms-$forms-$default_lang-$parent_id \
+             -key xotcl-core.instantiate_forms-$forms-$default_lang-${:folder_id}-$parent_id \
              {
                set form_item_ids {}
                foreach item_ref [split $forms |] {
