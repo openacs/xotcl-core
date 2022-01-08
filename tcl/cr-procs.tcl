@@ -89,6 +89,11 @@ namespace eval ::xo::db {
     @return fully qualified object containing the attributes of the CrItem
   } {
     set object ::[expr {$revision_id ? $revision_id : $item_id}]
+    if {$object eq "::0"} {
+      set msg "get_instance_from_db must be called with either item_id or revision_id different from 0"
+      ad_log error $msg
+      error $msg
+    }
     if {![::nsf::is object $object]} {
       set object_type [:get_object_type -item_id $item_id -revision_id $revision_id]
       set class [::xo::db::Class object_type_to_class $object_type]
@@ -96,8 +101,21 @@ namespace eval ::xo::db {
     }
     return $object
   }
-  #{4.544836 microseconds per iteration}
-  #{1.310991 microseconds per iteration}
+
+  CrClass ad_proc ensure_item_ids_instantiated {
+    {-initialize:boolean true}
+    {-item_ids:required}
+  } {
+    
+    Make sure, the objects all of the provided items_ids are
+    instantiated initialized (i.e. the same-named objects do exist as
+    executable commands in the current thread).
+
+  } {
+    foreach item_id $item_ids {
+      :get_instance_from_db -item_id $item_id -initialize $initialize
+    }
+  }
   
   CrClass ad_proc get_parent_id {
     -item_id:required
