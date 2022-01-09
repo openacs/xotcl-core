@@ -108,11 +108,12 @@ namespace eval ::xo::db {
   } {
     
     Make sure, the objects all of the provided items_ids are
-    instantiated initialized (i.e. the same-named objects do exist as
-    executable commands in the current thread).
+    instantiated (i.e. the same-named objects do exist as executable
+    commands in the current thread).
 
   } {
     foreach item_id $item_ids {
+      #if {![::nsf::is object ::$item_id]} { ns_log notice "===== we have to fetch ::$item_id"}
       :get_instance_from_db -item_id $item_id -initialize $initialize
     }
   }
