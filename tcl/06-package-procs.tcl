@@ -762,10 +762,11 @@ namespace eval ::xo {
     {-default_lang ""}
     {-parent_id ""}
   } {
-    #set t0 [clock clicks -microseconds]
     set form_item_ids \
         [acs::per_request_cache eval \
-             -key xotcl-core.instantiate_forms-$forms-$default_lang-${:folder_id}-$parent_id \
+             -key xotcl-core.instantiate_forms-$forms-$default_lang-$parent_id \
+             -no_cache {} \
+             -from_cache_indicator from_cache \
              {
                set form_item_ids {}
                foreach item_ref [split $forms |] {
@@ -791,11 +792,20 @@ namespace eval ::xo {
                set form_item_ids
              }]
 
-    #:log "instantiate: parent_id=$parent_id-forms=$forms -> $form_item_ids"
-    #set t1 [clock clicks -microseconds]
-    #ns_log notice "instantiate_forms parent_id $parent_id $forms -> $form_item_ids [expr {($t1-$t0)/1000.0}]ms "
+    #
+    # In case we got the item_ids from the pre-request cache, make
+    # sure to load these. This should not be an issue in most
+    # situations, but in the test-suite multiple request functions are
+    # bundled in a "request" such that will become an issue, when the
+    # per-request cache is not flushed quick enough.
+    #
+    if {$from_cache} {
+      #ns_log notice "... instantiate_forms -forms $forms -default_lang $default_lang -parent_id $parent_id --> '$form_item_ids'"
+      ::xo::db::CrClass ensure_item_ids_instantiated -item_ids $form_item_ids
+    }
     return $form_item_ids
   }
+
   ::xo::Package instproc get_parameter {attribute {default ""}} {
     # set package_id ${:id}
     # set parameter_obj [::xo::parameter get_parameter_object \
