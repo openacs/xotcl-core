@@ -11,6 +11,7 @@ namespace eval ::xo {
   ad_proc -deprecated clusterwide args {
     Execute a command on every machine in a cluster.
     The command was moved into the ::acs::* namespace.
+    @see acs::clusterwide
   } {
     ::acs::clusterwide {*}$args
   }
@@ -18,6 +19,7 @@ namespace eval ::xo {
   ad_proc -deprecated cache_flush_all {cache pattern} {
     Provide means to perform a wildcard-based cache flushing on
     (cluster) machines.
+    @see acs::cache_flush_all
   } {
     ::acs::cache_flush_all $cache $pattern
   }
@@ -25,6 +27,7 @@ namespace eval ::xo {
   ad_proc -deprecated Cluster args {
     Create a cluster node. The command was moved into the ::acs::*
     namespace.
+    @see acs::Cluster
   } {
     ::acs::Cluster {*}$args
   }
