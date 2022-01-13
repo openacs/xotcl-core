@@ -686,7 +686,6 @@ namespace eval ::xo::db {
     } elseif {[nsv_exists prepared_statement $key]} {
       #
       # The prepared statement exists already in the nsv-cache.
-      #
       set nsv_cached_value [nsv_get prepared_statement $key]
       #
       # Save the nsv-cached value as well in the per-interpreter cache
@@ -718,23 +717,47 @@ namespace eval ::xo::db {
       }
       set c [nsv_incr prepared_statement count]
       set prepName __p$c
-      set prepare "PREPARE $prepName ([join $prepArgs ,]) AS $l"
+      set prepare [ns_trim -delimiter | [subst {
+        |DO \$\$ DECLARE found boolean;
+        |BEGIN
+        |SELECT exists(select 1 from pg_prepared_statements where name = '$prepName') into found;
+        |if found IS FALSE then
+        |    PREPARE $prepName ([join $prepArgs ,]) AS $l;
+        |end if;
+        |END\$\$;
+      }]]
       set execute "EXECUTE $prepName ([join $execArgs ,])"
+      #
+      # Save the values for this statement in the nsv-cache. This does
+      # not mean that the prepared statement exists for the SQL
+      # session already.
+      #
       nsv_set prepared_statement $key [list $prepare $execute $prepName $sql]
     }
 
     #
-    # Cache the information, whether the prepared statement was
-    # defined per pg session. Depending on the version of the driver,
-    # we can obtain a session_id from the db driver. If we can't,
-    # we fall back to a per request-cache (via top-level variable).
+    # Now determine, whether the prepared statement was already
+    # defined for the current SQL session.  Depending on the version
+    # of the driver, we can obtain a session_id from the db driver on
+    # different preciseness levels. If we can't get the SQL session_id
+    # from the driver, fall back to a per-request cache (via top-level
+    # variable).
     #
     try {
-      set session_id [ns_db session_id $handle]
-    } on ok {r} {
+      if {[::acs::icanuse "ns_pg pid"]} {
+        set session_id [ns_pg pid $handle]
+        #ns_log notice "=== ns_pg pid -> '$session_id'"
+      } else {
+        set session_id [ns_db session_id $handle]
+      }
+    } on ok {_} {
       #ns_log notice "=== $handle $session_id"
       set varName ::xo::prepared($session_id,$key)
     } on error {errorMsg} {
+      #
+      # Could not determine SQL session_id, fall back to per-request
+      # cache.
+      #
       set session_id "-"
       set varName __prepared($key)
     }
@@ -744,14 +767,16 @@ namespace eval ::xo::db {
       # We have to check for the prepared statement in the current
       # session and we have to create it if necessary there.
       #
-      ns_log notice "select 1 from pg_prepared_statements where name = $prepName"
-      if {[ns_pg_bind 0or1row $handle {
-        select 1 from pg_prepared_statements where name = :prepName
-      }] eq ""} {
-        #ns_log notice "=== do prepare handle $handle $prepare session_id $session_id"
-        ::db_exec dml $handle dbqd..create_preapared $prepare
-        set $varName 1
-      }
+      ns_log notice "=== new prepared statement $prepName for $session_id: $sql"
+      ::db_exec dml $handle dbqd..create_preapared $prepare
+      #
+      # Save the fact that we have a new preparted statement for this
+      # SQL session_id in the current interpreter.
+      #
+      set $varName 1
+
+    } else {
+      #ns_log notice "=== prepare reuses handle $handle execute $execute session_id $session_id"
     }
     #ns_log notice "=== prepare done, handle $handle execute $execute session_id $session_id"
     return $execute
@@ -795,12 +820,7 @@ namespace eval ::xo::db {
   # cache creation here and create caches, when they do not exist
   # already.
   #
-  # Unfortunately, AOLserver's ns_cache has no command to check, whether
-  # a cache exists, so we use the little catch below to check.
-  #
-  try {
-    ns_cache flush xotcl_object_cache NOTHING
-  } on error {errorMsg} {
+  if {![nsf::is object ::xo::xotcl_object_cache]} {
     ns_log notice "xotcl-core: creating xotcl-object caches"
 
     ::acs::PartitionedCache create ::xo::xotcl_object_cache \
@@ -1821,7 +1841,7 @@ namespace eval ::xo::db {
       # DBMS. Therefore, we use a type cast to check whether
       # specified default value (e.g. '1900-01-01') is in fact
       # equivalent to default stored in db (e.g. '1900-01-01
-      # 00:00:00+01'::timestamp with timezone).
+      # 00:00:00+01'::timestamp with time zone).
       #
       # Booleans can be normalized in advance without involving the
       # database
@@ -2407,7 +2427,12 @@ namespace eval ::xo::db {
         ad_try {
           $o initialize_loaded_object
         } on error {errorMsg} {
-          ns_log error "$o initialize_loaded_object => [$o info vars] -> $errorMsg"
+          set context [lmap var {name item_id revision_id} {
+            if {![$o exists $var]} continue
+            set _ "$var [$o set $var]"
+          }]
+          ns_log error "$o initialize_loaded_object [join $context]" \
+              "=> [lsort [$o info vars]] -> $errorMsg"
         }
       }
       #:log "--DB more = $continue [$o serialize]"
