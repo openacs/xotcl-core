@@ -2,10 +2,11 @@ ad_page_contract {
         Cache Viewer
 } {
   {cache:optional 0}
-  {item:optional 0}
-  {flush:optional 0}
+  {item:token,optional 0}
+  {flush:boolean,optional 0}
   {filter ""}
-  {flushall:optional 0}
+  {flushall:boolean,optional 0}
+  {flushallcaches:optional,boolean 0}
 } -properties {
     title:onevalue
     context:onevalue
@@ -20,6 +21,15 @@ if {!$admin_p} {
 
 # Expires: now
 ns_set update [ns_conn outputheaders] "Expires" "now"
+
+if { $flushallcaches } {
+  foreach cache [ns_cache_names] {
+    ns_cache flush $cache
+  }
+
+  ad_returnredirect [ns_conn url]
+  ad_script_abort
+}
 
 if { $flush ne "0" } {
   ns_cache flush $cache $flush
@@ -47,6 +57,9 @@ if { $cache == 0 } {
   TableWidget create t1 \
       -actions [subst {
         Action new -label Refresh -url [ad_conn url] -tooltip "Reload this page"
+        Action new -label "Flush all" \
+            -url [export_vars -base [ad_conn url] {{flushallcaches 1}}] \
+            -tooltip "Flush all caches"
       }] \
       -columns {
         AnchorField name    -label "Name"
