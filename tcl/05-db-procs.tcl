@@ -791,7 +791,7 @@ namespace eval ::xo::db {
   #
   ##########################################################################
 
-  ad_proc ::xo::db::select_driver {{driver ""}} {
+  ad_proc -private ::xo::db::select_driver {{driver ""}} {
     Select the driver based on the specified argument (either DB or
     DBI) or based on the defaults for the configuration.  This
     function can be used to switch the driver as well dynamically.
