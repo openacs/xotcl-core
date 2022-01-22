@@ -41,41 +41,43 @@ namespace eval ::xo {
     {-all_from_caller:boolean true}
     {-caller_parameters}
   } {
-    :proc __parse [:parameter_declaration]  {
-      foreach v [info vars] {
-        uplevel [list set :queryparm($v) [set $v]]
-      }
-    }
+    set declared_parameters [lmap v ${:parameter_declaration} {
+      lindex [split [lindex $v 0] :] 0
+    }]
 
-    foreach v [:parameter_declaration] {
-      set ([lindex [split [lindex $v 0] :] 0]) 1
-    }
     if {${:actual_query} eq " "} {
       if {[ns_conn isconnected]} {
         set :actual_query [ns_conn query]
       }
       #:log "--CONN ns_conn query = <$actual_query>"
     }
-
+    set passed_args ""
     #:log "--P processing actual query ${:actual_query}"
-    foreach {att_name att_value} [ns_set array [ns_parsequery ${:actual_query}]] {
-      if {$att_name eq ""} continue
-      if {[info exists (-$att_name)]} {
-        lappend passed_args(-$att_name) $att_value
-      } elseif {$all_from_query} {
-        set :queryparm($att_name) $att_value
+    try {
+      set paramset [ns_parsequery ${:actual_query}]
+      foreach {att_name att_value} [ns_set array $paramset] {
+        if {$att_name eq ""} continue
+        if {"-$att_name" in $declared_parameters} {
+          dict lappend passed_args -$att_name $att_value
+        } elseif {$all_from_query} {
+          set :queryparm($att_name) $att_value
+        }
       }
+    } on error {errorMsg} {
+      ad_log warning "process_query_parameter: $errorMsg"
+      ad_return_complaint 1 "invalid characters in HTTP query parameters"
     }
 
     # get the query parameters (from the form if necessary)
     if {[:istype ::xo::ConnectionContext]} {
-      foreach param [array names ""] {
-        #:log "--cc check $param [info exists passed_args($param)]"
+      foreach param $declared_parameters {
+        #:log "--cc check $param [dict exists §passed_args $param]"
         set name [string range $param 1 end]
-        if {![info exists passed_args($param)] &&
-            [:exists_form_parameter $name]} {
+        if {![dict exists $passed_args $param]
+            && [:exists_form_parameter $name]
+          } {
           #:log "--cc adding passed_args(-$name) [:form_parameter $name]"
-          set passed_args($param) [:form_parameter $name]
+          dict set passed_args $param [:form_parameter $name]
         }
       }
     }
@@ -86,23 +88,39 @@ namespace eval ::xo {
       array set caller_param $caller_parameters
 
       foreach param [array names caller_param] {
-        if {[info exists ($param)]} {
-          set passed_args($param) $caller_param($param)
+        if {$param in $declared_parameters} {
+          dict set passed_args $param $caller_param($param)
         } elseif {$all_from_caller} {
           set :queryparm([string range $param 1 end]) $caller_param($param)
         }
       }
     }
 
-    set parse_args [list]
-    foreach param [array names passed_args] {
-      lappend parse_args $param $passed_args($param)
-    }
+    if {[::acs::icanuse "nsf::parseargs -asdict"]} {
+      # OLD {64.347249 microseconds per iteration}
+      # NEW {17.132942 microseconds per iteration}
+      try {
+        foreach {k v} [nsf::parseargs -asdict ${:parameter_declaration} $passed_args] {
+          set :queryparm($k) $v
+        }
+      } on error {errorMsg} {
+        ad_return_complaint 1 [ns_quotehtml $errorMsg]
+        ad_script_abort
+      }
+    } else {
+      #:log "--cc calling parser eval [self] __parse <${:parameter_declaration}> <$passed_args>"
 
-    #:log "--cc calling parser eval [self] __parse <$parse_args>"
-    if {[catch {[self] __parse {*}$parse_args} errorMsg]} {
-      ad_return_complaint 1 [ns_quotehtml $errorMsg]
-      ad_script_abort
+      :proc __parse ${:parameter_declaration} {
+        foreach v [info vars] {
+          :log "--cc uplevel [list set :queryparm($v) [set $v]]"
+          uplevel [list set :queryparm($v) [set $v]]
+        }
+      }
+
+      if {[catch {[self] __parse {*}$passed_args} errorMsg]} {
+        ad_return_complaint 1 [ns_quotehtml $errorMsg]
+        ad_script_abort
+      }
     }
     #:msg "--cc qp [array get :queryparm] // ${:actual_query}"
   }
