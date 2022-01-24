@@ -100,19 +100,25 @@ namespace eval ::xo {
     set permission ""
     set o [self]::[namespace tail $object]
     set key require_permission($method)
-    if {[nsf::is object $o] && [$o exists $key]} {
-      set permission [$o set $key]
-    } elseif {[nsf::is object $o] && [$o exists default_permission]} {
-      set permission [$o set default_permission]
+    if {[::nsf::is object $o]} {
+      if {[$o exists $key]} {
+        set permission [$o set $key]
+      } elseif {[$o exists default_permission]} {
+        set permission [$o set default_permission]
+      }
     } elseif {$check_classes} {
       # we have no object specific policy information, check the classes
       #ns_log notice "---check [list $object info class]"
       set c [$object info class]
       foreach class [concat $c [$c info heritage]] {
         set c [self]::[namespace tail $class]
-        if {![:isclass $c]} continue
+        if {![::nsf::is class $c]} {
+          continue
+        }
         set permission [:get_permission -check_classes false $class $method]
-        if {$permission ne ""} break
+        if {$permission ne ""} {
+          break
+        }
       }
     }
     return $permission
