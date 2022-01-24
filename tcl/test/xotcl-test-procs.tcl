@@ -10,6 +10,7 @@ aa_register_case -cats {
     "::xo::db::Class proc get_instance_from_db"
     "::xo::db::DB-postgresql instproc get_value"
 
+    "::xo::db::select_driver"
     "::xo::db::Object instproc save"
     "::xo::db::Object instproc save_new"
     "::xo::db::Object instproc delete"

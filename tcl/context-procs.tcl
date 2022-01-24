@@ -175,7 +175,7 @@ namespace eval ::xo {
     Convenience routine for includelets. It combines the actual
     parameters from the call in the page (highest priority) with
     the values from the url (second priority) and the default
-    values from the signature
+    values from the signature.
   } {
     set source [expr {[info exists :__caller_parameters]
                       ? [self] : [:info parent]}]

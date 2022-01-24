@@ -97,7 +97,6 @@ namespace eval ::xo {
 
   Policy instproc get_permission {{-check_classes true} object method} {
     # ns_log notice "[self] [self proc] [self args] // object=$object"
-    set permission ""
     set o [self]::[namespace tail $object]
     set key require_permission($method)
     if {[::nsf::is object $o]} {
@@ -105,6 +104,8 @@ namespace eval ::xo {
         set permission [$o set $key]
       } elseif {[$o exists default_permission]} {
         set permission [$o set default_permission]
+      } else {
+        set permission ""
       }
     } elseif {$check_classes} {
       # we have no object specific policy information, check the classes
@@ -124,13 +125,19 @@ namespace eval ::xo {
     return $permission
   }
 
-  Policy ad_instproc check_permissions {-user_id -package_id {-link ""} object method} {
+  Policy ad_instproc check_permissions {
+    -user_id:integer
+    -package_id:integer
+    {-link ""}
+    object:object
+    method
+  } {
 
-    This method checks whether the current user is allowed
-    or not to invoke a method based on the given policy.
-    This method is purely checking and does not force logins
-    or other side effects. It can be safely used for example
-    to check whether links should be shown or not.
+    This method checks whether the current or specified user is
+    allowed to invoke a method based on the given policy.  This
+    method is purely checking and does not force logins or other side
+    effects. It can be safely used for example to check whether links
+    should be shown or not.
 
     @see enforce_permissions
     @return 0 or 1
