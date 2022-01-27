@@ -183,9 +183,22 @@ if {[nsf::is object ::nx::Object]} {
   proc ::nsf::debug::call {level objectInfo methodInfo arglist} {
     ns_log Warning "DEBUG call($level) - {$objectInfo} {$methodInfo} $arglist"
   }
-  proc ::nsf::debug::exit {level objectInfo methodInfo result usec} {
-    #ns_log Warning "DEBUG exit($level) - {$objectInfo} {$methodInfo} $usec usec -> $result"
-    ns_log Warning "DEBUG exit($level) - {$objectInfo} {$methodInfo} $usec usec"
+
+  if {[acs::icanuse "nsf::config profile"]} {
+    #
+    # The debug call-data of nsf returns only timing information, when
+    # nsf was compiled with --enable-profile. So, just try to display
+    # it, when available.
+    #
+    proc ::nsf::debug::exit {level objectInfo methodInfo result usec} {
+      #ns_log Warning "DEBUG exit($level) - {$objectInfo} {$methodInfo} $usec usec -> $result"
+      ns_log Warning "DEBUG exit($level) - {$objectInfo} {$methodInfo} $usec usec"
+    }
+  } else {
+    proc ::nsf::debug::exit {level objectInfo methodInfo result usec} {
+      #ns_log Warning "DEBUG exit($level) - {$objectInfo} {$methodInfo} -> $result"
+      ns_log Warning "DEBUG exit($level) - {$objectInfo} {$methodInfo}"
+    }
   }
 }
 
