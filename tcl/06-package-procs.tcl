@@ -793,7 +793,7 @@ namespace eval ::xo {
              }]
 
     #
-    # In case we got the item_ids from the pre-request cache, make
+    # In case we got the item_ids from the per-request cache, make
     # sure to load these. This should not be an issue in most
     # situations, but in the test-suite multiple request functions are
     # bundled in a "request" such that will become an issue, when the
@@ -837,7 +837,7 @@ namespace eval ::xo {
       return $value
     }
     #
-    # make a second attempt from the global value.
+    # Make a second attempt from the global value.
     #
     return [parameter::get_global_value \
                    -package_key ${:package_key} \
@@ -863,7 +863,7 @@ namespace eval ::xo {
     }
 
     if {[ns_conn isconnected]} {
-      # in case of host-node map, simplify the url to avoid redirects
+      # in case of host-node map, simplify the URL to avoid redirects
       # .... but ad_host works only, when we are connected....
       # TODO: solution for syndication
       set root [acs::root_of_host [ad_host]]
@@ -876,7 +876,7 @@ namespace eval ::xo {
       regexp "^${root}(.*)$" ${:url} _ :url
     } elseif {![info exists :url]} {
       #:log "--R we have no url, use package_url '$package_url'"
-      # if we have no more information, we use the package_url as actual url
+      # if we have no more information, we use the package_url as actual URL
       set :url $package_url
     }
     :set_url -url ${:url}
@@ -888,7 +888,7 @@ namespace eval ::xo {
     }
 
     #
-    # Save the relation between class and package_key for fast lookup
+    # Save the relation between class and package_key for fast lookup.
     #
     set ::xo::package_class(${:package_key}) [:info class]
 
