@@ -27,19 +27,28 @@ namespace eval ::xo {
     set :__orderby $variable
   }
 
-  OrderedComposite instproc __compare {a b} {
-    set by ${:__orderby}
-    set x [$a set $by]
-    set y [$b set $by]
-    if {$x < $y} {
-      return -1
-    } elseif {$x > $y} {
-      return 1
-    } else {
-      return 0
+  if {[::acs::icanuse "ns_strcoll"]} {
+    OrderedComposite instproc __compare {a b} {
+      set by ${:__orderby}
+      set x [$a set $by]
+      set y [$b set $by]
+      return [ns_strcoll $x $y]
+    }
+  } else {  
+    OrderedComposite instproc __compare {a b} {
+      set by ${:__orderby}
+      set x [$a set $by]
+      set y [$b set $by]
+      if {$x < $y} {
+        return -1
+      } elseif {$x > $y} {
+        return 1
+      } else {
+        return 0
+      }
     }
   }
-
+  
   OrderedComposite instproc children {} {
     if {![info exists :__children]} {
       return ""
