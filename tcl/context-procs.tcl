@@ -292,16 +292,38 @@ namespace eval ::xo {
       set locale [lang::system::locale -package_id $package_id]
     }
     if {!$exists_cc} {
-      :create ::xo::cc \
-          -package_id $package_id \
-          -parameter_declaration $parameter \
-          -user_id $user_id \
-          -actual_query $actual_query \
-          -locale $locale \
-          -url $url
+      try {
+        :create ::xo::cc \
+            -package_id $package_id \
+            -parameter_declaration $parameter \
+            -user_id $user_id \
+            -actual_query $actual_query \
+            -locale $locale \
+            -url $url
+      } on error {errorMsg} {
+        if {[nsf::is object ::xo::cc]} {
+          ::xo::cc destroy
+        }
+        return -code error -errorcode $::errorCode -errorinfo $::errorInfo $errorMsg
+      }
+      ::xo::cc destroy_on_cleanup
+
+      # if {[ns_conn isconnected]} {
+      #   ns_log notice "XXX ::xo::cc created [ns_conn id] [ns_conn request]"
+      #   ::xo::cc set ID [ns_conn id]
+      # } else {
+      #   ns_log notice "XXX ::xo::cc created without connection"
+      #   ::xo::cc set ID UNKNOWN
+      # }
+      # ::xo::cc proc destroy {args} {
+      #   set ID [expr {[info exists :ID] ? ${:ID} : {-}}]
+      #   ns_log notice "::xo::cc destroyed ID $ID"
+      #   next
+      # }
+
       #::xo::show_stack
       #:msg "--cc ::xo::cc created $url [::xo::cc serialize]"
-      ::xo::cc destroy_on_cleanup
+
     } else {
       #:msg "--cc ::xo::cc reused $url -package_id $package_id"
       ::xo::cc configure \
@@ -484,7 +506,7 @@ namespace eval ::xo {
     return 0
   }
 
-  ConnectionContext ad_instproc permission {-object_id:required -privilege:required -party_id } {
+  ConnectionContext ad_instproc permission {-object_id:integer,required -privilege:required -party_id:integer } {
     call ::permission::permission_p but avoid multiple calls in the same
     session through caching in the connection context
   } {
