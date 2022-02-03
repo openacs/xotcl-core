@@ -567,6 +567,19 @@ namespace eval ::xo {
     #
 
   } {
+    #
+    # The following block is a safety measure: When there is no cleanup
+    # for ::xo::cc defined, the object will survive a request and many
+    # things might go wrong. The test is quite cheap an can reduce
+    # debugging time on some sites.
+    #
+    if {[info commands ::xo::cc] ne ""} {
+      if {![info exists ::xo::cleanup(::xo::cc)]} {
+        ns_log notice [::xo::cc serialize]
+        ns_log error "no cleanup for ::xo::cc registered"
+        ::xo::cc destroy
+      }
+    }
     ::xo::dc profile off
     ::xo::broadcast receive
 
