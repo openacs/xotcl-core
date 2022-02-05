@@ -2679,15 +2679,50 @@ namespace eval ::xo::db {
         {index}
       }
 
+  if {[::acs::icanuse "nsv_dict"]} {
+    #
+    # When "nsv_dict" is available, we can use it to check efficiently
+    # for the existence of defined attributes with minimal locking.
+    #
+    ::xo::db::Attribute instproc db_attribute_defined {
+      -object_type
+      -attribute_name
+    } {
+      if {[nsv_array names acs_attributes] eq ""} {
+        #
+        # The registered attributes were not yet loaded. Since the
+        # number of registered attributes is not very high, we can
+        # load these into an nsv. Since the data is fairly stable, and
+        # this function might be called before the caches are created,
+        # nsvs are better suited.
+        #
+        foreach set [xo::dc sets get_attributes {
+          select attribute_name, object_type from acs_attributes
+        }] {
+          nsv_dict set acs_attributes \
+              [ns_set get $set object_type] \
+              [ns_set get $set attribute_name] 1
+        }
+      }
+      return [nsv_dict exists acs_attributes $object_type $attribute_name]
+    }
+  } else {
+    ::xo::db::Attribute instproc db_attribute_defined {
+      -object_type
+      -attribute_name
+    } {
+      return [::xo::dc get_value check_att {select 0 from acs_attributes where
+        attribute_name = :attribute_name and object_type = :object_type} 1]
+    }
+  }
+
   ::xo::db::Attribute instproc create_attribute {} {
     if {![:create_acs_attribute]} return
 
-    set column_name ${:column_name}
     set object_type [${:domain} object_type]
-    #ns_log notice "::xo::db::Attribute create_attribute $object_type $column_name epoch [ns_ictl epoch] [array get ::db_state_default]"
+    #ns_log notice "::xo::db::Attribute create_attribute $object_type ${:column_name} epoch [ns_ictl epoch] [array get ::db_state_default]"
 
-    if {[::xo::dc get_value check_att {select 0 from acs_attributes where
-      attribute_name = :column_name and object_type = :object_type} 1]} {
+    if {![:db_attribute_defined -object_type $object_type -attribute_name ${:column_name} ]} {
 
       if {![::xo::db::Class object_type_exists_in_db -object_type $object_type]} {
         ${:domain} create_object_type
@@ -2695,12 +2730,15 @@ namespace eval ::xo::db {
 
       ::xo::db::sql::acs_attribute create_attribute \
           -object_type    $object_type \
-          -attribute_name $column_name \
+          -attribute_name ${:column_name} \
           -datatype       ${:datatype} \
           -pretty_name    ${:pretty_name} \
           -min_n_values   ${:min_n_values} \
           -max_n_values   ${:max_n_values}
-      #:save
+
+      if {[::acs::icanuse "nsv_dict"]} {
+        nsv_dict set acs_attributes $object_type ${:column_name} 1
+      }
     }
   }
 
@@ -2765,7 +2803,6 @@ namespace eval ::xo::db {
     # do nothing, if create_acs_attribute is set to false
     if {![:create_acs_attribute]} return
 
-    set column_name ${:column_name}
     set object_type [${:domain} object_type]
 
     if {$object_type eq "content_folder"} {
@@ -2773,9 +2810,8 @@ namespace eval ::xo::db {
       return
     }
 
-    #:log "check attribute $column_name object_type=$object_type, domain=${:domain}"
-    if {[::xo::dc get_value check_att {select 0 from acs_attributes where
-      attribute_name = :column_name and object_type = :object_type} 1]} {
+    #:log "check attribute ${:column_name} object_type=$object_type, domain=${:domain}"
+    if {![:db_attribute_defined -object_type $object_type -attribute_name ${:column_name}]} {
 
       if {![::xo::db::Class object_type_exists_in_db -object_type $object_type]} {
         ${:domain} create_object_type
@@ -2783,10 +2819,14 @@ namespace eval ::xo::db {
 
       ::xo::db::sql::content_type create_attribute \
           -content_type   $object_type \
-          -attribute_name $column_name \
+          -attribute_name ${:column_name} \
           -datatype       ${:datatype} \
           -pretty_name    ${:pretty_name} \
           -column_spec    [:column_spec]
+
+      if {[::acs::icanuse "nsv_dict"]} {
+        nsv_dict set acs_attributes $object_type ${:column_name} 1
+      }
     }
   }
 
