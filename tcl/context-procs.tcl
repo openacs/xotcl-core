@@ -42,7 +42,7 @@ namespace eval ::xo {
     {-caller_parameters}
   } {
     set declared_parameters [lmap v ${:parameter_declaration} {
-      lindex [split [lindex $v 0] :] 0
+      string range [lindex [split [lindex $v 0] :] 0] 1 end
     }]
 
     if {${:actual_query} eq " "} {
@@ -57,7 +57,7 @@ namespace eval ::xo {
       set paramset [ns_parsequery ${:actual_query}]
       foreach {att_name att_value} [ns_set array $paramset] {
         if {$att_name eq ""} continue
-        if {"-$att_name" in $declared_parameters} {
+        if {$att_name in $declared_parameters} {
           dict lappend passed_args -$att_name $att_value
         } elseif {$all_from_query} {
           set :queryparm($att_name) $att_value
@@ -70,9 +70,9 @@ namespace eval ::xo {
 
     # get the query parameters (from the form if necessary)
     if {[:istype ::xo::ConnectionContext]} {
-      foreach param $declared_parameters {
+      foreach name $declared_parameters {
+        set param -$name
         #:log "--cc check $param [dict exists §passed_args $param]"
-        set name [string range $param 1 end]
         if {![dict exists $passed_args $param]
             && [:exists_form_parameter $name]
           } {
@@ -88,10 +88,12 @@ namespace eval ::xo {
       array set caller_param $caller_parameters
 
       foreach param [array names caller_param] {
-        if {$param in $declared_parameters} {
+        if {"-$param" in $declared_parameters} {
           dict set passed_args $param $caller_param($param)
         } elseif {$all_from_caller} {
-          set :queryparm([string range $param 1 end]) $caller_param($param)
+          set name [string range $param 1 end]
+          set :queryparm($name) $caller_param($param)
+          lappend declared_parameters $name
         }
       }
     }
@@ -122,6 +124,7 @@ namespace eval ::xo {
         ad_script_abort
       }
     }
+    set :declared_parameters $declared_parameters
     #:msg "--cc qp [array get :queryparm] // ${:actual_query}"
   }
 
@@ -158,16 +161,36 @@ namespace eval ::xo {
     set :queryparm($name) $value
   }
 
-  Context ad_instproc export_vars {{-level 1}} {
-    Export the query variables
+  Context ad_instproc export_vars {-all:switch {-level 1}} {
+
+    Export either the declared query variables (default) or all (when
+    explicitly demanded).
+
+    @param all when specified, export all query variables
     @param level target level
   } {
-    foreach p [array names :queryparm] {
-      regsub -all : $p _ varName
-      uplevel $level [list set $varName [set :queryparm($p)]]
+
+    if {$all} {
+      foreach p [array names :queryparm] {
+        regsub -all : $p _ varName
+        uplevel $level [list set $varName [set :queryparm($p)]]
+      }
+    } else {
+      #
+      # Export only declared parameters (coming from the package
+      # initialization or from the includelet definition).
+      #
+      foreach p [array names :queryparm] {
+        if {$p in ${:declared_parameters}} {
+          #ns_log notice "=== export <$p>"
+          uplevel $level [list set $p [set :queryparm($p)]]
+        }
+      }
     }
+    #
+    # Set always variable package_id
+    #
     uplevel $level [list set package_id ${:package_id}]
-    #::xo::show_stack
   }
 
 
