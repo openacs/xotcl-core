@@ -84,7 +84,7 @@ namespace eval ::xo {
 
     # get the caller parameters (e.g. from the includelet call)
     if {[info exists caller_parameters]} {
-      :log "--cc caller_parameters=$caller_parameters"
+      #:log "--cc caller_parameters=$caller_parameters"
 
       foreach param [dict keys $caller_parameters] {
         set name [string range $param 1 end]
