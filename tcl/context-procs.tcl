@@ -88,7 +88,7 @@ namespace eval ::xo {
       array set caller_param $caller_parameters
 
       foreach param [array names caller_param] {
-        if {"-$param" in $declared_parameters} {
+        if {[string range $param 1 end] in $declared_parameters} {
           dict set passed_args $param $caller_param($param)
         } elseif {$all_from_caller} {
           set name [string range $param 1 end]
