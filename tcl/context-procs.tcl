@@ -72,7 +72,7 @@ namespace eval ::xo {
     if {[:istype ::xo::ConnectionContext]} {
       foreach name $declared_parameters {
         set param -$name
-        #:log "--cc check $param [dict exists §passed_args $param]"
+        #:log "--cc check $param [dict exists $passed_args $param]"
         if {![dict exists $passed_args $param]
             && [:exists_form_parameter $name]
           } {
@@ -84,15 +84,14 @@ namespace eval ::xo {
 
     # get the caller parameters (e.g. from the includelet call)
     if {[info exists caller_parameters]} {
-      #:log "--cc caller_parameters=$caller_parameters"
-      array set caller_param $caller_parameters
+      :log "--cc caller_parameters=$caller_parameters"
 
-      foreach param [array names caller_param] {
-        if {[string range $param 1 end] in $declared_parameters} {
-          dict set passed_args $param $caller_param($param)
+      foreach param [dict keys $caller_parameters] {
+        set name [string range $param 1 end]
+        if {$name in $declared_parameters} {
+          dict set passed_args $param [dict get $caller_parameters $param]
         } elseif {$all_from_caller} {
-          set name [string range $param 1 end]
-          set :queryparm($name) $caller_param($param)
+          set :queryparm($name) [dict get $caller_parameters $param]
           lappend declared_parameters $name
         }
       }
@@ -204,6 +203,8 @@ namespace eval ::xo {
                       ? [self] : [:info parent]}]
     $source instvar __caller_parameters
 
+    #set n [expr {[info exists :name] ? ${:name} : "NONE"}]
+    #ns_log notice "$n: GET PARAMETERS source <$source> have [info exists __caller_parameters]"
     if {![info exists :__including_page]} {
       #
       # An includelet is called from the top-level. The actual_query
