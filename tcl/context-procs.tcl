@@ -451,8 +451,11 @@ namespace eval ::xo {
     if {${:user_id} != 0} {
       set :requestor ${:user_id}
     } else {
-      # for requests bypassing the ordinary connection setup (resources in oacs 5.2+)
-      # we have to get the user_id by ourselves
+      #
+      # For requests bypassing the ordinary connection setup
+      # (resources in oacs 5.2+) we have to get the user_id by
+      # ourselves.
+      #
       ad_try {
         set cookie_list [ad_get_signed_cookie_with_expr "ad_session_id"]
         set cookie_data [split [lindex $cookie_list 0] {,}]
@@ -530,14 +533,19 @@ namespace eval ::xo {
     return 0
   }
 
-  ConnectionContext ad_instproc permission {-object_id:integer,required -privilege:required -party_id:integer } {
-    call ::permission::permission_p but avoid multiple calls in the same
-    session through caching in the connection context
+  ConnectionContext ad_instproc permission {
+    -object_id:integer,required
+    -privilege:required
+    -party_id:integer
+  } {
+    Call ::permission::permission_p but avoid multiple calls in the same
+    request through caching in the connection context
   } {
     if {![info exists party_id]} {
       set party_id ${:user_id}
     }
-    # :log "--  context permission user_id=$party_id uid=[::xo::cc user_id] untrusted=[::xo::cc set untrusted_user_id]"
+    # :log "--  context permission user_id=$party_id uid=[::xo::cc user_id]" \
+        "untrusted=[::xo::cc set untrusted_user_id]"
     if {$party_id == 0} {
       set granted [permission::permission_p -no_login -party_id $party_id \
                        -object_id $object_id \
@@ -631,7 +639,9 @@ namespace eval ::xo {
     # cases, where multiplicity is specified. This means effectively
     # that the default multiplicity is "0..1".
     #
-    if {[info exists constraint] && ([string first . $constraint] > -1 || $value ne "")} {
+    if {[info exists constraint]
+        && ([string first . $constraint] > -1 || $value ne "")
+      } {
       try {
         nsf::parseargs $name:$constraint [list $value]
 
@@ -660,7 +670,9 @@ namespace eval ::xo {
     unset -nocomplain :perconnectionparam($name)
   }
   ConnectionContext instproc get_parameter {name {default ""}} {
-    return [expr {[info exists :perconnectionparam($name)] ? [set :perconnectionparam($name)] : $default}]
+    return [expr {[info exists :perconnectionparam($name)]
+                  ? [set :perconnectionparam($name)]
+                  : $default}]
   }
   ConnectionContext instproc exists_parameter {name} {
     info exists :perconnectionparam($name)
