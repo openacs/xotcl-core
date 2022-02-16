@@ -496,12 +496,20 @@ namespace eval ::xo::db {
     return $sql
   }
 
-  ::xo::db::DB instproc sets {{-dbn ""} {-bind ""} -prepare qn sql} {
+  ::xo::db::DB-oracle instproc sets {{-dbn ""} {-bind ""} -prepare qn sql} {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    return [uplevel [list db_list_of_ns_sets -dbn $dbn $qn $sql {*}$bindOpt]]
+  }
+
+  ::xo::db::DB-postgresql instproc sets {{-dbn ""} {-bind ""} -prepare qn sql} {
+    if {$sql eq ""} {set sql [:get_sql $qn]}
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+
     db_with_handle -dbn $dbn db {
       if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
       set result [list]
+
       set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
       while { [::db_getrow $db $answers] } {
         lappend result [ns_set copy $answers]
@@ -1572,7 +1580,7 @@ namespace eval ::xo::db {
 
     set function_args [:get_function_args $package_name $object_name]
     set function_args [:fix_function_args $function_args $package_name $object_name]
-    set sql_info [:sql_info $function_args $package_name $object_name]
+    set sql_info [:sql_arg_info $function_args $package_name $object_name]
 
     if {$is_function} {
       set sql [subst {BEGIN :1 := ${package_name}.${object_name}(\$sql_args); END;}]
@@ -1581,7 +1589,7 @@ namespace eval ::xo::db {
       set sql [subst {BEGIN ${package_name}.${object_name}(\$sql_args); END;}]
       set sql_cmd {ns_ora dml $db $sql}
     }
-    dict set sql_info body  return [subst {
+    dict set sql_info body [subst {
       #function_args: $function_args
       set sql_args \[list\]
       foreach var \[list [dict get $sql_info arg_order]\]  {
@@ -1829,6 +1837,23 @@ namespace eval ::xo::db {
     }
 
     require proc default {-table -col -value} {
+      if {[db_driverkey ""] eq "oracle"} {
+        #
+        # Oracle behaves differently: one needs the "modify"
+        # subcommand, the stunt with the case below raises exceptions
+        # of several reasons (cast needs length, boolean value in
+        # coalesce, ...). Furthermore, Oracle does not allow a bind
+        # variable for the default value.
+        #
+        set default [string trim [::xo::db::sql::util get_default \
+                                      -table [string toupper $table] \
+                                      -column [string toupper $col]]]
+        if {$default ne $value} {
+          ::xo::dc dml alter-table-$table \
+              "alter table $table modify $col default [ns_dbquotevalue $value]"
+        }
+        return
+      }
       set default [::xo::db::sql::util get_default -table $table -column $col]
       #
       # Newer versions of PostgreSQL return default values with type
@@ -1877,9 +1902,21 @@ namespace eval ::xo::db {
         # if fails only table was given, assume refcol is reftable's
         # primary key
         set reftable [lindex $ref 0]
-        set refcol [::xo::db::sql::util get_primary_keys -table $reftable]
+        if {[db_driverkey ""] eq "oracle"} {
+          #
+          # The classical xo::db interface for Oracle does not with
+          # with functions return tables (multiple tuples). So for the
+          # time being, provide a local fix here.
+          #
+          set tableref [ns_dbquotevalue [string toupper reftable]]
+          set refcol [::xo::dc list get_keys "select * from util.get_primary_keys($tableref)"]
+        } else {
+          set refcol [::xo::db::sql::util get_primary_keys -table $reftable]
+        }
         # only one primary key is supported for the table
-        if {[llength $refcol] != 1} return
+        if {[llength $refcol] != 1} {
+          return
+        }
       }
       if {[::xo::db::sql::util foreign_key_exists \
                -table $table -column $col \
