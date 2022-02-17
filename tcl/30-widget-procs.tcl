@@ -813,18 +813,37 @@ namespace eval ::xo::Table {
 
   TABLE::Field instproc renderSortLabels {} {
     set field ${:orderby}
-    #set table_ref [namespace tail [[:info parent] info parent]]
-    #set table_id [::xowiki::Includelet html_id $table_ref]
-    #set order_by_name ${table_id}_orderby
     set orderby_name orderby
-    set lvl [template::adp_level]
-    if {$lvl ne ""} {
-      upvar #$lvl $orderby_name orderby
+
+    #
+    # First,try to get the sort-order from the including ordered
+    # composite, which is supposed to be always the data source.
+    # Only, when this fails, fall back to the old style based on the
+    # adp-level, which is less robust and warn about this usage.
+    #
+    set ordered_composite [${:__parent} info parent]
+    if {[::nsf::is object $ordered_composite] && [$ordered_composite hasclass ::xo::OrderedComposite]} {
+      set ordered_composite_orderby [$ordered_composite set __orderby]
+      set ordered_composite_order [$ordered_composite set __order]
+      if {$ordered_composite_order eq "increasing"} {
+        set orderby $ordered_composite_orderby,asc
+        set new_orderby $ordered_composite_orderby,desc
+      } else {
+        set orderby $ordered_composite_orderby,desc
+        set new_orderby $ordered_composite_orderby,asc
+      }
+    } else {
+      ns_log warning "renderSortLabels is still relying on addressing variables on the template::adp_level"
+      set lvl [template::adp_level]
+      if {$lvl ne ""} {
+        upvar #$lvl $orderby_name orderby
+      }
+      if {![info exists orderby]} {
+        set orderby ""
+      }
+      set new_orderby $orderby
     }
-    if {![info exists orderby]} {
-      set orderby ""
-    }
-    set new_orderby $orderby
+
     if {$orderby eq "$field,desc"} {
       set new_orderby $field,asc
       set title [_ xotcl-core.Sort_by_this_column_ascending]
