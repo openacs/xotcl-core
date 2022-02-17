@@ -879,22 +879,10 @@ namespace eval ::xo::db {
   ::xotcl::Object create require
 
   require proc exists_table {name} {
-    if {[db_driverkey ""] eq "oracle"} {
-      set name [string toupper $name]
-    } else {
-      set name [string tolower $name]
-    }
     ::xo::db::sql::util table_exists -name $name
   }
 
   require proc exists_column {table_name column_name} {
-    if {[db_driverkey ""] eq "oracle"} {
-      set table_name  [string toupper $table_name]
-      set column_name [string toupper $column_name]
-    } else {
-      set table_name  [string tolower $table_name]
-      set column_name [string tolower $column_name]
-    }
     #
     # The following "try" operation is a transitional code: When
     # someone upgrades from OpenACS 5.9.1 to OpenACS 5.10, and the
@@ -1846,8 +1834,8 @@ namespace eval ::xo::db {
         # variable for the default value.
         #
         set default [string trim [::xo::db::sql::util get_default \
-                                      -table [string toupper $table] \
-                                      -column [string toupper $col]]]
+                                      -table $table \
+                                      -column $col]]
         if {$default ne $value} {
           ::xo::dc dml alter-table-$table \
               "alter table $table modify $col default [ns_dbquotevalue $value]"
@@ -1908,7 +1896,7 @@ namespace eval ::xo::db {
           # with functions return tables (multiple tuples). So for the
           # time being, provide a local fix here.
           #
-          set tableref [ns_dbquotevalue [string toupper reftable]]
+          set tableref [ns_dbquotevalue reftable]
           set refcol [::xo::dc list get_keys "select * from util.get_primary_keys($tableref)"]
         } else {
           set refcol [::xo::db::sql::util get_primary_keys -table $reftable]
