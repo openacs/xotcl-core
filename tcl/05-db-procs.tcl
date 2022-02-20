@@ -248,14 +248,11 @@ namespace eval ::xo::db {
     set where_clause [expr {$where   ne "" ? "WHERE $where" : ""}]
     set order_clause [expr {$orderby ne "" ? "ORDER BY $orderby" : ""}]
     set group_clause [expr {$groupby ne "" ? "GROUP BY $groupby" : ""}]
+    set offset_clause [expr {$offset  ne "" ? "OFFSET $offset ROWS" : ""}]
+    set limit_clause  [expr {$limit   ne "" ? "FETCH NEXT $limit ROWS ONLY" : ""}]
     if {$map_function_names} {set vars [:map_function_name $vars]}
-    set sql "SELECT $vars FROM $from $where_clause $group_clause"
-    if {$limit ne "" || $offset ne ""} {
-      set sql [:limit_clause -sql "$sql $order_clause" -limit $limit -offset $offset]
-    } else {
-      append sql " " $order_clause
-    }
-    :log "--returned sql = $sql"
+    set sql "SELECT $vars FROM $from $where_clause $group_clause $order_clause $offset_clause $limit_clause"
+    #:log "--returned sql = $sql"
     return $sql
   }
   ::xo::db::oracle instproc date_trunc {field date} {
@@ -548,23 +545,26 @@ namespace eval ::xo::db {
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     uplevel [list ::db_1row [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
   }
-  ::xo::db::DB instproc dml {{-dbn ""} {-bind ""} -prepare qn sql} {
+  ::xo::db::DB instproc dml {{-dbn ""} {-bind ""} -prepare qn sql {-clobs ""} {-blobs ""}} {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    if {$blobs ne ""} {lappend bindOpt -blobs $blobs}
+    if {$clobs ne ""} {lappend bindOpt -clobs $clobs}
     uplevel [list ::db_dml [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
     return [db_resultrows]
   }
   ::xo::db::DB instproc get_value {{-dbn ""} {-bind ""} -prepare qn sql {default ""}} {
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
-    uplevel [list ::db_string [uplevel [list [self] qn $qn]] $sql -default $default {*}$bindOpt]
+    uplevel [list ::db_string -dbn $dbn [uplevel [list [self] qn $qn]] $sql -default $default {*}$bindOpt]
   }
-  ::xo::db::DB instproc list_of_lists {{-bind ""} -prepare qn sql} {
+  ::xo::db::DB instproc list_of_lists {{-dbn ""} {-bind ""} -prepare qn sql} {
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
-    uplevel [list ::db_list_of_lists [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
+    uplevel [list ::db_list_of_lists -dbn $dbn [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
   }
-  ::xo::db::DB instproc list {{-bind ""} -prepare qn sql} {
+
+  ::xo::db::DB instproc list {{-dbn ""} {-bind ""} -prepare qn sql} {
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
-    uplevel [list ::db_list [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
+    uplevel [list ::db_list -dbn $dbn [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
   }
 
   ::xo::db::DB instproc row_lock {{-dbn ""} {-bind ""} {-for "UPDATE"} -prepare qn sql} {

@@ -106,7 +106,7 @@ namespace eval ::xo::db {
     {-initialize:boolean true}
     {-item_ids:required}
   } {
-    
+
     Make sure, the objects all of the provided items_ids are
     instantiated (i.e. the same-named objects do exist as executable
     commands in the current thread).
@@ -117,7 +117,7 @@ namespace eval ::xo::db {
       :get_instance_from_db -item_id $item_id -initialize $initialize
     }
   }
-  
+
   CrClass ad_proc get_parent_id {
     -item_id:required
   } {
@@ -909,9 +909,10 @@ namespace eval ::xo::db {
         set revision_id ${:revision_id}
       }
       set domain [$slot domain]
-      set sql "update [$domain table_name] \
-                set [$slot column_name] = :value \
-        where [$domain id_column] = $revision_id"
+      #set sql "update [$domain table_name] \
+      #          set [$slot column_name] = '$value' \
+      #  where [$domain id_column] = $revision_id"
+      #ns_log notice UPDATE-$sql
       ::xo::dc dml update_attribute_from_slot [subst {
         update [$domain table_name]
         set [$slot column_name] = :value
@@ -928,7 +929,7 @@ namespace eval ::xo::db {
       #      -modifying_ip ...
 
       ::xo::dc dml update_attribute_from_slot_last_modified {
-        update acs_objects set last_modified = now()
+        update acs_objects set last_modified = CURRENT_TIMESTAMP
         where object_id = :revision_id
       }
     }
@@ -1011,9 +1012,9 @@ namespace eval ::xo::db {
         ::xo::dc dml $att $sql
       }
       ::xo::dc dml update_attribute_from_slot_last_modified {
-        update acs_objects set last_modified = now()
+        update acs_objects set last_modified = CURRENT_TIMESTAMP
         where object_id = :revision_id
-      }      
+      }
     }
   }
 
@@ -1404,7 +1405,7 @@ namespace eval ::xo::db {
                         content_revision__get_number(r.revision_id) as version_number " \
                  -from  "cr_items ci, cr_revisions r, acs_objects o" \
                  -where "ci.item_id = :page_id and r.item_id = ci.item_id and o.object_id = r.revision_id
-                         and acs_permission.permission_p(r.revision_id, :user_id, 'read')" \
+                         and acs_permission.permission_p(r.revision_id, :user_id, 'read') = 't'" \
                  -orderby "r.revision_id desc"]
 
     ::xo::dc foreach revisions_select $sql {
@@ -1795,7 +1796,7 @@ namespace eval ::xo::db {
     set serialized_object [::xo::xotcl_object_cache eval [string trimleft $object :] {
       # :log "--CACHE true fetch [self args], call shadowed method [self next]"
       set loaded_from_db 1
-      # Call the showdowed method with initializing turned off. We
+      # Call the shadowed method with initializing turned off. We
       # want to store object before the after-load initialize in the
       # cache to save storage.
       set o [next -item_id $item_id -revision_id $revision_id -object $object -initialize 0]
