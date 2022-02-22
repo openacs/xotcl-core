@@ -99,6 +99,7 @@ namespace eval ::xo {
   Policy instproc get_permission {{-check_classes true} object method} {
     # ns_log notice "[self] [self proc] [self args] // object=$object"
     set o [self]::[namespace tail $object]
+    set permission ""
     set key require_permission($method)
     if {[::nsf::is object $o]} {
       if {[$o exists $key]} {
