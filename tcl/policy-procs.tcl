@@ -114,7 +114,6 @@ namespace eval ::xo {
       # class tree up to the root.
       #
       #ns_log notice "---check [list $object info class]"
-      set permission ""
       set c [$object info class]
       foreach class [concat $c [$c info heritage]] {
         set c [self]::[namespace tail $class]
@@ -125,6 +124,15 @@ namespace eval ::xo {
         if {$permission ne ""} {
           break
         }
+      }
+      if {![info exists permission]} {
+        #
+        # This can happen only in error situations, when
+        #
+        ad_log error "get_permission could not find an approriate class for checking" \
+            "permissions for '$object' and '$method' in policy [self]" \
+            "using the class hierarchy [concat $c [$c info heritage]]"
+        set set permission ""
       }
     }
     return $permission
