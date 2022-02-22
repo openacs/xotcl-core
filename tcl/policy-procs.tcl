@@ -99,7 +99,6 @@ namespace eval ::xo {
   Policy instproc get_permission {{-check_classes true} object method} {
     # ns_log notice "[self] [self proc] [self args] // object=$object"
     set o [self]::[namespace tail $object]
-    set permission ""
     set key require_permission($method)
     if {[::nsf::is object $o]} {
       if {[$o exists $key]} {
@@ -110,8 +109,12 @@ namespace eval ::xo {
         set permission ""
       }
     } elseif {$check_classes} {
-      # we have no object specific policy information, check the classes
+      #
+      # We have no object specific policy information, check the
+      # class tree up to the root.
+      #
       #ns_log notice "---check [list $object info class]"
+      set permission ""
       set c [$object info class]
       foreach class [concat $c [$c info heritage]] {
         set c [self]::[namespace tail $class]
