@@ -308,7 +308,7 @@ namespace eval ::xo::db {
       select folder_id from cr_folder_type_map
       where content_type = :object_type
     } {
-      ::xo::db::sql::content_folder unregister_content_type \
+      ::acs::dc call content_folder unregister_content_type \
           -folder_id $folder_id \
           -content_type $object_type \
           -include_subtypes $include_subtypes
@@ -332,7 +332,7 @@ namespace eval ::xo::db {
     if {![info exists folder_id]} {
       set folder_id ${:folder_id}
     }
-    ::xo::db::sql::content_folder ${operation}_content_type \
+    ::acs::dc call content_folder ${operation}_content_type \
         -folder_id $folder_id \
         -content_type ${:object_type} \
         -include_subtypes $include_subtypes
@@ -352,7 +352,7 @@ namespace eval ::xo::db {
     if {![info exists :pretty_plural]} {set :pretty_plural ${:pretty_name}}
 
     ::xo::dc transaction {
-      ::xo::db::sql::content_type create_type \
+      ::acs::dc call content_type create_type \
           -content_type  ${:object_type} \
           -supertype     ${:supertype} \
           -pretty_name   ${:pretty_name} \
@@ -374,7 +374,7 @@ namespace eval ::xo::db {
     set object_type ${:object_type}
     ::xo::dc transaction {
       :folder_type unregister
-      ::xo::db::sql::content_type drop_type \
+      ::acs::dc call content_type drop_type \
           -content_type ${:object_type} \
           -drop_children_p t \
           -drop_table_p t
@@ -645,7 +645,7 @@ namespace eval ::xo::db {
     Delete a content item from the content repository.
     @param item_id id of the item to be deleted
   } {
-    ::xo::db::sql::content_item del -item_id $item_id
+    ::acs::dc call content_item del -item_id $item_id
   }
 
 
@@ -923,7 +923,7 @@ namespace eval ::xo::db {
       # that we would need the modifying_user and the modifying IP
       # address.
       #
-      # ::xo::db::sql::acs_object update_last_modified \
+      # ::acs::dc call acs_object update_last_modified \
       #      -object_id $revision_id \
       #      -modifying_user ${:publish_status} \
       #      -modifying_ip ...
@@ -1126,7 +1126,7 @@ namespace eval ::xo::db {
         # Update the life revision with the publish status and
         # optionally the "publish_date".
         #
-        ::xo::db::sql::content_item set_live_revision \
+        ::acs::dc call content_item set_live_revision \
             -revision_id $revision_id \
             -publish_status ${:publish_status} \
             -is_latest true \
@@ -1178,7 +1178,7 @@ namespace eval ::xo::db {
     @param revision_id
     @param publish_status one of 'live', 'ready' or 'production'
   } {
-    ::xo::db::sql::content_item set_live_revision \
+    ::acs::dc call content_item set_live_revision \
         -revision_id $revision_id \
         -publish_status $publish_status \
         -is_latest $is_latest
@@ -1275,7 +1275,7 @@ namespace eval ::xo::db {
                            -file      ${:import_file}]
       }
 
-      set :item_id [::xo::db::sql::content_item new \
+      set :item_id [::acs::dc call content_item new \
                         -name            ${:name} \
                         -parent_id       ${:parent_id} \
                         -creation_user   $creation_user \
@@ -1304,7 +1304,7 @@ namespace eval ::xo::db {
         # Update the life revision with the publish status and
         # optionally the publish_date
         #
-        ::xo::db::sql::content_item set_live_revision \
+        ::acs::dc call content_item set_live_revision \
             -revision_id $revision_id \
             -publish_status ${:publish_status} \
             -is_latest true \
@@ -1389,7 +1389,7 @@ namespace eval ::xo::db {
 
     set user_id [:current_user_id]
     set page_id ${:item_id}
-    set live_revision_id [::xo::db::sql::content_item get_live_revision -item_id $page_id]
+    set live_revision_id [::acs::dc call content_item get_live_revision -item_id $page_id]
     set package_id ${:package_id}
     set base [::$package_id url]
     set sql [::xo::dc select \
@@ -1685,7 +1685,7 @@ namespace eval ::xo::db {
   } {
     foreach content_type $content_types {
       set with_subtypes [expr {[regexp {^(.*)[*]$} $content_type _ content_type] ? "t" : "f"}]
-      ::xo::db::sql::content_folder register_content_type \
+      ::acs::dc call content_folder register_content_type \
           -folder_id $folder_id \
           -content_type $content_type \
           -include_subtypes $with_subtypes
@@ -1724,7 +1724,7 @@ namespace eval ::xo::db {
   } {
     set package_id ${:package_id}
     [:info class] get_context package_id creation_user creation_ip
-    set :folder_id [::xo::db::sql::content_folder new \
+    set :folder_id [::acs::dc call content_folder new \
                         -name ${:name} -label [:label] \
                         -description [:description] \
                         -parent_id ${:parent_id} \
@@ -1776,7 +1776,7 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::CrFolder proc delete {-item_id} {
-    ::xo::db::sql::content_folder del -folder_id $item_id -cascade_p t
+    ::acs::dc call content_folder del -folder_id $item_id -cascade_p t
   }
 
 

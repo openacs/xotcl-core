@@ -919,7 +919,7 @@ namespace eval ::xo {
       set folder_id [::xo::db::CrClass lookup -name $name -parent_id $parent_id]
       if {$folder_id == 0} {
         :log "folder with name '$name' and parent $parent_id does NOT EXIST"
-        set folder_id [::xo::db::sql::content_folder new \
+        set folder_id [::acs::dc call content_folder new \
                            -name $name \
                            -label ${:instance_name} \
                            -parent_id $parent_id \

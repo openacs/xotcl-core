@@ -879,10 +879,11 @@ namespace eval ::xo::db {
   ::xotcl::Object create require
 
   require proc exists_table {name} {
-    ::xo::db::sql::util table_exists -name $name
+    ::db_table_exists $name
   }
 
   require proc exists_column {table_name column_name} {
+
     #
     # The following "try" operation is a transitional code: When
     # someone upgrades from OpenACS 5.9.1 to OpenACS 5.10, and the
@@ -890,16 +891,27 @@ namespace eval ::xo::db {
     # definition is still the one of 5.9.1 have no -p_table and
     # p_column attributes defined (still the old names). A end user is
     # lost in this situation. Therefore, we provide as a fallback the
-    # interface to the 5.9.1 parameter names.
+    # interface to the 5.9.1 parameter names. The situation is still a
+    # problem in OpenACS 5.10, since the Oracle code has still the old
+    # names. Therefore, for OpenACS 5.10.1, the names are made more
+    # consistent, using "table_name" (abbreviated as table) and
+    # "column" as on several other occasions.
     #
+
     try {
-      ::xo::db::sql::util table_column_exists \
-          -p_table $table_name \
-          -p_column $column_name
+      ::acs::dc call util table_column_exists \
+          -table $table_name \
+          -column $column_name
     } on error {errorMsg} {
-      ::xo::db::sql::util table_column_exists \
-          -t_name $table_name \
-          -c_name $column_name
+      try {
+        ::acs::dc call util table_column_exists \
+            -t_name $table_name \
+            -c_name $column_name
+      } on error {errorMsg} {
+        ::acs::dc call util table_column_exists \
+           -p_table $table_name \
+           -p_column $column_name
+      }
     }
   }
 
@@ -933,14 +945,18 @@ namespace eval ::xo::db {
     if {$rebuild_p} {
       ::xo::dc dml drop-view-$name "drop view if exists $name"
     }
-    if {![::xo::db::sql::util view_exists -name $name]} {
+    if {![::acs::dc call util view_exists -name $name]} {
       ::xo::dc dml create-view-$name "create view $name AS $definition"
     }
   }
 
   require proc index {-table -col -expression -expression_name {-using ""} {-unique false}} {
-    if {![info exists col] && ![info exists expression]} {error "Neither col nor expression were provided"}
-    if { [info exists col] &&  [info exists expression]} {error "Please provide either col or expression"}
+    if {![info exists col] && ![info exists expression]} {
+      error "Neither col nor expression were provided"
+    }
+    if { [info exists col] &&  [info exists expression]} {
+      error "Please provide either col or expression"
+    }
 
     if {[info exists col]} {
       set colExpSQL $col
@@ -956,7 +972,7 @@ namespace eval ::xo::db {
     set suffix [expr {$unique ? "un_idx" : "idx"}]
     set uniquepart [expr {$unique ? "UNIQUE" : ""}]
     set name [::xo::dc mk_sql_constraint_name $table $colExpName $suffix]
-    if {![::xo::db::sql::util index_exists -name $name]} {
+    if {![::acs::dc call util index_exists -name $name]} {
       if {[db_driverkey ""] eq "oracle"} {set using ""}
       set using [expr {$using ne "" ? "using $using" : ""}]
       ::xo::dc dml create-index-$name \
@@ -1148,7 +1164,7 @@ namespace eval ::xo::db {
   } {
     Delete the object from the database
   } {
-    ::xo::db::sql::acs_object delete -object_id $id
+    ::acs::dc call acs_object delete -object_id $id
   }
 
   ::xo::db::Class ad_proc get_object_type {
@@ -1229,7 +1245,7 @@ namespace eval ::xo::db {
         ns_log error "error during drop_type: $errorMsg"
       }
     }
-    ::xo::db::sql::acs_object_type drop_type \
+    ::acs::dc call acs_object_type drop_type \
         -object_type $object_type -drop_children_p $cascade_p
     return ""
   }
@@ -1745,7 +1761,14 @@ namespace eval ::xo::db {
 
       set class_name ::xo::db::sql::[string tolower $package_name]
       if {![nsf::is object $class_name]} {
+
         ::xo::db::Class create $class_name
+        #$class_name proc unknown args {
+        #  ns_log warning "deprecated ::xo::db::[namespace tail [self]] $args was called." \
+        #      "Use '::acs::dc call [namespace tail [self]] $args]' instead"
+        #  return [::acs::dc call [namespace tail [self]] {*}$args]
+        #}
+
       } elseif {![$class_name istype ::xo::db::Class]} {
         #
         # The methods of ::xo::db::sql::util like "table_exists" fall
@@ -1802,120 +1825,110 @@ namespace eval ::xo::db {
   # The object require provides an interface to create certain
   # resources in case they are not created already.
   #
-  #
-  # Most of ::xo::db::sql::util is coming from acs-kernel / utilities.create.sql
-  #
-  # But still, we add here more procs
-  if {[::xo::db::sql::util info commands get_default] ne ""} {
-    require proc unique {-table -col} {
-      # Unique could be there by an index too
-      set idxname [::xo::dc mk_sql_constraint_name $table $col un_idx]
-      if {[::xo::db::sql::util index_exists -name $idxname]} return
-      if {![::xo::db::sql::util unique_exists -table $table -column $col]} {
-        ::xo::dc dml alter-table-$table \
-            "alter table $table add unique ($col)"
-      }
-    }
-
-    require proc not_null {-table -col} {
-      if {![::xo::db::sql::util not_null_exists -table $table -column $col]} {
-        ::xo::dc dml alter-table-$table \
-            "alter table $table alter column $col set not null"
-      }
-    }
-
-    require proc default {-table -col -value} {
-      if {[db_driverkey ""] eq "oracle"} {
-        #
-        # Oracle behaves differently: one needs the "modify"
-        # subcommand, the stunt with the case below raises exceptions
-        # of several reasons (cast needs length, boolean value in
-        # coalesce, ...). Furthermore, Oracle does not allow a bind
-        # variable for the default value.
-        #
-        set default [string trim [::xo::db::sql::util get_default \
-                                      -table $table \
-                                      -column $col]]
-        if {$default ne $value} {
-          ::xo::dc dml alter-table-$table \
-              "alter table $table modify $col default [ns_dbquotevalue $value]"
-        }
-        return
-      }
-      set default [::xo::db::sql::util get_default -table $table -column $col]
-      #
-      # Newer versions of PostgreSQL return default values with type
-      # casts (e.g. 'en_US'::character varying). In these cases, we
-      # remove the type cast from the returned default value before
-      # comparison.
-      #
-      # Depending on the generation and real datatype of the DBMS,
-      # certain datatype values are reported differently from the
-      # DBMS. Therefore, we use a type cast to check whether
-      # specified default value (e.g. '1900-01-01') is in fact
-      # equivalent to default stored in db (e.g. '1900-01-01
-      # 00:00:00+01'::timestamp with time zone).
-      #
-      # Booleans can be normalized in advance without involving the
-      # database
-      if {
-          ($default eq "f" && $value eq "false")
-          || ($default eq "t" && $value eq "true")
-        } {
-        set value $default
-      }
-      if {$default ne $value} {
-        if {[regexp {^'(.*)'::(.*)$} $default match default_value default_datatype]} {
-          set clause "$default <> cast(:value as $default_datatype)"
-        } else {
-          set datatype [db_column_type $table $col]
-          set clause "cast(:default as $datatype) <> cast(:value as $datatype)"
-        }
-        # This last coalesce is in case one of the compared values
-        # was null: as we know they were different, this is
-        # certainly a new default
-        if {[::xo::dc get_value check_default "
-                select coalesce($clause, true) from dual"]} {
-          ::xo::dc dml alter-table-$table \
-              "alter table $table alter column $col set default :value"
-        }
-      }
-    }
-
-    require proc references {-table -col -ref} {
-      # Check for already existing foreign keys.
-      set ref [string trim $ref]
-      # try to match the full reftable(refcol) syntax...
-      if {![regexp {^(\w*)\s*\(\s*(\w*)\s*\)\s*(.*)$} $ref match reftable refcol rest]} {
-        # if fails only table was given, assume refcol is reftable's
-        # primary key
-        set reftable [lindex $ref 0]
-        if {[db_driverkey ""] eq "oracle"} {
-          #
-          # The classical xo::db interface for Oracle does not with
-          # with functions return tables (multiple tuples). So for the
-          # time being, provide a local fix here.
-          #
-          set tableref [ns_dbquotevalue reftable]
-          set refcol [::xo::dc list get_keys "select * from util.get_primary_keys($tableref)"]
-        } else {
-          set refcol [::xo::db::sql::util get_primary_keys -table $reftable]
-        }
-        # only one primary key is supported for the table
-        if {[llength $refcol] != 1} {
-          return
-        }
-      }
-      if {[::xo::db::sql::util foreign_key_exists \
-               -table $table -column $col \
-               -reftable $reftable -refcolumn $refcol]} {
-        ns_log debug "foreign key already exists for table $table column $col to ${reftable}(${refcol})"
-        return
-      }
+  require proc unique {-table -col} {
+    # Unique could be there by an index too
+    set idxname [::xo::dc mk_sql_constraint_name $table $col un_idx]
+    if {[::acs::dc call util index_exists -name $idxname]} return
+    if {![::acs::dc call util unique_exists -table $table -column $col]} {
       ::xo::dc dml alter-table-$table \
-          "alter table $table add foreign key ($col) references $ref"
+          "alter table $table add unique ($col)"
     }
   }
+
+  require proc not_null {-table -col} {
+    set exists_p [::acs::dc call util not_null_exists -table $table -column $col]
+    if {!$exists_p} {
+      ::xo::dc dml alter-table-$table \
+          "alter table $table alter column $col set not null"
+    }
+  }
+
+  require proc default {-table -col -value} {
+    set default [::acs::dc call util get_default -table $table -column $col]
+
+    if {[db_driverkey ""] eq "oracle"} {
+      #
+      # Oracle behaves differently: one needs the "modify"
+      # subcommand, the stunt with the case below raises exceptions
+      # of several reasons (cast needs length, boolean value in
+      # coalesce, ...). Furthermore, Oracle does not allow a bind
+      # variable for the default value.
+      #
+      set default [string trim $default]
+      if {$default ne $value} {
+        ::xo::dc dml alter-table-$table \
+            "alter table $table modify $col default [ns_dbquotevalue $value]"
+      }
+      return
+    }
+    #
+    # Newer versions of PostgreSQL return default values with type
+    # casts (e.g. 'en_US'::character varying). In these cases, we
+    # remove the type cast from the returned default value before
+    # comparison.
+    #
+    # Depending on the generation and real datatype of the DBMS,
+    # certain datatype values are reported differently from the
+    # DBMS. Therefore, we use a type cast to check whether
+    # specified default value (e.g. '1900-01-01') is in fact
+    # equivalent to default stored in db (e.g. '1900-01-01
+    # 00:00:00+01'::timestamp with time zone).
+    #
+    # Booleans can be normalized in advance without involving the
+    # database
+    if {
+        ($default eq "f" && $value eq "false")
+        || ($default eq "t" && $value eq "true")
+      } {
+      set value $default
+    }
+    if {$default ne $value} {
+      if {[regexp {^'(.*)'::(.*)$} $default match default_value default_datatype]} {
+        set clause "$default <> cast(:value as $default_datatype)"
+      } else {
+        set datatype [db_column_type $table $col]
+        set clause "cast(:default as $datatype) <> cast(:value as $datatype)"
+      }
+      # This last coalesce is in case one of the compared values
+      # was null: as we know they were different, this is
+      # certainly a new default
+      if {[::xo::dc get_value check_default "
+                   select coalesce($clause, true) from dual"]} {
+        ::xo::dc dml alter-table-$table \
+            "alter table $table alter column $col set default :value"
+      }
+    }
+  }
+
+  require proc references {-table -col -ref} {
+    # Check for already existing foreign keys.
+    set ref [string trim $ref]
+    # try to match the full reftable(refcol) syntax...
+    if {![regexp {^(\w*)\s*\(\s*(\w*)\s*\)\s*(.*)$} $ref match reftable refcol rest]} {
+      # if fails only table was given, assume refcol is reftable's
+      # primary key
+      set reftable [lindex $ref 0]
+      set refcol [::acs::dc call util get_primary_keys -table $reftable]
+      # only one primary key is supported for the table
+      if {[llength $refcol] != 1} {
+        return
+      }
+    }
+
+    set exists_p [::acs::dc call util foreign_key_exists \
+                      -table $table \
+                      -column $col \
+                      -reftable $reftable \
+                      -refcolumn $refcol]
+    if {$exists_p} {
+      ns_log debug "foreign key already exists for table $table column $col" \
+          "to ${reftable}(${refcol})"
+      return
+    }
+    ::xo::dc dml alter-table-$table \
+        "alter table $table add foreign key ($col) references $ref"
+  }
+
 
   #
   # Methods for instances of the meta class (methods for object_types)
@@ -1984,7 +1997,7 @@ namespace eval ::xo::db {
       set :supertype [::xo::db::Class class_to_object_type [:info superclass]]
     }
 
-    ::xo::db::sql::acs_object_type create_type \
+    ::acs::dc call acs_object_type create_type \
         -object_type   ${:object_type} \
         -supertype     ${:supertype} \
         -pretty_name   ${:pretty_name} \
@@ -2000,7 +2013,7 @@ namespace eval ::xo::db {
     Drop an acs object_type; cascde true means that the attributes
     are dropped as well.
   } {
-    ::xo::db::sql::acs_object_type drop_type \
+    ::acs::dc call acs_object_type drop_type \
         -object_type ${:object_type} \
         -cascade_p [expr {$cascade ? "t" : "f"}]
   }
@@ -2286,7 +2299,7 @@ namespace eval ::xo::db {
   } {
     :get_context package_id creation_user creation_ip
 
-    set id [::xo::db::sql::acs_object new \
+    set id [::acs::dc call acs_object new \
                 -object_type [::xo::db::Class class_to_object_type [self]] \
                 -title $object_title \
                 -package_id $package_id \
@@ -2402,7 +2415,7 @@ namespace eval ::xo::db {
       }
     }
 
-    set sets [uplevel [list ::xo::dc sets -dbn $dbn [self proc] $sql]]
+    set sets [uplevel [list ::xo::dc sets -dbn $dbn dbqd..[self proc] $sql]]
     foreach selection $sets {
       if {$named_objects} {
         set object_name ::[ns_set get $selection $object_named_after]
@@ -2637,7 +2650,7 @@ namespace eval ::xo::db {
   ::xo::db::Object ad_instproc delete {} {
     Delete the object from the database and from memory
   } {
-    ::xo::db::sql::acs_object delete -object_id ${:object_id}
+    ::acs::dc call acs_object delete -object_id ${:object_id}
     :destroy
   }
 
@@ -2753,7 +2766,7 @@ namespace eval ::xo::db {
         ${:domain} create_object_type
       }
 
-      ::xo::db::sql::acs_attribute create_attribute \
+      ::acs::dc call acs_attribute create_attribute \
           -object_type    $object_type \
           -attribute_name ${:column_name} \
           -datatype       ${:datatype} \
@@ -2842,7 +2855,7 @@ namespace eval ::xo::db {
         ${:domain} create_object_type
       }
 
-      ::xo::db::sql::content_type create_attribute \
+      ::acs::dc call content_type create_attribute \
           -content_type   $object_type \
           -attribute_name ${:column_name} \
           -datatype       ${:datatype} \
