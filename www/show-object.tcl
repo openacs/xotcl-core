@@ -239,6 +239,7 @@ if {$isclass} {
   }
 }
 set documented_only [expr {$show_methods < 2}]
+set hide_methods [expr {$show_methods == 0}]
 
 if {[nsv_exists api_library_doc $index]} {
   array set doc_elements [nsv_get api_library_doc $index]
@@ -414,16 +415,13 @@ if {!$as_img} {
   # Construct the dot code from the provided classes as embedded svg
   # code.
   #
-  # TODO: it would be nice to pass the selected options from the
-  # dimensional slider to dotcode, since with svg, the dot code
-  # constructs URLs for navigation in the class tree.
-  #
   set dot_code [::xo::dotcode -dpi 72 \
                     -with_children $with_children \
                     -with_instance_relations $with_instance_relations \
                     -omit_base_classes 0 \
                     -current_object $object \
                     -documented_methods $documented_only \
+                    -hide_methods $hide_methods \
                     $class_hierarchy]
 
   set svg [util::inline_svg_from_dot -css {

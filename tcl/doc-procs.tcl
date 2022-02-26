@@ -38,7 +38,7 @@ namespace eval ::xo {
         }
     }
 
-    ad_proc -private dotclass {{-is_focus 0} {-documented_methods 1} e} {
+    ad_proc -private dotclass {{-is_focus 0} {-hide_methods 1} {-documented_methods 1} e} {
     } {
         set definition ""
         if {$is_focus} {
@@ -58,11 +58,13 @@ namespace eval ::xo {
         append definition "|"
         ::xo::api scope_from_object_reference scope e
         set methods [list]
-        dot_append_method -documented_methods $documented_methods $e methods proc
-        dot_append_method -documented_methods $documented_methods $e methods instproc
-        dot_append_method -documented_methods $documented_methods $e methods instforward
-        foreach method [lsort $methods] {append definition "$method\\l" }
-        append definition "\}\"\];\n"
+        if {!$hide_methods} {
+            dot_append_method -documented_methods $documented_methods $e methods proc
+            dot_append_method -documented_methods $documented_methods $e methods instproc
+            dot_append_method -documented_methods $documented_methods $e methods instforward
+            foreach method [lsort $methods] {append definition "$method\\l" }
+            append definition "\}\"\];\n"
+        }
     }
 
     ad_proc -private dotobject {e} {
@@ -76,6 +78,7 @@ namespace eval ::xo {
         {-with_instance_relations 0}
         {-omit_base_classes 1}
         {-documented_methods 1}
+        {-hide_methods 1}
         {-current_object ""}
         {-dpi 96}
         things
@@ -87,13 +90,17 @@ namespace eval ::xo {
         set mclasses {}
 
         foreach e $things {
-            if {![::nsf::is object $e] || ($omit_base_classes && [::nsf::is baseclass $e])} continue
+            if {![::nsf::is object $e]
+                || ($omit_base_classes && [::nsf::is baseclass $e])
+            } continue
             lappend [expr {[::nsf::is class $e] ? "classes" : "objects"}] $e
         }
         set instances ""
         if {$with_instance_relations} {
             foreach e $things {
-                if {![::nsf::is object $e] || ($omit_base_classes && [::nsf::is baseclass $e])} continue
+                if {![::nsf::is object $e]
+                    || ($omit_base_classes && [::nsf::is baseclass $e])
+                } continue
                 set c [$e info class]
                 if {$omit_base_classes && [::nsf::is baseclass $c]} continue
                 if {$c ni $things} {lappend iclasses $c}
@@ -150,7 +157,11 @@ namespace eval ::xo {
         }
 
         foreach e $classes {
-            append tclasses [dotclass -is_focus [expr {$e eq $current_object}] -documented_methods $documented_methods $e]
+            append tclasses [dotclass \
+                                 -is_focus [expr {$e eq $current_object}] \
+                                 -hide_methods $hide_methods \
+                                 -documented_methods $documented_methods \
+                                 $e]
         }
         set tobjects {}
         foreach e $objects {
