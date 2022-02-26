@@ -62,9 +62,11 @@ namespace eval ::xo {
             dot_append_method -documented_methods $documented_methods $e methods proc
             dot_append_method -documented_methods $documented_methods $e methods instproc
             dot_append_method -documented_methods $documented_methods $e methods instforward
-            foreach method [lsort $methods] {append definition "$method\\l" }
-            append definition "\}\"\];\n"
         }
+        foreach method [lsort $methods] {
+            append definition "$method\\l"
+        }
+        append definition "\}\"\];\n"
     }
 
     ad_proc -private dotobject {e} {
@@ -108,6 +110,7 @@ namespace eval ::xo {
             }
         }
         set superclasses ""
+        set drawn ""
         foreach e $classes {
             if {![::nsf::is object $e]} continue
             set reduced_sc [list]
@@ -115,10 +118,21 @@ namespace eval ::xo {
                 if {$omit_base_classes && [::nsf::is baseclass $sc]} continue
                 lappend reduced_sc $sc
             }
-            if {$reduced_sc eq {}} continue
+            if {$reduced_sc eq {}} {
+                continue
+            }
             foreach sc $reduced_sc {
-                if {$sc in $things} {
-                    append superclasses "[dotquote $e]->[dotquotel $sc];\n"
+                #
+                # Draw always the superclass of the object of
+                # interest, which might in the case of multiple
+                # inheritance not in the "things" variable.  This
+                # might leave out the superclass of the superclass.
+                #
+                if {$sc in $things || $sc ne "::nx::Object"} {
+                    if {![dict exists $drawn $e-$sc]} {
+                        append superclasses "[dotquote $e]->[dotquotel $sc];\n"
+                        dict set drawn $e-$sc 1
+                    }
                 }
             }
         }
