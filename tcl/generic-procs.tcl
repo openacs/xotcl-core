@@ -231,7 +231,7 @@ namespace eval ::Generic {
     ad_form -name ${:name} -form ${:fields} -mode $mode \
         -export $exports -action [:action] -html [:html]
 
-    :log "--- generate: setup methods on data ${:data} (page_order [${:data} set page_order])"
+    #:log "--- generate: setup methods on data ${:data}"
 
     set new_data            "set item_id \[[self] new_data\]"
     set edit_data           "set item_id \[[self] edit_data\]"
@@ -265,7 +265,7 @@ namespace eval ::Generic {
                               -container_object_id ${:package_id}]
       }
     }
-    ns_log notice "-- ad_form new_data=<$new_data> edit_data=<$edit_data> edit_request=<$edit_request>"
+    #ns_log notice "-- ad_form new_data=<$new_data> edit_data=<$edit_data> edit_request=<$edit_request>"
     #
     # Action blocks must be added last. "-new_data" and "-edit_data"
     # are enclosed in a transaction, such that optional additional
