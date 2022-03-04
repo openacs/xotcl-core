@@ -596,10 +596,14 @@ namespace eval ::xo {
     }
   }
 
-  ConnectionContext instproc form_parameter {name {default ""}} {
+  ConnectionContext instproc require_form_parameter {} {
     if {![info exists :form_parameter]} {
       :load_form_parameter
     }
+  }
+
+  ConnectionContext instproc form_parameter {name {default ""}} {
+    :require_form_parameter
     if {[info exists :form_parameter($name)]} {
       if {[info exists :form_parameter_multiple($name)]} {
         return [set :form_parameter($name)]
@@ -611,12 +615,11 @@ namespace eval ::xo {
     }
   }
   ConnectionContext instproc exists_form_parameter {name} {
-    if {![info exists :form_parameter]} {
-      :load_form_parameter
-    }
+    :require_form_parameter
     info exists :form_parameter($name)
   }
   ConnectionContext instproc get_all_form_parameter {} {
+    :require_form_parameter
     return [array get :form_parameter]
   }
 
