@@ -224,7 +224,7 @@ namespace eval ::xo {
     } else {
       set xh [string range $x 0 $xp]
       set yh [string range $y 0 $yp]
-      #puts "xh=$xh yh=$yh"
+      #:log "xh=$xh yh=$yh"
       if {$xh < $yh} {
         return -1
       } elseif {$xh > $yh} {
@@ -232,7 +232,7 @@ namespace eval ::xo {
       } else {
         incr xp
         incr yp
-        #puts "rest [string range $x $xp end] [string range $y $yp end]"
+        #:log "rest [string range $x $xp end] [string range $y $yp end]"
         return [:__value_compare [string range $x $xp end] [string range $y $yp end] $def]
       }
     }
