@@ -18,7 +18,6 @@ aa_register_case -cats {
     "::xo::db::DB-postgresql instproc 0or1row"
     "::xo::db::DB-postgresql instproc 1row"
     "::xo::db::DB instproc transaction"
-    "::xo::db::sql::acs_object proc delete"
     "::xo::db::Object instproc update"
     "::xo::db::CrClass proc get_object_type"
     "::throttle proc check"
@@ -177,8 +176,6 @@ aa_register_case -cats {
     "::xo::db::DB-postgresql instproc insert-view-operation"
     "::xo::db::DB-postgresql instproc row_lock"
     "::xo::db::postgresql instproc nextval"
-    "::xo::db::sql::content_item proc new"
-    "::xo::db::sql::content_item proc set_live_revision"
     "::xo::db::CrClass proc get_object_type"
     "::throttle proc check"
 } test_cr_items {
