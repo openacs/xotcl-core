@@ -822,7 +822,11 @@ namespace eval ::xo::Table {
     # adp-level, which is less robust and warn about this usage.
     #
     set ordered_composite [${:__parent} info parent]
-    if {[::nsf::is object $ordered_composite] && [$ordered_composite hasclass ::xo::OrderedComposite]} {
+    if {[::nsf::is object $ordered_composite] &&
+        [$ordered_composite hasclass ::xo::OrderedComposite] &&
+        [$ordered_composite exists __orderby] &&
+        [$ordered_composite exists __order]
+      } {
       set ordered_composite_orderby [$ordered_composite set __orderby]
       set ordered_composite_order [$ordered_composite set __order]
       if {$ordered_composite_order eq "increasing"} {
