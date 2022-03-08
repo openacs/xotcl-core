@@ -1771,9 +1771,8 @@ namespace eval ::xo::db {
 
       } elseif {![$class_name istype ::xo::db::Class]} {
         #
-        # The methods of ::xo::db::sql::util like "table_exists" fall
-        # into this category. Make sure that we do not create new
-        # objects via the next command.
+        # Make sure that we do not create new objects via the next
+        # command.
         #
         continue
       }
