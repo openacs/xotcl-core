@@ -822,22 +822,29 @@ namespace eval ::xo::Table {
     # adp-level, which is less robust and warn about this usage.
     #
     set ordered_composite [${:__parent} info parent]
-    if {[::nsf::is object $ordered_composite] &&
-        [$ordered_composite hasclass ::xo::OrderedComposite] &&
-        [$ordered_composite exists __orderby] &&
-        [$ordered_composite exists __order]
-      } {
-      set ordered_composite_orderby [$ordered_composite set __orderby]
-      set ordered_composite_order [$ordered_composite set __order]
-      if {$ordered_composite_order eq "increasing"} {
-        set orderby $ordered_composite_orderby,asc
-        set new_orderby $ordered_composite_orderby,desc
+    if {[::nsf::is object $ordered_composite] && [$ordered_composite hasclass ::xo::OrderedComposite]} {
+      if {![$ordered_composite exists __orderby] || ![$ordered_composite exists __order]} {
+        #
+        # Tables must always have a defined ordering to ensure stable
+        # appearance and correct setup of sorting arrows.
+        #
+        ad_log warning "downstream application issue: invalid usage of ordered composiste:", \
+            "definition of ordering is missing (call method 'orderby' on the ordered composite)."
+        set orderby ""
+        set neworderby ""
       } else {
-        set orderby $ordered_composite_orderby,desc
-        set new_orderby $ordered_composite_orderby,asc
+        set ordered_composite_orderby [$ordered_composite set __orderby]
+        set ordered_composite_order [$ordered_composite set __order]
+        if {$ordered_composite_order eq "increasing"} {
+          set orderby $ordered_composite_orderby,asc
+          set new_orderby $ordered_composite_orderby,desc
+        } else {
+          set orderby $ordered_composite_orderby,desc
+          set new_orderby $ordered_composite_orderby,asc
+        }
       }
     } else {
-      ns_log warning "renderSortLabels is still relying on addressing variables on the template::adp_level"
+      ad_log warning "renderSortLabels is still relying on addressing variables on the template::adp_level"
       set lvl [template::adp_level]
       if {$lvl ne ""} {
         upvar #$lvl $orderby_name orderby
