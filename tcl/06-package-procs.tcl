@@ -115,7 +115,7 @@ namespace eval ::xo {
       set package_key ${:package_key}
     }
     foreach location {www resources} {
-      set fn [acs_root_dir]/packages/$package_key/$location/prototypes/$name.page
+      set fn $::acs::rootdir/packages/$package_key/$location/prototypes/$name.page
       if {[file exists $fn]} {
         if {$location eq "www"} {
           ns_log warning "deprecated location: you should move prototype page" \

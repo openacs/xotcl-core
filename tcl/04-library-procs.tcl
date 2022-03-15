@@ -65,7 +65,7 @@ namespace eval ::xo {
     if {$package eq ""} {
       set otherfile $dirname/$filename.tcl
     } else {
-      set otherfile [acs_root_dir]/packages/$package/tcl/$filename.tcl
+      set otherfile $::acs::rootdir/packages/$package/tcl/$filename.tcl
     }
     set vn [self]
     #:log "--exists otherfile $otherfile => [nsv_exists $vn $otherfile]"

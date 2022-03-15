@@ -1036,7 +1036,7 @@ namespace eval ::xo::db {
         # Use apm_source instead of source to prevent double
         # sourcing by the apm_loader (temporary solution, double
         # sourcing should no happen)
-        uplevel #1 apm_source "[acs_root_dir]/packages/$package_key/$path"
+        uplevel #1 apm_source "$::acs::rootdir/packages/$package_key/$path"
       }
       set :required_package($package_key) 1
     }

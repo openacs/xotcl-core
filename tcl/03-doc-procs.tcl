@@ -229,7 +229,7 @@ ad_library {
     if {$script eq "" && [info exists ::xotcl::currentScript]} {
       set script $::xotcl::currentScript
     }
-    set root_dir [acs_root_dir]
+    set root_dir $::acs::rootdir
     set root_length [string length $root_dir]
     if { $root_dir eq [string range $script 0 $root_length-1]} {
       set script [string range $script $root_length+1 end]
