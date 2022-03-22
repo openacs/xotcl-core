@@ -828,7 +828,7 @@ namespace eval ::xo::Table {
         # Tables must always have a defined ordering to ensure stable
         # appearance and correct setup of sorting arrows.
         #
-        ad_log warning "downstream application issue: invalid usage of ordered composiste:" \
+        ad_log warning "downstream application issue: invalid usage of ordered composite:" \
             "definition of ordering is missing (call method 'orderby' on the ordered composite)."
         set orderby ""
         set neworderby ""
