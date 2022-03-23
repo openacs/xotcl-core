@@ -22,9 +22,40 @@ namespace eval ::xo {
     }
   }
 
-  OrderedComposite instproc orderby {{-order "increasing"} variable} {
+  OrderedComposite instproc orderby {{-order "increasing"} {-type dictionary} attribute} {
+    #
+    # Specify the sorting properties order in OrderedComposites. The
+    # sorting is defined via sorting attribute, sorting order and the
+    # sorting type (defining the comparison operators).
+    #
+    # @param order one of "increasing" or "decreasing"
+    # @param type one of "integer", "real", "index" or "dictionary" (default "dictionary")
+    #
+    #ns_log notice "OrderedComposite called with order '$order' type '$type' attribute '$attribute'"
     set :__order $order
-    set :__orderby $variable
+    set :__orderby $attribute
+    set :__ordercompare [ad_decode $type real __compare_tcl integer __compare_tcl __compare]
+    if {$type eq "index"} {
+      :mixin add ::xo::OrderedComposite::IndexCompare
+    }
+  }
+
+  OrderedComposite instproc __compare_tcl {a b} {
+    #
+    # Comparison based on plain Tcl compare. This behaves reasonable
+    # on numbers (integer or real) and in mixed cases of numbers and
+    # strings.
+    #
+    set by ${:__orderby}
+    set x [$a set $by]
+    set y [$b set $by]
+    if {$x < $y} {
+      return -1
+    } elseif {$x > $y} {
+      return 1
+    } else {
+      return 0
+    }
   }
 
   if {[::acs::icanuse "ns_strcoll"]} {
@@ -34,7 +65,7 @@ namespace eval ::xo {
       set y [$b set $by]
       return [ns_strcoll $x $y]
     }
-  } else {  
+  } else {
     OrderedComposite instproc __compare {a b} {
       set by ${:__orderby}
       set x [$a set $by]
@@ -48,7 +79,7 @@ namespace eval ::xo {
       }
     }
   }
-  
+
   OrderedComposite instproc children {} {
     if {![info exists :__children]} {
       return ""
@@ -58,8 +89,10 @@ namespace eval ::xo {
       set firstChild [lindex ${:__children} 0]
       if {[$firstChild exists ${:__orderby}]} {
         set order [expr {[info exists :__order] ? ${:__order} : "increasing"}]
-        return [lsort -command :__compare -$order ${:__children}]
-      } else {      
+        set compare [expr {[info exists :__ordercompare] ? ${:__ordercompare} : "__compare"}]
+        #ns_log notice SORT=[list lsort -command :$compare -$order ${:__children}]
+        return [lsort -command :$compare -$order ${:__children}]
+      } else {
         ad_log warning "ignore invalid sorting criterion '${:__orderby}'"
       }
     }
