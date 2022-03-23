@@ -132,7 +132,7 @@ namespace eval ::xo::db {
     ::xo::dc 1row -prepare integer get_parent "select parent_id from cr_items where item_id = :item_id"
     return $parent_id
   }
-
+  
   CrClass ad_proc get_name {
     -item_id:required
   } {
@@ -148,6 +148,27 @@ namespace eval ::xo::db {
     return $name
   }
 
+  CrClass ad_proc id_belongs_to_package {
+    {-item_id:integer 0}
+    {-revision_id:integer 0}
+    -package_id:integer,required
+  } {
+    Check if the provided item_id or revision_id belongs to the provided package.
+    @return boolean success
+  } {
+    set id [expr {$revision_id ? $revision_id : $item_id}]
+    if {$id eq 0} {
+      return 0
+    }
+    set what [expr {$item_id != 0 ? "item_id" : "revision_id"}]
+    return [::xo::dc 0or1row -prepare integer,integer check_package [subst {
+      select 1 from cr_items, acs_objects
+      where $what = :$what and object_id = :$what
+      and package_id = :package_id
+      fetch first 1 rows only
+    }]]
+  } 
+  
   CrClass ad_proc get_child_item_ids {
     -item_id:required
   } {
