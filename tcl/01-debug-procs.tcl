@@ -133,7 +133,12 @@ if {[nsf::is object ::nx::Object]} {
         error "value '$value' of parameter $name must not be larger than $max"
       }
       return $value
-  }
+    }
+    :method type=cr_item_of_package {name value package_id:int32} {
+      if {![::xo::db::CrClass id_belongs_to_package -item_id $value -package_id $package_id]} {
+        error "value '$value' of is not a valid content repository item of the required package"
+      }
+    }
   }
 
   ::xotcl::Object proc setExitHandler {code} {::nsf::exithandler set $code}
@@ -153,6 +158,7 @@ if {[nsf::is object ::nx::Object]} {
     ::nx::Slot method type=html
     ::nx::Slot method type=nohtml
     ::nx::Slot method type=range
+    ::nx::Slot method type=cr_item_of_package
     ::nx::Object nsfproc ::nsf::debug::call
     ::nx::Object nsfproc ::nsf::debug::exit
   }
