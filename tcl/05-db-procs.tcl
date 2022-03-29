@@ -1029,16 +1029,11 @@ namespace eval ::xo::db {
   }
 
   require proc package {package_key} {
-    if {![info exists :required_package($package_key)]} {
-      foreach path [apm_get_package_files \
-                        -package_key $package_key \
-                        -file_types tcl_procs] {
-        # Use apm_source instead of source to prevent double
-        # sourcing by the apm_loader (temporary solution, double
-        # sourcing should no happen)
-        uplevel #1 apm_source "$::acs::rootdir/packages/$package_key/$path"
-      }
-      set :required_package($package_key) 1
+    foreach path [apm_get_package_files \
+                      -package_key $package_key \
+                      -file_types tcl_procs] {
+      ::xo::library -package $package_key \
+          [file name [file tail $path]]
     }
   }
 
