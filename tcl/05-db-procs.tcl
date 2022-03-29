@@ -1032,7 +1032,7 @@ namespace eval ::xo::db {
     foreach path [apm_get_package_files \
                       -package_key $package_key \
                       -file_types tcl_procs] {
-      ::xo::library -package $package_key \
+      ::xo::library require -package $package_key \
           [file name [file tail $path]]
     }
   }
