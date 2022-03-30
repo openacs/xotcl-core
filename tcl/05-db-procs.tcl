@@ -1033,7 +1033,7 @@ namespace eval ::xo::db {
                       -package_key $package_key \
                       -file_types tcl_procs] {
       ::xo::library require -package $package_key \
-          [file name [file tail $path]]
+          [file rootname [file tail $path]]
     }
   }
 
