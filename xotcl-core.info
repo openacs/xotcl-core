@@ -44,7 +44,7 @@ Features:
 
 	<provides url="xotcl-core" version="5.10.1d7"/>
 	<requires url="acs-kernel" version="5.10.0"/>
-	<requires url="acs-templating" version="5.10.0"/>
+        <requires url="acs-templating" version="5.10.1d6"/>        
 	<requires url="acs-api-browser" version="5.10.0"/>
 	<requires url="acs-content-repository" version="5.10.0"/>
 	<requires url="acs-tcl" version="5.10.1d8"/>
