@@ -300,7 +300,7 @@ namespace eval ::Generic {
     class
     {create_url ""}
     {edit_url   ""}
-    {edit_template {<adp:icon name="edit">}
+    {edit_template {<adp:icon name="edit">}}
     {delete_url ""}
     {delete_template {<adp:icon name="trash">}}
     {no_create_p f}
