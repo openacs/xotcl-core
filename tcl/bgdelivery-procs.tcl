@@ -22,6 +22,7 @@ if {[info commands ::thread::mutex] eq ""} {
     (when the module is in use).
 
   } {
+    security::csp::add_static_resource_header $mime_type
     ns_returnfile $status_code $mime_type $filename
   }
 
@@ -41,6 +42,7 @@ if {![::acs::icanuse "ns_conn contentsentlength"]} {
     blocking a request thread. This is especially important when large files are
     requested over slow (e.g. dial-ip) connections.
   } {
+    security::csp::add_static_resource_header $mime_type
     ns_returnfile $status_code $mime_type $filename
   }
   return
@@ -686,7 +688,7 @@ bgdelivery ad_proc returnfile {
     set tid [:get_tid]
 
     # :log "+++ lock ${:bgmutex}"
-    ::thread::mutex lock ${:mutex}
+    ns_mutex_lock ${:mutex}
 
     #
     # Transfer the channel to the bgdelivery thread and report errors
@@ -707,7 +709,7 @@ bgdelivery ad_proc returnfile {
       }
     } errorMsg
 
-    ::thread::mutex unlock ${:mutex}
+    ns_mutex_unlock ${:mutex}
     #ns_mutex unlock ${:bgmutex}
     # :log "+++ unlock ${:bgmutex}"
 
@@ -791,6 +793,8 @@ ad_proc -public ad_returnfile_background {{-client_data ""} status_code mime_typ
   everything to ns_returnfile.
 } {
   #ns_log notice "ad_returnfile_background xo::use_h264 -> [xo::use_h264 $mime_type]"
+  
+  security::csp::add_static_resource_header $mime_type  
   if {[xo::use_h264 $mime_type]} {
     bgdelivery returnfile -client_data $client_data $status_code $mime_type $filename
   } else {
