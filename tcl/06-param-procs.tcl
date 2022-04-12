@@ -1,3 +1,14 @@
+::xo::library doc {
+
+  xotcl-core implementation for OpenACS package parameters.
+  
+  This functionality was backported to acs-tcl in OpenACS 5.10. The
+  functions here are just for backward compatibility, in case these
+  functions were called directly.
+
+  @author Gustaf Neumann (neumann@wu-wien.ac.at)
+}
+
 # Motivations:
 #
 #  - Huge number of parameter_values in larger dotlrn installations

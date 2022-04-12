@@ -1,3 +1,10 @@
+::xo::library doc {
+
+  Tdom support functions. Just to make Tdom createNodeCmds available.
+
+  @author Gustaf Neumann (neumann@wu-wien.ac.at)
+}
+
 package require tdom
 
 ad_proc -public -deprecated require_html_procs {} {

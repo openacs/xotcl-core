@@ -1,3 +1,11 @@
+::xo::library doc {
+
+  Protocol handles, mostly for defining extra HTTP methods.
+
+  @author Gustaf Neumann (neumann@wu-wien.ac.at)
+}
+
+
 namespace eval ::xo {
   Class create ProtocolHandler -parameter {
     {url}

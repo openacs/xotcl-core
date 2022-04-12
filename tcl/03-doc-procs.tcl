@@ -11,17 +11,6 @@ ad_library {
   @cvs-id $Id$
 }
 
-# Per default, the content of the ::xotcl:: namespace is not serialized;
-# so we add the specified methods explizitely to the export list
-::Serializer exportMethods {
-  ::xotcl::Object instproc ad_proc
-  ::xotcl::Object instproc ad_forward
-  ::xotcl::Class  instproc ad_instproc
-  ::xotcl::Class  instproc ad_instforward
-  ::xotcl::Object instproc ad_doc
-  ::nx::Class method init
-}
-
 ::nx::Object create ::xo::api {
 
   array set :methodLabel {
@@ -594,6 +583,24 @@ ad_library {
     }
     return $result
   }
+}
+
+# ---------------------------------------------------------------------
+#
+# Per default, the content of the "::xotcl" and "::nx" namespace is
+# not serialized; so when extending the base classes of the object
+# system, one has to these methods explizitely to the export list for
+# the serializer.
+#
+# The following extensions of the base classes are defined here:
+# 
+::Serializer exportMethods {
+  ::nx::Class instproc init
+  ::xotcl::Object instproc ad_proc
+  ::xotcl::Object instproc ad_forward
+  ::xotcl::Class  instproc ad_instproc
+  ::xotcl::Class  instproc ad_instforward
+  ::xotcl::Object instproc ad_doc
 }
 
 ::nx::Class method init {} {

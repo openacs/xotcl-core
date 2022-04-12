@@ -1,3 +1,10 @@
+::xo::library doc {
+
+  Callback proc for operations before and after installs.
+
+  @author Gustaf Neumann (neumann@wu-wien.ac.at)
+}
+
 namespace eval ::xotcl-core {
 
   ad_proc -private ::xotcl-core::before-install {} {
