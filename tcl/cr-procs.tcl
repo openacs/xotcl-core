@@ -132,7 +132,7 @@ namespace eval ::xo::db {
     ::xo::dc 1row -prepare integer get_parent "select parent_id from cr_items where item_id = :item_id"
     return $parent_id
   }
-  
+
   CrClass ad_proc get_name {
     -item_id:required
   } {
@@ -167,8 +167,8 @@ namespace eval ::xo::db {
       and package_id = :package_id
       fetch first 1 rows only
     }]]
-  } 
-  
+  }
+
   CrClass ad_proc get_child_item_ids {
     -item_id:required
   } {
@@ -1135,7 +1135,9 @@ namespace eval ::xo::db {
                             -mime_type ${:mime_type} \
                             -filename  ${:name} \
                             -file      ${:import_file}]
-        set text [cr_create_content_file $item_id $revision_id ${:import_file}]
+        set :text [cr_create_content_file $item_id $revision_id ${:import_file}]
+        set text ${:text}
+        set mime_type ${:mime_type}
       }
       ::xo::dc [::xo::dc insert-view-operation] revision_add \
           [[:info class] insert_statement $__atts $__vars]
@@ -1927,7 +1929,7 @@ namespace eval ::xo::db {
         array unset :$x
       } {
         lappend scalars $x [set :$x]
-        unset :$x
+        unset -nocomplain :$x
       }
     }
     return [list $arrays $scalars]
