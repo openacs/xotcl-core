@@ -800,7 +800,8 @@ namespace eval ::xo::Table {
   }
 
   TABLE::Field instproc render {} {
-    set CSSclass [list "list" ${:CSSclass}]
+    set CSSclass [list "list" {*}${:CSSclass}]
+    #ns_log notice "FIELD: ${:name}: orderby '${:orderby}' '[:get_orderby]'"
     html::th [concat [list class $CSSclass] ${:html}] {
       if {${:orderby} eq ""} {
         html::t [:_ label]
@@ -811,10 +812,7 @@ namespace eval ::xo::Table {
     }
   }
 
-  TABLE::Field instproc renderSortLabels {} {
-    set field ${:orderby}
-    set orderby_name orderby
-
+  TABLE::Field instproc get_orderby {} {
     #
     # First,try to get the sort-order from the including ordered
     # composite, which is supposed to be always the data source.
@@ -831,16 +829,13 @@ namespace eval ::xo::Table {
         ad_log warning "downstream application issue: invalid usage of ordered composite:" \
             "definition of ordering is missing (call method 'orderby' on the ordered composite)."
         set orderby ""
-        set neworderby ""
       } else {
         set ordered_composite_orderby [$ordered_composite set __orderby]
         set ordered_composite_order [$ordered_composite set __order]
         if {$ordered_composite_order eq "increasing"} {
           set orderby $ordered_composite_orderby,asc
-          set new_orderby $ordered_composite_orderby,desc
         } else {
           set orderby $ordered_composite_orderby,desc
-          set new_orderby $ordered_composite_orderby,asc
         }
       }
     } else {
@@ -852,21 +847,32 @@ namespace eval ::xo::Table {
       if {![info exists orderby]} {
         set orderby ""
       }
-      set new_orderby $orderby
     }
+    return $orderby
+  }
+
+  TABLE::Field instproc renderSortLabels {} {
+    set field ${:orderby}
+    set orderby_name orderby
+    set orderby [:get_orderby]
+
+    set sort_up "sort-inactive"
+    set sort_down "sort-inactive"
 
     if {$orderby eq "$field,desc"} {
       set new_orderby $field,asc
       set title [_ xotcl-core.Sort_by_this_column_ascending]
-      set img /resources/acs-templating/sort-ascending.png
+      #set img /resources/acs-templating/sort-ascending.png
+      set sort_up "sort-active"
     } elseif {$orderby eq "$field,asc"} {
       set new_orderby $field,desc
       set title [_ xotcl-core.Sort_by_this_column_descending]
-      set img /resources/acs-templating/sort-descending.png
+      #set img /resources/acs-templating/sort-descending.png
+      set sort_down "sort-active"
     } else {
       set new_orderby $field,asc
       set title [_ xotcl-core.Sort_by_this_column]
-      set img /resources/acs-templating/sort-neither.png
+      #set img /resources/acs-templating/sort-neither.png
     }
     set query [list [list $orderby_name $new_orderby]]
     if {[ns_conn isconnected]} {
@@ -886,7 +892,9 @@ namespace eval ::xo::Table {
 
     html::a -href $href -title $title {
       html::t [:_ label]
-      html::img -src $img -alt ""
+      html::span -class "sort-up $sort_up" {html::t "↑"}
+      html::span -class "sort-down $sort_down" {html::t "↓"}
+      #html::img -src $img -alt ""
     }
   }
 
