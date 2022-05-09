@@ -30,9 +30,11 @@ namespace eval ::xo {
 
   ProtocolHandler instproc log {message} {
     #
-    # Comment out the following line to silence the logging.
+    # Comment/uncomment one of the two following lines to
+    # activate/silence the logging.
     #
     #next "xo::ProtocolHandler: $message"
+    #ns_log notice "xo::ProtocolHandler [self]: $message"
   }
 
   ProtocolHandler ad_instproc set_user_id {} {
@@ -77,6 +79,7 @@ namespace eval ::xo {
     Setup connection object and authenticate user
   } {
     ad_conn -reset
+
     #
     # Make sure, there is no ::ad_conn(request); otherwise the
     # developer support will add all its output to a single var, which
