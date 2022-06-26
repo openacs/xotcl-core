@@ -1768,8 +1768,7 @@ namespace eval ::xo::db {
           -content_types [[self class] set allowed_content_types]
     }
     ::xo::xotcl_object_cache flush ${:parent_id}
-    # who is setting sub_folder_list?
-    #db_flush_cache -cache_key_pattern sub_folder_list_*
+
     return ${:folder_id}
   }
 
