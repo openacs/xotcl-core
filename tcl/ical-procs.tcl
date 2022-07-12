@@ -104,6 +104,23 @@ nx::Object create ::xo::ical {
     return $text
   }
 
+  :public object method reflow_content_line {text} {
+    #
+    # Perform line folding: According to RFC 5545 section 3.1,
+    # SHOULD NOT be longer than 75 octets, excluding the line break.
+    # https://www.ietf.org/rfc/rfc5545.txt
+    #
+    if {[string length $text] > 73} {
+      set lines ""
+      while {[string length $text] > 73} {
+        append lines [string range $text 0 73] \r\n " "
+        set text [string range $text 74 end]
+      }
+      append lines $text
+      set text $lines
+    }
+    return $text
+  }
 }
 
 namespace eval ::xo {
@@ -186,21 +203,7 @@ namespace eval ::xo {
       }
 
       if {$value ne ""} {
-        set result "$tag:$value"
-        #
-        # Perform line folding: According to RFC 5545 section 3.1,
-        # SHOULD NOT be longer than 75 octets, excluding the line break.
-        # https://www.ietf.org/rfc/rfc5545.txt
-        #
-        if {[string length $result] > 73} {
-          set lines ""
-          while {[string length $result] > 73} {
-            append lines [string range $result 0 73] \r\n " "
-            set result [string range $result 74 end]
-          }
-          append lines $result
-          set result $lines
-        }
+        set result [::xo::ical reflow_content_line "$tag:$value"]
         append result \r\n
         #ns_log notice "::xo::ical::VCALITEM tag [self args] -> len: [string length $result]"
       } else {
