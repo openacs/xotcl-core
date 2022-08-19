@@ -17,11 +17,8 @@ Object instproc asHTML {{-master defaultMaster} -page:switch} {
   set root [$doc documentElement]
   if {!$page} {
     $root appendFromScript {:render}
-    set n [$root childNode]
-    if {$n eq ""} {
-      return ""
-    }
-    return [$n asHTML]
+    set nodes [$root childNode]
+    return [join [lmap n $nodes {$n asHTML}] \n]
   } else {
     set slave [$master decorate $root]
     $slave appendFromScript {:render}
