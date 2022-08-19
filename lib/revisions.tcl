@@ -1,4 +1,4 @@
-ad_page_contract {
+ad_include_contract {
   display information about revisions of content items
 
   @author Gustaf Neumann (gustaf.neumann@wu-wien.ac.at)
