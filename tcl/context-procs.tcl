@@ -49,10 +49,10 @@ namespace eval ::xo {
       if {[ns_conn isconnected]} {
         set :actual_query [ns_conn query]
       }
-      #:log "--CONN ns_conn query = <$actual_query>"
+      #:log "--P actual_query <${:actual_query}> url [ns_conn url] q [ns_conn query]"
     }
     set passed_args ""
-    #:log "--P processing actual query ${:actual_query}"
+    #:log "--P processing actual query '${:actual_query}'"
     try {
       set paramset [ns_parsequery ${:actual_query}]
       foreach {att_name att_value} [ns_set array $paramset] {
@@ -124,7 +124,7 @@ namespace eval ::xo {
       }
     }
     set :declared_parameters $declared_parameters
-    #:msg "--cc qp [array get :queryparm] // ${:actual_query}"
+    #:log "--cc qp [array get :queryparm] // ${:actual_query}"
   }
 
   Context instproc original_url_and_query args {
@@ -626,16 +626,30 @@ namespace eval ::xo {
   #
   # Version of query_parameter respecting set-parameter
   #
-  ConnectionContext instproc query_parameter {name {default ""}} {
+  ConnectionContext ad_instproc query_parameter {__spec {default ""}} {
+
+    Get query parameter with default and optional value constraints.
+    In case the value check for the query parameter fails, and no
+    futher precautions are performed (::aa_test_noabort is set), the
+    method raises an exception with "ad_return_complaint" and aborts
+    the script.
+
+    @param __spec has the formname or name:valueConstraints
+    @param default default value
+    @return actual value of the query parameter
+  } {
     #
-    # Try to split up provided name argument into name and value
-    # constraint.
+    # Try to split up provided "__spec" argument into name and
+    # value constraint components.
     #
-    regexp {^([^:]+):(.*)$} $name . name constraint
-    if {[:exists_parameter $name]} {
-      set value [:get_parameter $name]
+    set __name $__spec
+    regexp {^([^:]+):(.*)$} $__spec . __name constraint
+
+    if {[:exists_parameter $__name]} {
+      set value [:get_parameter $__name]
     } else {
-      set value [next $name $default]
+      ns_log notice "getting value from next [self next]"
+      set value [next $__name $default]
     }
     #
     # If we have a value-constraint, we check for empty values only in
@@ -646,21 +660,32 @@ namespace eval ::xo {
         && ([string first . $constraint] > -1 || $value ne "")
       } {
       try {
-        nsf::parseargs $name:$constraint [list $value]
-
+        #
+        # Use parseargs with "-asdict" option when it is available,
+        # since it does not globber the variable namespace. For legacy
+        # applications, lets hope that no query parameter named
+        # "__name" is used with a value constraint.
+        #
+        if {[::acs::icanuse "nsf::parseargs -asdict"]} {
+          set value [dict get \
+                         [nsf::parseargs -asdict ${__name}:$constraint [list $value]] \
+                         $__name]
+        } else {
+          nsf::parseargs ${__name}:$constraint [list $value]
+          set value [set $__name]
+        }
       } on error {errorMsg} {
-        if {[ns_conn isconnected]} {
+        #ns_log notice ".... nsf::parseargs error '$errorMsg'"
+        if {[ns_conn isconnected] && ![info exists ::aa_test_noabort]} {
           ad_return_complaint 1 [ns_quotehtml $errorMsg]
           ad_script_abort
         } else {
           throw $::errorInfo $errorMsg
         }
       }
-      set value [set $name]
     }
     return $value
   }
-
 
   ConnectionContext instproc set_parameter {name value} {
     set key [list get_parameter $name]
