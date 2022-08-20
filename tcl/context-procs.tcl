@@ -648,7 +648,6 @@ namespace eval ::xo {
     if {[:exists_parameter $__name]} {
       set value [:get_parameter $__name]
     } else {
-      ns_log notice "getting value from next [self next]"
       set value [next $__name $default]
     }
     #
