@@ -713,28 +713,32 @@ namespace eval ::xo::Table {
   }
 
   TABLE instproc render-body {} {
-    html::tr -class list-header {
-      foreach o [[self]::__columns children] {
-        $o render
+    html::thead {
+      html::tr -class list-header {
+        foreach o [[self]::__columns children] {
+          $o render
+        }
       }
     }
     set children [:children]
     if {[llength $children] == 0} {
       html::tr {html::td { html::t ${:no_data}}}
     } else {
-      foreach line [:children] {
-        #:log "--LINE vars=[:info vars] cL: [[self class] info vars] r=[:renderer]"
-        html::tr -class [expr {[incr :__rowcount]%2 ? ${:css.tr.odd-class} : ${:css.tr.even-class}}] {
-          foreach field [[self]::__columns children] {
-            if {[$field istype HiddenField]} continue
-            if {![$field exists CSSclass]} {
-              # TODO: remove me when message does not show up
-              ns_log warning "CSSclass missing $field\n[$field serialize]"
-              $field set CSSclass ""
-            }
-            set CSSclass [list "list" {*}[$field CSSclass]]
-            html::td [concat [list class $CSSclass] [$field html]] {
-              $field render-data $line
+      html::tbody {
+        foreach line [:children] {
+          #:log "--LINE vars=[:info vars] cL: [[self class] info vars] r=[:renderer]"
+          html::tr -class [expr {[incr :__rowcount]%2 ? ${:css.tr.odd-class} : ${:css.tr.even-class}}] {
+            foreach field [[self]::__columns children] {
+              if {[$field istype HiddenField]} continue
+              if {![$field exists CSSclass]} {
+                # TODO: remove me when message does not show up
+                ns_log warning "CSSclass missing $field\n[$field serialize]"
+                $field set CSSclass ""
+              }
+              set CSSclass [list "list" {*}[$field CSSclass]]
+              html::td [concat [list class $CSSclass] [$field html]] {
+                $field render-data $line
+              }
             }
           }
         }
