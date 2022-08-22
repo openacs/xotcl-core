@@ -578,10 +578,10 @@ namespace eval ::xo::db {
   }
 
   proc ::xo::db::pg_0or1row {sql} {
-    ns_log notice "::xo::db::pg_0or1row deprecated"
+    ad_log_deprecated proc ::xo::db::pg_0or1row "ns_pg_bind 0or1row"
     ::db_with_handle h {
       return [uplevel [list ns_pg_bind 0or1row $h {*}$bindOpt $sql]]
-    }
+    }    
   }
 
   #

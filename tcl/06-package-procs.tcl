@@ -118,8 +118,8 @@ namespace eval ::xo {
       set fn $::acs::rootdir/packages/$package_key/$location/prototypes/$name.page
       if {[file exists $fn]} {
         if {$location eq "www"} {
-          ns_log warning "deprecated location: you should move prototype page" \
-              "'$fn' to /packages/$package_key/resources/prototypes/"
+          ad_log_deprecated "location of prototype page" $fn \
+              packages/$package_key/resources/prototypes/
         }
         break
       }

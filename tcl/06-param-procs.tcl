@@ -291,7 +291,7 @@ namespace eval ::xo {
                             [::xo::cc package_id] :
                             [ns_conn isconnected] ? [ad_conn package_id] : $::acs::kernel_id}]
     }
-    ns_log notice "deprecated xo::parameter get -parameter $parameter called (replaced by ::parameter::get)"
+    ad_log_deprecated proc "xo::parameter get -parameter $parameter" parameter::get
     return [::parameter::get -parameter $parameter -package_id $package_id \
                 {*}[expr {[info exists default] ? [list -default $default] : ""}]]
 
@@ -325,8 +325,8 @@ namespace eval ::xo {
                             [::xo::cc package_id] :
                             [ns_conn isconnected] ? [ad_conn package_id] : $::acs::kernel_id}]
     }
-    ns_log notice "deprecated xo::parameter set_value -parameter $parameter called " \
-        "(replaced by ::parameter::set_value)"
+    
+    ad_log_deprecated proc "xo::parameter set_value -parameter $parameter" parameter::set_value    
     return [::parameter::set_value -package_id $package_id -parameter $parameter -value $value]
 
     set parameter_obj [:get_parameter_object -parameter_name $parameter -package_id $package_id]
