@@ -321,14 +321,17 @@ namespace eval ::Generic {
   } -ad_doc {
 
     Simple OO interface to template::list.
-    This class has been built to allow quick creation of list UIs for generic acs_objects.<br/>
-    <br/>
-    Many parameters are homonimous to those for <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a><br/>
-    and work in the same way, unless stated differently in this documentation.<br/>
-    Despite the high number of object's members, most of them are there for backward compatibility with the procedural API
-    and they seldom need to be specified.<br/>
-    <br/>
-    An example of instantiation could just look as this:<br/>
+    This class has been built to allow quick creation of list UIs for generic acs_objects.
+
+    <p>Many parameters are homonymous to those for
+    <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>
+    and work in the same way, unless stated differently in this documentation.
+    
+    <p>Despite the high number of object's members, most of them are
+    there for backward compatibility with the procedural API and they
+    seldom need to be specified.
+    
+    <p>An example of instantiation could just look as this:
     <pre>
     # Must be an existing acs_object class on the system.
     set class "::dev::Location"

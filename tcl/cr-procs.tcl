@@ -1679,17 +1679,21 @@ namespace eval ::xo::db {
     {-item_id 0}
     {-revision_id 0}
     {-initialize:boolean true}
-  } {
-    The "standard" get_instance_from_db methods return objects following the
-    naming convention "::<acs_object_id>", e.g. ::1234
+  } {    
+    The "standard" get_instance_from_db methods return objects
+    following the naming convention "::&lt;acs_object_id&gt;",
+    e.g. ::1234
 
-    Usually, the id of the item that is fetched from the database is used. However,
-    XoWiki's "folder objects" (i.e. an ::xowiki::Object instance that can be used
-    to configure the respective instance) are created using the acs_object_id of the
-    root folder of the xowiki instance, which is actually the id of another acs_object.
+    <p>Usually, the id of the item that is fetched from the database
+    is used. However, XoWiki's "folder objects" (i.e. an
+    ::xowiki::Object instance that can be used to configure the
+    respective instance) are created using the acs_object_id of the
+    root folder of the xowiki instance, which is actually the id of
+    another acs_object.
 
-    Because of this, we cannot simply create the instances of CrFolder using the
-    "standard naming convention". Instead we create them as ::cr_folder<acs_object_id>
+    <p>Because of this, we cannot simply create the instances of
+    CrFolder using the "standard naming convention". Instead we create
+    them as ::cr_folder&lt;acs_object_id&gt;.    
   } {
     set object ::$item_id
     if {![nsf::is object $object]} {
