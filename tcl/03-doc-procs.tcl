@@ -301,7 +301,7 @@ ad_library {
     set docBlock ""
     set i 0
     set nrLines [llength $lines]
-    while {[string trim [lindex $lines $i]] eq "" && $i < $nrLines} {incr i}
+    while {[string is space [lindex $lines $i]] && $i < $nrLines} {incr i}
     while {$i < $nrLines} {
       set line [string trim [lindex $lines $i]]
       incr i
