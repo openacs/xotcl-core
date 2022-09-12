@@ -2709,6 +2709,10 @@ namespace eval ::xo::db {
         {not_null}
         {unique}
         {index}
+      } {
+        #
+        # ORM class representing an acs_attribute from and acs_object.
+        #
       }
 
   if {[::acs::icanuse "nsv_dict"]} {
@@ -2829,7 +2833,12 @@ namespace eval ::xo::db {
 
   ##############
   ::xotcl::MetaSlot create ::xo::db::CrAttribute \
-      -superclass {::xo::db::Attribute}
+      -superclass {::xo::db::Attribute} {
+        #
+        # ORM class representing an acs_attribute for a content_type
+        # in the Content Repository.
+        #
+      }
 
   ::xo::db::CrAttribute instproc create_attribute {} {
     # do nothing, if create_acs_attribute is set to false
