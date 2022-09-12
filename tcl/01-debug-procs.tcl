@@ -12,11 +12,6 @@ if {[info exists ::xotcl_version] || ([info exists ::xotcl::version] && $::xotcl
 package require xotcl::serializer
 
 #
-# Keep the initcmds of classes for documentation purposes.
-#
-::nsf::configure keepcmds 1
-
-#
 # Tell serializer to export methods, although these are methods of the
 # base classes.
 #
