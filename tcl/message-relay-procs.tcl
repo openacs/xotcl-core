@@ -1,5 +1,5 @@
-xo::library doc {
-  GenericMessageRelay procs
+::xo::library doc {
+  Generic MessageRelay procs
 
   Provide means to publish a subscription key and let clients write to
   these keys. These functions are used e.g. by the chat.
@@ -11,6 +11,9 @@ xo::library doc {
 namespace eval ::xo {
 
   nx::Class create ::xo::MessageRelay {
+    #
+    # Generic Message Relay class
+    #
     :public method subscribe {key {-initmsg ""} {-mode default}} {
       #
       # Subscribe to a service identified by a key.
