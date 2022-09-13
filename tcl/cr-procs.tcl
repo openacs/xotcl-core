@@ -1748,6 +1748,7 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::CrFolder ad_instproc save_new {-creation_user} {
+    Save a new CrFolder instance in the database.
   } {
     set package_id ${:package_id}
     [:info class] get_context package_id creation_user creation_ip
@@ -1776,7 +1777,9 @@ namespace eval ::xo::db {
     return ${:folder_id}
   }
 
-  ::xo::db::CrFolder ad_instproc save {args} { }  {
+  ::xo::db::CrFolder ad_instproc save {args} {
+    Save an existing CrFolder instance in the database.
+  } {
     set folder_id ${:folder_id}
     content::folder::update \
         -folder_id $folder_id \
