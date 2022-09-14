@@ -441,7 +441,7 @@ ad_library {
                  param "" \
                  protection $protection \
                  varargs_p $varargs_p \
-                 deprecated_p false \
+                 deprecated_p $deprecated \
                  warn_p false \
                  script [::xo::api script_name $scope] \
                  main "" \
