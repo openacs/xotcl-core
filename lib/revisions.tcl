@@ -57,11 +57,7 @@ template::list::create \
         sub_class narrow
       }
       version_delete { label "" link_url_col version_delete_link
-        display_template {
-          <img src='/resources/acs-subsite/Delete16.gif' \
-              title='Delete Revision' alt='delete' \
-              width="16" height="16" border="0">
-        }
+        display_template {<adp:icon name="trash" title="Delete Revision">}
         html {align center}
       }
     }
