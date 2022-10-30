@@ -526,7 +526,7 @@ namespace eval ::xo::Table {
 
   Class create ::xo::Table::Action \
       -superclass ::xo::OrderedComposite::Child \
-      -parameter {label url {tooltip {}} {confirm_message {}}}
+      -parameter {{CSSclass ""} label url {tooltip {}} {confirm_message {}}}
   #-proc destroy {} {
   #   :log "-- DESTROY "
   #      show_stack
@@ -776,7 +776,7 @@ namespace eval ::xo::Table {
   Class create TABLE::Action \
       -superclass ::xo::Drawable \
       -instproc render {} {
-        html::a -class button -title [:_ tooltip] -href [:url] {
+        html::a -class "button ${:CSSclass}" -title [:_ tooltip] -href ${:url} {
           html::t [:_ label]
         }
         #:log "-- "
