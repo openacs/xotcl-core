@@ -954,7 +954,9 @@ namespace eval ::xo {
       } else {
         set default_status_code 204
       }
-      set status_code [expr {[::xo::cc exists status_code] ? [::xo::cc set status_code] : $default_status_code}]
+      set status_code [expr {[::xo::cc exists status_code]
+                             ? [::xo::cc set status_code]
+                             : $default_status_code}]
       #:log "REPLY ${:delivery} $status_code ${:mime_type} - length: [string length $text] - [ad_conn peeraddr]"
       ${:delivery} $status_code ${:mime_type} $text
     }
@@ -969,10 +971,10 @@ namespace eval ::xo {
         # The variable specification "$_var" is a pair of name and
         # value.
         #
-        if {[util::potentially_unsafe_eval_p -- [uplevel [lindex $_var 1]]]} {
-          ad_log warning "depecated usage of variable/value pair $_var, potentially unsafe for 'subst'"
-        }
-        lappend __vars [lindex $_var 0] [uplevel subst -nocommands [lindex $_var 1]]
+        #if {[util::potentially_unsafe_eval_p -- [lindex $_var 1]]} {
+        #  ad_log warning "depecated usage of variable/value pair $_var, potentially unsafe for 'subst'"
+        #}
+        lappend __vars [lindex $_var 0] [uplevel [list subst [lindex $_var 1]]]
       } else {
         #
         # We have just a variable name, provide a linked variable to
