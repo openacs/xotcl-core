@@ -634,7 +634,7 @@ namespace eval ::xo {
     method raises an exception with "ad_return_complaint" and aborts
     the script.
 
-    @param __spec has the formname or name:valueConstraints
+    @param __spec has the formname or name:value_constraint
     @param default default value
     @return actual value of the query parameter
   } {
@@ -655,33 +655,8 @@ namespace eval ::xo {
     # cases, where multiplicity is specified. This means effectively
     # that the default multiplicity is "0..1".
     #
-    if {[info exists constraint]
-        && ([string first . $constraint] > -1 || $value ne "")
-      } {
-      try {
-        #
-        # Use parseargs with "-asdict" option when it is available,
-        # since it does not globber the variable namespace. For legacy
-        # applications, lets hope that no query parameter named
-        # "__name" is used with a value constraint.
-        #
-        if {[::acs::icanuse "nsf::parseargs -asdict"]} {
-          set value [dict get \
-                         [nsf::parseargs -asdict ${__name}:$constraint [list $value]] \
-                         $__name]
-        } else {
-          nsf::parseargs ${__name}:$constraint [list $value]
-          set value [set $__name]
-        }
-      } on error {errorMsg} {
-        #ns_log notice ".... nsf::parseargs error '$errorMsg'"
-        if {[ns_conn isconnected] && ![info exists ::aa_test_noabort]} {
-          ad_return_complaint 1 [ns_quotehtml $errorMsg]
-          ad_script_abort
-        } else {
-          throw $::errorInfo $errorMsg
-        }
-      }
+    if {[info exists constraint]} {
+      xo::validate_parameter_constraints $__name $constraint $value
     }
     return $value
   }
@@ -749,6 +724,54 @@ namespace eval ::xo {
     return $query
   }
 
+  ad_proc ::xo::validate_parameter_constraints {name constraint value} {
+    
+    Validate the provided value against the constraints.  In case of
+    failure, return with ad_return_complaint when there is an
+    connection, otherwise raise an error.
+    
+  } {
+    #
+    # If we have a value-constraint, we check for empty values only in
+    # cases, where multiplicity is specified. This means effectively
+    # that the default multiplicity is "0..1".
+    #
+    if {[string first . $constraint] > -1 || $value ne ""} {
+      try {
+        #
+        # Use parseargs with "-asdict" option when it is available,
+        # since it does not globber the variable namespace. For legacy
+        # applications, lets hope that no query parameter named
+        # "__name" is used with a value constraint.
+        #
+        if {[::acs::icanuse "nsf::parseargs -asdict"]} {
+          #
+          # Newer versions will use this branch
+          #
+          set value [dict get \
+                         [nsf::parseargs -asdict ${name}:$constraint [list $value]] \
+                         $name]
+        } else {
+          #
+          # This is the legacy branch.  nsf::parseargs might clobber
+          # "name", therefore save it in an highly unlikely variable
+          # name.
+          #
+          set { name } $name
+          nsf::parseargs ${name}:$constraint [list $value]
+          set value [set ${ name }]
+        }
+      } on error {errorMsg} {
+        #ns_log notice ".... nsf::parseargs error '$errorMsg'"
+        if {[ns_conn isconnected] && ![info exists ::aa_test_noabort]} {
+          ad_return_complaint 1 [ns_quotehtml $errorMsg]
+          ad_script_abort
+        } else {
+          throw $::errorInfo $errorMsg
+        }
+      }
+    }
+  }
 }
 
 ::xo::library source_dependent
