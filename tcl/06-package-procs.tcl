@@ -991,7 +991,7 @@ namespace eval ::xo {
         # The variable specification "$_var" is a pair of name and
         # value.
         #
-        if {util::potentially_unsafe_eval_p -- [uplevel [lindex $_var 1]]} {
+        if {[util::potentially_unsafe_eval_p -- [uplevel [lindex $_var 1]]]} {
           ad_log warning "depecated usage of variable/value pair $_var, potentially unsafe for 'subst'"
         }
         lappend __vars [lindex $_var 0] [uplevel subst -nocommands [lindex $_var 1]]
