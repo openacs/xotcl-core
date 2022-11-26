@@ -4,7 +4,7 @@ ad_page_contract {
   @author Gustaf Neumann
   @cvs-id $Id$
 } -query {
-  {classes}
+  {classes:token}
   {documented_only:boolean 1}
   {with_children:boolean 0}
   {dpi:integer 96}
@@ -22,14 +22,17 @@ if {$dot eq ""} {
   ad_script_abort
 }
 
-set stem [ad_tmpnam]
-set dotfile $stem.dot
-set outfile $stem.$format
 
 try {
-  set f [open $dotfile w]; puts $f $dot_code; close $f
-  exec $dot -T$format -o $outfile $dotfile
+  set F [ad_opentmpfile dotfile dot]
+  puts $F $dot_code
+  close $F
+
+  exec $dot -T$format -O $dotfile
+  set outfile $dotfile.$format
+  
 } on error {errorMsg} {
+  catch {close $F}
   ns_log warning "show-class-graph: dot returned $errorMsg"
   ad_return_error "dot error" $errorMsg
 } on ok {result} {
