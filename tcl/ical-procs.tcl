@@ -213,7 +213,7 @@ namespace eval ::xo {
     :method start_end {} {
       #
       # Output either a DAY-EVENT (denoted by a single DTSTART with
-      # appropriate VALUE format) or a state and end time stamps.
+      # appropriate VALUE format) or a state and end timestamps.
       #
       if {${:is_day_item}} {
         append result \
@@ -247,7 +247,7 @@ namespace eval ::xo {
       # as lists.
       #
       #
-      # All date/time stamps are provided either by
+      # All date/timestamps are provided either by
       # the ANSI date (from postgres) or by a date
       # which can be processed via clock scan
       #
