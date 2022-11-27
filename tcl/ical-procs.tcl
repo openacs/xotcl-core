@@ -18,7 +18,7 @@ nx::Object create ::xo::ical {
 
   :object method debug {msg} {
     #
-    # TODO: mabe add Debug(ical)?
+    # TODO: maybe add Debug(ical)?
     #
     ns_log Debug(caldav) "[uplevel current proc]: $msg"
   }
