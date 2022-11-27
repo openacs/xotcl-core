@@ -298,12 +298,12 @@ namespace eval ::xo {
         {<D:multistatus xmlns:D="DAV:">} $body \n </D:multistatus> \n
   }
 
-  ProtocolHandler instproc multiStatusResonse {
+  ProtocolHandler instproc multiStatusResponse {
     -href:required
     -propstats:required
     {-propstatus true}
   } {
-    :log "multiStatusResonse href $href propstats $propstats"
+    :log "multiStatusResponse href $href propstats $propstats"
     append reply \n \
         {<D:response xmlns:lp1="DAV:" xmlns:lp2="http://apache.org/dav/props/" xmlns:g0="DAV:">} \
         "\n<D:href>$href</D:href>\n"
@@ -342,7 +342,7 @@ namespace eval ::xo {
         D:getcontentlength "" \
         D:creationdate "" \
         D:resourcetype ""
-    set r [:multiStatus [:multiStatusResonse \
+    set r [:multiStatus [:multiStatusResponse \
                              -href [ns_urldecode [ns_conn url]] \
                              -propstats [list $davprops $status]]]
     :log multiStatusError=$r
@@ -377,7 +377,7 @@ namespace eval ::xo {
         D:lockdiscovery     {}
 
     ns_return 207 text/xml [:multiStatus \
-                                [:multiStatusResonse \
+                                [:multiStatusResponse \
                                      -href ${:uri} \
                                      -propstats [list $davprops "HTTP/1.1 200 OK"]]]
   }

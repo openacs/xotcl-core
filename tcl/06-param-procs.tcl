@@ -45,7 +45,7 @@
 #     package-key provides default
 #     package-instance keeps values (materialized cross-product)
 #
-# - Consquences
+# - Consequences
 #   1) Since default values are copied into
 #      per-package-instance-values altering the default has no
 #      immediate effect.  It would be nice to alter in an OpenACS

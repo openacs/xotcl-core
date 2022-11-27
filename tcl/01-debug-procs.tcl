@@ -636,7 +636,7 @@ namespace eval ::xo {
           # the object to the base class and try again.
           #
           if {[lindex $cmd 1] eq "destroy"} {
-            ns_log error "... forcing object destroy without application level destuctors"
+            ns_log error "... forcing object destroy without application level destructors"
             if {[$obj isclass]} {
               $obj class ::xotcl::Class; $obj destroy
             } else {

@@ -972,7 +972,7 @@ namespace eval ::xo {
         # value.
         #
         #if {[util::potentially_unsafe_eval_p -- [lindex $_var 1]]} {
-        #  ad_log warning "depecated usage of variable/value pair $_var, potentially unsafe for 'subst'"
+        #  ad_log warning "deprecated usage of variable/value pair $_var, potentially unsafe for 'subst'"
         #}
         lappend __vars [lindex $_var 0] [uplevel [list subst [lindex $_var 1]]]
       } else {

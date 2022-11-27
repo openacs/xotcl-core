@@ -132,7 +132,7 @@ namespace eval ::xo {
         set class_info [expr {[info exists c] && [::nsf::is class $c] ?
                               "using the class hierarchy [concat $c [$c info heritage]]" :
                               ""}]
-        ad_log error "get_permission could not find an approriate class for checking" \
+        ad_log error "get_permission could not find an appropriate class for checking" \
             "permissions for '$object' and '$method' in policy [self]" \
             $class_info
         set permission ""

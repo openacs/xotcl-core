@@ -630,7 +630,7 @@ namespace eval ::xo {
 
     Get query parameter with default and optional value constraints.
     In case the value check for the query parameter fails, and no
-    futher precautions are performed (::aa_test_noabort is set), the
+    further precautions are performed (::aa_test_noabort is set), the
     method raises an exception with "ad_return_complaint" and aborts
     the script.
 
@@ -727,8 +727,7 @@ namespace eval ::xo {
   ad_proc ::xo::validate_parameter_constraints {name constraint value} {
     
     Validate the provided value against the constraints.  In case of
-    failure, return with ad_return_complaint when there is an
-    connection, otherwise raise an error.
+    failure, return with ad_return_complaint when there is a connection, otherwise raise an error.
     
   } {
     #
@@ -754,7 +753,7 @@ namespace eval ::xo {
         } else {
           #
           # This is the legacy branch.  nsf::parseargs might clobber
-          # "name", therefore save it in an highly unlikely variable
+          # "name", therefore, save it in an highly unlikely variable
           # name.
           #
           set { name } $name

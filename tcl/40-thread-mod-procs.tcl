@@ -270,7 +270,7 @@ Class create ::xotcl::THREAD \
 }
 
 #
-# Create a sample persistent thread that can be acessed
+# Create a sample persistent thread that can be accessed
 # via request threads.
 #
 #::xotcl::THREAD create t0 {

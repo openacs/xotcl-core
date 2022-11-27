@@ -61,7 +61,7 @@ ad_proc -public ::xo::require_html_procs {} {
 
       #
       # Command generating HTML tags. All these commands have
-      # following sytax: <cmd> ?-option value ...? ?script?
+      # following syntax: <cmd> ?-option value ...? ?script?
       #
       #    -option   name of HTML attribute
       #     value    attribute value
