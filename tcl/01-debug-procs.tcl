@@ -158,28 +158,11 @@ if {[nsf::is object ::nx::Object]} {
     ::nx::Object nsfproc ::nsf::debug::exit
   }
 
-  if {[nx::Class  info methods -path "info superclasses"] eq ""} {
-    # There is no "info superclasses" defined, it must be a beta
-    # release of nsf.  Map method names to improve robustness for
-    # earlier versions (should be transitional code).
-    array set ::xo::mapMethodNames {
-      superclasses superclass
-      subclasses subclass
-      mixins "mixin classes"
-    }
-  } else {
-    array set ::xo::mapMethodNames {
-      superclasses superclasses
-      subclasses subclasses
-      mixins mixins
-    }
-  }
-
   #
   # Make sure, the ::nsf::debug namespace exists (might not be
   # available in older versions of nsf)
   #
-  namespace eval ::nsf::debug {}
+  #namespace eval ::nsf::debug {}
 
   proc ::nsf::debug::call {level objectInfo methodInfo arglist} {
     ns_log Warning "DEBUG call($level) - {$objectInfo} {$methodInfo} $arglist"
@@ -319,17 +302,6 @@ namespace eval ::xo {
   #::xotcl::Object instmixin add ::xo::InstanceManager
 }
 
-if {[info commands ::xotcl::nonposArgs] ne ""} {
-  ::xotcl::nonposArgs proc integer args {
-    if {[llength $args] < 2} return
-    lassign $args name value
-    if {![string is integer $value]} {error "value '$value' of $name not an integer"}
-  }
-  ::xotcl::nonposArgs proc optional {name args} {
-    ;
-  }
-}
-
 ::xotcl::Object instproc __timediff {} {
   set now [ns_time get]
   if {[ns_conn isconnected]} {
@@ -390,7 +362,8 @@ if {[info commands ::xotcl::nonposArgs] ne ""} {
   if {$l < 2} {
     set prefix topLevel
   } else {
-    set prefix [:uplevel {info level 0}]
+    set prefix [lindex [:uplevel {info level 0}] 0]
+    ns_log notice "QN <$query_name> -> PREFIX <$prefix>"
   }
   return "dbqd.$prefix.$query_name"
 }
@@ -1013,7 +986,7 @@ proc ::xo::getObjectProperty {o what args} {
     }
     "superclass" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info superclass]}
-      return [$o info $::xo::mapMethodNames(superclasses)]
+      return [$o info superclasses]
     }
     "heritage" {
       #if {"::xotcl::Object" in [$o info precedence]} {return [$o info heritage]}
@@ -1021,7 +994,7 @@ proc ::xo::getObjectProperty {o what args} {
     }
     "subclass" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info subclass]}
-      return [$o info $::xo::mapMethodNames(subclasses)]
+      return [$o info subclasses]
     }
     "parameter" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info parameter]}
