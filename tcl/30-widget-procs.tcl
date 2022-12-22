@@ -815,7 +815,7 @@ namespace eval ::xo::Table {
 
   TABLE::Field instproc get_orderby {} {
     #
-    # First,try to get the sort-order from the including ordered
+    # First, try to get the sort-order from the including ordered
     # composite, which is supposed to be always the data source.
     # Only, when this fails, fall back to the old style based on the
     # adp-level, which is less robust and warn about this usage.
