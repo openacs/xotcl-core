@@ -723,6 +723,14 @@ namespace eval ::xo::db {
       if {[llength $argtypes] == [llength $prepArgs]} {
         set prepArgs $argtypes
       }
+
+      if {[llength $prepArgs] > 0} {
+        set prepArgs ([join $prepArgs ,])
+      }
+      if {[llength $execArgs] > 0} {
+        set execArgs ([join $execArgs ,])
+      }
+
       set c [nsv_incr prepared_statement count]
       set prepName __p$c
       set prepare [ns_trim -delimiter | [subst {
@@ -730,11 +738,11 @@ namespace eval ::xo::db {
         |BEGIN
         |SELECT exists(select 1 from pg_prepared_statements where name = '$prepName') into found;
         |if found IS FALSE then
-        |    PREPARE $prepName ([join $prepArgs ,]) AS $l;
+        |    PREPARE $prepName $prepArgs AS $l;
         |end if;
         |END\$\$;
       }]]
-      set execute "EXECUTE $prepName ([join $execArgs ,])"
+      set execute "EXECUTE $prepName $execArgs"
       #
       # Save the values for this statement in the nsv-cache. This does
       # not mean that the prepared statement exists for the SQL
