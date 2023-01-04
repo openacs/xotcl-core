@@ -373,6 +373,75 @@ aa_register_case -cats {
     aa_equals "tcl_date from PostgreSQL TZ and secfrac" "$tz_var $secfrac_var" "00 0"
 }
 
+aa_register_case -cats {
+    api smoke
+} -procs {
+    "::xo::dc 1row"
+} test_prepared_statements {
+    Tests the ::xo::dc with respect to prepared statements.
+} {
+    aa_false "::xo::dc 1row with 0 parameters, unprepared statement - no error" [catch {
+        set object_id [::xo::dc get_value one_object {select max(object_id) from acs_objects}]
+    }]
+
+    aa_false "::xo::dc 1row with 0 parameters, prepared statement - no error" [catch {
+        set object_id [::xo::dc get_value -prepare "" one_object {
+            select max(object_id) from acs_objects
+        }]
+    }]
+
+    aa_false "::xo::dc 1row with 1 parameter, unprepared statement - no error" [catch {
+        ::xo::dc 1row get_object {
+            select object_id as object_id_found_1
+            from acs_objects where object_id = :object_id
+        }
+    }]
+
+    aa_equals "::xo::dc 1row with 1 parameter, unprepared statement - value was returned" \
+        $object_id $object_id_found_1
+
+    aa_false "::xo::dc 1row with 1 parameter, prepared statement" [catch {
+        ::xo::dc 1row -prepare integer get_object {
+            select object_id as object_id_found_2
+            from acs_objects where object_id = :object_id
+        }
+    }]
+
+    aa_equals "::xo::dc 1row with 1 parameter, prepared statement - value was returned" \
+        $object_id $object_id_found_2
+
+    aa_false "::xo::dc 1row with 2 parameters, unprepared statement - no error" [catch {
+        ::xo::dc 1row get_object {
+            select object_id as object_id_found_3
+            from acs_objects where object_id = :object_id and object_id = :object_id
+        }
+    }]
+
+    aa_equals "::xo::dc 1row with 2 parameters, unprepared statement - value was returned" \
+        $object_id $object_id_found_3
+
+    aa_false "::xo::dc 1row with 2 parameters, prepared statement" [catch {
+        ::xo::dc 1row -prepare integer,integer get_object {
+            select object_id as object_id_found_4
+            from acs_objects where object_id = :object_id and object_id = :object_id
+        }
+    }]
+
+    aa_equals "::xo::dc 1row with 2 parameter, prepared statement - value was returned" \
+        $object_id $object_id_found_4
+
+    aa_false "::xo::dc 1row with 2 parameters, prepared statement (alt. format)" [catch {
+        ::xo::dc 1row -prepare {integer integer} get_object {
+            select object_id as object_id_found_5
+            from acs_objects where object_id = :object_id and object_id = :object_id
+        }
+    }]
+
+    aa_equals "::xo::dc 1row with 2 parameter, prepared statement (alt. format) - value was returned" \
+        $object_id $object_id_found_5
+
+}
+
 
 # Local variables:
 #    mode: tcl
