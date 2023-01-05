@@ -710,7 +710,7 @@ namespace eval ::xo::db {
       #
       set c 0; set l ""; set last 0
       set execArgs {}; set prepArgs {}
-      foreach pair [regexp -all -inline -indices {[^:]:[a-zA-Z0_9_]+\M} $sql ] {
+      foreach pair [regexp -all -inline -indices {[^:a-zA-Z0_9_]:[a-zA-Z0_9_]+\M} $sql] {
         lassign $pair from to
         lappend execArgs [string range $sql $from+1 $to]
         lappend prepArgs unknown
