@@ -441,7 +441,7 @@ aa_register_case -cats {
         $object_id $object_id_found_5
 
     aa_false "::xo::dc 1row with 1 parameter, prepared statement with SQL containing semicolon - no error" [catch {
-        ::xo::dc 1row -prepare integer,integer get_object {
+        ::xo::dc 1row -prepare integer get_object {
             select object_id as object_id_found_6
             from acs_objects where object_id = :object_id and title <> '__I:Do:Not:Exist'
         }
