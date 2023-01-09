@@ -718,16 +718,16 @@ namespace eval ::xo::db {
       # replaced text.
       #
       set strings [regexp -all -inline {'(\\'|[^'])*'} $sql]
-      regsub -all {'(\\'|[^'])*'} $sql "#__string__#" sql
+      regsub -all {'(\\'|[^'])*'} $sql "#__string__#" sql_prep
 
-      foreach pair [regexp -all -inline -indices {[^:]:[a-zA-Z0_9_]+\M} $sql] {
+      foreach pair [regexp -all -inline -indices {[^:]:[a-zA-Z0_9_]+\M} $sql_prep] {
         lassign $pair from to
-        lappend execArgs [string range $sql $from+1 $to]
+        lappend execArgs [string range $sql_prep $from+1 $to]
         lappend prepArgs unknown
-        append l [string range $sql $last $from] \$[incr c]
+        append l [string range $sql_prep $last $from] \$[incr c]
         set last [incr to]
       }
-      append l [string range $sql $last end]
+      append l [string range $sql_prep $last end]
 
       #
       # Put back the substituted strings in the prepared SQL.
