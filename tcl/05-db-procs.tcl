@@ -515,6 +515,45 @@ namespace eval ::xo::db {
     return $result
   }
 
+  ::xo::db::DB-postgresql instproc foreach {{-dbn ""} {-bind ""} -prepare qn sql body} {
+    if {$sql eq ""} {set sql [:get_sql $qn]}
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+
+    db_with_handle -dbn $dbn db {
+      if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
+      set result [list]
+
+      set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
+      while { [::db_getrow $db $answers] } {
+        foreach {att value} [ns_set array $answers] {
+          uplevel 1 [list set $att $value]
+        }
+
+        try {
+
+          uplevel 1 $body
+
+        } on error {errMsg} {
+
+          error $errMsg $::errorInfo $::errorCode
+
+        } on return {} {
+
+          error "Cannot return from inside a ::xo::dc foreach loop"
+
+        } on break {} {
+
+          break
+
+        } on continue {} {
+
+          # Just ignore and continue looping.
+
+        }
+      }
+    }
+  }
+
   ::xo::db::DB instproc foreach {{-dbn ""} {-bind ""} -prepare qn sql body} {
     #if {$sql eq ""} {set sql [:get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
