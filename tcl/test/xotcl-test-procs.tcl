@@ -377,6 +377,7 @@ aa_register_case -cats {
     api smoke
 } -procs {
     "::xo::dc 1row"
+    "::xo::dc foreach"
 } test_prepared_statements {
     Tests the ::xo::dc with respect to prepared statements.
 } {
@@ -462,6 +463,34 @@ aa_register_case -cats {
 
     aa_equals "::xo::dc 1row with 1 parameter, prepared statement with SQL containing semicolon - value was returned" \
         $object_id $object_id_found_7
+
+    aa_false "::xo::dc foreach with 1 parameter - no error" [catch {
+        set l [list]
+        ::xo::dc foreach get_object {
+            select object_id
+            from acs_objects
+           where object_id = :object_id
+        } {
+            lappend l $object_id
+        }
+    }]
+
+    aa_equals "::xo::dc foreach with 1 parameter - value was returned" \
+        $l [list $object_id]
+
+    aa_false "::xo::dc foreach with 1 parameter, prepared statement - no error" [catch {
+        set l2 [list]
+        ::xo::dc foreach -prepare integer get_object {
+            select object_id
+            from acs_objects
+           where object_id = :object_id
+        } {
+            lappend l2 $object_id
+        }
+    }]
+
+    aa_equals "::xo::dc foreach with 1 parameter, prepared statement - value was returned" \
+        $l2 [list $object_id]
 
 }
 
