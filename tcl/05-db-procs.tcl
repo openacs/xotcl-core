@@ -554,6 +554,101 @@ namespace eval ::xo::db {
     }
   }
 
+  ::xo::db::DB-postgresql instproc multirow {
+    {-dbn ""}
+    {-bind ""}
+    {-local false}
+    {-upvar_level 1}
+    {-extend {}}
+    -prepare
+    var_name
+    qn
+    sql
+    {body {}}
+  } {
+    if { $local } {
+      set level_up [expr {$upvar_level + 1}]
+    } else {
+      set level_up \#[::template::adp_level]
+    }
+
+    if {$sql eq ""} {set sql [:get_sql $qn]}
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+
+    set multirow_exists_p [::template::multirow -local -ulevel $level_up exists $var_name]
+
+    if {$multirow_exists_p && [llength $extend] > 0} {
+      ::template::multirow -local -ulevel $level_up extend $var_name {*}$extend
+    }
+
+    set multirow_size [::template::multirow -local -ulevel $level_up size $var_name]
+    set i [expr {$multirow_size == 0 ? 1 : $multirow_size + 1}]
+
+    db_with_handle -dbn $dbn db {
+      if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
+      set result [list]
+
+      set answers [uplevel 1 [list ns_pg_bind select $db {*}$bindOpt $sql]]
+      set cols [concat [ns_set keys $answers] $extend]
+      if {$multirow_exists_p} {
+        #
+        # We enforce here, that appending to an existing multirow
+        # can only happen when we are extracting the same columns.
+        #
+        set existing_cols [::template::multirow -local -ulevel $level_up columns $var_name]
+        if {$cols ne $existing_cols} {
+          error "Cannot append to a multirow with different columns"
+        }
+      } else {
+        ::template::multirow -local -ulevel $level_up create $var_name {*}$cols
+        set multirow_exists_p true
+      }
+
+      while { [::db_getrow $db $answers] } {
+        foreach att $cols {
+          uplevel 1 [list set $att [ns_set get $answers $att]]
+        }
+
+        if {[llength $body] > 0} {
+          try {
+
+            uplevel 1 $body
+
+          } on error {errMsg} {
+
+            error $errMsg $::errorInfo $::errorCode
+
+          } on return {} {
+
+            error "Cannot return from inside a ::xo::dc multirow loop"
+
+          } on break {} {
+
+            break
+
+          } on continue {} {
+
+            # Just ignore and continue looping.
+
+          }
+        }
+
+        #
+        # Add an empty row, then set the values individually, so we do
+        # not need to loop through the multirow columns twice.
+        #
+        ::template::multirow -local -ulevel $level_up append $var_name
+        foreach att $cols {
+          if {[uplevel 1 [list info exists $att]]} {
+            set value [uplevel 1 [list set $att]]
+            ::template::multirow -local -ulevel $level_up set $var_name $i $att $value
+          }
+        }
+        incr i
+      }
+    }
+  }
+
   ::xo::db::DB instproc foreach {{-dbn ""} {-bind ""} -prepare qn sql body} {
     #if {$sql eq ""} {set sql [:get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
@@ -565,6 +660,26 @@ namespace eval ::xo::db {
     #if {[info exists prepare]} {set sql [:prepare -dbn $dbn -argtypes $prepare $sql]}
     #ns_log notice "### [list ::db_foreach -dbn $dbn $qn $sql $body {*}$bindOpt]"
     uplevel [list ::db_foreach -dbn $dbn $qn $sql $body {*}$bindOpt]
+  }
+
+  ::xo::db::DB instproc multirow {
+    {-dbn ""}
+    {-bind ""}
+    {-local false}
+    {-upvar_level 1}
+    {-extend {}}
+    -prepare
+    var_name
+    qn
+    sql
+    {body ""}
+  } {
+    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    set qn [uplevel [list [self] qn $qn]]
+    set local [expr {$local ? "-local" : ""}]
+    uplevel [list ::db_multirow -dbn $dbn {*}$local \
+                 -upvar_level $upvar_level -extend $extend $var_name \
+                 $qn $sql $body {*}$bindOpt]
   }
 
   ::xo::db::DB instproc exec_0or1row {-prepare {-bind ""} sql} {
