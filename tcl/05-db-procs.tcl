@@ -601,7 +601,6 @@ namespace eval ::xo::db {
         }
       } else {
         ::template::multirow -local -ulevel $level_up create $var_name {*}$cols
-        set multirow_exists_p true
       }
 
       while { [::db_getrow $db $answers] } {
