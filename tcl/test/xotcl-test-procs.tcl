@@ -376,20 +376,30 @@ aa_register_case -cats {
 aa_register_case -cats {
     api smoke
 } -procs {
+    "::xo::dc get_value"
     "::xo::dc 1row"
     "::xo::dc foreach"
+    "::xo::dc multirow"
 } test_prepared_statements {
     Tests the ::xo::dc with respect to prepared statements.
 } {
-    aa_false "::xo::dc 1row with 0 parameters, unprepared statement - no error" [catch {
+    #
+    # get_value
+    #
+
+    aa_false "::xo::dc get_value with 0 parameters, unprepared statement - no error" [catch {
         set object_id [::xo::dc get_value one_object {select max(object_id) from acs_objects}]
     }]
 
-    aa_false "::xo::dc 1row with 0 parameters, prepared statement - no error" [catch {
+    aa_false "::xo::dc get_value with 0 parameters, prepared statement - no error" [catch {
         set object_id [::xo::dc get_value -prepare "" one_object {
             select max(object_id) from acs_objects
         }]
     }]
+
+    #
+    # 1row
+    #
 
     aa_false "::xo::dc 1row with 1 parameter, unprepared statement - no error" [catch {
         ::xo::dc 1row get_object {
@@ -428,9 +438,6 @@ aa_register_case -cats {
         }
     }]
 
-    aa_equals "::xo::dc 1row with 2 parameter, prepared statement (alt. format) - value was returned" \
-        $object_id $object_id_found_5
-
     aa_false "::xo::dc 1row with 1 parameter, prepared statement with SQL containing semicolon - no error" [catch {
         ::xo::dc 1row -prepare integer get_object {
             select object_id as object_id_found_6
@@ -454,14 +461,18 @@ aa_register_case -cats {
     aa_equals "::xo::dc 1row with 1 parameter, prepared statement with SQL containing semicolon - value was returned" \
         $object_id $object_id_found_7
 
+    #
+    # foreach
+    #
+
     aa_false "::xo::dc foreach with 1 parameter - no error" [catch {
         set l [list]
         ::xo::dc foreach get_object {
-            select object_id
+            select object_id as object_id_found_8
             from acs_objects
            where object_id = :object_id
         } {
-            lappend l $object_id
+            lappend l $object_id_found_8
         }
     }]
 
@@ -471,19 +482,146 @@ aa_register_case -cats {
     aa_false "::xo::dc foreach with 1 parameter, prepared statement - no error" [catch {
         set l2 [list]
         ::xo::dc foreach -prepare integer get_object {
-            select object_id
+            select object_id as object_id_found_9
             from acs_objects
            where object_id = :object_id
         } {
-            lappend l2 $object_id
+            lappend l2 $object_id_found_9
         }
     }]
 
     aa_equals "::xo::dc foreach with 1 parameter, prepared statement - value was returned" \
         $l2 [list $object_id]
 
+    #
+    # multirow
+    #
+
+    aa_false "::xo::dc multirow with 1 parameter - no error" [catch {
+        set l3 [list]
+        ::xo::dc multirow test get_object {
+            select object_id as object_id_found_10
+            from acs_objects
+           where object_id = :object_id
+        } {
+            lappend l3 $object_id_found_10
+        }
+    }]
+
+    aa_equals "::xo::dc multirow with 1 parameter - value was returned" \
+        $l3 [list $object_id]
+
+    aa_false "::xo::dc multirow with 1 parameter, prepared statement - no error" [catch {
+        ::xo::dc multirow -prepare integer test get_object {
+            select object_id + 1 as object_id_found_10
+            from acs_objects
+           where object_id = :object_id
+        } {
+            lappend l3 $object_id_found_10
+        }
+    }]
+
+    aa_equals "::xo::dc multirow with 1 parameter, prepared statement - value was returned" \
+        $l3 [list $object_id [expr {$object_id + 1}]]
+
+    aa_equals "::xo::dc multirow appended twice to the test multirow" \
+        [::template::multirow size test] 2
+
 }
 
+aa_register_case -cats {
+    api smoke
+} -procs {
+    "::xo::dc multirow"
+} test_multirow {
+    Tests the ::xo::dc multirow api
+} {
+    aa_section "Test that ::xo::dc multirow behaves as db_multirow with respect to Bug 3441"
+    #
+    # Create a multirow with 0 entries and append a row "manually"
+    # For details, see # https://openacs.org/bugtracker/openacs/bug?bug_number=3441
+    #
+    ::xo::dc multirow person_mr1 noxql {
+        SELECT person_id, first_names, last_name
+        FROM persons WHERE false
+    }
+
+    aa_equals "have empty multirow" [template::multirow size person_mr1] 0
+    template::multirow append person_mr1 1234 “Ed” “Grooberman”
+    aa_equals "have one tuple in multirow" [template::multirow size person_mr1] 1
+
+    aa_equals "columns empty" \
+        [template::multirow columns person_mr1] \
+        "person_id first_names last_name"
+
+    set user_id [ad_conn user_id]
+    ::xo::dc multirow person_mr2 noxql {
+        SELECT person_id, first_names, last_name
+        FROM persons where person_id = :user_id
+    }
+    aa_equals "columns nonempty" \
+        [template::multirow columns person_mr2] \
+        "person_id first_names last_name"
+
+    aa_section "Now for some freestyle operations..."
+
+    # We set d outside the multirow body to show that the variable
+    # will be reinitialized at every loop.
+    set d a
+
+    ::xo::dc multirow -local t -extend {d e} __test_multirow q {
+        select *
+        from (values (1, 2, 3), (4, 5, 6)) as t (a, b, c)
+    } {
+        incr a
+        append d a
+    }
+
+    aa_equals "columns nonempty" \
+        [template::multirow -local columns __test_multirow] \
+        {a b c d e}
+
+    aa_equals "size is 2" [template::multirow -local size __test_multirow] 2
+
+    set template {
+        <ul>
+        <multiple name="__test_multirow">
+        <li>
+        |@__test_multirow.a@|
+        @__test_multirow.b@|
+        @__test_multirow.c@|
+        @__test_multirow.d@|
+        @__test_multirow.e@
+        </li>
+        </multiple>
+        </ul>
+    }
+
+    set expected {
+        <ul>
+        <li>|2|2|3|a|</li>
+        <li>|5|5|6|a|</li>
+        </ul>
+    }
+
+    set code [template::adp_compile -string $template]
+    aa_equals "Template returns expected result" \
+        [join [template::adp_eval code] ""] [join $expected ""]
+
+    template::multirow -local append __test_multirow I am appended to multirow
+
+    set expected {
+        <ul>
+        <li>|2|2|3|a|</li>
+        <li>|5|5|6|a|</li>
+        <li>|I|am|appended|to|multirow</li>
+        </ul>
+    }
+
+    set code [template::adp_compile -string $template]
+    aa_equals "Template returns expected result after appending to the multirow" \
+        [join [template::adp_eval code] ""] [join $expected ""]
+}
 
 # Local variables:
 #    mode: tcl
