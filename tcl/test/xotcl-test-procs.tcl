@@ -541,17 +541,17 @@ aa_register_case -cats {
     # Create a multirow with 0 entries and append a row "manually"
     # For details, see # https://openacs.org/bugtracker/openacs/bug?bug_number=3441
     #
-    ::xo::dc multirow person_mr1 noxql {
+    ::xo::dc multirow __xotcl_person_mr1 noxql {
         SELECT person_id, first_names, last_name
         FROM persons WHERE false
     }
 
-    aa_equals "have empty multirow" [template::multirow size person_mr1] 0
-    template::multirow append person_mr1 1234 “Ed” “Grooberman”
-    aa_equals "have one tuple in multirow" [template::multirow size person_mr1] 1
+    aa_equals "have empty multirow" [template::multirow size __xotcl_person_mr1] 0
+    template::multirow append __xotcl_person_mr1 1234 “Ed” “Grooberman”
+    aa_equals "have one tuple in multirow" [template::multirow size __xotcl_person_mr1] 1
 
     aa_equals "columns empty" \
-        [template::multirow columns person_mr1] \
+        [template::multirow columns __xotcl_person_mr1] \
         "person_id first_names last_name"
 
     set user_id [ad_conn user_id]
