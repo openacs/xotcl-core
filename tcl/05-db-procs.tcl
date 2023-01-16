@@ -622,7 +622,7 @@ namespace eval ::xo::db {
           }
 
           #
-          # Run the code and trap any expection.
+          # Run the code and trap any exception.
           #
           try {
 
