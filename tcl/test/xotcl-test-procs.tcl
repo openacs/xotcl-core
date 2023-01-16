@@ -563,7 +563,7 @@ aa_register_case -cats {
         [template::multirow columns person_mr2] \
         "person_id first_names last_name"
 
-    aa_section "Now for some freestyle operations..."
+    aa_section "Create a new multirow via ::xo::dc, then append via the ::template api"
 
     # We set d outside the multirow body to show that the variable
     # will be reinitialized at every loop.
@@ -571,9 +571,22 @@ aa_register_case -cats {
 
     ::xo::dc multirow -local t -extend {d e} __test_multirow q {
         select *
-        from (values (1, 2, 3), (4, 5, 6)) as t (a, b, c)
+        from (values (1, 2, 3), (4, 5, 6), (7, 8, 9), (10, 11, 12), (666, 666, 666)) as t (a, b, c)
     } {
+        # Test issuing continue in the loop
+        if {$a == 7} {
+            continue
+        }
+
+        # Test issuing break in the loop
+        if {$c == 12} {
+            break
+        }
+
+        # Test changing a "native" column
         incr a
+
+        # Test changing an extended column (var existed outside)
         append d a
     }
 
@@ -597,6 +610,8 @@ aa_register_case -cats {
         </ul>
     }
 
+    set code [template::adp_compile -string $template]
+
     set expected {
         <ul>
         <li>|2|2|3|a|</li>
@@ -604,7 +619,6 @@ aa_register_case -cats {
         </ul>
     }
 
-    set code [template::adp_compile -string $template]
     aa_equals "Template returns expected result" \
         [join [template::adp_eval code] ""] [join $expected ""]
 
@@ -618,9 +632,20 @@ aa_register_case -cats {
         </ul>
     }
 
-    set code [template::adp_compile -string $template]
     aa_equals "Template returns expected result after appending to the multirow" \
         [join [template::adp_eval code] ""] [join $expected ""]
+
+
+    aa_section "Create a multirow via the ::template api, then append via the ::xo::dc interface"
+    template::multirow -local create __test_multirow_2 a b c
+    template::multirow -local append __test_multirow_2 1 2 3
+
+    ::xo::dc multirow -local t __test_multirow_2 q {
+        select *
+        from (values (4, 5, 6), (7, 8, 9)) as t (a, b, c)
+    }
+
+    aa_equals "size is 3" [template::multirow -local size __test_multirow_2] 3
 }
 
 # Local variables:
