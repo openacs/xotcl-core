@@ -581,9 +581,6 @@ namespace eval ::xo::db {
       ::template::multirow -local -ulevel $level_up extend $var_name {*}$extend
     }
 
-    set multirow_size [::template::multirow -local -ulevel $level_up size $var_name]
-    set i [expr {$multirow_size + 1}]
-
     db_with_handle -dbn $dbn db {
       if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
       set result [list]
@@ -604,11 +601,29 @@ namespace eval ::xo::db {
       }
 
       while { [::db_getrow $db $answers] } {
-        foreach att $cols {
-          uplevel 1 [list set $att [ns_set get $answers $att]]
-        }
-
         if {[llength $body] > 0} {
+          #
+          # We have a code to execute. Bring all of the multirow
+          # variables in scope.
+          #
+
+          #
+          # Vars from the query
+          #
+          foreach {att value} [ns_set array $answers] {
+            uplevel 1 [list set $att $value]
+          }
+
+          #
+          # Extended variables, initialized to empty.
+          #
+          foreach att $extend {
+            uplevel 1 [list set $att ""]
+          }
+
+          #
+          # Run the code and trap any expection.
+          #
           try {
 
             uplevel 1 $body
@@ -630,20 +645,21 @@ namespace eval ::xo::db {
             continue
 
           }
-        }
 
-        #
-        # Add an empty row, then set the values individually, so we do
-        # not need to loop through the multirow columns twice.
-        #
-        ::template::multirow -local -ulevel $level_up append $var_name
-        foreach att $cols {
-          if {[uplevel 1 [list info exists $att]]} {
-            set value [uplevel 1 [list set $att]]
-            ::template::multirow -local -ulevel $level_up set $var_name $i $att $value
-          }
+          #
+          # Collect the values after the code has been executed.
+          #
+          set values [lmap att $cols {
+            expr {[uplevel 1 [list info exists $att]] ? [uplevel 1 [list set $att]] : ""}
+          }]
+        } else {
+          #
+          # No code to execute. We can just bulk append the values
+          # from the set.
+          #
+          set values [ns_set values $answers]
         }
-        incr i
+        ::template::multirow -local -ulevel $level_up append $var_name {*}$values
       }
     }
   }
