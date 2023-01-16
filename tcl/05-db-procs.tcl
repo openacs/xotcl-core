@@ -627,7 +627,7 @@ namespace eval ::xo::db {
 
           } on continue {} {
 
-            # Just ignore and continue looping.
+            continue
 
           }
         }
@@ -676,7 +676,7 @@ namespace eval ::xo::db {
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     set qn [uplevel [list [self] qn $qn]]
     set local [expr {$local ? "-local" : ""}]
-    uplevel [list ::db_multirow -dbn $dbn {*}$local \
+    uplevel [list ::db_multirow -dbn $dbn {*}$local -append \
                  -upvar_level $upvar_level -extend $extend $var_name \
                  $qn $sql $body {*}$bindOpt]
   }
