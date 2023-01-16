@@ -601,7 +601,7 @@ namespace eval ::xo::db {
       }
 
       while { [::db_getrow $db $answers] } {
-        if {[llength $body] > 0} {
+        if {[string length $body] > 0} {
           #
           # We have a code to execute. Bring all of the multirow
           # variables in scope.
