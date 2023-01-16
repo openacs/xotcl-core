@@ -582,7 +582,7 @@ namespace eval ::xo::db {
     }
 
     set multirow_size [::template::multirow -local -ulevel $level_up size $var_name]
-    set i [expr {$multirow_size == 0 ? 1 : $multirow_size + 1}]
+    set i [expr {$multirow_size + 1}]
 
     db_with_handle -dbn $dbn db {
       if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
