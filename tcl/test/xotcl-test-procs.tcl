@@ -646,6 +646,45 @@ aa_register_case -cats {
     }
 
     aa_equals "size is 3" [template::multirow -local size __test_multirow_2] 3
+
+    aa_section "Append again via ::xo::dc"
+
+    ::xo::dc multirow -extend {b c} -local t __test_multirow_2 q {
+        select *
+        from (values (10), (13)) as t (a)
+    } {
+        set b [expr {$a + 1}]
+        set c [expr {$b + 1}]
+    }
+
+    aa_equals "size is 5" [template::multirow -local size __test_multirow_2] 5
+
+    set template {
+        <ul>
+        <multiple name="__test_multirow_2">
+        <li>
+        |@__test_multirow_2.a@|
+        @__test_multirow_2.b@|
+        @__test_multirow_2.c@|
+        </li>
+        </multiple>
+        </ul>
+    }
+
+    set code [template::adp_compile -string $template]
+
+    set expected {
+        <ul>
+        <li>|1|2|3|</li>
+        <li>|4|5|6|</li>
+        <li>|7|8|9|</li>
+        <li>|10|11|12|</li>
+        <li>|13|14|15|</li>
+        </ul>
+    }
+
+    aa_equals "Template returns expected result after appending to the multirow" \
+        [join [template::adp_eval code] ""] [join $expected ""]
 }
 
 # Local variables:
