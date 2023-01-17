@@ -575,19 +575,13 @@ namespace eval ::xo::db {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
 
-    set multirow_exists_p [::template::multirow -local -ulevel $level_up exists $var_name]
-
-    if {$multirow_exists_p && [llength $extend] > 0} {
-      ::template::multirow -local -ulevel $level_up extend $var_name {*}$extend
-    }
-
     db_with_handle -dbn $dbn db {
       if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
       set result [list]
 
       set answers [uplevel 1 [list ns_pg_bind select $db {*}$bindOpt $sql]]
       set cols [concat [ns_set keys $answers] $extend]
-      if {$multirow_exists_p} {
+      if {[::template::multirow -local -ulevel $level_up exists $var_name]} {
         #
         # We enforce here, that appending to an existing multirow
         # can only happen when we are extracting the same columns.
