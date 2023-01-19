@@ -744,7 +744,7 @@ namespace eval ::xo::db {
     ad_log_deprecated proc ::xo::db::pg_0or1row "ns_pg_bind 0or1row"
     ::db_with_handle h {
       return [uplevel [list ns_pg_bind 0or1row $h {*}$bindOpt $sql]]
-    }    
+    }
   }
 
   #
@@ -835,6 +835,33 @@ namespace eval ::xo::db {
     :uplevel [list ::xo::dc list -dbn $dbn -bind $bind {*}$prepareOpt $qn "$sql FOR $for"]
   }
 
+  if {[info commands ::ns_pg_prepare] eq ""} {
+    #
+    # In case, ns_pg_prepare is not available, use the approximate Tcl
+    # implementation of the bind-vars parser. The built-in version
+    # uses the exactly same bind-vars parser as for non-prepared
+    # statements.
+    #
+    ad_proc -private ::ns_pg_prepare {sql} {
+      Return components of prepared data in form a dict with the keys
+      "sql" (the prepared body) and "args" (list of arguments).
+    } {
+      set c 0; set l ""; set last 0
+      set execArgs {}; set prepArgs {}
+      foreach pair [regexp -all -inline -indices {[^:]:[a-zA-Z0_9_]+\M} $sql ] {
+        lassign $pair from to
+        lappend execArgs [string range $sql $from+1 $to]
+        lappend prepArgs unknown
+        append l [string range $sql $last $from] \$[incr c]
+        set last [incr to]
+      }
+      append l [string range $sql $last end]
+      dict set d args $execArgs
+      dict set d sql $l
+    }
+    return $d
+  }
+
   ::xo::db::DB-postgresql instproc prepare {-handle:required {-argtypes ""} sql} {
     #
     # Define a md5 key for the prepared statement in nsv based on the
@@ -871,33 +898,10 @@ namespace eval ::xo::db {
       # fly. Notice, that the incoming SQL statement must not have Tcl
       # vars, but has to use bind vars.
       #
-      set c 0; set l ""; set last 0
-      set execArgs {}; set prepArgs {}
-
-      #
-      # Colon characters may happen also inside of strings. We want to
-      # allow this, so we first replace every legitimate string in the
-      # SQL with a placeholder and collect the variables on the
-      # replaced text.
-      #
-      set strings [regexp -all -inline {'(\\'|[^'])*'} $sql]
-      regsub -all {'(\\'|[^'])*'} $sql "#__string__#" sql_prep
-
-      foreach pair [regexp -all -inline -indices {[^:]:[a-zA-Z0_9_]+\M} $sql_prep] {
-        lassign $pair from to
-        lappend execArgs [string range $sql_prep $from+1 $to]
-        lappend prepArgs unknown
-        append l [string range $sql_prep $last $from] \$[incr c]
-        set last [incr to]
-      }
-      append l [string range $sql_prep $last end]
-
-      #
-      # Put back the substituted strings in the prepared SQL.
-      #
-      foreach {s p} $strings {
-        regsub "#__string__#" $l $s l
-      }
+      set d [ns_pg_prepare $sql]
+      set execArgs [dict get $d args]
+      set prepArgs [lrepeat [llength $execArgs] unknown]
+      set preparedSQL [dict get $d sql]
 
       set argtypes [split $argtypes ,]
       if {[llength $argtypes] == [llength $prepArgs]} {
@@ -918,7 +922,7 @@ namespace eval ::xo::db {
         |BEGIN
         |SELECT exists(select 1 from pg_prepared_statements where name = '$prepName') into found;
         |if found IS FALSE then
-        |    PREPARE $prepName $prepArgs AS $l;
+        |    PREPARE $prepName $prepArgs AS $preparedSQL;
         |end if;
         |END\$\$;
       }]]
