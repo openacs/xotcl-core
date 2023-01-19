@@ -1893,7 +1893,7 @@ namespace eval ::xo::db {
     }
     #
     # Object names have the form of e.g. ::xo::db::apm_parameter.
-    # Therefore, we use the namspace tail as sql_package_name.
+    # Therefore, we use the namespace tail as sql_package_name.
     #
     set package_name  [:sql_package_name [namespace tail [self]]]
     set sql_info      [::xo::dc generate_psql $package_name $object_name]
@@ -2579,7 +2579,7 @@ namespace eval ::xo::db {
     XOTcl "new" method to avoid object name clashes.
 
     @param destroy_on_cleanup If this flag is true, the objects (and
-    ordered composite) will be automatically destroyed on cleaup
+    ordered composite) will be automatically destroyed on cleanup
     (typically after the request was processed).
 
     @param initialize can be used to avoid full initialization, when a
