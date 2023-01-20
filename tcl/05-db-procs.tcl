@@ -848,7 +848,17 @@ namespace eval ::xo::db {
     } {
       set c 0; set l ""; set last 0
       set execArgs {}; set prepArgs {}
-      foreach pair [regexp -all -inline -indices {[^:]:[a-zA-Z0_9_]+\M} $sql ] {
+
+      #
+      # Colon characters may happen also inside of strings. We want to
+      # allow this, so we first replace every legitimate string in the
+      # SQL with a placeholder and collect the variables on the
+      # replaced text.
+      #
+      set strings [regexp -all -inline {'(\\'|[^'])*'} $sql]
+      regsub -all {'(\\'|[^'])*'} $sql "#__string__#" sql
+
+      foreach pair [regexp -all -inline -indices {[^:]:[a-zA-Z0_9_]+\M} $sql] {
         lassign $pair from to
         lappend execArgs [string range $sql $from+1 $to]
         lappend prepArgs unknown
@@ -856,10 +866,18 @@ namespace eval ::xo::db {
         set last [incr to]
       }
       append l [string range $sql $last end]
+
+      #
+      # Put back the substituted strings in the prepared SQL.
+      #
+      foreach {s p} $strings {
+        regsub "#__string__#" $l $s l
+      }
+
       dict set d args $execArgs
       dict set d sql $l
+      return $d
     }
-    return $d
   }
 
   ::xo::db::DB-postgresql instproc prepare {-handle:required {-argtypes ""} sql} {
