@@ -438,28 +438,44 @@ aa_register_case -cats {
         }
     }]
 
-    aa_false "::xo::dc 1row with 1 parameter, prepared statement with SQL containing semicolon - no error" [catch {
-        ::xo::dc 1row -prepare integer get_object {
-            select object_id as object_id_found_6
-            from acs_objects where object_id = :object_id and title <> '__I:Do:Not:Exist'
-        }
-    }]
+    if {[info procs ns_pg_prepare] ne ""} {
 
-    aa_equals "::xo::dc 1row with 1 parameter, prepared statement with SQL containing semicolon - value was returned" \
-        $object_id $object_id_found_6
+        #
+        # ns_pg_prepare is implemented via tcl fallback: this
+        # NaviServer version will not support prepared statements
+        # where the query contains strings with colon.
+        #
+        set aa_error_level $::aa_error_level
+        set ::aa_error_level warning
+        aa_log_result fail "This NaviServer version does not support prepared statements with strings containing colons."
+        set ::aa_error_level $aa_error_level
 
-    aa_false "::xo::dc 1row with 1 parameter, prepared statement with SQL containing semicolon - no error" [catch {
-        ::xo::dc 1row -prepare integer get_object {
-            select object_id as object_id_found_7
-            from acs_objects
-           where object_id = :object_id
-             and title <> ':__I:Do:Not:Exist'
-             and title <> ' :__I::also:Do:Not:Exist'
-        }
-    }]
+    } else {
 
-    aa_equals "::xo::dc 1row with 1 parameter, prepared statement with SQL containing semicolon - value was returned" \
-        $object_id $object_id_found_7
+        aa_false "::xo::dc 1row with 1 parameter, prepared statement with SQL containing colon - no error" [catch {
+            ::xo::dc 1row -prepare integer get_object {
+                select object_id as object_id_found_6
+                from acs_objects where object_id = :object_id and title <> '__I:Do:Not:Exist'
+            }
+        }]
+
+        aa_equals "::xo::dc 1row with 1 parameter, prepared statement with SQL containing colon - value was returned" \
+            $object_id $object_id_found_6
+
+        aa_false "::xo::dc 1row with 1 parameter, prepared statement with SQL containing colon - no error" [catch {
+            ::xo::dc 1row -prepare integer get_object {
+                select object_id as object_id_found_7
+                from acs_objects
+                where object_id = :object_id
+                and title <> ':__I:Do:Not:Exist'
+                and title <> ' :__I::also:Do:Not:Exist'
+            }
+        }]
+
+        aa_equals "::xo::dc 1row with 1 parameter, prepared statement with SQL containing colon - value was returned" \
+            $object_id $object_id_found_7
+
+    }
 
     #
     # foreach
