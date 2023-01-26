@@ -703,6 +703,37 @@ aa_register_case -cats {
         [join [template::adp_eval code] ""] [join $expected ""]
 }
 
+aa_register_case -cats {
+    api smoke
+} -procs {
+    "::xo::dc foreach"
+    "::xo::dc multirow"
+} test_db_out_of_pools {
+
+    Makes sure the ::xo::dc api does not incur in the "out of pools"
+    bug when nested looping idioms are executed.
+
+} {
+    set one_too_many_pools [expr {[llength [db_available_pools ""]] + 1}]
+
+    aa_false "Nesting $one_too_many_pools '::xo::dc foreach' does not return an error" [catch {
+        set code {}
+        for {set i 0} {$i < $one_too_many_pools} {incr i} {
+            set code "::xo::dc foreach q {select 1 from dual} {$code}"
+        }
+        eval $code
+    }]
+
+    aa_false "Nesting $one_too_many_pools '::xo::dc multirow' does not return an error" [catch {
+        set code {}
+        for {set i 0} {$i < $one_too_many_pools} {incr i} {
+            set code "::xo::dc multirow test_$i q {select 1 from dual} {$code}"
+        }
+        eval $code
+    }]
+
+}
+
 # Local variables:
 #    mode: tcl
 #    tcl-indent-level: 4
