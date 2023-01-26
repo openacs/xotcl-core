@@ -587,7 +587,12 @@ namespace eval ::xo::db {
         ::template::multirow -local -ulevel $level_up create $var_name {*}$cols
       }
 
+      set rows [list]
       while { [::db_getrow $db $answers] } {
+        lappend rows [ns_set copy $answers]
+      }
+
+      foreach answers $rows {
         if {[string length $body] > 0} {
           #
           # We have a code to execute. Bring all of the multirow
