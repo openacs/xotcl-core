@@ -515,8 +515,9 @@ namespace eval ::xo::db {
     return $result
   }
 
-  ::xo::db::DB-postgresql instproc foreach {{-dbn ""} {-bind ""} {-prepare ""} qn sql body} {
-    set sets [uplevel 1 [list ::xo::dc sets -dbn $dbn -bind $bind -prepare $prepare $qn $sql]]
+  ::xo::db::DB-postgresql instproc foreach {{-dbn ""} {-bind ""} -prepare qn sql body} {
+    set prepare [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
+    set sets [uplevel 1 [list ::xo::dc sets -dbn $dbn -bind $bind {*}$prepare $qn $sql]]
     foreach answers $sets {
       foreach {att value} [ns_set array $answers] {
         uplevel 1 [list set $att $value]
