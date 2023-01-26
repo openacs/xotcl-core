@@ -515,41 +515,33 @@ namespace eval ::xo::db {
     return $result
   }
 
-  ::xo::db::DB-postgresql instproc foreach {{-dbn ""} {-bind ""} -prepare qn sql body} {
-    if {$sql eq ""} {set sql [:get_sql $qn]}
-    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+  ::xo::db::DB-postgresql instproc foreach {{-dbn ""} {-bind ""} {-prepare ""} qn sql body} {
+    set sets [uplevel 1 [list ::xo::dc sets -dbn $dbn -bind $bind -prepare $prepare $qn $sql]]
+    foreach answers $sets {
+      foreach {att value} [ns_set array $answers] {
+        uplevel 1 [list set $att $value]
+      }
 
-    db_with_handle -dbn $dbn db {
-      if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
-      set result [list]
+      try {
 
-      set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
-      while { [::db_getrow $db $answers] } {
-        foreach {att value} [ns_set array $answers] {
-          uplevel 1 [list set $att $value]
-        }
+        uplevel 1 $body
 
-        try {
+      } on error {errMsg} {
 
-          uplevel 1 $body
+        error $errMsg $::errorInfo $::errorCode
 
-        } on error {errMsg} {
+      } on return {} {
 
-          error $errMsg $::errorInfo $::errorCode
+        error "Cannot return from inside a ::xo::dc foreach loop"
 
-        } on return {} {
+      } on break {} {
 
-          error "Cannot return from inside a ::xo::dc foreach loop"
+        break
 
-        } on break {} {
+      } on continue {} {
 
-          break
+        # Just ignore and continue looping.
 
-        } on continue {} {
-
-          # Just ignore and continue looping.
-
-        }
       }
     }
   }
