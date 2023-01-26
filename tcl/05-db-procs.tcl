@@ -517,9 +517,10 @@ namespace eval ::xo::db {
 
   ::xo::db::DB-postgresql instproc foreach {{-dbn ""} {-bind ""} -prepare qn sql body} {
     set prepare [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
-    set sets [uplevel 1 [list ::xo::dc sets -dbn $dbn -bind $bind {*}$prepare $qn $sql]]
-    foreach answers $sets {
-      foreach {att value} [ns_set array $answers] {
+    set rows [uplevel 1 [list ::xo::dc list_of_lists -with_headers true -dbn $dbn -bind $bind {*}$prepare $qn $sql]]
+    set headers [lindex $rows 0]
+    foreach row [lrange $rows 1 end] {
+      foreach att $headers value $row {
         uplevel 1 [list set $att $value]
       }
 
@@ -559,100 +560,89 @@ namespace eval ::xo::db {
     sql
     {body {}}
   } {
+    set prepare [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
+    set rows [uplevel 1 [list ::xo::dc list_of_lists -with_headers true -dbn $dbn -bind $bind {*}$prepare $qn $sql]]
+    set headers [lindex $rows 0]
+
     if { $local } {
       set level_up [expr {$upvar_level + 1}]
     } else {
       set level_up \#[::template::adp_level]
     }
 
-    if {$sql eq ""} {set sql [:get_sql $qn]}
-    if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
+    set cols [concat $headers $extend]
+    if {[::template::multirow -local -ulevel $level_up exists $var_name]} {
+      #
+      # We enforce here, that appending to an existing multirow
+      # can only happen when we are extracting the same columns.
+      #
+      set existing_cols [::template::multirow -local -ulevel $level_up columns $var_name]
+      if {$cols ne $existing_cols} {
+        error "Cannot append to a multirow with different columns"
+      }
+    } else {
+      ::template::multirow -local -ulevel $level_up create $var_name {*}$cols
+    }
 
-    db_with_handle -dbn $dbn db {
-      if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
-      set result [list]
+    foreach values [lrange $rows 1 end] {
+      if {[string length $body] > 0} {
+        #
+        # We have a code to execute. Bring all of the multirow
+        # variables in scope.
+        #
 
-      set answers [uplevel 1 [list ns_pg_bind select $db {*}$bindOpt $sql]]
-      set cols [concat [ns_set keys $answers] $extend]
-      if {[::template::multirow -local -ulevel $level_up exists $var_name]} {
         #
-        # We enforce here, that appending to an existing multirow
-        # can only happen when we are extracting the same columns.
+        # Vars from the query
         #
-        set existing_cols [::template::multirow -local -ulevel $level_up columns $var_name]
-        if {$cols ne $existing_cols} {
-          error "Cannot append to a multirow with different columns"
+        foreach att $headers value $values {
+          uplevel 1 [list set $att $value]
         }
+
+        #
+        # Extended variables, initialized to empty.
+        #
+        foreach att $extend {
+          uplevel 1 [list set $att ""]
+        }
+
+        #
+        # Run the code and trap any exception.
+        #
+        try {
+
+          uplevel 1 $body
+
+        } on error {errMsg} {
+
+          error $errMsg $::errorInfo $::errorCode
+
+        } on return {} {
+
+          error "Cannot return from inside a ::xo::dc multirow loop"
+
+        } on break {} {
+
+          break
+
+        } on continue {} {
+
+          continue
+
+        }
+
+        #
+        # Collect the values after the code has been executed.
+        #
+        set values [lmap att $cols {
+          expr {[uplevel 1 [list info exists $att]] ? [uplevel 1 [list set $att]] : ""}
+        }]
       } else {
-        ::template::multirow -local -ulevel $level_up create $var_name {*}$cols
+        #
+        # No code to execute. We can just bulk append the values
+        # from the row.
+        #
       }
-
-      set rows [list]
-      while { [::db_getrow $db $answers] } {
-        lappend rows [ns_set copy $answers]
-      }
-
-      foreach answers $rows {
-        if {[string length $body] > 0} {
-          #
-          # We have a code to execute. Bring all of the multirow
-          # variables in scope.
-          #
-
-          #
-          # Vars from the query
-          #
-          foreach {att value} [ns_set array $answers] {
-            uplevel 1 [list set $att $value]
-          }
-
-          #
-          # Extended variables, initialized to empty.
-          #
-          foreach att $extend {
-            uplevel 1 [list set $att ""]
-          }
-
-          #
-          # Run the code and trap any exception.
-          #
-          try {
-
-            uplevel 1 $body
-
-          } on error {errMsg} {
-
-            error $errMsg $::errorInfo $::errorCode
-
-          } on return {} {
-
-            error "Cannot return from inside a ::xo::dc multirow loop"
-
-          } on break {} {
-
-            break
-
-          } on continue {} {
-
-            continue
-
-          }
-
-          #
-          # Collect the values after the code has been executed.
-          #
-          set values [lmap att $cols {
-            expr {[uplevel 1 [list info exists $att]] ? [uplevel 1 [list set $att]] : ""}
-          }]
-        } else {
-          #
-          # No code to execute. We can just bulk append the values
-          # from the set.
-          #
-          set values [ns_set values $answers]
-        }
-        ::template::multirow -local -ulevel $level_up append $var_name {*}$values
-      }
+      ::template::multirow -local -ulevel $level_up append $var_name {*}$values
     }
   }
 
@@ -718,9 +708,10 @@ namespace eval ::xo::db {
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     uplevel [list ::db_string -dbn $dbn [uplevel [list [self] qn $qn]] $sql -default $default {*}$bindOpt]
   }
-  ::xo::db::DB instproc list_of_lists {{-dbn ""} {-bind ""} -prepare qn sql} {
+  ::xo::db::DB instproc list_of_lists {{-dbn ""} {-bind ""} {-with_headers false} -prepare qn sql} {
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
-    uplevel [list ::db_list_of_lists -dbn $dbn [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
+    set with_headers [expr {$with_headers ? "-with_headers" : ""}]
+    uplevel [list ::db_list_of_lists -dbn $dbn {*}$with_headers [uplevel [list [self] qn $qn]] $sql {*}$bindOpt]
   }
 
   ::xo::db::DB instproc list {{-dbn ""} {-bind ""} -prepare qn sql} {
@@ -787,13 +778,21 @@ namespace eval ::xo::db {
     }
     return $default
   }
-  ::xo::db::DB-postgresql instproc list_of_lists {{-dbn ""} {-bind ""} -prepare qn sql} {
+::xo::db::DB-postgresql instproc list_of_lists {{-dbn ""} {-bind ""} {-with_headers false} -prepare qn sql} {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     db_with_handle db {
       if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
       set result {}
       set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
+      if {$with_headers} {
+        if {[acs::icanuse "ns_set keys"]} {
+          set headers [ns_set keys $answers]
+        } else {
+          set headers [dict keys [ns_set array $answers]]
+        }
+        set result [list $headers]
+      }
       while { [db_getrow $db $answers] } {
         set row [list]
         foreach {att value} [ns_set array $answers] {lappend row $value}
