@@ -634,7 +634,9 @@ namespace eval ::xo::db {
         # Collect the values after the code has been executed.
         #
         set values [lmap att $cols {
-          expr {[uplevel 1 [list info exists $att]] ? [uplevel 1 [list set $att]] : ""}
+          if {[uplevel 1 [list info exists $att]]} {
+            uplevel 1 [list set $att]
+          }
         }]
       } else {
         #
