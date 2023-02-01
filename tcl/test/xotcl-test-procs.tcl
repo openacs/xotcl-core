@@ -701,6 +701,27 @@ aa_register_case -cats {
 
     aa_equals "Template returns expected result after appending to the multirow" \
         [join [template::adp_eval code] ""] [join $expected ""]
+
+    aa_section "Multirows with a numeric value ending in '.'"
+
+    ::xo::dc multirow -local t __test_multirow_dot_1 q {
+        select *
+        from (values ('2.')) as t(a)
+    }
+    ::template::multirow -local foreach __test_multirow_dot_1 {
+        aa_equals "Value is correct when looping through __test_multirow_dot_1 later" $a "2."
+    }
+
+    ::xo::dc multirow -local t __test_multirow_dot_2 q {
+        select *
+        from (values ('2.')) as t(a)
+    } {
+        aa_equals "Value is correct in __test_multirow_dot_2 body" $a "2."
+    }
+    ::template::multirow -local foreach __test_multirow_dot_2 {
+        aa_equals "Value is correct when looping through __test_multirow_dot_2 later" $a "2."
+    }
+
 }
 
 aa_register_case -cats {
