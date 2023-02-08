@@ -19,7 +19,7 @@ namespace eval ::xo {
     {-login true}
     -user_id:required
     -package_id
-    privilege object method
+    privilege object:object method
   } {
     #:log "--p [self proc] [self args]"
     if {$privilege eq "nobody"} {
@@ -70,7 +70,7 @@ namespace eval ::xo {
     return $allowed
   }
 
-  Policy instproc get_privilege {{-query_context "::xo::cc"} permission object method} {
+  Policy instproc get_privilege {{-query_context "::xo::cc"} permission object:object method} {
     #
     # The privilege might be primitive (one word privilege),
     # or it might be complex (attribute + privilege),
@@ -96,8 +96,8 @@ namespace eval ::xo {
     return [list primitive nobody]
   }
 
-  Policy instproc get_permission {{-check_classes true} object method} {
-    # ns_log notice "[self] [self proc] [self args] // object=$object"
+  Policy instproc get_permission {{-check_classes true} object:object method} {
+    #ns_log notice "[self] [self proc] [self args] // object=$object"
     set o [self]::[namespace tail $object]
     set key require_permission($method)
     if {[::nsf::is object $o]} {
@@ -206,7 +206,7 @@ namespace eval ::xo {
     return $allowed
   }
 
-  Policy ad_instproc enforce_permissions {-user_id -package_id object method} {
+  Policy ad_instproc enforce_permissions {-user_id -package_id object:object method} {
 
     This method checks whether the current user is allowed
     or not to invoke a method based on the given policy and
