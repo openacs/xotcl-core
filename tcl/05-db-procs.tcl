@@ -968,7 +968,7 @@ namespace eval ::xo::db {
       # We have to check for the prepared statement in the current
       # session and we have to create it if necessary there.
       #
-      ns_log notice "=== new prepared statement $prepName for $session_id: $sql"
+      ns_log notice "=== new prepared statement $prepName for SQL session $session_id: $sql"
       ::db_exec dml $handle dbqd..create_preapared $prepare
       #
       # Save the fact that we have a new preparted statement for this
