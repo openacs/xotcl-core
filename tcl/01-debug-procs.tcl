@@ -363,7 +363,7 @@ namespace eval ::xo {
     set prefix topLevel
   } else {
     set prefix [lindex [:uplevel {info level 0}] 0]
-    ns_log notice "QN <$query_name> -> PREFIX <$prefix>"
+    #ns_log notice "QN <$query_name> -> PREFIX <$prefix>"
   }
   return "dbqd.$prefix.$query_name"
 }
