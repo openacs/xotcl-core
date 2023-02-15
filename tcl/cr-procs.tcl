@@ -900,7 +900,9 @@ namespace eval ::xo::db {
       #   :msg "$slot_name [$cls table_name] [$cls id_column] length=[string length $content]"
       # }
       if {![info exists :storage_type] || $storage_type ne ${:storage_type}} {
-        ad_log warning "we cannot get rid of the instvar storage_type yet (exists [info exists :storage_type])"
+        ad_log warning "we cannot get rid of the instvar storage_type yet" \
+            "(exists [info exists :storage_type], instvar '$storage_type'," \
+            "value '[expr {[info exists :storage_type] ? ${:storage_type} : {UNKNOWN}}]')"
       }
       if {$storage_type eq "file"} {
         ::xo::dc dml fix_content_length "update cr_revisions \
@@ -924,7 +926,7 @@ namespace eval ::xo::db {
       }
     }
 
-    CrItem instproc update_attribute_from_slot {-revision_id slot value} {
+    CrItem instproc update_attribute_from_slot {-revision_id slot:object value} {
       set :[$slot name] $value
       if {![info exists revision_id]} {
         set revision_id ${:revision_id}
@@ -1016,7 +1018,7 @@ namespace eval ::xo::db {
       }
     }
 
-    CrItem instproc update_attribute_from_slot {-revision_id slot value} {
+    CrItem instproc update_attribute_from_slot {-revision_id slot:object value} {
       set :[$slot name] $value
       if {![info exists revision_id]} {set revision_id ${:revision_id}}
       set domain [$slot domain]
@@ -1679,7 +1681,7 @@ namespace eval ::xo::db {
     {-item_id 0}
     {-revision_id 0}
     {-initialize:boolean true}
-  } {    
+  } {
     The "standard" get_instance_from_db methods return objects
     following the naming convention "::&lt;acs_object_id&gt;",
     e.g. ::1234
@@ -1693,7 +1695,7 @@ namespace eval ::xo::db {
 
     <p>Because of this, we cannot simply create the instances of
     CrFolder using the "standard naming convention". Instead we create
-    them as ::cr_folder&lt;acs_object_id&gt;.    
+    them as ::cr_folder&lt;acs_object_id&gt;.
   } {
     set object ::$item_id
     if {![nsf::is object $object]} {
