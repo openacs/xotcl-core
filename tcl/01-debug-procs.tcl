@@ -129,6 +129,24 @@ if {[nsf::is object ::nx::Object]} {
       }
       return $value
     }
+    :method type=signed {name input} {
+      #
+      # Check, if a value is a signed value, signed by
+      # ::security::parameter::signed. Note, that this is a converting
+      # checker. Therefore, call it always with "signed,convert" to
+      # obtain the value which was signed.
+      #
+      set pair [ns_base64urldecode $input]
+      if {[string is list -strict $pair] && [llength $pair] == 2} {
+        lassign $pair value signature
+        set secret [ns_config "ns/server/[ns_info server]/acs" parametersecret ""]
+        #ns_log notice "[list ad_verify_signature -secret $secret $value $signature]"
+        if {[ad_verify_signature -secret $secret $value $signature]} {
+          return $value
+        }
+      }
+      return -code error "Value '$input' of parameter $name is not properly signed"
+    }
     :method type=cr_item_of_package {name value:int32 package_id:int32} {
       if {![::xo::db::CrClass id_belongs_to_package -item_id $value -package_id $package_id]} {
         error "value '$value' of is not a valid content repository item of the required package"
@@ -153,6 +171,7 @@ if {[nsf::is object ::nx::Object]} {
     ::nx::Slot method type=html
     ::nx::Slot method type=nohtml
     ::nx::Slot method type=range
+    ::nx::Slot method type=signed
     ::nx::Slot method type=cr_item_of_package
     ::nx::Object nsfproc ::nsf::debug::call
     ::nx::Object nsfproc ::nsf::debug::exit
