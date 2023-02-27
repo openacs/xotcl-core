@@ -602,14 +602,28 @@ namespace eval ::xo {
     }
   }
 
-  ConnectionContext instproc form_parameter {name {default ""}} {
+  ConnectionContext instproc form_parameter {spec {default ""}} {
     :require_form_parameter
+
+    set name $spec
+    regexp {^([^:]+):(.*)$} $spec . name constraint
+
     if {[info exists :form_parameter($name)]} {
       if {[info exists :form_parameter_multiple($name)]} {
-        return [set :form_parameter($name)]
+        set value [set :form_parameter($name)]
       } else {
-        return [lindex [set :form_parameter($name)] 0]
+        set value [lindex [set :form_parameter($name)] 0]
       }
+      if {[info exists constraint]} {
+        set r [xo::validate_parameter_constraints $name $constraint $value]
+        if {$r ne $value} {
+          ns_log notice "converting value checker: form parameter validate <$spec> -> '$value' -> '$r'"
+          set value $r
+        }
+      } else {
+        #:msg "FORM_PARAMETER spec <$spec> no constraint -> '$value'"
+      }
+      return $value
     } else {
       return $default
     }
@@ -656,7 +670,11 @@ namespace eval ::xo {
     # that the default multiplicity is "0..1".
     #
     if {[info exists constraint]} {
-      xo::validate_parameter_constraints $__name $constraint $value
+      set r [xo::validate_parameter_constraints $__name $constraint $value]
+      if {$r ne $value} {
+        ns_log notice "converting value checker: query parameter <$__spec> -> '$value' -> '$r'"
+        set value $r
+      }
     }
     return $value
   }
@@ -725,16 +743,18 @@ namespace eval ::xo {
   }
 
   ad_proc ::xo::validate_parameter_constraints {name constraint value} {
-    
+
     Validate the provided value against the constraints.  In case of
-    failure, return with ad_return_complaint when there is a connection, otherwise raise an error.
-    
+    failure, return with ad_return_complaint when there is a
+    connection, otherwise raise an error.
+
   } {
     #
     # If we have a value-constraint, we check for empty values only in
     # cases, where multiplicity is specified. This means effectively
     # that the default multiplicity is "0..1".
     #
+    #ns_log notice "::xo::validate_parameter_constraints $name $constraint input '$value'"
     if {[string first . $constraint] > -1 || $value ne ""} {
       try {
         #
@@ -770,6 +790,8 @@ namespace eval ::xo {
         }
       }
     }
+    #ns_log notice "::xo::validate_parameter_constraints $name $constraint -> '$value'"
+    return $value
   }
 }
 
