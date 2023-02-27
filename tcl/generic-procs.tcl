@@ -98,7 +98,7 @@ namespace eval ::Generic {
     ${:data} save
     # Renaming is meant for cr_items and such
     if {[${:data} istype ::xo::db::CrItem]} {
-      set old_name [::xo::cc form_parameter __object_name ""]
+      set old_name [::xo::cc form_parameter __object_name:signed,convert ""]
       set new_name [${:data} set name]
       if {$old_name ne $new_name} {
         #
@@ -114,6 +114,8 @@ namespace eval ::Generic {
         if {$url ne ""} {
           :submit_link $url
         }
+      } else {
+        # :log "--- edit_data $old_name equals $new_name"
       }
     }
     return [${:data} set [:get_id_field]]
@@ -223,7 +225,7 @@ namespace eval ::Generic {
     set exports [list \
       [list object_type $object_type] \
                      [list folder_id ${:folder_id}] \
-                     [list __object_name $object_name]]
+                     [list __object_name [::security::parameter::signed $object_name]]]
     if {[info exists export]} {
       foreach pair $export {lappend exports $pair}
     }
