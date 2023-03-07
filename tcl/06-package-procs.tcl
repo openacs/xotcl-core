@@ -640,7 +640,9 @@ namespace eval ::xo {
       ::xo::cc array set form_parameter $form_parameter
     }
 
-    # create package object if necessary
+    #
+    # Create package object instance if necessary.
+    #
     if {$keep_cc} {
       :require $package_id
     } else {
@@ -656,8 +658,8 @@ namespace eval ::xo {
     #
     #:msg "force [::$package_id force_refresh_login] &&\
         #    [::xo::cc set untrusted_user_id] != [::xo::cc user_id]"
-    if {[::$package_id force_refresh_login] &&
-        [::xo::cc set untrusted_user_id] != [::xo::cc user_id]} {
+    if {[::$package_id force_refresh_login]
+        && [::xo::cc set untrusted_user_id] != [::xo::cc user_id]} {
       auth::require_login
     }
 
@@ -828,10 +830,10 @@ namespace eval ::xo {
     set package_url [lindex [site_node::get_url_from_object_id -object_id $id] 0]
     #:log "--R creating package_url='$package_url'"
     if {$package_url ne ""} {
-      array set info [site_node::get -url $package_url]
-      #set package_url $info(url)
-      :package_key $info(package_key)
-      :instance_name $info(instance_name)
+      set info [site_node::get -url $package_url]
+      #set package_url [dict get $info url]
+      :package_key [dict get $info package_key]
+      :instance_name [dict get $info instance_name]
     } else {
       ::xo::dc 1row package_info {
         select package_key, instance_name from apm_packages where package_id = :id
@@ -874,7 +876,14 @@ namespace eval ::xo {
   }
 
   ::xo::Package instproc initialize {} {
-    # empty hook for user level initialization
+    # Empty hook for OpenACS package level initialization.  This is
+    # used e.g. by xowf for adding the work flow mixin classes.
+  }
+
+  ::xo::Package instproc process_init_parameter {init_parameter} {
+    # Empty hook for package instance initialization, when e.g. one
+    # instance of an xowiki package should behave differently from
+    # another one.
   }
 
   Package ad_instproc require_root_folder {
