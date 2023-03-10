@@ -2908,40 +2908,13 @@ namespace eval ::xo::db {
         #
       }
 
-  if {[::acs::icanuse "nsv_dict"]} {
-    #
-    # When "nsv_dict" is available, we can use it to check efficiently
-    # for the existence of defined attributes with minimal locking.
-    #
-    ::xo::db::Attribute instproc db_attribute_defined {
-      -object_type
-      -attribute_name
-    } {
-      if {[nsv_array names acs_attributes] eq ""} {
-        #
-        # The registered attributes were not yet loaded. Since the
-        # number of registered attributes is not very high, we can
-        # load these into an nsv. Since the data is fairly stable, and
-        # this function might be called before the caches are created,
-        # nsvs are better suited.
-        #
-        foreach set [xo::dc sets get_attributes {
-          select attribute_name, object_type from acs_attributes
-        }] {
-          nsv_dict set acs_attributes \
-              [ns_set get $set object_type] \
-              [ns_set get $set attribute_name] 1
-        }
-      }
-      return [nsv_dict exists acs_attributes $object_type $attribute_name]
-    }
-  } else {
-    ::xo::db::Attribute instproc db_attribute_defined {
-      -object_type
-      -attribute_name
-    } {
-      return [::xo::dc get_value check_att {select 0 from acs_attributes where
-        attribute_name = :attribute_name and object_type = :object_type} 1]
+  ::xo::db::Attribute instproc db_attribute_defined {
+    -object_type
+    -attribute_name
+  } {
+    acs::per_request_cache eval -key xotcl-core.db_attribute_defined-$object_type-$attribute_name {
+      ::xo::dc 0or1row check_att {select 1 from acs_attributes where
+        attribute_name = :attribute_name and object_type = :object_type}
     }
   }
 
