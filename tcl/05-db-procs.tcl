@@ -2912,9 +2912,15 @@ namespace eval ::xo::db {
     -object_type
     -attribute_name
   } {
-    acs::per_request_cache eval -key xotcl-core.db_attribute_defined-$object_type-$attribute_name {
-      ::xo::dc 0or1row check_att {select 1 from acs_attributes where
-        attribute_name = :attribute_name and object_type = :object_type}
+    #
+    # One could try caching this, but be aware that this also requires
+    # proper flushing, this value cannot be considered immutable, not
+    # even per request.
+    #
+    ::xo::dc 0or1row -prepare text,text check_att {
+      select 1 from acs_attributes
+      where attribute_name = :attribute_name
+        and object_type = :object_type
     }
   }
 
