@@ -272,16 +272,18 @@ if {[::package vcompare [package require xotcl::serializer] 2.0] < -1} {
 ::xotcl::Object instproc www-show-object {} {
   #
   # Allow to show an arbitrary object via API-browser.  Per-default,
-  # e.g. site-wide can use e.g. /xowiki/index?m=show-object
+  # e.g. a site-wide admin can use e.g. /xowiki/index?m=show-object
   #
-  set form [ns_getform]
-  if {$form ne ""} {
+  if {[ns_conn isconnected]} {
+    set form [ns_getform]
     ns_set update $form object [self]
     ns_set update $form show_source    [::xo::cc query_parameter show_source:integer 1]
     ns_set update $form show_methods   [::xo::cc query_parameter show_methods:integer 2]
     ns_set update $form show_variables [::xo::cc query_parameter show_variables:integer 1]
     ns_set update $form as_img 1
     rp_internal_redirect /packages/xotcl-core/www/show-object
+  } else {
+    ns_log error "show-object can only be called with an active connection"
   }
   ad_script_abort
 }
