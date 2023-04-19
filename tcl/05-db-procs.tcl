@@ -2908,6 +2908,8 @@ namespace eval ::xo::db {
         #
       }
 
+  nsv_set acs_attributes . .
+
   ::xo::db::Attribute instproc db_attribute_defined {
     -object_type
     -attribute_name
@@ -2917,20 +2919,34 @@ namespace eval ::xo::db {
     # proper flushing, this value cannot be considered immutable, not
     # even per request.
     #
-    ::xo::dc 0or1row -prepare text,text check_att {
-      select 1 from acs_attributes
-      where attribute_name = :attribute_name
-        and object_type = :object_type
+    #ns_log notice "GN: db_attribute_defined name $attribute_name type $object_type"
+    #::xo::dc 0or1row -prepare text,text check_att {
+    #  select 1 from acs_attributes
+    #  where attribute_name = :attribute_name
+    #    and object_type = :object_type
+    #}
+    if {![nsv_get acs_attributes acs_attributes list]} {
+      ns_log notice "GN: fetch all db_attributes"
+      set list [xo::dc list get_all_attributes {
+        select object_type || '-' || attribute_name from acs_attributes
+      }]
+      nsv_set acs_attributes acs_attributes $list
     }
+    set key $object_type-$attribute_name
+    #ns_log notice "GN: check is $object_type $attribute_name in list? [expr {$key in $list}]"
+    expr {$key in $list}
   }
 
   ::xo::db::Attribute instproc create_attribute {} {
-    if {![:create_acs_attribute]} return
+    if {!${:create_acs_attribute}} return
 
     set object_type [${:domain} object_type]
     #ns_log notice "::xo::db::Attribute create_attribute $object_type ${:column_name} epoch [ns_ictl epoch] [array get ::db_state_default]"
 
     if {![:db_attribute_defined -object_type $object_type -attribute_name ${:column_name} ]} {
+
+      ns_log notice "GN: Attribute create_attribute flushes acs_attributes cache"
+      nsv_unset -nocomplain acs_attributes acs_attributes
 
       if {![::xo::db::Class object_type_exists_in_db -object_type $object_type]} {
         ${:domain} create_object_type
@@ -3014,7 +3030,7 @@ namespace eval ::xo::db {
 
   ::xo::db::CrAttribute instproc create_attribute {} {
     # do nothing, if create_acs_attribute is set to false
-    if {![:create_acs_attribute]} return
+    if {!${:create_acs_attribute}} return
 
     set object_type [${:domain} object_type]
 
@@ -3025,6 +3041,9 @@ namespace eval ::xo::db {
 
     #:log "check attribute ${:column_name} object_type=$object_type, domain=${:domain}"
     if {![:db_attribute_defined -object_type $object_type -attribute_name ${:column_name}]} {
+
+      ns_log notice "GN: CrAttribute create_attribute flushes acs_attributes cache"
+      nsv_unset -nocomplain acs_attributes acs_attributes
 
       if {![::xo::db::Class object_type_exists_in_db -object_type $object_type]} {
         ${:domain} create_object_type
@@ -3037,9 +3056,9 @@ namespace eval ::xo::db {
           -pretty_name    ${:pretty_name} \
           -column_spec    [:column_spec]
 
-      if {[::acs::icanuse "nsv_dict"]} {
-        nsv_dict set acs_attributes $object_type ${:column_name} 1
-      }
+      #if {[::acs::icanuse "nsv_dict"]} {
+      #  nsv_dict set acs_attributes $object_type ${:column_name} 1
+      #}
     }
   }
 
