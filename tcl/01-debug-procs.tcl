@@ -1021,13 +1021,7 @@ proc ::xo::getObjectProperty {o what args} {
     }
     "parameter" {
       if {"::xotcl::Object" in [$o info precedence]} {return [$o info parameter]}
-      set result ""
-      foreach p [$o info lookup parameters configure] {
-        set n [nsf::parameter::info name $p]
-        if {[string match __* $n]} continue
-        lappend result $n
-      }
-      return $result
+      return [lmap p [$o info variables -closure] {$o info variable parameter $p}]
     }
     "isclass" {
       return [nsf::is class $o]
