@@ -37,7 +37,7 @@ if {![::acs::icanuse "ns_conn contentsentlength"]} {
   ns_log notice "AOLserver is not patched for bgdelivery, NOT loading bgdelivery"
 
   ad_proc -public ad_returnfile_background {-client_data status_code mime_type filename} {
-    Deliver the given file to the requestor in the background. This proc uses the
+    Deliver the given file to the requester in the background. This proc uses the
     background delivery thread to send the file in an event-driven manner without
     blocking a request thread. This is especially important when large files are
     requested over slow (e.g. dial-ip) connections.
@@ -521,7 +521,7 @@ bgdelivery ad_proc returnfile {
   {-content_disposition}
   status_code mime_type filename} {
 
-    Deliver the given file to the requestor in the background. This proc uses the
+    Deliver the given file to the requester in the background. This proc uses the
     background delivery thread to send the file in an event-driven manner without
     blocking a request thread. This is especially important when large files are
     requested over slow connections.
@@ -720,13 +720,13 @@ bgdelivery ad_proc returnfile {
     if {$use_h264} {
       #:log "MP4 q=[::xo::cc actual_query], h=[ns_set array [ns_conn outputheaders]]"
       :do -async ::h264Spooler spool -delete $delete -channel $ch -filename $filename \
-          -context [list [::xo::cc requestor],[::xo::cc url],$query [ns_conn start]] \
+          -context [list [::xo::cc requester],[::xo::cc url],$query [ns_conn start]] \
           -query $query \
           -client_data $client_data
     } else {
       #:log "FILE SPOOL $filename"
       :do -async ::fileSpooler spool -ranges $ranges -delete $delete -channel $ch -filename $filename \
-          -context [list [::xo::cc requestor],[::xo::cc url],$query [ns_conn start]] \
+          -context [list [::xo::cc requester],[::xo::cc url],$query [ns_conn start]] \
           -client_data $client_data
     }
     #
@@ -783,7 +783,7 @@ if {[info commands h264open] ne ""} {
 
 ad_proc -public ad_returnfile_background {{-client_data ""} status_code mime_type filename} {
 
-  Deliver the given file to the requestor in the background.  When
+  Deliver the given file to the requester in the background.  When
   using NaviServer with its writer threads, ns_returnfile is perfectly
   fine since it delivers its contents already in the background.
 

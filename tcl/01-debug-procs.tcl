@@ -132,7 +132,7 @@ if {[nsf::is object ::nx::Object]} {
     :method type=signed {name input} {
       #
       # Check, if a value is a signed value, signed by
-      # ::security::parameter::signed. Note, that this is a converting
+      # ::security::parameter::signed. Note that this is a converting
       # checker. Therefore, call it always with "signed,convert" to
       # obtain the value which was signed.
       #

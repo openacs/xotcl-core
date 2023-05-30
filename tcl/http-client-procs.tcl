@@ -647,7 +647,7 @@ namespace eval ::xo {
       set block [read $S]
       :notify reply_data $block
       append :data $block
-      #:debug "reveived [string length $block] bytes"
+      #:debug "received [string length $block] bytes"
     }
   }
 

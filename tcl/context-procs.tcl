@@ -228,7 +228,7 @@ namespace eval ::xo {
 
   Class create ConnectionContext -superclass Context -parameter {
     user_id
-    requestor
+    requester
     user
     url
     mobile
@@ -374,6 +374,16 @@ namespace eval ::xo {
       set ::ad_conn(file) ""
     }
   }
+
+  ConnectionContext instproc requestor {} {
+    #
+    # Helper method to ease migration to the name without the spelling
+    # error.
+    #
+    ad_log_deprecated method "... requestor" "... requester"
+    return [expr {[info exists :requester] ? ${:requester} : ${:requester}}]
+  }
+  
   ConnectionContext instproc lang {} {
     return [string range [:locale] 0 1]
   }
@@ -449,7 +459,7 @@ namespace eval ::xo {
     set pa [expr {[ns_conn isconnected] ? [ad_conn peeraddr] : "nowhere"}]
 
     if {${:user_id} != 0} {
-      set :requestor ${:user_id}
+      set :requester ${:user_id}
     } else {
       #
       # For requests bypassing the ordinary connection setup
@@ -460,21 +470,21 @@ namespace eval ::xo {
         set cookie_list [ad_get_signed_cookie_with_expr "ad_session_id"]
         set cookie_data [split [lindex $cookie_list 0] {,}]
         set untrusted_user_id [lindex $cookie_data 1]
-        set :requestor $untrusted_user_id
+        set :requester $untrusted_user_id
       } on error {errorMsg } {
-        set :requestor 0
+        set :requester 0
       }
     }
 
-    # if user not authorized, use peer address as requestor key
-    if {${:requestor} == 0} {
-      set :requestor $pa
+    # if user not authorized, use peer address as requester key
+    if {${:requester} == 0} {
+      set :requester $pa
       set :user "client from $pa"
     } else {
-      set user_url [acs_community_member_admin_url -user_id ${:requestor}]
-      set :user "<a href='$user_url'>${:requestor}</a>"
+      set user_url [acs_community_member_admin_url -user_id ${:requester}]
+      set :user "<a href='$user_url'>${:requester}</a>"
     }
-    #:log "--i requestor = ${:requestor}"
+    #:log "--i requester = ${:requester}"
 
     :process_query_parameter
   }
