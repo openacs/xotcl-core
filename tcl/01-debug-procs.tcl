@@ -145,7 +145,8 @@ if {[nsf::is object ::nx::Object]} {
           return $value
         }
       }
-      return -code error "Value '$input' of parameter $name is not properly signed"
+      ad_log warning "Value '$input' of parameter $name is not properly signed"
+      return -code error "Value of parameter $name is not properly signed"
     }
     :method type=cr_item_of_package {name value:int32 package_id:int32} {
       if {![::xo::db::CrClass id_belongs_to_package -item_id $value -package_id $package_id]} {
