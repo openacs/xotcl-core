@@ -261,8 +261,9 @@ Class create ::xotcl::THREAD \
     }
     set :tid $tid
   }
-  #:log "calling [self class] ($tid, [pid]) $args"
-  if {$async} {
+  if {[ns_info shutdownpending]} {
+    :log "thread send operation ignored due to pending shutdown: $args"
+  } elseif {$async} {
     return [thread::send -async $tid $args]
   } else {
     return [thread::send $tid $args]
