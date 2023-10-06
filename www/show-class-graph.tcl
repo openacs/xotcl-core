@@ -4,11 +4,11 @@ ad_page_contract {
   @author Gustaf Neumann
   @cvs-id $Id$
 } -query {
-  {classes:token}
-  {documented_only:boolean 1}
-  {with_children:boolean 0}
-  {dpi:integer 96}
-  {format:word png}
+  {classes:token,notnull}
+  {documented_only:boolean,notnull 1}
+  {with_children:boolean,notnull 0}
+  {dpi:integer,notnull 96}
+  {format:word,notnull png}
 }
 
 

@@ -1,12 +1,12 @@
 ad_page_contract {
         Cache Viewer
 } {
-  {cache:optional 0}
-  {item:token,optional 0}
-  {flush:boolean,optional 0}
+  {cache:optional,notnull 0}
+  {item:token,optional,notnull 0}
+  {flush:boolean,optional,notnull 0}
   {filter ""}
-  {flushall:boolean,optional 0}
-  {flushallcaches:optional,boolean 0}
+  {flushall:boolean,optional,notnull 0}
+  {flushallcaches:optional,boolean,notnull 0}
 } -properties {
     title:onevalue
     context:onevalue
