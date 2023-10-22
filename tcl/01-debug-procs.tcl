@@ -575,12 +575,10 @@ namespace eval ::xo {
     # things might go wrong. The test is quite cheap an can reduce
     # debugging time on some sites.
     #
-    if {[nsf::is object ::xo::cc]} {
-      if {![info exists ::xo::cleanup(::xo::cc)]} {
-        ns_log notice [::xo::cc serialize]
-        ns_log error "no cleanup for ::xo::cc registered"
-        ::xo::cc destroy
-      }
+    if {[nsf::is object ::xo::cc] && ![info exists ::xo::cleanup(::xo::cc)]} {
+      ns_log notice [::xo::cc serialize]
+      ns_log error "no cleanup for ::xo::cc registered"
+      ::xo::cc destroy
     }
     ::xo::dc profile off
     ::xo::broadcast receive
