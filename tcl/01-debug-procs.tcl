@@ -705,7 +705,7 @@ namespace eval ::xo {
     set nobjs   [llength [::nx::Object info instances  -closure]]
     set tmpObjs [llength [info commands ::nsf::__#*]]
     set tdoms   [llength [list {*}[info commands domNode0*] {*}[info commands domDoc0x*]]]
-    set nssets  [llength [ns_set list]]
+    set nssets  [expr {[acs::icanuse "ns_set stats"] ? [list [ns_set stats]] : [llength [ns_set list]]}]
     ns_log notice "xo::stats $msg: current objects xotcl $xobjs nx $nobjs tmp $tmpObjs tDOM $tdoms ns_set $nssets"
   }
 
