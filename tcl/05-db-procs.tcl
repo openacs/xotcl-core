@@ -2631,7 +2631,8 @@ namespace eval ::xo::db {
         continue
       }
       $o mset [ns_set array $selection]
-
+      ns_set free $selection
+      
       if {[$o exists object_type]} {
         #
         # Set the object type if it looks like managed from XOTcl.
