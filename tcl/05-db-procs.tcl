@@ -511,6 +511,7 @@ namespace eval ::xo::db {
       while { [::db_getrow $db $answers] } {
         lappend result [ns_set copy $answers]
       }
+      ns_set free $answers
     }
     return $result
   }
@@ -2632,7 +2633,7 @@ namespace eval ::xo::db {
       }
       $o mset [ns_set array $selection]
       ns_set free $selection
-      
+
       if {[$o exists object_type]} {
         #
         # Set the object type if it looks like managed from XOTcl.
