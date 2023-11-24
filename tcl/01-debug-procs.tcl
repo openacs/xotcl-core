@@ -129,8 +129,8 @@ if {[nsf::is object ::nx::Object]} {
       }
       return $value
     }
-    :method type=oneof {name value set} {
-      if {[ad_page_contract_filter_proc_oneof $name value $set] == 0} {
+    :method type=oneof {name value arg} {
+      if {[ad_page_contract_filter_proc_oneof $name value [split $arg |]] == 0} {
         return -code error [lindex [ad_complaints_get_list] end]
       }
     }
