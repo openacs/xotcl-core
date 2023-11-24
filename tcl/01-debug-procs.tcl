@@ -130,8 +130,8 @@ if {[nsf::is object ::nx::Object]} {
       return $value
     }
     :method type=oneof {name value arg} {
-      if {[ad_page_contract_filter_proc_oneof $name value [split $arg |]] == 0} {
-        return -code error [lindex [ad_complaints_get_list] end]
+      if {$value ni [split $arg |]} {
+        error "value '$value' of parameter $name is invalid"
       }
     }
     :method type=signed {name input} {
