@@ -177,6 +177,7 @@ if {[nsf::is object ::nx::Object]} {
     ::nx::Slot method type=html
     ::nx::Slot method type=nohtml
     ::nx::Slot method type=range
+    ::nx::Slot method type=oneof
     ::nx::Slot method type=signed
     ::nx::Slot method type=cr_item_of_package
     ::nx::Object nsfproc ::nsf::debug::call
