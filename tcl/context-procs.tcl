@@ -105,7 +105,7 @@ namespace eval ::xo {
           set :queryparm($k) $v
         }
       } on error {errorMsg} {
-        ad_return_complaint 1 [ns_quotehtml $errorMsg]
+        ad_return_complaint 1 $errorMsg
         ad_script_abort
       }
     } else {
