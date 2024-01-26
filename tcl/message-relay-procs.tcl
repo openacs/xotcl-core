@@ -56,21 +56,28 @@ namespace eval ::xo {
       # Compose reply header.
       #
       if {$mode eq "scripted"} {
+        #
+        # Scripted streaming relies on an infinitely long request,
+        # providing chunks of javascript code conveying the
+        # message. Widely supported e.g. also by Internet Explorer,
+        # but not recommended on modern browsers.
+        #
         set content_type "text/html;charset=utf-8"
         set encoding "Cache-Control: no-cache\r\nTransfer-Encoding: chunked\r\n"
         set body "<html><body>[string repeat { } 1024]\r\n"
         set body [format %x [string length $body]]\r\n$body\r\n
+        return "HTTP/1.1 200 OK\r\nContent-type: $content_type\r\n$encoding\r\n$body"
       } else {
         #
-        # Chrome refuses to expose partial response to ajax unless we
-        # set content_type to octet stream.  Drawback is we have to
-        # force the translation on the channel.
+        # Other modes will use Server Sent Events.
         #
-        set content_type "application/octet-stream"
-        set encoding ""
-        set body ""
+        return [append _ \
+                    "HTTP/1.1 200 OK\r\n" \
+                    "Cache-Control: no-cache\r\n" \
+                    "X-Accel-Buffering': no\r\n" \
+                    "Content-type: text/event-stream\r\n" \
+                    "\r\n"]
       }
-      return "HTTP/1.1 200 OK\r\nContent-type: $content_type\r\n$encoding\r\n$body"
     }
 
     :public method encode_message {mode msg} {
@@ -92,6 +99,8 @@ namespace eval ::xo {
           </script>
         }]
         set msg [format %x [string length $jsMsg]]\r\n$jsMsg\r\n
+      } else {
+        set msg [string cat {data: } $msg \n\n]
       }
       #ns_log notice "#### [self] encode_message <$mode> returns <$msg>"
       return $msg
