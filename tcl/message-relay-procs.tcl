@@ -94,8 +94,7 @@ namespace eval ::xo {
         #ns_log notice "SEND data <$msg> encoded <$emsg>"
         set jsMsg [subst {
           <script nonce='[::security::csp::nonce]'>
-              var data = $msg;
-              parent.getData(data);
+              window.parent.postMessage($msg);
           </script>
         }]
         set msg [format %x [string length $jsMsg]]\r\n$jsMsg\r\n
