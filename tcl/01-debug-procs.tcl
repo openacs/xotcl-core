@@ -148,7 +148,7 @@ if {[nsf::is object ::nx::Object]} {
       #
       # Reject the NUL character
       #
-      if {[regexp \u00 $value]} {
+      if {[string first \u00 $value] != -1} {
         error "value '$value' of parameter $name contains the NUL character"
       }
     }
@@ -185,19 +185,20 @@ if {[nsf::is object ::nx::Object]} {
     ::nx::Object method serialize
     ::nx::Object method destroy_on_cleanup
     ::nx::Object method qn
-    ::nx::Slot method istype
     ::nx::Slot method exists
+    ::nx::Slot method istype
     ::nx::Slot method set
-    ::nx::Slot method type=naturalnum
-    ::nx::Slot method type=object_id
-    ::nx::Slot method type=token
-    ::nx::Slot method type=localurl
-    ::nx::Slot method type=html
-    ::nx::Slot method type=nohtml
-    ::nx::Slot method type=range
-    ::nx::Slot method type=oneof
-    ::nx::Slot method type=signed
     ::nx::Slot method type=cr_item_of_package
+    ::nx::Slot method type=dbtext
+    ::nx::Slot method type=html
+    ::nx::Slot method type=localurl
+    ::nx::Slot method type=naturalnum
+    ::nx::Slot method type=nohtml
+    ::nx::Slot method type=object_id
+    ::nx::Slot method type=oneof
+    ::nx::Slot method type=range
+    ::nx::Slot method type=signed
+    ::nx::Slot method type=token
     ::nx::Object nsfproc ::nsf::debug::call
     ::nx::Object nsfproc ::nsf::debug::exit
   }
