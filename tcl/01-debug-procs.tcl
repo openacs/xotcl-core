@@ -134,6 +134,24 @@ if {[nsf::is object ::nx::Object]} {
         error "value '$value' of parameter $name is invalid"
       }
     }
+    :method type=dbtext {name value arg} {
+      #
+      # Ensure that the value can be used in an SQL query.
+      #
+      # Note that this is not the same as quoting or otherwise
+      # ensuring the safety of the statement itself. What we enforce
+      # here is that the value will be accepted by the db interface
+      # without complaining. The actual definition may change or be
+      # database specific in the future.
+      #
+
+      #
+      # Reject the NUL character
+      #
+      if {[regexp \u00 $value]} {
+        error "value '$value' of parameter $name contains the NUL character"
+      }
+    }
     :method type=signed {name input} {
       #
       # Check, if a value is a signed value, signed by
