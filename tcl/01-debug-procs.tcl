@@ -134,7 +134,7 @@ if {[nsf::is object ::nx::Object]} {
         error "value '$value' of parameter $name is invalid"
       }
     }
-    :method type=dbtext {name value arg} {
+    :method type=dbtext {name value} {
       #
       # Ensure that the value can be used in an SQL query.
       #
