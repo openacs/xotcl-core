@@ -312,6 +312,11 @@ namespace eval ::xo::db {
   ::xotcl::Class create ::xo::db::DBI            -superclass ::xo::db::Driver
   ::xotcl::Class create ::xo::db::DBI-postgresql -superclass {::xo::db::DBI ::xo::db::postgresql}
 
+  ::xo::db::Driver parameter {{dbn ""}}
+  ::xo::db::Driver instproc map_default_dbn {dbn} {
+    return [expr {$dbn eq "" && ${:dbn} ne "" ? ${:dbn} : $dbn}]
+  }
+
   ::xo::db::Driver instproc get_sql {{-dbn ""} qn} {
     set full_statement_name [db_qd_get_fullname $qn 2]
     set full_query [db_qd_fetch $full_statement_name $dbn]
@@ -682,10 +687,10 @@ namespace eval ::xo::db {
                  $qn $sql $body {*}$bindOpt]
   }
 
-  ::xo::db::DB instproc exec_0or1row {-prepare {-bind ""} sql} {
+  ::xo::db::DB instproc exec_0or1row {{-dbn ""} -prepare {-bind ""} sql} {
     # Helper, used from several postgres-specific one-tuple queries
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
-    ::db_with_handle h {
+    ::db_with_handle -dbn [:map_default_dbn $dbn] h {
       if {[info exists prepare]} {set sql [:prepare -handle $h -argtypes $prepare $sql]}
       return [uplevel [list ns_pg_bind 0or1row $h {*}$bindOpt $sql]]
     }
@@ -751,7 +756,7 @@ namespace eval ::xo::db {
   ::xo::db::DB-postgresql instproc 0or1row {{-dbn ""} {-bind ""} -prepare qn sql} {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     set prepOpt [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
-    set answers [uplevel [list [self] exec_0or1row {*}$prepOpt -bind $bind $sql]]
+    set answers [uplevel [list [self] exec_0or1row -dbn $dbn {*}$prepOpt -bind $bind $sql]]
     if {$answers ne ""} {
       foreach {att val} [ns_set array $answers] { uplevel [list set $att $val] }
       ns_set free $answers
@@ -762,7 +767,7 @@ namespace eval ::xo::db {
   ::xo::db::DB-postgresql instproc 1row {{-dbn ""} {-bind ""} -prepare qn sql} {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     set prepOpt [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
-    set answers [uplevel [list [self] exec_0or1row {*}$prepOpt -bind $bind $sql]]
+    set answers [uplevel [list [self] exec_0or1row -dbn $dbn {*}$prepOpt -bind $bind $sql]]
     if {$answers ne ""} {
       foreach {att val} [ns_set array $answers] { uplevel [list set $att $val] }
       ns_set free $answers
@@ -773,7 +778,7 @@ namespace eval ::xo::db {
   ::xo::db::DB-postgresql instproc get_value {{-dbn ""} {-bind ""} -prepare qn sql {default ""}} {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     set prepOpt [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
-    set answers [uplevel [list [self] exec_0or1row {*}$prepOpt -bind $bind $sql]]
+    set answers [uplevel [list [self] exec_0or1row -dbn $dbn {*}$prepOpt -bind $bind $sql]]
     if {$answers ne ""} {
       set result [ns_set value $answers 0]
       ns_set free $answers
@@ -781,10 +786,10 @@ namespace eval ::xo::db {
     }
     return $default
   }
-::xo::db::DB-postgresql instproc list_of_lists {{-dbn ""} {-bind ""} {-with_headers false} -prepare qn sql} {
+  ::xo::db::DB-postgresql instproc list_of_lists {{-dbn ""} {-bind ""} {-with_headers false} -prepare qn sql} {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
-    db_with_handle db {
+    db_with_handle -dbn [:map_default_dbn $dbn] db {
       if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
       set result {}
       set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
@@ -808,7 +813,7 @@ namespace eval ::xo::db {
   ::xo::db::DB-postgresql instproc list {{-dbn ""} {-bind ""} -prepare qn sql} {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
-    db_with_handle db {
+    db_with_handle -dbn [:map_default_dbn $dbn] db {
       if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
       set result {}
       set answers [uplevel [list ns_pg_bind select $db {*}$bindOpt $sql]]
@@ -823,7 +828,7 @@ namespace eval ::xo::db {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     set bind $bindOpt
-    db_with_handle -dbn $dbn db {
+    db_with_handle -dbn [:map_default_dbn $dbn] db {
       if {[info exists prepare]} {set sql [:prepare -handle $db -argtypes $prepare $sql]}
       ::db_exec dml $db [uplevel [list [self] qn $qn]] $sql 2
     }
