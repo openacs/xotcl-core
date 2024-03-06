@@ -2933,7 +2933,7 @@ namespace eval ::xo::db {
     #    and object_type = :object_type
     #}
     if {![nsv_get acs_attributes acs_attributes list]} {
-      ns_log notice "GN: fetch all db_attributes"
+      #ns_log notice "GN: fetch all db_attributes"
       set list [xo::dc list get_all_attributes {
         select object_type || '-' || attribute_name from acs_attributes
       }]
@@ -2952,7 +2952,7 @@ namespace eval ::xo::db {
 
     if {![:db_attribute_defined -object_type $object_type -attribute_name ${:column_name} ]} {
 
-      ns_log notice "GN: Attribute create_attribute flushes acs_attributes cache"
+      #ns_log notice "GN: Attribute create_attribute flushes acs_attributes cache"
       nsv_unset -nocomplain acs_attributes acs_attributes
 
       if {![::xo::db::Class object_type_exists_in_db -object_type $object_type]} {
@@ -3049,7 +3049,7 @@ namespace eval ::xo::db {
     #:log "check attribute ${:column_name} object_type=$object_type, domain=${:domain}"
     if {![:db_attribute_defined -object_type $object_type -attribute_name ${:column_name}]} {
 
-      ns_log notice "GN: CrAttribute create_attribute flushes acs_attributes cache"
+      #ns_log notice "GN: CrAttribute create_attribute flushes acs_attributes cache"
       nsv_unset -nocomplain acs_attributes acs_attributes
 
       if {![::xo::db::Class object_type_exists_in_db -object_type $object_type]} {
