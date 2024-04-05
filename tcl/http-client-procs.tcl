@@ -77,7 +77,7 @@ namespace eval ::xo {
   #
   # Provided that the Tcl module tls (see e.g. http://tls.sourceforge.net/)
   # is available and can be loaded via "package require tls" into
-  # the aolserver, you can use both TLS/SSL secured or unsecured requests
+  # the AOLserver, you can use both TLS/SSL secured or insecured requests
   # in the synchronous/ asynchronous mode by using an
   # https url.
   #
@@ -89,7 +89,7 @@ namespace eval ::xo {
   #
   # AsyncHttpRequest is a subclass for HttpCore implementing
   # asynchronous HTTP requests without vwait (vwait causes
-  # stalls on aolserver). AsyncHttpRequest requires to provide a listener
+  # stalls on AOLserver). AsyncHttpRequest requires to provide a listener
   # or callback object that will be notified upon success or failure of
   # the request.
   #
