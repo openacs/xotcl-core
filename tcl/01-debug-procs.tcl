@@ -162,7 +162,7 @@ if {[nsf::is object ::nx::Object]} {
       set pair [ns_base64urldecode $input]
       if {[string is list -strict $pair] && [llength $pair] == 2} {
         lassign $pair value signature
-        set secret [ns_config "ns/server/[ns_info server]/acs" parametersecret ""]
+        set secret [ns_config "ns/server/[ns_info server]/acs" parameterSecret ""]
         #ns_log notice "[list ad_verify_signature -secret $secret $value $signature]"
         if {[ad_verify_signature -secret $secret $value $signature]} {
           return $value
