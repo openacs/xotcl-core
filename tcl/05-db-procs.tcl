@@ -284,7 +284,7 @@ namespace eval ::xo::db {
   #
   # Database Driver
   #
-  # Abstract form the Tcl interface that the drivers are offering to
+  # Abstract from the Tcl interface that the drivers are offering to
   # issue SQL commands and to perform profiling.
   #
 

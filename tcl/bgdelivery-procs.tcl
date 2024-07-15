@@ -575,7 +575,7 @@ bgdelivery ad_proc returnfile {
         # we have to obtain the size from the file; unfortunately, this
         # requires a duplicate open+close of the h264 stream. If the
         # application is performance sensitive, one might consider to use
-        # the possibly incorrect size form the filesystem instead (works
+        # the possibly incorrect size from the filesystem instead (works
         # perfectly for e.g. flowplayer)
         if {[catch {set handle [h264open $filename $query]} errorMsg]} {
           ns_log error "h264: error opening h264 channel for $filename $query: $errorMsg"
