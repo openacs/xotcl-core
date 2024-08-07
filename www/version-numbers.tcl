@@ -6,6 +6,8 @@ ad_page_contract {
     context:onevalue
 }
 
+auth::require_login
+
 set title "Version Numbers of XOTcl and Related Packages"
 set context [list "XOTcl Version Numbers"]
 
