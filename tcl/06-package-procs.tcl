@@ -114,7 +114,7 @@ namespace eval ::xo {
     if {![info exists package_key] && [info exists :package_key]} {
       set package_key ${:package_key}
     }
-    foreach location {www resources} {
+    foreach location {resources www} {
       set fn $::acs::rootdir/packages/$package_key/$location/prototypes/$name.page
       if {[file exists $fn]} {
         if {$location eq "www"} {
