@@ -595,7 +595,7 @@ ad_library {
 # The following extensions of the base classes are defined here:
 # 
 ::Serializer exportMethods {
-  ::nx::Class instproc init
+  ::nx::Class method init
   ::xotcl::Object instproc ad_proc
   ::xotcl::Object instproc ad_forward
   ::xotcl::Class  instproc ad_instproc
