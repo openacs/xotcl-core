@@ -726,12 +726,13 @@ namespace eval ::xo {
   }
 
   proc ::xo::stats {{msg ""}} {
-    set xobjs   [llength [::xotcl::Object info instances -closure]]
-    set nobjs   [llength [::nx::Object info instances  -closure]]
-    set tmpObjs [llength [info commands ::nsf::__#*]]
-    set tdoms   [llength [list {*}[info commands domNode0*] {*}[info commands domDoc0x*]]]
-    set nssets  [expr {[acs::icanuse "ns_set stats"] ? [list [ns_set stats]] : [llength [ns_set list]]}]
-    ns_log notice "xo::stats $msg: current objects xotcl $xobjs nx $nobjs tmp $tmpObjs tDOM $tdoms ns_set $nssets"
+    dict set stats xotcl   [llength [::xotcl::Object info instances -closure]]
+    dict set stats nx      [llength [::nx::Object info instances  -closure]]
+    dict set stats tmpObjs [llength [info commands ::nsf::__#*]]
+    dict set stats tdom    [llength [list {*}[info commands domNode0*] {*}[info commands domDoc0x*]]]
+    dict set stats nssets  [expr {[acs::icanuse "ns_set stats"] ? [list [ns_set stats]] : [llength [ns_set list]]}]
+    ns_log notice "xo::stats $msg: $stats"
+    return $stats
   }
 
   #

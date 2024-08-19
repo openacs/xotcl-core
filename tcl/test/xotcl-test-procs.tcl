@@ -2,25 +2,31 @@ ad_library {
     Test xotcl-core features
 }
 
-#
-# This test could be used to make sure binaries in use in the code are
-# actually available to the system.
-#
-# aa_register_case -cats {
-#     smoke production_safe
-# } -procs {
-#     util::which
-#     apm_tar_cmd
-#     apm_gzip_cmd
-# } xotcl_core_exec_dependencies {
-#     Test external command dependencies for this package.
-# } {
-#     foreach cmd [list \
-#                      [::util::which dot] \
-#                     ] {
-#         aa_true "'$cmd' is executable" [file executable $cmd]
-#     }
-# }
+ad_proc ::xo::aa_check_leftovers {} {
+    #
+    # Perform cleanup tests to check for object/command leaks in
+    # either the called functions or in the test itself.
+    #
+} {
+    set stats [::xo::stats]
+
+    dict with stats {
+        aa_equals "leftover temp objects"     $tmpObjs 0
+        if {$tmpObjs > 0} {
+            foreach obj [info commands ::nsf::__#*] {
+                set isXotcl [::nsf::dispatch $obj ::nsf::methods::object::info::hastype ::xotcl::Object]
+                set isNx    [::nsf::dispatch $obj ::nsf::methods::object::info::hastype ::nx::Object]
+                aa_log obj $obj (isXotcl $isXotcl isNx $isNx)
+                aa_log <pre>[$obj serialize]</pre>
+            }
+        }
+        aa_equals "leftover tdom cmds"        $tdom 0
+
+        aa_log    "final xotcl objects: $xotcl"
+        aa_log    "final nx objects: $nx"
+        aa_log    "final nssets: $nssets"
+    }
+}
 
 aa_register_case -cats {
     api smoke
@@ -51,12 +57,15 @@ aa_register_case -cats {
         set orm_object [::xo::db::Object new]
         aa_log "Save new"
         set object_id [$orm_object save_new]
+        $orm_object destroy
+
         aa_log "Fetch"
         set orm_object [::xo::db::Class get_instance_from_db -id $object_id]
         aa_log "Save"
         $orm_object save
         aa_log "Delete"
         $orm_object delete
+        #$orm_object destroy
 
         aa_section "Object creation"
         aa_log "Create object"
@@ -122,7 +131,7 @@ aa_register_case -cats {
         aa_log "Setting a different context_id: $new_context_id"
         $orm_object set context_id $new_context_id
 
-        aa_log "Saving the object"
+        aa_log "Saving the object $orm_object"
         $orm_object save
 
 
@@ -171,7 +180,9 @@ aa_register_case -cats {
             select 1 from acs_objects where object_id = :object_id
         }]
         aa_true "Object is not there anymore" {!$orm_exists_p && !$db_exists_p}
+
     }
+    ::xo::aa_check_leftovers
 }
 
 aa_register_case -cats {
@@ -205,14 +216,19 @@ aa_register_case -cats {
         aa_section "Quick trivial CRUD of an object"
         aa_log "Create object"
         set orm_object [::xo::db::CrItem new]
+
         aa_log "Save new"
         set object_id [$orm_object save_new]
+        $orm_object destroy
+
         aa_log "Fetch"
         set orm_object [::xo::db::CrClass get_instance_from_db -item_id $object_id]
         aa_log "Save"
         $orm_object save
+
         aa_log "Delete"
         $orm_object delete
+        $orm_object destroy
 
         aa_section "Object creation"
         aa_log "Create object"
@@ -230,11 +246,10 @@ aa_register_case -cats {
         }]
         aa_true "Object was created" {$orm_exists_p && $db_exists_p}
 
-
         aa_section "Object fetching"
         aa_log "Fetching object from ORM"
         set orm_object [::xo::db::CrClass get_instance_from_db -item_id $object_id]
-        aa_log "Fetching object from DB"
+        aa_log "Fetching object from DB ($orm_object)"
         ::xo::dc 1row get_object_from_db {
             select creation_date,
                    creation_user,
@@ -340,7 +355,6 @@ aa_register_case -cats {
             }
         }
 
-
         aa_section "Check modifications AFTER refetching"
         aa_log "Fetching object again from ORM"
         set orm_object [::xo::db::CrItem get_instance_from_db -item_id $object_id]
@@ -359,7 +373,9 @@ aa_register_case -cats {
             select 1 from acs_objects where object_id = :object_id
         }]
         aa_true "Object is not there anymore" {!$orm_exists_p && !$db_exists_p}
+
     }
+    ::xo::aa_check_leftovers
 }
 
 aa_register_case -cats {
