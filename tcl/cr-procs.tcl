@@ -780,7 +780,7 @@ namespace eval ::xo::db {
                  -where [join $cond " and "] \
                  -orderby $orderby \
                  -limit $limit -offset $offset]
-    :log "--sql=$sql"
+    #:log "--sql=$sql"
     return $sql
   }
 
