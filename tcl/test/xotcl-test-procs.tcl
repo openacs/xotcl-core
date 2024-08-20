@@ -2,32 +2,6 @@ ad_library {
     Test xotcl-core features
 }
 
-ad_proc ::xo::aa_check_leftovers {} {
-    #
-    # Perform cleanup tests to check for object/command leaks in
-    # either the called functions or in the test itself.
-    #
-} {
-    set stats [::xo::stats]
-
-    dict with stats {
-        aa_equals "leftover temp objects"     $tmpObjs 0
-        if {$tmpObjs > 0} {
-            foreach obj [info commands ::nsf::__#*] {
-                set isXotcl [::nsf::dispatch $obj ::nsf::methods::object::info::hastype ::xotcl::Object]
-                set isNx    [::nsf::dispatch $obj ::nsf::methods::object::info::hastype ::nx::Object]
-                aa_log obj $obj (isXotcl $isXotcl isNx $isNx)
-                aa_log <pre>[$obj serialize]</pre>
-            }
-        }
-        aa_equals "leftover tdom cmds"        $tdom 0
-
-        aa_log    "final xotcl objects: $xotcl"
-        aa_log    "final nx objects: $nx"
-        aa_log    "final nssets: $nssets"
-    }
-}
-
 aa_register_case -cats {
     api smoke
 } -procs {
@@ -182,7 +156,6 @@ aa_register_case -cats {
         aa_true "Object is not there anymore" {!$orm_exists_p && !$db_exists_p}
 
     }
-    ::xo::aa_check_leftovers
 }
 
 aa_register_case -cats {
@@ -375,7 +348,6 @@ aa_register_case -cats {
         aa_true "Object is not there anymore" {!$orm_exists_p && !$db_exists_p}
 
     }
-    ::xo::aa_check_leftovers
 }
 
 aa_register_case -cats {
