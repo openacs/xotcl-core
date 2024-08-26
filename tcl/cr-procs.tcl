@@ -1401,10 +1401,10 @@ namespace eval ::xo::db {
           AnchorField create view -CSSclass view-item-button -label ""
           AnchorField diff -label ""
           AnchorField plain_diff -label ""
-          AnchorField author -label [_ file-storage.Author]
-          Field content_size -label [_ file-storage.Size] -html {align right}
-          Field last_modified_ansi -label [_ file-storage.Last_Modified]
-          Field description -label [_ file-storage.Version_Notes]
+          AnchorField author -label [_ acs-content-repository.Creation_User]
+          Field content_size -label [_ acs-content-repository.Size] -html {align right}
+          Field last_modified_ansi -label [_ acs-content-repository.Last_Modified]
+          Field description -label [_ acs-content-repository.Description]
           if {[acs_user::site_wide_admin_p]} {AnchorField show -label ""}
           ImageAnchorField live_revision -label [_ xotcl-core.live_revision] \
               -src /resources/acs-subsite/radio.gif \
@@ -1464,7 +1464,7 @@ namespace eval ::xo::db {
           -version_delete.href [export_vars -base $base \
                                     {{m delete-revision} {revision_id $version_id}}] \
           -version_delete "" \
-          -version_delete.title [_ file-storage.Delete_Version]
+          -version_delete.title [_ acs-content-repository.Delete_Revision]
 
       [t1 last_child] set payload(revision_id) $version_id
 

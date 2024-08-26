@@ -23,7 +23,7 @@ set live_revision_id [content::item::get_live_revision -item_id $page_id]
 
 template::list::create \
     -name revisions \
-    -no_data [_ file-storage.lt_There_are_no_versions] \
+    -no_data [_ acs-content-repository.No_Revisions] \
     -multirow revisions \
     -elements {
       version_number {label "" html {align right}}
@@ -36,16 +36,16 @@ template::list::create \
         sub_class narrow
         link_url_col version_link
       }
-      author { label #file-storage.Author#
+      author { label #acs-content-repository.Creation_User#
         display_template {@revisions.author_link;noquote@}
       }
-      content_size { label #file-storage.Size# html {align right}
+      content_size { label #acs-content-repository.Size# html {align right}
         display_col content_size_pretty
       }
-      last_modified_ansi { label #file-storage.Last_Modified#
+      last_modified_ansi { label #acs-content-repository.Last_Modified#
         display_col last_modified_pretty
       }
-      description { label #file-storage.Version_Notes#}
+      description { label #acs-content-repository.Description#}
       live_revision { label #xotcl-core.live_revision#
         display_template {
           <a href='@revisions.live_revision_link@'> \
@@ -72,7 +72,7 @@ db_multirow -unclobber -extend {
   set last_modified_pretty [lc_time_fmt $last_modified_ansi "%x %X"]
   set content_size_pretty  [lc_content_size_pretty -size $content_size]
 
-  if {$name eq ""} {set name [_ file-storage.untitled]}
+  if {$name eq ""} {set name [_ acs-kernel.Untitled]}
   set live_revision_link [export_vars -base make-live-revision \
                               {page_id name {revision_id $version_id}}]
   set version_delete_link [export_vars -base delete-revision \
@@ -85,7 +85,7 @@ db_multirow -unclobber -extend {
     set live_revision "Current Live Revision"
     set live_revision_icon /resources/acs-subsite/radiochecked.gif
   }
-  set version_delete [_ file-storage.Delete_Version]
+  set version_delete [_ acs-content-repository.Delete_Revision]
   set author_link [acs_community_member_link -user_id $author_id -label $author]
 }
 
