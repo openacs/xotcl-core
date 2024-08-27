@@ -265,9 +265,9 @@ namespace eval ::xo {
           set r
         }]
       }
-      
+
       #ns_log notice "======require_site_wide_info site_wide_instance_id -> <$site_wide_instance_id>"
-      
+
       #
       # During install, no xo::cc is available, but it seems to be
       # needed for instantiating prototype pages. So provide a best
@@ -288,7 +288,7 @@ namespace eval ::xo {
     }
     return ${:site_wide_info}
   }
-  
+
   PackageMgr instproc configure_fresh_instance {
     {-package_id:required}
     {-parameter_page_info ""}

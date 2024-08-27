@@ -20,7 +20,7 @@ aa_register_case -cats {
             -parameter "" \
             -user_id -1 \
             -actual_query "a=1&b=2&name=dagobert&__name=duck" \
-           
+
         aa_true "exists xo::cc " {[info commands ::xo::cc] ne ""}
         ::xo::cc destroy_on_cleanup
         aa_log "xo::cc <pre>[::xo::cc serialize]</pre>"
@@ -60,7 +60,7 @@ aa_register_case -cats {
         # Avoid script_abort when value constraint fails
         #
         set ::aa_test_noabort 1
-        
+
         foreach {pair expected} {
             {a:alpha ""} {expected alpha but got "1" for parameter "a"}
         } {

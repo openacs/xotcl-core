@@ -1,4 +1,4 @@
-ad_library {  
+ad_library {
   Tests for the XOTcl db abstraction based on the XOTcl core tutorial.
 }
 

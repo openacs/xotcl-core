@@ -1,7 +1,7 @@
 ::xo::library doc {
 
   xotcl-core implementation for OpenACS package parameters.
-  
+
   This functionality was backported to acs-tcl in OpenACS 5.10. The
   functions here are just for backward compatibility, in case these
   functions were called directly.
@@ -325,8 +325,8 @@ namespace eval ::xo {
                             [::xo::cc package_id] :
                             [ns_conn isconnected] ? [ad_conn package_id] : $::acs::kernel_id}]
     }
-    
-    ad_log_deprecated proc "xo::parameter set_value -parameter $parameter" parameter::set_value    
+
+    ad_log_deprecated proc "xo::parameter set_value -parameter $parameter" parameter::set_value
     return [::parameter::set_value -package_id $package_id -parameter $parameter -value $value]
 
     set parameter_obj [:get_parameter_object -parameter_name $parameter -package_id $package_id]

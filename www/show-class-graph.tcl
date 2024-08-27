@@ -30,7 +30,7 @@ try {
 
   exec $dot -T$format -O $dotfile
   set outfile $dotfile.$format
-  
+
 } on error {errorMsg} {
   catch {close $F}
   ns_log warning "show-class-graph: dot returned $errorMsg"

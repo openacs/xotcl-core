@@ -793,8 +793,8 @@ ad_proc -public ad_returnfile_background {{-client_data ""} status_code mime_typ
   everything to ns_returnfile.
 } {
   #ns_log notice "ad_returnfile_background xo::use_h264 -> [xo::use_h264 $mime_type]"
-  
-  security::csp::add_static_resource_header -mime_type $mime_type  
+
+  security::csp::add_static_resource_header -mime_type $mime_type
   if {[xo::use_h264 $mime_type]} {
     bgdelivery returnfile -client_data $client_data $status_code $mime_type $filename
   } else {

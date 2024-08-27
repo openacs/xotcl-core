@@ -216,7 +216,7 @@ namespace eval ::Generic {
   } {
     # set form name for adp file
     set :$template ${:name}
-    
+
     set object_type [[${:data} info class] object_type]
     set object_name [expr {[${:data} exists name] ? [${:data} set name] : ""}]
     # :log "-- ${:data}, cl=[${:data} info class] [[${:data} info class] object_type]"
@@ -328,11 +328,11 @@ namespace eval ::Generic {
     <p>Many parameters are homonymous to those for
     <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>
     and work in the same way, unless stated differently in this documentation.
-    
+
     <p>Despite the high number of object's members, most of them are
     there for backward compatibility with the procedural API and they
     seldom need to be specified.
-    
+
     <p>An example of instantiation could just look as this:
     <pre>
     # Must be an existing acs_object class on the system.

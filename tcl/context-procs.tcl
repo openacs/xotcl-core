@@ -383,7 +383,7 @@ namespace eval ::xo {
     ad_log_deprecated method "... requestor" "... requester"
     return [expr {[info exists :requester] ? ${:requester} : ${:requester}}]
   }
-  
+
   ConnectionContext instproc lang {} {
     return [string range [:locale] 0 1]
   }
