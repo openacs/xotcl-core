@@ -259,7 +259,7 @@ namespace eval ::xo {
                      -configuration_command $cmd]
           if {$r eq ""} {
             ns_log warning "acs_admin::require_site_wide_package -package_key ${:package_key}" \
-                "returned empty pacakge_id. Do not cache!"
+                "returned empty package_id. Do not cache!"
             break
           }
           set r
