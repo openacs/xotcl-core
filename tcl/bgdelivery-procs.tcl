@@ -22,6 +22,7 @@ if {[info commands ::thread::mutex] eq ""} {
     (when the module is in use).
 
   } {
+    security::csp::add_static_resource_header -mime_type $mime_type
     ns_returnfile $status_code $mime_type $filename
   }
 
@@ -29,18 +30,19 @@ if {[info commands ::thread::mutex] eq ""} {
 }
 #return ;# DON'T COMMIT
 
-# catch {ns_conn contentsentlength} alone does not work, since we do not have
-# a connection yet, and the bgdelivery won't be activated
-catch {ns_conn xxxxx} msg
-if {![string match "*contentsentlength*" $msg]} {
+#
+# Old style bgdelivery requires "ns_conn contentsentlength"
+#
+if {![::acs::icanuse "ns_conn contentsentlength"]} {
   ns_log notice "AOLserver is not patched for bgdelivery, NOT loading bgdelivery"
 
   ad_proc -public ad_returnfile_background {-client_data status_code mime_type filename} {
-    Deliver the given file to the requestor in the background. This proc uses the
+    Deliver the given file to the requester in the background. This proc uses the
     background delivery thread to send the file in an event-driven manner without
     blocking a request thread. This is especially important when large files are
     requested over slow (e.g. dial-ip) connections.
   } {
+    security::csp::add_static_resource_header -mime_type $mime_type
     ns_returnfile $status_code $mime_type $filename
   }
   return
@@ -95,7 +97,7 @@ if {![string match "*contentsentlength*" $msg]} {
       set value [set $k]
       ns_log notice "resubmit: canceling currently running request $context  // closing $value"
       lassign $value fd0 channel0 client_data0 filename0
-      my end-delivery -client_data $client_data0 $filename0 $fd0 $channel0 -1
+      :end-delivery -client_data $client_data0 $filename0 $fd0 $channel0 -1
     }
     set $k [list $fd $channel $client_data $filename]
 
@@ -134,13 +136,13 @@ if {![string match "*contentsentlength*" $msg]} {
       if {[ns_time seconds $t] > 2000} {
         if {[regexp {^([^,]+),([^,]+),(.+)$} $index _ channel fd filename]} {
           ns_log notice "bgdelivery, fileSpooler cleanup after [ns_time seconds $t] seconds, $key"
-          my end-delivery $filename $fd $channel -1
+          :end-delivery $filename $fd $channel -1
         }
       }
     }
   }
   fileSpooler proc tick {} {
-    if {[catch {my cleanup} errorMsg]} {ns_log error "Error during filespooler cleanup: $errorMsg"}
+    if {[catch {:cleanup} errorMsg]} {ns_log error "Error during filespooler cleanup: $errorMsg"}
     set :to [after ${:tick_interval} [list [self] tick]]
   }
   fileSpooler tick
@@ -188,7 +190,7 @@ if {![string match "*contentsentlength*" $msg]} {
       flush $channel
     } errorMsg]} {
       ns_log notice "h264: error writing headers in h264 channel for $filename $query: $errorMsg"
-      my end-delivery -client_data $client_data $filename $handle $channel 0
+      :end-delivery -client_data $client_data $filename $handle $channel 0
     }
     # setup async delivery
     fconfigure $channel -translation binary -blocking false
@@ -199,16 +201,16 @@ if {![string match "*contentsentlength*" $msg]} {
     set bytesVar ::bytes($channel,$handle,$filename)
     #ns_log notice "h264 WRITE BLOCK $channel $handle"
     if {[eof $channel] || [h264eof $handle]} {
-      my end-delivery -client_data $client_data $filename $handle $channel [set $bytesVar]
+      :end-delivery -client_data $client_data $filename $handle $channel [set $bytesVar]
     } else {
       set block [h264read $handle]
-      # one should not use "bytelength" on binary data: http://wiki.tcl.tk/8455
+      # one should not use "bytelength" on binary data: https://wiki.tcl-lang.org/8455
       set len [string length $block]
       incr $bytesVar $len
       h264Spooler incr byteCount $len
       if {[catch {puts -nonewline $channel $block} errorMsg]} {
         ns_log notice "h264: error on writing to channel $channel: $errorMsg"
-        my end-delivery -client_data $client_data $filename $handle $channel [set $bytesVar]
+        :end-delivery -client_data $client_data $filename $handle $channel [set $bytesVar]
       }
     }
   }
@@ -287,7 +289,7 @@ if {![string match "*contentsentlength*" $msg]} {
   set ::subscription_count 0
   set ::message_count 0
 
-  ::xotcl::Class create Subscriber -parameter {key channel user_id mode}
+  ::xotcl::Class create Subscriber -parameter {key channel user_id mode {start_of_page ""}}
   Subscriber proc current {-key } {
     set result [list]
     if {[info exists key]} {
@@ -304,7 +306,7 @@ if {![string match "*contentsentlength*" $msg]} {
   Subscriber instproc close {} {
     set channel [:channel]
     #
-    # It is important to make the channel non-blocking for the close,
+    # It is important to make the channel nonblocking for the close,
     # since otherwise the close operation might block and bring all of
     # bgdelivery to a halt.
     #
@@ -322,7 +324,7 @@ if {![string match "*contentsentlength*" $msg]} {
     if {[catch {set eof [eof $channel]}]} {set eof 1}
     :log "sweep [:channel] EOF $eof"
     if {$eof} {
-      error "connection $channel closed by peer"
+      throw {AD_CLIENTDISCONNECT} "connection $channel closed by peer"
     }
     # make an IO attempt to trigger EOF
     if {[catch {
@@ -331,25 +333,17 @@ if {![string match "*contentsentlength*" $msg]} {
       set x [read $channel]
       fconfigure $channel -blocking $blocking
     } errorMsg]} {
-      error "connection $channel closed due to IO error"
+      throw {AD_CLIENTDISCONNECT} "connection $channel closed due to IO error"
     }
   }
 
   Subscriber instproc send {msg} {
     #ns_log notice "SEND <$msg> [:mode]"
     :log ""
-    if {[:mode] eq "scripted"} {
-      ::sec_handler_reset
-      set emsg [encoding convertto utf-8 $msg]
-      #ns_log notice "SEND data <$msg> encoded <$emsg>"
-      set smsg "<script type='text/javascript' nonce='$::__csp_nonce'>\nvar data = $emsg;\n\
-            parent.getData(data);</script>\n"
-      set smsg [format %x [string length $smsg]]\r\n$smsg\r\n
-    } else {
-      set smsg $msg
-    }
-    #my log "-- sending to subscriber for [:key] $smsg ch=[:channel] \
-        #        mode=[:mode], user_id [:user_id]"
+    ::sec_handler_reset
+    set smsg [::xo::mr::bgdelivery encode_message [:mode] $msg]
+    #:log "-- sending to subscriber for [:key] $smsg ch=[:channel] \
+        #        mode=[:mode], user_id ${:user_id}"
     try {
       puts -nonewline [:channel] $smsg
       flush [:channel]
@@ -362,7 +356,7 @@ if {![string match "*contentsentlength*" $msg]} {
         "POSIX ECONNRESET {connection reset by peer}"
       }
       if {$::errorCode in $ok_errors} {
-        throw {CLIENTDISCONNECT} {client disconnected}
+        throw {AD_CLIENTDISCONNECT} {client disconnected}
       } else {
         throw $::errorCode $errorMsg
       }
@@ -376,7 +370,7 @@ if {![string match "*contentsentlength*" $msg]} {
       foreach s [set :subscriptions($key)] {
         try {
           $s $method $argument
-        } trap {CLIENTDISCONNECT} {errMsg} {
+        } trap {AD_CLIENTDISCONNECT} {errMsg} {
           ns_log warning "$method to subscriber $s (key=$key): $errMsg"
           $s destroy
         } on error {errMsg} {
@@ -408,25 +402,11 @@ if {![string match "*contentsentlength*" $msg]} {
     [:info class] instvar subscriptions
     lappend subscriptions([:key]) [self]
     incr ::subscription_count
-    #my log "-- cl=[:info class], subscriptions([:key]) = $subscriptions([:key])"
+    #:log "-- cl=[:info class], subscriptions([:key]) = $subscriptions([:key])"
     fconfigure [:channel] -translation binary
 
-    if {[:mode] eq "scripted"} {
-      set content_type "text/html;charset=utf-8"
-      set encoding "Cache-Control: no-cache\r\nTransfer-Encoding: chunked\r\n"
-      set body "<html><body>[string repeat { } 1024]\r\n"
-      set body [format %x [string length $body]]\r\n$body\r\n
-    } else {
-      # Chrome refuses to expose partial response to ajax unless we
-      # set content_type to octet stream.  Drawback is we have to
-      # force the translation on the channel.
-      set content_type "application/octet-stream"
-      set encoding ""
-      fconfigure [:channel] -encoding utf-8
-      set body ""
-    }
-
-    puts -nonewline [:channel] "HTTP/1.1 200 OK\r\nContent-type: $content_type\r\n$encoding\r\n$body"
+    fconfigure [:channel] -encoding utf-8
+    puts -nonewline [:channel] ${:start_of_page}
     flush [:channel]
   }
 
@@ -450,13 +430,13 @@ if {![string match "*contentsentlength*" $msg]} {
   ::HttpSpooler instproc release {} {
     # release indicates the when running becomes 0, the spooler is finished
     set :release 1
-    if {${:running} == 0} {my all_done}
+    if {${:running} == 0} {:all_done}
   }
   ::HttpSpooler instproc done {reason request} {
     incr :running -1
     :log "--running ${:running}"
     $request destroy
-    if {${:running} == 0 && ${:release}} {my all_done}
+    if {${:running} == 0 && ${:release}} {:all_done}
   }
   ::HttpSpooler instproc deliver {data request {encoding binary}} {
     :log "-- spooling ${:spooling}"
@@ -464,20 +444,21 @@ if {![string match "*contentsentlength*" $msg]} {
       :log "--enqueue"
       lappend :queue $data $request $encoding
     } else {
-      #my log "--send"
+      #:log "--send"
       set :spooling 1
       # puts -nonewline [:channel] $data
       # :done
-      set filename [ad_tmpnam]
-      set fd [open $filename w]
+
+      set fd [file tempfile spool_filename [ad_tmpdir]/nsd-spool-XXXXXX]
       fconfigure $fd -translation binary -encoding $encoding
       puts -nonewline $fd $data
       close $fd
-      set fd [open $filename]
+
+      set fd [open $spool_filename]
       fconfigure $fd -translation binary -encoding $encoding
       fconfigure [:channel] -translation binary  -encoding $encoding
       fcopy $fd [:channel] -command \
-          [list [self] end-delivery $filename $fd [:channel] $request]
+          [list [self] end-delivery $spool_filename $fd [:channel] $request]
     }
   }
   ::HttpSpooler instproc end-delivery {filename fd ch request bytes args} {
@@ -540,7 +521,7 @@ bgdelivery ad_proc returnfile {
   {-content_disposition}
   status_code mime_type filename} {
 
-    Deliver the given file to the requestor in the background. This proc uses the
+    Deliver the given file to the requester in the background. This proc uses the
     background delivery thread to send the file in an event-driven manner without
     blocking a request thread. This is especially important when large files are
     requested over slow connections.
@@ -559,8 +540,8 @@ bgdelivery ad_proc returnfile {
     #ns_log notice "expires-set $filename"
     #ns_log notice "status_code = $status_code, filename=$filename"
 
-    if {![:isobject ::xo::cc]} {
-      ::xo::ConnectionContext require
+    if {![nsf::is object ::xo::cc]} {
+      ::xo::ConnectionContext require -url [ad_conn url]
     }
     set query [::xo::cc actual_query]
     set secure_conn_p [security::secure_conn_p]
@@ -594,7 +575,7 @@ bgdelivery ad_proc returnfile {
         # we have to obtain the size from the file; unfortunately, this
         # requires a duplicate open+close of the h264 stream. If the
         # application is performance sensitive, one might consider to use
-        # the possibly incorrect size form the file system instead (works
+        # the possibly incorrect size from the filesystem instead (works
         # perfectly for e.g. flowplayer)
         if {[catch {set handle [h264open $filename $query]} errorMsg]} {
           ns_log error "h264: error opening h264 channel for $filename $query: $errorMsg"
@@ -603,10 +584,10 @@ bgdelivery ad_proc returnfile {
         set size [h264length $handle]
         h264close $handle
       } else {
-        set size [file size $filename]
+        set size [ad_file size $filename]
       }
     } else {
-      set size [file size $filename]
+      set size [ad_file size $filename]
     }
 
     # Make sure to set "connection close" for the requests (in other
@@ -627,7 +608,7 @@ bgdelivery ad_proc returnfile {
         if {$from eq ""} {
           # The last $to bytes, $to must be specified; 'to' is
           # differently interpreted as in the case, where from is
-          # non-empty
+          # nonempty
           set from [expr {$size - $to}]
         } else {
           if {$to eq ""} {set to [expr {$size-1}]}
@@ -707,7 +688,7 @@ bgdelivery ad_proc returnfile {
     set tid [:get_tid]
 
     # :log "+++ lock ${:bgmutex}"
-    ::thread::mutex lock ${:mutex}
+    ns_mutex_lock ${:mutex}
 
     #
     # Transfer the channel to the bgdelivery thread and report errors
@@ -728,7 +709,7 @@ bgdelivery ad_proc returnfile {
       }
     } errorMsg
 
-    ::thread::mutex unlock ${:mutex}
+    ns_mutex_unlock ${:mutex}
     #ns_mutex unlock ${:bgmutex}
     # :log "+++ unlock ${:bgmutex}"
 
@@ -737,15 +718,15 @@ bgdelivery ad_proc returnfile {
     }
 
     if {$use_h264} {
-      #my log "MP4 q=[::xo::cc actual_query], h=[ns_set array [ns_conn outputheaders]]"
+      #:log "MP4 q=[::xo::cc actual_query], h=[ns_set array [ns_conn outputheaders]]"
       :do -async ::h264Spooler spool -delete $delete -channel $ch -filename $filename \
-          -context [list [::xo::cc requestor],[::xo::cc url],$query [ns_conn start]] \
+          -context [list [::xo::cc requester],[::xo::cc url],$query [ns_conn start]] \
           -query $query \
           -client_data $client_data
     } else {
-      #my log "FILE SPOOL $filename"
+      #:log "FILE SPOOL $filename"
       :do -async ::fileSpooler spool -ranges $ranges -delete $delete -channel $ch -filename $filename \
-          -context [list [::xo::cc requestor],[::xo::cc url],$query [ns_conn start]] \
+          -context [list [::xo::cc requester],[::xo::cc url],$query [ns_conn start]] \
           -client_data $client_data
     }
     #
@@ -754,29 +735,82 @@ bgdelivery ad_proc returnfile {
     ns_conn contentsentlength $size       ;# maybe overly optimistic
   }
 
+
+#
+# Check at load time, whether h264open is available. If so, perform
+# detailed checking if h264 streaming for file deliveries is necessary.
+#
+if {[info commands h264open] ne ""} {
+  #
+  # try to use h264 module when required
+  #
+  ns_log notice "... h264open available"
+
+  ad_proc -private ::xo::use_h264 {{-query ""} mime_type} {
+
+    Check, if the file to be delivered can be and has to be delivered
+    via the h264Spooler of bgdelivery
+
+  } {
+    if {$query eq ""} {
+      if {![nsf::is object ::xo::cc]} {
+        ::xo::ConnectionContext require -url [ad_conn url]
+      }
+      set query [::xo::cc actual_query]
+    }
+    set use_h264 [expr {[string match "video/mp4*" $mime_type] && $query ne ""
+                        && ([string match {*start=[1-9]*} $query] || [string match {*end=[1-9]*} $query])
+                        && [info commands h264open] ne ""
+                        && ![security::secure_conn_p] }]
+    return $use_h264
+  }
+
+} else {
+  #
+  # no h264
+  #
+  ns_log notice "... no h264open available"
+  ad_proc -private ::xo::use_h264 {{-query ""} mime_type} {
+
+    Check, if the file to be delivered can be and has to be delivered
+    via the h264Spooler of bgdelivery
+
+  } {
+    return 0
+  }
+}
+
+
 ad_proc -public ad_returnfile_background {{-client_data ""} status_code mime_type filename} {
-  Deliver the given file to the requestor in the background. This proc uses the
-  background delivery thread to send the file in an event-driven manner without
-  blocking a request thread. This is especially important when large files are
-  requested over slow (e.g. dial-ip) connections.
+
+  Deliver the given file to the requester in the background.  When
+  using NaviServer with its writer threads, ns_returnfile is perfectly
+  fine since it delivers its contents already in the background.
+
+  The main reason for using the bgdelivery thread is currently (2019)
+  the support of h264 streaming (when the module is in use). So we
+  check, whether h264 is available and requested, otherwise pass
+  everything to ns_returnfile.
 } {
-  #ns_log notice "driver=[ns_conn driver]"
-  if {[ns_conn driver] ne "nssock"} {
-    ns_returnfile $status_code $mime_type $filename
-  } else {
+  #ns_log notice "ad_returnfile_background xo::use_h264 -> [xo::use_h264 $mime_type]"
+
+  security::csp::add_static_resource_header -mime_type $mime_type
+  if {[xo::use_h264 $mime_type]} {
     bgdelivery returnfile -client_data $client_data $status_code $mime_type $filename
+  } else {
+    ns_returnfile $status_code $mime_type $filename
   }
 }
 
 #####################################
-bgdelivery proc subscribe {key {initmsg ""} {mode default} } {
+bgdelivery proc -deprecated subscribe {key {initmsg ""} {mode default} } {
   set ch [ns_conn channel]
   thread::transfer [:get_tid] $ch
-  #my do ::Subscriber sweep $key
+  #:do ::Subscriber sweep $key
   :do ::Subscriber new -channel $ch -key $key -user_id [ad_conn user_id] -mode $mode
 }
 
-bgdelivery proc send_to_subscriber {key msg} {
+bgdelivery proc -deprecated send_to_subscriber {key msg} {
   :do -async ::Subscriber broadcast $key $msg
 }
 #####################################

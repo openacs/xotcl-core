@@ -1,10 +1,12 @@
 ad_page_contract {
   View version numbers of XOTcl and related packages
-} {    
+} {
 } -properties {
     title:onevalue
     context:onevalue
 }
+
+auth::require_login
 
 set title "Version Numbers of XOTcl and Related Packages"
 set context [list "XOTcl Version Numbers"]

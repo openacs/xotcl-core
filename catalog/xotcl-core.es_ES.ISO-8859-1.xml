@@ -4,11 +4,16 @@
   <msg key="add">Añadir %type%</msg>
   <msg key="add_item">Añadir elemento</msg>
   <msg key="add_long">Añadir un nuevo ítem del tipo %type%</msg>
+  <msg key="Bulk_actions">Ítems seleccionados</msg>
   <msg key="create_new_type">Crear Nuevo %type%</msg>
   <msg key="delete_item">Borrar elemento</msg>
+  <msg key="description">Descripción</msg>
+  <msg key="descriptions">Descripciones</msg>
   <msg key="edit_item">Editar Ítem</msg>
   <msg key="edit_type">Editar %type%</msg>
   <msg key="has_entered_the_room">ha entrado en la sala</msg>
+  <msg key="language">Lenguaje</msg>
+  <msg key="languages">Lenguajes</msg>
   <msg key="live_revision">Revisión Viva</msg>
   <msg key="No_Data">Sin datos</msg>
   <msg key="nobody">Invitado</msg>
@@ -18,5 +23,10 @@ Usted no tiene permisos suficientes para realizar método %method% en objeto %obj
 &lt;/blockquote&gt;</msg>
   <msg key="revision_title">Revisiones de la Entrada</msg>
   <msg key="revisions">Revisiones</msg>
+  <msg key="Sort_by_this_column">Ordenar por ésta columna</msg>
+  <msg key="Sort_by_this_column_ascending">Ordenar ascendentemente por ésta columna</msg>
+  <msg key="Sort_by_this_column_descending">Ordenar descendentemente por ésta columna</msg>
+  <msg key="title">Título</msg>
+  <msg key="titles">Títulos</msg>
   <msg key="view_item">Ver elemento</msg>
 </message_catalog>

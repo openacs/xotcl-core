@@ -4,19 +4,29 @@
   <msg key="add">Add %type%</msg>
   <msg key="add_item">Add Item</msg>
   <msg key="add_long">Add new item of type %type%</msg>
+  <msg key="Bulk_actions">Selected Items</msg>
   <msg key="create_new_type">Create New %type%</msg>
   <msg key="delete_item">Delete Item</msg>
+  <msg key="description">Description</msg>
+  <msg key="descriptions">Descriptions</msg>
   <msg key="edit_item">Edit Item</msg>
   <msg key="edit_type">Edit %type%</msg>
   <msg key="has_entered_the_room">has entered the room</msg>
+  <msg key="language">Language</msg>
+  <msg key="languages">Languages</msg>
   <msg key="live_revision">Live Revision</msg>
-  <msg key="nobody">Guest</msg>
   <msg key="No_Data">No Data</msg>
+  <msg key="nobody">Guest</msg>
   <msg key="permission_denied">Permission Denied</msg>
   <msg key="policy-error-insufficient_permissions">&lt;blockquote&gt;
-You don't have sufficient permissions for performing method %method% on object %object%.
+You don&#39;t have sufficient permissions for performing method %method% on object %object%.
 &lt;/blockquote&gt;</msg>
   <msg key="revision_title">Revisions of Entry</msg>
   <msg key="revisions">Revisions</msg>
+  <msg key="Sort_by_this_column">Sort by this column</msg>
+  <msg key="Sort_by_this_column_ascending">Sort by this column ascending</msg>
+  <msg key="Sort_by_this_column_descending">Sort by this column descending</msg>
+  <msg key="title">Title</msg>
+  <msg key="titles">Titles</msg>
   <msg key="view_item">View Item</msg>
 </message_catalog>

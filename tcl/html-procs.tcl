@@ -1,10 +1,29 @@
+::xo::library doc {
+
+  Tdom support functions. Just to make Tdom createNodeCmds available.
+
+  @author Gustaf Neumann (neumann@wu-wien.ac.at)
+}
+
 package require tdom
 
-proc require_html_procs {} {
+ad_proc -public -deprecated require_html_procs {} {
+    Deprecated: polluting the root namespace.
+
+    @see ::xo::require_html_procs
+} {
+    ::xo::require_html_procs
+}
+
+ad_proc -public ::xo::require_html_procs {} {
+
+      Declare Tcl commands for building HTML elements
+
+} {
   if {[info commands ::html::a] eq ""} {
     namespace eval ::html {
 
-      # Declare Tcl commands for building HTML elements. This is an complete
+      # Declare Tcl commands for building HTML elements. This is a complete
       # set taken from W3C on http://www.w3.org/TR/html4/index/elements.html
       #
 
@@ -42,7 +61,7 @@ proc require_html_procs {} {
 
       #
       # Command generating HTML tags. All these commands have
-      # following sytax: <cmd> ?-option value ...? ?script?
+      # following syntax: <cmd> ?-option value ...? ?script?
       #
       #    -option   name of HTML attribute
       #     value    attribute value

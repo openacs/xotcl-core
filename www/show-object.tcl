@@ -1,7 +1,10 @@
 ad_page_contract {
-  Show an xotcl class or object
+  Show an XOTcl class or object
+
+  @param as_img do NOT include svg content in the HTML rendering
 
   @author Gustaf Neumann
+
   @cvs-id $Id$
 } -query {
   {object:nohtml,trim ::xotcl::Object}
@@ -202,7 +205,7 @@ if {$isclass} {
   }
 
   # Display just up to two extra two levels of heritage to keep the
-  # class in quesiton in focus.
+  # class in question in focus.
   set heritage [DO xo::getObjectProperty $object heritage]
   set subclasses [DO xo::getObjectProperty $object subclass]
 
@@ -236,6 +239,7 @@ if {$isclass} {
   }
 }
 set documented_only [expr {$show_methods < 2}]
+set hide_methods [expr {$show_methods == 0}]
 
 if {[nsv_exists api_library_doc $index]} {
   array set doc_elements [nsv_get api_library_doc $index]
@@ -244,7 +248,11 @@ if {[nsv_exists api_library_doc $index]} {
   if { [info exists doc_elements(param)] && [llength $doc_elements(param)] > 0} {
     append output "<dt><b>Documented Parameters:</b></dt><dd><dl>\n"
     foreach par $doc_elements(param) {
-      append output "<dt><em>-[lindex $par 0]</em></dt><dd>[lrange $par 1 end]</dd>\n"
+      if {[regexp {^\s*(\S+)\s*(.*)$} $par . param desc]} {
+        append output "<dt><em>$param</em></dt><dd>$desc</dd>\n"
+      } else {
+        ad_log warning "show_object: ignoring invalid parameter description <$par>"
+      }
     }
     append output "</dl></dd>"
   }
@@ -258,7 +266,7 @@ if {[nsv_exists api_library_doc $index]} {
     append output "<dt><b>Created:</b>\n<dd>[lindex $doc_elements(creation-date) 0]\n"
   }
   if { [info exists doc_elements(author)] } {
-    append output "<dt><b>Author[ad_decode [llength $doc_elements(author)] 1 "" "s"]:</b>\n"
+    append output "<dt><b>Author[expr {[llength $doc_elements(author)] > 1 ? "s" : ""}]:</b>\n"
     foreach author $doc_elements(author) {
       append output "<dd>[::apidoc::format_author $author]\n"
     }
@@ -399,13 +407,13 @@ if {$isclass && $with_instances} {
   }
 }
 
+#
+# "as_img" true means: do not include SVG in the code.
+#
 if {!$as_img} {
   #
-  # Construct the dot code from the provided classes.
-  #
-  # TODO: it would be nice to pass the selected options from the
-  # dimensional slider to dotcode, since with svg, the dot code
-  # constructs URLS for navigation in the class tree.
+  # Construct the dot code from the provided classes as embedded svg
+  # code.
   #
   set dot_code [::xo::dotcode -dpi 72 \
                     -with_children $with_children \
@@ -413,41 +421,13 @@ if {!$as_img} {
                     -omit_base_classes 0 \
                     -current_object $object \
                     -documented_methods $documented_only \
+                    -hide_methods $hide_methods \
                     $class_hierarchy]
-  set dot ""
-  catch {set dot [::util::which dot]}
-  # final ressort for cases, where ::util::which is not available
-  if {$dot eq "" && [file executable /usr/bin/dot]} {set dot /usr/bin/dot}
-  if {$dot eq ""} {
-    #ns_return 404 plain/text "dot not found"
-    ns_log warning "program 'dot' is not available"
-    #ad_script_abort
-  } else {
 
-    set tmpnam [ad_tmpnam]
-    set tmpfile $tmpnam.svg
-    set f [open $tmpnam.dot w]; puts $f $dot_code; close $f
-
-    #ns_log notice "svg $tmpnam dot $tmpnam.dot"
-    set f [open "|$dot  -Tsvg -o $tmpfile" w]; puts $f $dot_code
-    try {
-      close $f
-    } on error {errorMsg} {
-      ns_log warning "dot returned $errorMsg"
-    }
-    set f [open  $tmpfile]; set svg [read $f]; close $f
-
-    # delete the first three lines generated from dot
-    regsub {^[^\n]+\n[^\n]+\n[^\n]+\n} $svg "" svg
-    set css {
-      svg g a:link {text-decoration: none;}
-      div.inner svg {width: 100%; margin: 0 auto;}
-    }
-    set svg "<style>$css</style><div><div class='inner'>$svg</div></div>"
-
-    file delete -- $tmpfile
-    file delete -- $tmpnam.dot
-  }
+  set svg [util::inline_svg_from_dot -css {
+    svg g a:link {text-decoration: none;}
+    div.inner svg {width: 100%; margin: 0 auto;}
+  } $dot_code]
 }
 
 if {$isclass} {

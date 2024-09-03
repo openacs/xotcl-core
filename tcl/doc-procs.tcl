@@ -18,7 +18,7 @@ namespace eval ::xo {
         return $result
     }
 
-    ad_proc dot_append_method {{-documented_methods 1} e methods_ref kind} {
+    ad_proc -private dot_append_method {{-documented_methods 1} e methods_ref kind} {
     } {
         upvar $methods_ref methods
         set infokind $kind
@@ -28,7 +28,7 @@ namespace eval ::xo {
         foreach methodName [xo::getObjectProperty $e $kind] {
             if {$documented_methods} {
                 set proc_index [::xo::api proc_index $scope $e $kind $methodName]
-                #my msg "check $methodName => [nsv_exists api_proc_doc $proc_index]"
+                #:msg "check $methodName => [nsv_exists api_proc_doc $proc_index]"
                 if {[nsv_exists api_proc_doc $proc_index]} {
                     lappend methods $prefix$methodName
                 }
@@ -38,7 +38,7 @@ namespace eval ::xo {
         }
     }
 
-    ad_proc dotclass {{-is_focus 0} {-documented_methods 1} e} {
+    ad_proc -private dotclass {{-is_focus 0} {-hide_methods 1} {-documented_methods 1} e} {
     } {
         set definition ""
         if {$is_focus} {
@@ -46,7 +46,7 @@ namespace eval ::xo {
         } else {
             set style ""
         }
-        set url [export_vars -base show-object [list [list object $e]]]
+        set url [export_vars -base show-object {{object $e}}]
         append definition "[dotquote $e] \[${style}URL=\"$url\",label=\"\{$e|"
         foreach slot [$e info slots] {
             set name ""
@@ -58,24 +58,29 @@ namespace eval ::xo {
         append definition "|"
         ::xo::api scope_from_object_reference scope e
         set methods [list]
-        dot_append_method -documented_methods $documented_methods $e methods proc
-        dot_append_method -documented_methods $documented_methods $e methods instproc
-        dot_append_method -documented_methods $documented_methods $e methods instforward
-        foreach method [lsort $methods] {append definition "$method\\l" }
+        if {!$hide_methods} {
+            dot_append_method -documented_methods $documented_methods $e methods proc
+            dot_append_method -documented_methods $documented_methods $e methods instproc
+            dot_append_method -documented_methods $documented_methods $e methods instforward
+        }
+        foreach method [lsort $methods] {
+            append definition "$method\\l"
+        }
         append definition "\}\"\];\n"
     }
 
-    ad_proc dotobject {e} {
+    ad_proc -private dotobject {e} {
     } {
-        set url [export_vars -base show-object [list [list object $e]]]
+        set url [export_vars -base show-object {{object $e}}]
         set definition "[dotquote $e] \[URL=\"$url\"\];\n";
     }
 
-    ad_proc dotcode {
+    ad_proc -private dotcode {
         {-with_children 0}
         {-with_instance_relations 0}
         {-omit_base_classes 1}
         {-documented_methods 1}
+        {-hide_methods 1}
         {-current_object ""}
         {-dpi 96}
         things
@@ -87,13 +92,17 @@ namespace eval ::xo {
         set mclasses {}
 
         foreach e $things {
-            if {![::nsf::is object $e] || ($omit_base_classes && [::nsf::is baseclass $e])} continue
+            if {![::nsf::is object $e]
+                || ($omit_base_classes && [::nsf::is baseclass $e])
+            } continue
             lappend [expr {[::nsf::is class $e] ? "classes" : "objects"}] $e
         }
         set instances ""
         if {$with_instance_relations} {
             foreach e $things {
-                if {![::nsf::is object $e] || ($omit_base_classes && [::nsf::is baseclass $e])} continue
+                if {![::nsf::is object $e]
+                    || ($omit_base_classes && [::nsf::is baseclass $e])
+                } continue
                 set c [$e info class]
                 if {$omit_base_classes && [::nsf::is baseclass $c]} continue
                 if {$c ni $things} {lappend iclasses $c}
@@ -101,6 +110,7 @@ namespace eval ::xo {
             }
         }
         set superclasses ""
+        set drawn ""
         foreach e $classes {
             if {![::nsf::is object $e]} continue
             set reduced_sc [list]
@@ -108,10 +118,21 @@ namespace eval ::xo {
                 if {$omit_base_classes && [::nsf::is baseclass $sc]} continue
                 lappend reduced_sc $sc
             }
-            if {$reduced_sc eq {}} continue
+            if {$reduced_sc eq {}} {
+                continue
+            }
             foreach sc $reduced_sc {
-                if {$sc in $things} {
-                    append superclasses "[dotquote $e]->[dotquotel $sc];\n"
+                #
+                # Draw always the superclass of the object of
+                # interest, which might in the case of multiple
+                # inheritance not in the "things" variable.  This
+                # might leave out the superclass of the superclass.
+                #
+                if {$sc in $things || $sc ne "::nx::Object"} {
+                    if {![dict exists $drawn $e-$sc]} {
+                        append superclasses "[dotquote $e]->[dotquotel $sc];\n"
+                        dict set drawn $e-$sc 1
+                    }
                 }
             }
         }
@@ -150,7 +171,11 @@ namespace eval ::xo {
         }
 
         foreach e $classes {
-            append tclasses [dotclass -is_focus [expr {$e eq $current_object}] -documented_methods $documented_methods $e]
+            append tclasses [dotclass \
+                                 -is_focus [expr {$e eq $current_object}] \
+                                 -hide_methods $hide_methods \
+                                 -documented_methods $documented_methods \
+                                 $e]
         }
         set tobjects {}
         foreach e $objects {

@@ -1,7 +1,18 @@
-# Motivations: 
+::xo::library doc {
+
+  xotcl-core implementation for OpenACS package parameters.
+
+  This functionality was backported to acs-tcl in OpenACS 5.10. The
+  functions here are just for backward compatibility, in case these
+  functions were called directly.
+
+  @author Gustaf Neumann (neumann@wu-wien.ac.at)
+}
+
+# Motivations:
 #
 #  - Huge number of parameter_values in larger dotlrn installations
-#    Learn: currently > 0.3 mio entries, 
+#    Learn: currently > 0.3 mio entries,
 #    Galileo: > 2mio (2nd most frequent kind of object type)
 #    Small oacs installations: 1000 objects (38 package instances)
 #
@@ -14,13 +25,13 @@
 #   Most parameters are stored multiple times with the same values
 #   (e.g. most dotlrn parameters > 4000 times on dotlrn; cause:
 #   Cause: high number of communities.
-#  
-#   Do we really need to store 4000 times what the pretty-plural 
+#
+#   Do we really need to store 4000 times what the pretty-plural
 #   string is one and the same string?
 #
 # - Most parameter_values are identical to default values
 #   For 1 parameter in learn, we have 8 different values, for
-#   4 parameters we have 3 different values, ... for most, 
+#   4 parameters we have 3 different values, ... for most,
 #   all values are the same
 #
 # - Huge space improvements, when redundancy is removed.
@@ -29,12 +40,12 @@
 #   => especially big savings on larger installations.
 #
 # Other shortcomings:
-# 
-# - Existent design is 2 level: 
+#
+# - Existent design is 2 level:
 #     package-key provides default
 #     package-instance keeps values (materialized cross-product)
 #
-# - Consquences
+# - Consequences
 #   1) Since default values are copied into
 #      per-package-instance-values altering the default has no
 #      immediate effect.  It would be nice to alter in an OpenACS
@@ -54,14 +65,14 @@
 # flexible) and is substantially faster (current implementation):
 #      parameter get_from_package_key   old: 172.92 new: 32.16 (5x)
 #      parameter get                    old: 63.09 new: 31.29 (2x)
-#      
-# The implementation uses the OpenACS datamodel (apm_packages, 
+#
+# The implementation uses the OpenACS datamodel (apm_packages,
 # apm_package_values) and loads the parameters during startup.
 #
-# Missing: 
+# Missing:
 #   - definition of new parameters (based on ::xo::db interface)
 #   - changing of per-package-key values
-#   - user interface 
+#   - user interface
 #   - alternate permissions for changing/deleting per-package-instance and
 #     per-package-key values (simple approach: use swa for the latter)
 #
@@ -74,8 +85,8 @@
 #   ::xo::Package (apm_package)
 #      <- ::xowiki::Package
 #           <- ::s5::Package
-#   
-#   package_parameter: 
+#
+#   package_parameter:
 #       parameter_id  package_key  parameter_name         default_value
 #        835          xowiki       with_yahoo_publisher     0
 #       2071          s5           with_yahoo_publisher     0
@@ -87,20 +98,20 @@
 # Lookup for package_id=2075 "with_yahoo_publisher"
 #   1) lookup parameter_id for "with_yahoo_publisher" from s5 (::s5::Package)
 #      1.1) parameter_id exists for s5 => parameter_id=2071
-#           lookup value for parameter_id=2071,package_id=2075 
-#           1.1.1) value for parameter=2071 and package_id=2075 exists 
+#           lookup value for parameter_id=2071,package_id=2075
+#           1.1.1) value for parameter=2071 and package_id=2075 exists
 #                  => return value
-#           1.1.2) value for parameter=2071 and package_id=2075 does not exist 
+#           1.1.2) value for parameter=2071 and package_id=2075 does not exist
 #                  => return default value for parameter and package_key=s5
 #      1.2) no parameter_id for s5 + "with_yahoo_publisher"
 #           search for parameter_id in superclasses ...
 #
 #   2) lookup parameter_id for "with_yahoo_publisher" from superclass
 #      2.1) parameter_id exists for xowiki => parameter_id=835
-#           lookup value for parameter_id=835,package_id=2075 
-#           2.1.1) value for parameter=835 and package_id=2075 exists 
+#           lookup value for parameter_id=835,package_id=2075
+#           2.1.1) value for parameter=835 and package_id=2075 exists
 #                  => return value
-#           2.1.2) value for parameter=835 and package_id=2075 does not exist 
+#           2.1.2) value for parameter=835 and package_id=2075 does not exist
 #                  => return default value for parameter and package_key=xowiki
 #      2.2) no parameter_id for xowiki + "with_yahoo_publisher"
 #           search for parameter_id in superclasses ...
@@ -108,7 +119,7 @@
 namespace eval ::xo {
 
   Class create ::xo::parameter
-  
+
   # Every OpenACS parameter should work with the methods defined here.
   # So, fetch first the apm_parameter class from the definitions
   # in the database, and ...
@@ -133,7 +144,7 @@ namespace eval ::xo {
     # TODO: Constraint_values are dummies for now.
     #
     # Should be for db::Attributes:
-    #    constraint apm_parameters_datatype_ck 
+    #    constraint apm_parameters_datatype_ck
     #    check(datatype in ('number', 'string','text')),
     #
     # Could be used directly for UI selections as well.
@@ -164,9 +175,12 @@ namespace eval ::xo {
   }
   parameter proc get_package_id_from_package_key {-package_key:required} {
     return [ns_cache eval xotcl_package_cache package_id-$package_key {
-      ::xo::dc get_value get_package_id \
-          [::xo::dc select -vars package_id -from apm_packages \
-               -where "package_key = :package_key" -limit 1]
+      ::xo::dc get_value get_package_id {
+        select package_id
+        from apm_packages
+        where package_key = :package_key
+        fetch first 1 rows only
+      }
     }]
   }
 
@@ -185,14 +199,14 @@ namespace eval ::xo {
       if {[info exists :$key]} {
         return [set :$key]
       }
-      # 
+      #
       # We did not find the parameter object for the current package
       # key. Loop up the parameter class (TODO: should be done from
       # object_type of package_id, but first, we have to store it
       # there).  We simply iterate here of the classes of packages
       # (only a few exist).
-      # 
-      #my log "--p looking for $parameter_name in superclass of package_key=$package_key"
+      #
+      #:log "--p looking for $parameter_name in superclass of package_key=$package_key"
       set success 0
       set pkg_class [::xo::PackageMgr get_package_class_from_package_key $package_key]
       if {$pkg_class ne ""} {
@@ -206,7 +220,7 @@ namespace eval ::xo {
     }
     if {$retry} {
       #
-      # The parameter object was not found. Maybe this is a new 
+      # The parameter object was not found. Maybe this is a new
       # parameter, not known in this thread. We try to load it
       #
       set r [::xo::db::apm_parameter instantiate_objects \
@@ -225,7 +239,9 @@ namespace eval ::xo {
         #
         # seems as if this parameter was newly defined
         #
-        if {![info exists package_id]} {set package_id ""}
+        if {![info exists package_id]} {
+          set package_id ""
+        }
         return [:get_parameter_object \
                     -retry false \
                     -parameter_name $parameter_name \
@@ -244,7 +260,9 @@ namespace eval ::xo {
                                        -parameter:required
                                        -default
                                      } {
-    set parameter_obj [:get_parameter_object -package_key $package_key -parameter_name $parameter]
+    set parameter_obj [:get_parameter_object \
+                           -package_key $package_key \
+                           -parameter_name $parameter]
     if {$parameter_obj eq ""} {
       if {[info exists default]} {return $default}
       error "No parameter '$parameter' for package_key '$package_key' defined"
@@ -269,68 +287,169 @@ namespace eval ::xo {
       # Try to get the package id; if everything fails, use kernel_id
       # (to be compatible with traditional parameter::get)
       #
-      set package_id [expr {[info commands ::xo::cc] ne "" ? 
-                            [::xo::cc package_id] : 
-                            [ns_conn isconnected] ? [ad_conn package_id] : [ad_acs_kernel_id]}]
+      set package_id [expr {[nsf::is object ::xo::cc] ?
+                            [::xo::cc package_id] :
+                            [ns_conn isconnected] ? [ad_conn package_id] : $::acs::kernel_id}]
     }
-    set parameter_obj [:get_parameter_object -parameter_name $parameter -package_id $package_id -retry $retry]
+    ad_log_deprecated proc "xo::parameter get -parameter $parameter" parameter::get
+    return [::parameter::get -parameter $parameter -package_id $package_id \
+                {*}[expr {[info exists default] ? [list -default $default] : ""}]]
+
+    set parameter_obj [:get_parameter_object \
+                           -parameter_name $parameter \
+                           -package_id $package_id \
+                           -retry $retry]
     if {$parameter_obj ne ""} {
       set value [$parameter_obj get -package_id $package_id]
-      if {$value eq "" && [$parameter_obj set __success] == 0} {return $default}
+      if {$value eq "" && [$parameter_obj set __success] == 0} {
+        return $default
+      }
       return $value
     } else {
       return $default
-    } 
+    }
   }
-  
+
+  parameter proc set_value {
+                      -package_id
+                      -parameter:required
+                      -value:required
+                    } {
+
+    if {![info exists package_id]} {
+      #
+      # Try to get the package id; if everything fails, use kernel_id
+      # (to be compatible with traditional parameter::get)
+      #
+      set package_id [expr {[nsf::is object ::xo::cc] ?
+                            [::xo::cc package_id] :
+                            [ns_conn isconnected] ? [ad_conn package_id] : $::acs::kernel_id}]
+    }
+
+    ad_log_deprecated proc "xo::parameter set_value -parameter $parameter" parameter::set_value
+    return [::parameter::set_value -package_id $package_id -parameter $parameter -value $value]
+
+    set parameter_obj [:get_parameter_object -parameter_name $parameter -package_id $package_id]
+    if {$parameter_obj ne ""} {
+      $parameter_obj set_per_package_instance_value $package_id $value
+    } else {
+      error "could not create parameter object"
+    }
+  }
+
   #
   # Methods for parameter instances
   #
-  parameter instproc set_per_package_instance_value {package_id value} {
-    set array [:per_package_id_name $package_id]
-    nsv_set $array [:parameter_name] $value
-  }
-  parameter instproc clear_per_package_instance_value {package_id value} {
-    set array [:per_package_id_name $package_id]
-    if {[nsv_exists $array [:parameter_name]]} {
-      nsv_unset $array [:parameter_name]
+  if {[::acs::icanuse "nsv_dict"]} {
+    #
+    # Basic model (with nsv_dict):
+    #
+    #   nsv_dict CFG-X $package_id [list $parameter $value ...]
+    #
+    # The value X is just used for partitioning to avoid all
+    # configuration values on a single mutex. This can be used for
+    # fine-tuning mutex locks on such nsvs in the future.
+    #
+    parameter instproc -deprecated per_package_id_name {package_id} {
+      xo::show_stack
+      return CFG-[expr {$package_id % 2}]
     }
+    parameter instproc -deprecated set_per_package_instance_value {package_id value} {
+      set array [:per_package_id_name $package_id]
+      ns_log notice "[list nsv_dict set $array $package_id ${:parameter_name} $value]"
+      xo::show_stack
+      nsv_dict set $array $package_id ${:parameter_name} $value
+    }
+    parameter instproc clear_per_package_instance_value {package_id} {
+      set array [:per_package_id_name $package_id]
+      if {[nsv_dict exists $array $package_id ${:parameter_name}]} {
+        nsv_dict unset $array $package_id ${:parameter_name}
+      }
+    }
+    parameter instproc get {-package_id:required} {
+      set array [:per_package_id_name $package_id]
+      #
+      # Try to get the variable from the nsv. On success,
+      #
+      if {[nsv_dict get -varname result $array $package_id ${:parameter_name}]} {
+        #:log "--parameter get <${:parameter_name}> for $package_id -> '$result'"
+        set :__success 1
+        return $result
+      }
+      # We could as well store per-package-key values,
+      # but most probably, this is not needed if we use
+      # the parameter default (which is per package-key).
+      # With additional  per-package-key values, we could implement
+      # a very simple "reset to default" for package-key values.
+      #
+      #     foreach cls $package_class_hierarchy {
+      #       set nsv_array_name [:per_package_class_name $cls]
+      #       if {[nsv_exists $nsv_array_name $key]} {
+      #         #:log "--parameter get <$key> from $nsv_array_name --> '[nsv_get $nsv_array_name $key]'"
+      #         return [nsv_get $nsv_array_name $key]
+      #       }
+      #     }
+      #
+      #:log "--parameter get <$key> from default of [:package_key] --> '[:default_value]'"
+      set :__success 0
+      return ${:default_value}
+    }
+
+  } else {
+    #
+    # Basic model (without nsv_dict):
+    #
+    #   ns_set CFG-$package_id $parameter $value
+    #
+    parameter instproc per_package_id_name {package_id} {
+      return "CFG-$package_id"
+    }
+    parameter instproc set_per_package_instance_value {package_id value} {
+      set array [:per_package_id_name $package_id]
+      nsv_set $array [:parameter_name] $value
+    }
+    parameter instproc clear_per_package_instance_value {package_id} {
+      set array [:per_package_id_name $package_id]
+      if {[nsv_exists $array [:parameter_name]]} {
+        nsv_unset $array [:parameter_name]
+      }
+    }
+    #   parameter instproc per_package_class_name {package_class} {
+    #     return "CFG-$package_class"
+    #   }
+    parameter instproc get {-package_id:required} {
+      set key [:parameter_name]
+      set nsv_array_name [:per_package_id_name $package_id]
+      if {[nsv_exists $nsv_array_name $key]} {
+        #:log "--parameter get <$key> from $nsv_array_name --> '[nsv_get $nsv_array_name $key]'"
+        set :__success 1
+        return [nsv_get $nsv_array_name $key]
+      }
+      # We could as well store per-package-key values,
+      # but most probably, this is not needed if we use
+      # the parameter default (which is per package-key).
+      # With additional  per-package-key values, we could implement
+      # a very simple "reset to default" for package-key values.
+      #
+      #     foreach cls $package_class_hierarchy {
+      #       set nsv_array_name [:per_package_class_name $cls]
+      #       if {[nsv_exists $nsv_array_name $key]} {
+      #         #:log "--parameter get <$key> from $nsv_array_name --> '[nsv_get $nsv_array_name $key]'"
+      #         return [nsv_get $nsv_array_name $key]
+      #       }
+      #     }
+      #
+      #:log "--parameter get <$key> from default of [:package_key] --> '[:default_value]'"
+      set :__success 0
+      return [:default_value]
+    }
+
   }
+
   parameter instproc initialize_loaded_object {} {
     [self class] set Parameter_id(${:package_key},${:parameter_name}) [self]
   }
-  parameter instproc per_package_id_name {package_id} {
-    return "CFG-$package_id"
-  }
-  #   parameter instproc per_package_class_name {package_class} {
-  #     return "CFG-$package_class"
-  #   }
-  parameter instproc get {-package_id:required} {
-    set key [:parameter_name]
-    set nsv_array_name [:per_package_id_name $package_id]
-    if {[nsv_exists $nsv_array_name $key]} {
-      #my log "--parameter get <$key> from $nsv_array_name --> '[nsv_get $nsv_array_name $key]'"
-      set :__success 1
-      return [nsv_get $nsv_array_name $key]
-    }
-    # We could as well store per-package-key values,
-    # but most probably, this is not needed if we use
-    # the parameter default (which is per package-key).
-    # With additional  per-package-key values, we could implement
-    # a very simple "reset to default" for package-key values.
-    #
-    #     foreach cls $package_class_hierarchy {
-    #       set nsv_array_name [:per_package_class_name $cls]
-    #       if {[nsv_exists $nsv_array_name $key]} {
-    #         #my log "--parameter get <$key> from $nsv_array_name --> '[nsv_get $nsv_array_name $key]'"
-    #         return [nsv_get $nsv_array_name $key]
-    #       }
-    #     }
-    #
-    #my log "--parameter get <$key> from default of [:package_key] --> '[:default_value]'"
-    set :__success 0
-    return [:default_value]
-  }
+
 
   # get apm_parameter objects
   ::xo::db::apm_parameter instantiate_objects \
@@ -342,56 +461,61 @@ namespace eval ::xo {
   #foreach p [::xo::db::apm_parameter info instances] { ns_log notice [$p serialize] }
 
   parameter proc initialize_parameters {} {
-    # Get those parameter values, which are different from the default and
-    # remember theses per package_id.
+    #
+    # Get those parameter values, which are different from the default
+    # and remember these per package_id. For site-wide parameters -
+    # which we do not handle here - the package_id is NULL, so we skip
+    # it.
+    #
     xo::dc foreach get_non_default_values {
-      select p.parameter_id, p.package_key, v.package_id, p.parameter_name, 
-      p.default_value, v.attr_value 
-      from apm_parameters p, apm_parameter_values v 
-      where p.parameter_id = v.parameter_id 
+      select p.parameter_id, p.package_key, v.package_id, p.parameter_name,
+      p.default_value, v.attr_value
+      from apm_parameters p, apm_parameter_values v
+      where p.parameter_id = v.parameter_id
       and coalesce(attr_value,'') <> coalesce(p.default_value,'')
+      and package_id is not null
     } {
-      #      ns_log notice "--p $parameter_id $package_key $package_id $parameter_name <$attr_value>"
+      # ns_log notice "--p $parameter_id $package_key $package_id $parameter_name <$attr_value>"
       $parameter_id set_per_package_instance_value $package_id $attr_value
     }
   }
 
-  parameter initialize_parameters
+  #parameter initialize_parameters
 
   #
   # For the time being: catch changed parameter values
   #
-  ad_proc -public -callback subsite::parameter_changed -impl xotcl-param-procs {
-    -package_id:required
-    -parameter:required
-    -value:required
-  } {
-    Implementation of subsite::parameter_changed for xotcl param procs
-    
-    @param package_id the package_id of the package the parameter was changed for
-    @param parameter  the parameter name
-    @param value      the new value
-  } {
-    #
-    # In order to use the existing inerface for parameters, we catch
-    # all parameter changes and update accordingly the values in the new
-    # interface.
-    #
-    set package_key [apm_package_key_from_id $package_id]
-    set parameter_obj [::xo::parameter get_parameter_object \
-                           -package_key $package_key \
-                           -parameter_name $parameter]
-    
-    if {$parameter_obj eq ""} {
-      # We have still no parameter. There must be something significantly wrong.
-      error "--parameter $parameter for package $package_key, package_id $package_id does not exist"
-    } else {
-      $parameter_obj clear_per_package_instance_value $package_id $value
-      if {[$parameter_obj default_value] ne $value} {
-        $parameter_obj set_per_package_instance_value $package_id $value
-      }
-    }
-  }
+  # ad_proc -public -callback subsite::parameter_changed -impl xotcl-param-procs {
+  #   -package_id:required
+  #   -parameter:required
+  #   -value:required
+  # } {
+  #   Implementation of subsite::parameter_changed for xotcl param procs
+  #
+  #   @param package_id the package_id of the package the parameter was changed for
+  #   @param parameter  the parameter name
+  #   @param value      the new value
+  # } {
+  #   #
+  #   # In order to use the existing interface for parameters, we catch
+  #   # all parameter changes and update accordingly the values in the new
+  #   # interface.
+  #   #
+  #   set package_key [apm_package_key_from_id $package_id]
+  #   set parameter_obj [::xo::parameter get_parameter_object \
+  #                          -package_key $package_key \
+  #                          -parameter_name $parameter]
+  #
+  #   if {$parameter_obj eq ""} {
+  #     # We have still no parameter. There must be something significantly wrong.
+  #     ns_log warning "parameter $parameter for package $package_key, package_id $package_id does not exist (yet)"
+  #   } else {
+  #     $parameter_obj clear_per_package_instance_value $package_id
+  #     if {[$parameter_obj default_value] ne $value} {
+  #       $parameter_obj set_per_package_instance_value $package_id $value
+  #     }
+  #   }
+  # }
 
 
   #
@@ -410,7 +534,7 @@ namespace eval ::xo {
   #   ns_log notice "GET_PACKAGE_KEY old: [time $cmd1 100], new: [time $cmd2 100]"
 
   #   set pid 4906
-  #   set pname trend-elements 
+  #   set pname trend-elements
   #   ns_log notice "xotcl-request-monitor.$pname=[parameter get \
       #       -package_id $pid -parameter $pname]"
   #   set cmd1 "::parameter::get -package_id $pid -parameter $pname"
@@ -435,7 +559,7 @@ namespace eval ::xo {
   #   $p append default_value "1"
   #   $p save
   # $p delete
-  
+
 }
 
 #

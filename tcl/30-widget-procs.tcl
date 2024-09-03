@@ -12,16 +12,13 @@
 }
 
 Object instproc asHTML {{-master defaultMaster} -page:switch} {
-  require_html_procs
+  ::xo::require_html_procs
   dom createDocument html doc
   set root [$doc documentElement]
   if {!$page} {
     $root appendFromScript {:render}
-    set n [$root childNode]
-    if {$n eq ""} {
-      return ""
-    }
-    return [$n asHTML]
+    set nodes [$root childNode]
+    return [join [lmap n $nodes {$n asHTML}] \n]
   } else {
     set slave [$master decorate $root]
     $slave appendFromScript {:render}
@@ -33,7 +30,7 @@ Object instproc asHTML {{-master defaultMaster} -page:switch} {
 #
 # Define Widget classes with localization
 #
-# Most importantly, we define ::xo::Table, somewhat similar to the classical multirow 
+# Most importantly, we define ::xo::Table, somewhat similar to the classical multirow
 
 namespace eval ::xo {}
 namespace eval ::xo::tdom {
@@ -145,7 +142,7 @@ namespace eval ::xo::tdom {
       } else {
         set HTMLattribute $attribute
       }
-      #:msg "[:name] check for $attribute => [info exists :$attribute]"
+      #:msg "${:name} check for $attribute => [info exists :$attribute]"
       if {[info exists :$attribute]} {
         lappend pairs $HTMLattribute [set :$attribute]
       }
@@ -169,14 +166,14 @@ namespace eval ::xo::tdom {
       } else {
         set HTMLattribute $attribute
       }
-      #:msg "[:name] check for $attribute => [info exists :$attribute]"
+      #:msg "${:name} check for $attribute => [info exists :$attribute]"
       if {[:uplevel [list info exists $attribute]]} {
         lappend pairs $HTMLattribute [:uplevel [list set $attribute]]
       }
     }
     return $pairs
   }
-  
+
   #
   # ::xo::tdom::Object
   # is the top of the class hierarchies for tDOM objects
@@ -229,9 +226,9 @@ namespace eval ::xo {
     regsub -all \x01# $text "#" text
     return $text
   }
-  
+
   proc escape_message_keys {text} {
-    regsub -all {(\#[a-zA-Z0-9_:-]+\.[a-zA-Z0-9_:-]+)\#} $text "\\1\x01#" text
+    regsub -all -- {(\#[a-zA-Z0-9_:-]+\.[a-zA-Z0-9_:-]+)\#} $text "\\1\x01#" text
     return $text
   }
 
@@ -253,12 +250,12 @@ namespace eval ::xo {
       set return_text ""
       if {$inline} {
         # Attempt to move all message keys outside of tags
-        while { [regsub -all {(<[^>]*)(\x02\(\x01[^\x01]*\x01\)\x02)([^>]*>)} $text {\2\1\3} text] } {}
-        
+        while { [regsub -all -- {(<[^>]*)(\x02\(\x01[^\x01]*\x01\)\x02)([^>]*>)} $text {\2\1\3} text] } {}
+
         # Attempt to move all message keys outside of <select>...</select> statements
-        regsub -all -nocase {(<option\s[^>]*>[^<]*)(\x02\(\x01[^\x01]*\x01\)\x02)([^<]*</option[^>]*>)} $text {\2\1\3} text
-        
-        while { [regsub -all -nocase {(<select[^>]*>[^<]*)(\x02\(\x01[^\x01]*\x01\)\x02)} $text {\2\1} text] } {}
+        regsub -all -nocase -- {(<option\s[^>]*>[^<]*)(\x02\(\x01[^\x01]*\x01\)\x02)([^<]*</option[^>]*>)} $text {\2\1\3} text
+
+        while { [regsub -all -nocase -- {(<select[^>]*>[^<]*)(\x02\(\x01[^\x01]*\x01\)\x02)} $text {\2\1} text] } {}
       }
 
       while {[regexp {^([^\x02]*)\x02\(\x01([^\x01]*)\x01\)\x02(.*)$} $text _ \
@@ -267,17 +264,17 @@ namespace eval ::xo {
         lassign [split $key .] package_key message_key
         set url [export_vars -base $::xo::acs_lang_url/edit-localized-message {
           {locale {[ad_conn locale]} }
-          package_key message_key 
-          {return_url [ad_return_url]} 
+          package_key message_key
+          {return_url [ad_return_url]}
         }]
         if {[lang::message::message_exists_p [ad_conn locale] $key]} {
           set type localized
         } elseif { [lang::message::message_exists_p "en_US" $key] } {
           set type us_only
         } else { # message key is missing
-          set url [export_vars -base $::xo::acs_lang_url/localized-message-new { 
-            {locale en_US } package_key message_key 
-            {return_url [ad_return_url]} 
+          set url [export_vars -base $::xo::acs_lang_url/localized-message-new {
+            {locale en_US } package_key message_key
+            {return_url [ad_return_url]}
           }]
           set type missing
         }
@@ -305,30 +302,38 @@ namespace eval ::xo {
 
   Class create Localizer -parameter {type key url}
 
+  #Localizer instproc render {} {
+  #  html::a -title [:key] -href [:url] {
+  #    switch -- [:type] {
+  #      localized {set char o; set style "color: green"}
+  #      us_only   {set char *; set style "background-color: yellow; color: red;"}
+  #      missing   {set char @; set style "background-color: red; color: white;"}
+  #    }
+  #    html::span -style $style {html::t $char}
+  #  }
+  #}
+  #Localizer instproc render {} {
+  #  html::a -title [:key] -href [:url] {
+  #    set path /resources/acs-templating/xinha-nightly/plugins/
+  #    switch -- [:type] {
+  #      localized {set img ImageManager/img/btn_ok.gif}
+  #      us_only  {set img Filter/img/ed_filter.gif}
+  #      missing  {set img LangMarks/img/en.gif}
+  #    }
+  #    html::img -alt [:type] -src $path/$img -width 16 -height 16 -border 0
+  #  }
+  #}
   Localizer instproc render {} {
-    html::a -title [:key] -href [:url] {
-      switch -- [:type] {
-        localized {set char o; set style "color: green"}
-        us_only   {set char *; set style "background-color: yellow; color: red;"}
-        missing   {set char @; set style "background-color: red; color: white;"}
-      }
-      html::span -style $style {html::t $char}
+    switch -- ${:type} {
+      localized {set img ImageManager/img/btn_ok.gif}
+      us_only  {set img Filter/img/ed_filter.gif}
+      missing  {set img LangMarks/img/en.gif}
     }
-  }
-  Localizer instproc render {} {
-    html::a -title [:key] -href [:url] {
-      set path /resources/acs-templating/xinha-nightly/plugins/
-      switch -- [:type] {
-        localized {set img ImageManager/img/btn_ok.gif}
-        us_only  {set img Filter/img/ed_filter.gif}
-        missing  {set img LangMarks/img/en.gif}
-      }
-      html::img -alt [:type] -src $path/$img -width 16 -height 16 -border 0
-    }
+    html::a -class "acs-lang-${:type}" -title ${:key} -href ${:url} {}
   }
 
   ## todo : make these checks only in trn mode (additional mixin)
-  
+
   Class create Drawable \
       -superclass ::xo::tdom::AttributeManager \
       -instproc _ {attr} {
@@ -359,28 +364,32 @@ namespace eval ::xo {
         next
         :render_localizer
       }
-   
+
   #
   # for the time being, just a proc
   #
   proc get_user_name {uid} {
-    set name [expr {[string is integer -strict $uid] ?
-                    [person::name -person_id $uid] : ""}]
+    set name [expr {[string is integer -strict $uid]
+                    ? [person::name -person_id $uid]
+                    : ""}]
     if {$name eq ""} {
       set name [_ xotcl-core.nobody]
     }
     return $name
   }
+}
 
+namespace eval ::xo {
   #
-  # define an abstract table
+  # Define an abstract ::xo::Table
   #
-  Class create Table -superclass OrderedComposite \
-      -parameter [expr {[apm_version_names_compare [ad_acs_version] 5.3.0] == 1 ? 
-                        {{no_data  "#xotcl-core.No_Data#"} {renderer TABLE3} name} :
-                        {{no_data  "#xotcl-core.No_Data#"} {renderer TABLE2} name} 
-                      }]
-  
+  Class create ::xo::Table -superclass OrderedComposite \
+      -parameter {
+        {no_data  "#xotcl-core.No_Data#"}
+        {renderer TABLE3}
+        name
+      }
+
   Table instproc destroy {} {
     #:log "-- "
     foreach c {__bulkactions __actions __columns} {
@@ -414,10 +423,26 @@ namespace eval ::xo {
     }
   }
 
+  Table ad_instproc column_names {} {
+
+    Return a list of names of the columns of the current table.  These
+    names are used to refer to the columns, e.g. in sorting or when
+    values are set.
+
+    @return list of names
+
+  } {
+    set names {}
+    foreach c [[[self]::__columns] children] {
+      lappend names [$c name]
+    }
+    return $names
+  }
+
   Table instproc render_with {renderer trn_mixin} {
     #:log "-- renderer=$renderer"
     set cl [self class]
-    :mixin ${cl}::$renderer 
+    :mixin ${cl}::$renderer
     foreach child [$cl info classchildren] {
       #:log "-- $child class [$child info class] "
       set mixinname ${cl}::${renderer}::[namespace tail $child]
@@ -434,83 +459,106 @@ namespace eval ::xo {
     :init_renderer
   }
 
-  Table instproc write_csv {
+  Table instproc format_csv {
     {-delimiter ","}
   } {
     set output ""
     set line [list]
-    foreach column [[self]::__columns children] {
+    set displayColumns [lmap column [[self]::__columns children] {
       if {[$column exists no_csv]} continue
+      if {[$column istype ::xo::Table::BulkAction]} continue
+      if {[$column istype ::xo::Table::HiddenField]} continue
+      set column
+    }]
+    foreach column $displayColumns {
       set label [$column label]
       if {[regexp {^#([a-zA-Z0-9_:-]+\.[a-zA-Z0-9_:-]+)#$} $label _ message_key]} {
         set label [_ $message_key]
       }
-      set value [string map {\" \\\" \n \r)} $label]
-    lappend line \"$value\"
-  }
-  append output [join $line $delimiter] \n
-  foreach row [:children] {
-    set line [list]
-    foreach column [[self]::__columns children] {
-      if {[$column exists no_csv]} continue
-      set value [string map {\" \\\" \n \r} [$row set [$column set name]]]
+      set value [string map {\" \\\" \n \r} $label]
       lappend line \"$value\"
     }
     append output [join $line $delimiter] \n
+    foreach row [:children] {
+      set line [list]
+      foreach column $displayColumns {
+        set value [string map {\" \\\" \n \r} [$row set [$column set name]]]
+        lappend line \"$value\"
+      }
+      append output [join $line $delimiter] \n
+    }
+    return $output
   }
-  #ns_return 200 text/plain $output
-  if {![info exists :name]} {set :name "table"}
-  set fn [xo::backslash_escape \" ${:name}.csv]
-  ns_set put [ns_conn outputheaders] Content-Disposition "attachment;filename=\"$fn\""
-  ns_return 200 text/csv $output
-  ad_script_abort
+
+  Table instproc write_csv {
+    {-delimiter ","}
+  } {
+    if {![info exists :name]} {
+      set :name "table"
+    }
+    set fn [xo::backslash_escape \" ${:name}.csv]
+    ns_set put [ns_conn outputheaders] Content-Disposition "attachment;filename=\"$fn\""
+    ns_return 200 "text/csv; charset=utf-8" [:format_csv -delimiter $delimiter]
+    ad_script_abort
+  }
+
 }
 
-Class create Table::Line \
-    -superclass ::xo::Drawable \
-    -instproc attlist {name atts {extra ""}} {
-      set result [list] 
-      foreach att $atts {
-        set varname $name.$att
-        if {[info exists :$varname]} {
-          lappend result $att [::xo::localize [set :$varname]]
-        }
-      }
-      foreach {att val} $extra {lappend result $att $val}
-      return $result
-    }
-
-
-#
-# Define elements of a Table
-#
 namespace eval ::xo::Table {
-  Class create Action \
+
+  #
+  # Define elements of a ::xo::Table
+  #
+
+  Class create ::xo::Table::Line \
+      -superclass ::xo::Drawable \
+      -instproc attlist {name atts {extra ""}} {
+        set result [list]
+        foreach att $atts {
+          set varname $name.$att
+          if {[info exists :$varname]} {
+            lappend result $att [::xo::localize [set :$varname]]
+          }
+        }
+        foreach {att val} $extra {lappend result $att $val}
+        return $result
+      }
+
+  Class create ::xo::Table::Action \
       -superclass ::xo::OrderedComposite::Child \
-      -parameter {label url {tooltip {}}} 
+      -parameter {{CSSclass ""} label url {tooltip {}} {confirm_message {}}}
   #-proc destroy {} {
   #   :log "-- DESTROY "
   #      show_stack
   #      next
   #    }
 
-  Class create Field \
+  Class create ::xo::Table::Field \
       -superclass ::xo::OrderedComposite::Child \
-      -parameter {label {html {}} {orderby ""} name {richtext false} no_csv {CSSclass ""} {hide 0}} \
+      -parameter {
+        label
+        {html {}}
+        {orderby ""}
+        name
+        {richtext false}
+        no_csv
+        {CSSclass ""}
+        {hide 0}
+      } \
       -instproc init {} {
         set :name [namespace tail [self]]
       } \
       -instproc get-slots {} {
-        set slots [list -[:name]]
+        set slots [list -${:name}]
         foreach subfield {richtext CSSclass} {
-          lappend slots [list -[:name].$subfield ""]
+          lappend slots [list -${:name}.$subfield ""]
         }
         return $slots
       }
 
-  Class create BulkAction \
+  Class create ::xo::Table::BulkAction \
       -superclass ::xo::OrderedComposite::Child \
-      -parameter {name id {html {}} {hide 0}} \
+      -parameter {{CSSclass ""} name id {html {}} {hide 0}} \
       -instproc actions {cmd} {
         #:init
         set grandParent [[:info parent] info parent]
@@ -526,74 +574,76 @@ namespace eval ::xo::Table {
         ;
       }
 
-  Class create AnchorField \
+  Class create ::xo::Table::AnchorField \
       -superclass ::xo::Table::Field \
       -instproc get-slots {} {
-        set slots [list -[:name]]
+        set slots [list -${:name}]
         foreach subfield {href title CSSclass} {
-          lappend slots [list -[:name].$subfield ""]
+          lappend slots [list -${:name}.$subfield ""]
         }
         return $slots
       }
 
-  Class create HiddenField \
+  Class create ::xo::Table::HiddenField \
       -superclass ::xo::Table::Field \
       -instproc get-slots {} {
-        return [list -[:name]]
+        return [list -${:name}]
       }
 
-  Class create ImageField \
+  Class create ::xo::Table::ImageField \
       -parameter {src width height border title alt} \
       -superclass ::xo::Table::Field \
       -instproc get-slots {} {
-        set slots [list -[:name]]
-        lappend slots [list -[:name].src [:src]]
-        lappend slots [list -[:name].CSSclass [:CSSclass]]
+        set slots [list -${:name}]
+        lappend slots [list -${:name}.src ${:src}]
+        lappend slots [list -${:name}.CSSclass ${:CSSclass}]
         foreach att {width height border title alt} {
           if {[info exists :$att]} {
-            lappend slots [list -[:name].$att [:$att]]
+            lappend slots [list -${:name}.$att [:$att]]
           } else {
-            lappend slots [list -[:name].$att]
+            lappend slots [list -${:name}.$att]
           }
         }
         return $slots
       }
 
-  Class create ImageAnchorField \
+  Class create ::xo::Table::ImageAnchorField \
       -superclass ::xo::Table::ImageField \
       -instproc get-slots {} {
-        return [concat [next]  -[:name].href ""]
+        return [concat [next]  -${:name}.href ""]
       }
 
-  Class create ImageField_EditIcon \
+  Class create ::xo::Table::ImageField_EditIcon \
       -superclass ImageAnchorField -parameter {
-        {src /resources/acs-subsite/Edit16.gif} {width 16} {height 16} {border 0} 
+        {src /resources/acs-subsite/Edit16.gif} {width 16} {height 16} {border 0}
         {title "[_ xotcl-core.edit_item]"} {alt "edit"}
       }
-  
-  Class create ImageField_AddIcon \
+
+  Class create ::xo::Table::ImageField_AddIcon \
       -superclass ImageAnchorField -parameter {
-        {src /resources/acs-subsite/Add16.gif} {width 16} {height 16} {border 0} 
+        {src /resources/acs-subsite/Add16.gif} {width 16} {height 16} {border 0}
         {title "[_ xotcl-core.add_item]"} {alt "add"}
       }
 
-  Class create ImageField_ViewIcon \
+  Class create ::xo::Table::ImageField_ViewIcon \
       -superclass ImageAnchorField -parameter {
-        {src /resources/acs-subsite/Zoom16.gif} {width 16} {height 16} {border 0} 
+        {src /resources/acs-subsite/Zoom16.gif} {width 16} {height 16} {border 0}
         {title "[_ xotcl-core.view_item]"} {alt "view"}
       }
-  Class create ImageField_DeleteIcon \
+  Class create ::xo::Table::ImageField_DeleteIcon \
       -superclass ImageAnchorField -parameter {
-        {src /resources/acs-subsite/Delete16.gif} {width 16} {height 16} {border 0} 
+        {src /resources/acs-subsite/Delete16.gif} {width 16} {height 16} {border 0}
         {title "[_ xotcl-core.delete_item]"} {alt "delete"}
       }
-  
-  # export table elements
+}
+
+namespace eval ::xo::Table {
+  #
+  # Export ::xo::Table elements
+  #
   namespace export Field AnchorField HiddenField Action ImageField ImageAnchorField \
       ImageField_EditIcon ImageField_ViewIcon ImageField_DeleteIcon ImageField_AddIcon \
       BulkAction
-}
-
 }
 
 
@@ -623,14 +673,14 @@ namespace eval ::xo::Table {
             html::t -disableOutputEscaping "&middot;"
           }
         }
-      } 
+      }
     }
   }
-  
+
   TABLE instproc render-bulkactions {} {
     set bulkactions [[self]::__bulkactions children]
     html::div -class "list-button-bar-bottom" {
-      html::t "Bulk-Actions:"
+      html::t "#xotcl-core.Bulk_actions#:"
       set bulkaction_container [[lindex $bulkactions 0] set __parent]
       set name [$bulkaction_container set __identifier]
 
@@ -643,50 +693,71 @@ namespace eval ::xo::Table {
                   html::t [$ba label]
                 }
           }
+          set script [subst {
+            acs_ListBulkActionClick("$name","[$ba url]");
+          }]
+          if {[$ba confirm_message] ne ""} {
+            set script [subst {
+              if (confirm('[$ba confirm_message]')) {
+                $script
+              }
+            }]
+          }
           template::add_event_listener \
               -id $id \
               -preventdefault=false \
-              -script [subst {acs_ListBulkActionClick("$name","[$ba url]");}]
+              -script $script
         }
       }
     }
   }
 
   TABLE instproc render-body {} {
-    html::tr -class list-header {
-      foreach o [[self]::__columns children] {
-        $o render
+    html::thead {
+      html::tr -class list-header {
+        foreach o [[self]::__columns children] {
+          $o render
+        }
       }
     }
     set children [:children]
     if {[llength $children] == 0} {
       html::tr {html::td { html::t ${:no_data}}}
     } else {
-      foreach line [:children] {
-        #:log "--LINE vars=[:info vars] cL: [[self class] info vars] r=[:renderer]"
-        html::tr -class [expr {[incr :__rowcount]%2 ? ${:css.tr.odd-class} : ${:css.tr.even-class}}] {
-          foreach field [[self]::__columns children] {
-            html::td  [concat [list class list] [$field html]] { 
-              $field render-data $line
+      html::tbody {
+        foreach line [:children] {
+          #:log "--LINE vars=[:info vars] cL: [[self class] info vars] r=[:renderer]"
+          html::tr -class [expr {[incr :__rowcount]%2 ? ${:css.tr.odd-class} : ${:css.tr.even-class}}] {
+            foreach field [[self]::__columns children] {
+              if {[$field istype HiddenField]} continue
+              if {![$field exists CSSclass]} {
+                # TODO: remove me when message does not show up
+                ns_log warning "CSSclass missing $field\n[$field serialize]"
+                $field set CSSclass ""
+              }
+              set CSSclass [list "list" {*}[$field CSSclass]]
+              html::td [concat [list class $CSSclass] [$field html]] {
+                $field render-data $line
+              }
             }
           }
         }
       }
     }
   }
-  
+
   TABLE instproc render {} {
-    if {![:isobject [self]::__actions]} {:actions {}}
-    if {![:isobject [self]::__bulkactions]} {:bulkactions {}}
+    if {![nsf::is object [self]::__actions]} {:actions {}}
+    if {![nsf::is object [self]::__bulkactions]} {:bulkactions {}}
     set bulkactions [[self]::__bulkactions children]
-    if {$bulkactions eq ""} {
+    if {[llength $bulkactions] == 0} {
       html::table -class ${:css.table-class} {
         :render-actions
         :render-body
       }
     } else {
       set name [[self]::__bulkactions set __identifier]
-      html::form -name $name -method POST { 
+      html::form -name $name -method POST {
         html::table -class ${:css.table-class} {
           :render-actions
           :render-body
@@ -698,39 +769,41 @@ namespace eval ::xo::Table {
 
   #
   # Define renderer for elements of a Table
-  # 
-  # ::xo:Table requires the elements to have the methods render and render-data 
+  #
+  # ::xo:Table requires the elements to have the methods render and render-data
   #
 
   Class create TABLE::Action \
       -superclass ::xo::Drawable \
       -instproc render {} {
-        html::a -class button -title [:_ tooltip] -href [:url] { 
+        html::a -class "button ${:CSSclass}" -title [:_ tooltip] -href ${:url} {
           html::t [:_ label]
         }
         #:log "-- "
       }
   #-proc destroy {} {
   #  :log "-- DESTROY"
-  #  show_stack 
+  #  show_stack
   #  next
   #}
 
-  Class create TABLE::Field -superclass ::xo::Drawable 
+  Class create TABLE::Field -superclass ::xo::Drawable
   TABLE::Field instproc render-data {line} {
-    $line instvar [list [:name].richtext richtext]
+    $line instvar [list ${:name}.richtext richtext]
     if {![info exists richtext] || $richtext eq ""} {
       set richtext [:richtext]
     }
     if {$richtext} {
-      html::t -disableOutputEscaping [$line set [:name]]
+      html::t -disableOutputEscaping [$line set ${:name}]
     } else {
-      html::t [$line set [:name]] 
+      html::t [$line set ${:name}]
     }
   }
 
   TABLE::Field instproc render {} {
-    html::th [concat [list class list] [:html]] { 
+    set CSSclass [list "list" {*}${:CSSclass}]
+    #ns_log notice "FIELD: ${:name}: orderby '${:orderby}' '[:get_orderby]'"
+    html::th [concat [list class $CSSclass] ${:html}] {
       if {${:orderby} eq ""} {
         html::t [:_ label]
       } else {
@@ -740,40 +813,89 @@ namespace eval ::xo::Table {
     }
   }
 
+  TABLE::Field instproc get_orderby {} {
+    #
+    # First, try to get the sort-order from the including ordered
+    # composite, which is supposed to be always the data source.
+    # Only, when this fails, fall back to the old style based on the
+    # adp-level, which is less robust and warn about this usage.
+    #
+    set ordered_composite [${:__parent} info parent]
+    if {[::nsf::is object $ordered_composite] && [$ordered_composite hasclass ::xo::OrderedComposite]} {
+      if {![$ordered_composite exists __orderby] || ![$ordered_composite exists __order]} {
+        #
+        # Tables must always have a defined ordering to ensure stable
+        # appearance and correct setup of sorting arrows.
+        #
+        ad_log warning "downstream application issue: invalid usage of ordered composite:" \
+            "definition of ordering is missing (call method 'orderby' on the ordered composite)."
+        set orderby ""
+      } else {
+        set ordered_composite_orderby [$ordered_composite set __orderby]
+        set ordered_composite_order [$ordered_composite set __order]
+        if {$ordered_composite_order eq "increasing"} {
+          set orderby $ordered_composite_orderby,asc
+        } else {
+          set orderby $ordered_composite_orderby,desc
+        }
+      }
+    } else {
+      ad_log warning "renderSortLabels is still relying on addressing variables on the template::adp_level"
+      set lvl [template::adp_level]
+      if {$lvl ne ""} {
+        upvar #$lvl $orderby_name orderby
+      }
+      if {![info exists orderby]} {
+        set orderby ""
+      }
+    }
+    return $orderby
+  }
+
   TABLE::Field instproc renderSortLabels {} {
     set field ${:orderby}
-    set lvl [template::adp_level]
-    if {$lvl ne ""} {
-      upvar #$lvl orderby orderby
-    }
-    if {![info exists orderby]} {set orderby ""}
-    set new_orderby $orderby
+    set orderby_name orderby
+    set orderby [:get_orderby]
+
+    set sort_up "sort-inactive"
+    set sort_down "sort-inactive"
+
     if {$orderby eq "$field,desc"} {
       set new_orderby $field,asc
-      set title "Sort by this column ascending"
-      set img /resources/acs-templating/sort-ascending.png
+      set title [_ xotcl-core.Sort_by_this_column_ascending]
+      #set img /resources/acs-templating/sort-ascending.png
+      set sort_up "sort-active"
     } elseif {$orderby eq "$field,asc"} {
       set new_orderby $field,desc
-      set title "Sort by this column descending"
-      set img /resources/acs-templating/sort-descending.png
+      set title [_ xotcl-core.Sort_by_this_column_descending]
+      #set img /resources/acs-templating/sort-descending.png
+      set sort_down "sort-active"
     } else {
       set new_orderby $field,asc
-      set title "Sort by this column"
-      set img /resources/acs-templating/sort-neither.png
+      set title [_ xotcl-core.Sort_by_this_column]
+      #set img /resources/acs-templating/sort-neither.png
     }
-    set query [list [list orderby $new_orderby]]
-    if {[catch {set actual_query [ns_conn query]}]} {
-      set actual_query ""
+    set query [list [list $orderby_name $new_orderby]]
+    if {[ns_conn isconnected]} {
+      #
+      # Called interactively
+      #
+      set base [ad_conn url]
+      set query [ns_conn query]
+    } else {
+      #
+      # Called in the background (e.g. from search renderer)
+      #
+      set base .
+      set query ""
     }
-    foreach pair [split $actual_query &] {
-      lassign [split $pair =] key value
-      if {$key eq "orderby"} continue
-      lappend query [list [ns_urldecode $key] [ns_urldecode $value]]
-    }
-    set href [export_vars -base [ad_conn url] $query]
+    set href $base?[::xo::update_query $query $orderby_name $new_orderby]
+
     html::a -href $href -title $title {
       html::t [:_ label]
-      html::img -src $img -alt ""
+      html::span -class "sort-up $sort_up" {html::t "↑"}
+      html::span -class "sort-down $sort_down" {html::t "↓"}
+      #html::img -src $img -alt ""
     }
   }
 
@@ -781,11 +903,19 @@ namespace eval ::xo::Table {
   Class create TABLE::AnchorField \
       -superclass TABLE::Field \
       -instproc render-data {line} {
-        if {[$line exists [:name].href] && 
-            [set href [$line set [:name].href]] ne ""} {
-          # use the CSS class rather from the Field than not the line
-          :instvar CSSclass
-          $line instvar [list [:name].title title]
+        if {[$line exists ${:name}.href]
+            && [set href [$line set ${:name}.href]] ne ""
+          } {
+          # Default class is from the field definition. To it we
+          # append the class coming from the line.
+          set CSSclass ${:CSSclass}
+          if {[$line exists ${:name}.CSSclass]} {
+            set lineCSSclass [$line set ${:name}.CSSclass]
+            if {$lineCSSclass ne ""} {
+              append CSSclass " " $lineCSSclass
+            }
+          }
+          $line instvar [list ${:name}.title title]
           html::a [:get_local_attributes href title {CSSclass class}] {
             return [next]
           }
@@ -796,14 +926,14 @@ namespace eval ::xo::Table {
   Class create TABLE::HiddenField \
       -instproc render {} {;} \
       -instproc render-data {line} {;}
-  
-  
+
+
   Class create TABLE::ImageField \
       -superclass TABLE::Field \
       -instproc render-data {line} {
-        $line instvar [list [:name].CSSclass CSSclass]
+        $line instvar [list ${:name}.CSSclass CSSclass]
         html::a [:get_local_attributes href {style "border-bottom: none;"} {CSSclass class}] {
-          html::img [$line attlist [:name] {src width height border title alt}] {}
+          html::img [$line attlist ${:name} {src width height border title alt}] {}
         }
         $line render_localizer
       }
@@ -811,37 +941,38 @@ namespace eval ::xo::Table {
   Class create TABLE::ImageAnchorField \
       -superclass TABLE::Field \
       -instproc render-data {line} {
-        set href [$line set [:name].href]
-        if {$href ne ""} {
-          #if {$line exists [:name].CSSclass} {set CSSclass [$line set [:name].CSSclass]}
-          $line instvar [list [:name].CSSclass CSSclass]
+        if {[$line exists ${:name}.href]
+            && [set href [$line set ${:name}.href]] ne ""
+          } {
+          #if {$line exists ${:name}.CSSclass} {set CSSclass [$line set ${:name}.CSSclass]}
+          $line instvar [list ${:name}.CSSclass CSSclass]
           html::a [:get_local_attributes href {style "border-bottom: none;"} {CSSclass class}] {
-            html::img [$line attlist [:name] {src width height border title alt}] {}
+            html::img [$line attlist ${:name} {src width height border title alt}] {}
           }
           $line render_localizer
         }
       }
 
-  Class create TABLE::BulkAction -superclass ::xo::Drawable 
+  Class create TABLE::BulkAction -superclass ::xo::Drawable -parameter {{CSSclass ""}}
   TABLE::BulkAction instproc render {} {
-    set name [:name]
     #:msg [:serialize]
-    html::th -class list { 
+    html::th -class list {
       html::input -type checkbox -name __bulkaction -id __bulkaction \
           -title "Mark/Unmark all rows"
       ::html::CSRFToken
     }
     template::add_body_script -script [subst {
       document.getElementById('__bulkaction').addEventListener('click', function (event) {
-        acs_ListCheckAll('$name', this.checked);
+        acs_ListCheckAll('${:name}', this.checked);
       }, false);
     }]
   }
-  
+
   TABLE::BulkAction instproc render-data {line} {
     #:msg [:serialize]
-    set name [:name]
+    set name ${:name}
     set value [$line set [:id]]
+
     html::input -type checkbox -name $name -value $value \
         -id "$name---[string map {/ _} $value]" \
         -title "Mark/Unmark this row"
@@ -860,12 +991,13 @@ namespace eval ::xo::Table {
         }
       } \
       -instproc render {} {
-        if {![:isobject [self]::__actions]} {:actions {}}
-        if {![:isobject [self]::__bulkactions]} {:__bulkactions {}}
+        if {![nsf::is object [self]::__actions]} {:actions {}}
+        if {![nsf::is object [self]::__bulkactions]} {:__bulkactions {}}
         set bulkactions [[self]::__bulkactions children]
         html::div  {
           :render-actions
-          if {$bulkactions eq ""} {
+
+          if {![[self]::__bulkactions exists __identifier]} {
             html::div -class table {
               html::table -class ${:css.table-class} {:render-body}
             }
@@ -893,7 +1025,7 @@ namespace eval ::xo::Table {
   Class create TABLE3 \
       -superclass TABLE2 \
       -instproc init_renderer {} {
-        next 
+        next
         set :css.table-class list-table
         set :css.tr.even-class even
         set :css.tr.odd-class odd
@@ -947,9 +1079,9 @@ Object create defaultMaster -proc decorate {node} {
 Object create pageMaster -proc decorate {node} {
   $node appendFromScript {
     html::div -class defaultMasterClass {
-      html::t "hello header"
+      #html::t "hello header"
       set slave [tmpl::body]
-      html::t "hello footer"
+      #html::t "hello footer"
     }
   }
   return $slave
@@ -958,14 +1090,14 @@ Object create pageMaster -proc decorate {node} {
 
 namespace eval ::xo {
   #
-  # templating and CSS
+  # xo::Page: Templating and CSS
   #
   Class create Page
   Page proc requireCSS {{-order 1} name} {
-    set ::_xo_need_css($name) [expr {[array size ::_xo_need_css]+1000*$order}]
+    set ::_xo_need_css($name) [expr {[array size ::_xo_need_css] + 1000 * $order}]
   }
   Page proc requireStyle {{-order 1} s} {
-    set ::_xo_need_style($s) [expr {[array size ::_xo_need_style]+1000*$order}]
+    set ::_xo_need_style($s) [expr {[array size ::_xo_need_style] + 1000 * $order}]
   }
   Page proc requireJS  name {
     if {![info exists ::_xo_need_js($name)]} {lappend ::_xo_js_order $name}
@@ -1023,8 +1155,8 @@ namespace eval ::xo {
     return ""
   }
 }
-::xo::library source_dependent
 
+::xo::library source_dependent
 #
 # Local variables:
 #    mode: tcl

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<message_catalog package_key="xotcl-core" locale="tr_TR" charset="utf-8">
+
+  <msg key="add">%type% ekle</msg>
+  <msg key="add_item">Öge ekle</msg>
+  <msg key="add_long">%type% türünde yeni öge oluştur</msg>
+  <msg key="create_new_type">Yeni %type% türü oluştur</msg>
+  <msg key="delete_item">Öğeyi sil</msg>
+  <msg key="edit_item">Ögeyi düzenle</msg>
+  <msg key="edit_type">%type% türünü düzenle</msg>
+  <msg key="has_entered_the_room">sohbete katıldı.</msg>
+  <msg key="has_left_the_room">sohbeti terketti.</msg>
+  <msg key="live_revision">Geçerli revizyon</msg>
+  <msg key="parameter_parse_error_text">Sağlanan girdide bir sorun çıktı: &quot;%error_msg%&quot;</msg>
+  <msg key="parameter_parse_error_title">Geçersiz parametre</msg>
+  <msg key="permission_denied">İzin reddedildi</msg>
+  <msg key="policy-error-insufficient_permissions">&lt;blockquote&gt;%method% metodunu %object% objesine uygulamak için yeterli izne sahip değilsiniz.&lt;/blockquote&gt;</msg>
+  <msg key="revision_title">Girdi revizyonları</msg>
+  <msg key="revisions">Revizyonlar</msg>
+  <msg key="view_item">Ögeyi göster</msg>
+</message_catalog>

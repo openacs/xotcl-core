@@ -1,6 +1,6 @@
 xo::library doc {
-  
-  XOTcl implementation for synchronous and asynchronous 
+
+  XOTcl implementation for synchronous and asynchronous
   HTTP and HTTPS requests
 
   @author Gustaf Neumann, Stefan Sobernig
@@ -10,7 +10,7 @@ xo::library doc {
 
 
 #
-# The xotcl HTTP client procs are deprecated.
+# The XOTcl HTTP client procs are deprecated.
 # Use util::http::get/post/... etc. instead
 #
 
@@ -26,7 +26,7 @@ namespace eval ::xo {
   # Defined classes
   #  1) HttpCore (common base class)
   #  2) HttpRequest (for blocking requests + timeout support)
-  #  3) AsyncHttpRequest (for non-blocking requests + timeout support)
+  #  3) AsyncHttpRequest (for nonblocking requests + timeout support)
   #  4) HttpRequestTrace (mixin class)
   #  5) Tls (mixin class, applicable to various protocols)
   #
@@ -42,15 +42,15 @@ namespace eval ::xo {
   #  set r [::xo::HttpRequest new -url http://www.openacs.org/]
   #
   # The resulting object $r contains all information
-  # about the requests, such as e.g. status_code or 
+  # about the requests, such as e.g. status_code or
   # data (the response body from the server). For details
-  # look into the output of [$r serialize]. The result 
+  # look into the output of [$r serialize]. The result
   # object $r is automatically deleted at cleanup of
   # a connection thread.
   #
   # Example of a POST request with a form with var1 and var2
   # (providing post_data causes the POST request).
-  #    
+  #
   #  set r [::xo::HttpRequest new \
                          #             -url http://yourhost.yourdomain/yourpath \
                          #             -post_data [export_vars {var1 var2}] \
@@ -71,16 +71,16 @@ namespace eval ::xo {
   # tclthread <= 2.6.5. At the time of this writing, there was no
   # post-2.6.5 release of tclthread, hence, you are required to obtain a
   # CVS snapshot, dating at least 2008-05-23. E.g.:
-  # 
+  #
   # cvs -z3 -d:pserver:anonymous@tcl.cvs.sourceforge.net:/cvsroot/tcl co \
                          #         -D 20080523 -d thread2.6.5~20080523 thread
   #
   # Provided that the Tcl module tls (see e.g. http://tls.sourceforge.net/)
-  # is available and can be loaded via "package require tls" into 
-  # the aolserver, you can use both TLS/SSL secured or unsecured requests 
+  # is available and can be loaded via "package require tls" into
+  # the AOLserver, you can use both TLS/SSL secured or insecured requests
   # in the synchronous/ asynchronous mode by using an
   # https url.
-  # 
+  #
   #  set r [::xo::HttpRequest new -url https://learn.wu-wien.ac.at/]
   #
   ######################
@@ -88,9 +88,9 @@ namespace eval ::xo {
   # 2 AsyncHttpRequest
   #
   # AsyncHttpRequest is a subclass for HttpCore implementing
-  # asynchronous HTTP requests without vwait (vwait causes 
-  # stalls on aolserver). AsyncHttpRequest requires to provide a listener 
-  # or callback object that will be notified upon success or failure of 
+  # asynchronous HTTP requests without vwait (vwait causes
+  # stalls on AOLserver). AsyncHttpRequest requires to provide a listener
+  # or callback object that will be notified upon success or failure of
   # the request.
   #
   # Asynchronous requests are much more complex to handle, since
@@ -121,22 +121,22 @@ namespace eval ::xo {
   # 3 HttpRequestTrace
   #
   # HttpRequestTrace can be used to trace one or all requests.
-  # If activated, the class writes protocol data into 
-  # /tmp/req-<somenumber>.
+  # If activated, the class writes protocol data into
+  # [ad_tmpdir]/req-<somenumber>.
   #
-  # Use 
+  # Use
   #
   #  ::xo::HttpCore instmixin add ::xo::HttpRequestTrace
   #
-  # to activate trace for all requests, 
+  # to activate trace for all requests,
   # or mixin the class into a single request to trace it.
   #
 
   Class create HttpCore \
       -slots {
         Attribute create host
-        Attribute create protocol -default "http" 
-        Attribute create port 
+        Attribute create protocol -default "http"
+        Attribute create port
         Attribute create path -default "/"
         Attribute create url
         Attribute create method
@@ -157,7 +157,7 @@ namespace eval ::xo {
   HttpCore instproc parse_url {} {
     :instvar protocol url host port path
     if {[regexp {^(http|https)://([^/]+)(/.*)?$} $url _ protocol host path]} {
-      # Be friendly and allow strictly speaking invalid URLs 
+      # Be friendly and allow strictly speaking invalid URLs
       # like "http://www.openacs.org"  (no trailing slash)
       if {$path eq ""} {set path /}
       :set_default_port $protocol
@@ -173,7 +173,7 @@ namespace eval ::xo {
   }
 
   HttpCore instproc get_channel_settings {
-    {-text_translation {auto binary}} 
+    {-text_translation {auto binary}}
     content_type
   } {
     #
@@ -195,10 +195,10 @@ namespace eval ::xo {
     #
     set content_type [string tolower $content_type]
     set trl [expr {[string match "text/*" $content_type] ? $text_translation : "binary"}]
-    
+
     #
-    # 3. In the following, I realise a IANA/MIME charset resolution
-    # scheme which is compliant with RFC 3023 which deals with
+    # 3. In the following, an IANA/MIME charset resolution scheme is
+    # implemented which is compliant with RFC 3023 which deals with
     # treating XML media types properly.
     #
     # see http://tools.ietf.org/html/rfc3023
@@ -207,12 +207,12 @@ namespace eval ::xo {
     # helper proc does not consider RFC 3023 at all. In the future,
     # RFC 3023 support should enter a revised [ns_encodingfortype],
     # for now, we fork.
-    # 
+    #
     # The mappings between Tcl encoding names (as shown by [encoding
     # names]) and IANA/MIME charset names (i.e., names and aliases in
     # the sense of http://www.iana.org/assignments/character-sets) is
     # provided by ...
-    # 
+    #
     # i. A static, built-in correspondence map: see nsd/encoding.c
     # ii. An extensible correspondence map (i.e., the ns/charsets
     # section in config.tcl).
@@ -261,28 +261,28 @@ namespace eval ::xo {
     # = "binary"). This requires the client of the *HttpRequest* to
     # treat the data accordingly.
     #
-    
+
     set enc ""
     if {[regexp {^text/.*$|^.*/xml.*$|^.*\+xml.*$} $content_type]} {
       # Case (A): Check for an explicitly provided charset parameter
       if {[regexp {;\s*charset\s*=([^;]*)} $content_type _ charset]} {
         set enc [ns_encodingforcharset [string trim $charset]]
-      } 
+      }
       # Case (B.1)
       if {$enc eq "" && [regexp {^text/xml.*$|text/.*\+xml.*$} $content_type]} {
         set enc [ns_encodingforcharset us-ascii]
-      } 
+      }
 
       # Case (B.3)
       if {$enc eq "" && [string match "text/*" $content_type]} {
         set enc [ns_encodingforcharset iso-8859-1]
-      }   
+      }
     }
 
     # Cases (C) and (B.2) are covered by the [expr] below.
     return [list encoding [expr {$enc eq ""?"binary":$enc}] translation $trl]
   }
-  
+
 
 
 
@@ -299,7 +299,7 @@ namespace eval ::xo {
     if {[info exists :url]} {
       :parse_url
     } else {
-      if {![info exists port]} {my set_default_port $protocol}
+      if {![info exists port]} {:set_default_port $protocol}
       if {![info exists host]} {
         error "either host or url must be specified"
       }
@@ -310,12 +310,12 @@ namespace eval ::xo {
         error "https request require the Tcl module TLS to be installed\n\
              See e.g. http://tls.sourceforge.net/"
       }
-      # 
+      #
       # Add HTTPs handling
       #
       :mixin add ::xo::Tls
     }
-    if {[catch {my open_connection} err]} {
+    if {[catch {:open_connection} err]} {
       :cancel "error during open connection via $protocol to $host $port: $err"
     }
   }
@@ -331,7 +331,7 @@ namespace eval ::xo {
         #set tag [string trim $tag]
         puts $S "$tag: $value"
       }
-      my $method
+      :$method
     } err]} {
       :cancel "error send $host [:port]: $err"
       return
@@ -392,7 +392,7 @@ namespace eval ::xo {
       :debug "--premature eof"
       return -2
     }
-    if {$n == -1} {my debug "--input pending, no full line"; return -1}
+    if {$n == -1} {:debug "--input pending, no full line"; return -1}
     return $n
   }
   HttpCore instproc reply_first_line {} {
@@ -400,8 +400,8 @@ namespace eval ::xo {
     fconfigure $S -translation crlf
     set n [:getLine response]
     switch -exact -- $n {
-      -2 {my cancel premature-eof; return}
-      -1 {my finish; return}
+      -2 {:cancel premature-eof; return}
+      -1 {:finish; return}
     }
     if {[regexp {^HTTP/([0-9.]+) +([0-9]+) *} $response _ \
              responseHttpVersion status_code]} {
@@ -417,11 +417,11 @@ namespace eval ::xo {
     while {1} {
       set n [:getLine response]
       switch -exact -- $n {
-        -2 {my cancel premature-eof; return}
+        -2 {:cancel premature-eof; return}
         -1 {continue}
         0 {break}
         default {
-          #my debug "--header $response"
+          #:debug "--header $response"
           if {[regexp -nocase {^content-length:(.+)$} $response _ length]} {
             set :content_length [string trim $length]
           } elseif {[regexp -nocase {^content-type:(.+)$} $response _ type]} {
@@ -437,7 +437,7 @@ namespace eval ::xo {
   }
   HttpCore instproc reply_header_done {} {
     :instvar S
-    # we have received the header, including potentially the 
+    # we have received the header, including potentially the
     # content_type of the returned data
     array set "" [:get_channel_settings [:content_type]]
     fconfigure $S -translation $(translation) -encoding $(encoding)
@@ -485,9 +485,9 @@ namespace eval ::xo {
       # create a cond and mutex
       set cond  [thread::cond create]
       set mutex [thread::mutex create]
-      
+
       thread::mutex lock $mutex
-      
+
       # start the asynchronous request
       :debug "--a create new  ::xo::AsyncHttpRequest"
       set req [bgdelivery do -async ::xo::AsyncHttpRequest new \
@@ -516,7 +516,7 @@ namespace eval ::xo {
       if {$status eq "JOB_COMPLETED"} {
         set :data $status_value
       } else {
-        set msg "Timeout-constraint, blocking HTTP request failed. Reason: '$status'" 
+        set msg "Timeout-constraint, blocking HTTP request failed. Reason: '$status'"
         if {$status_value ne ""} {
           append msg " ($status_value)"
         }
@@ -538,9 +538,9 @@ namespace eval ::xo {
       }
     }
   }
-  
+
   #
-  # Asynchronous (non-blocking) requests
+  # Asynchronous (nonblocking) requests
   #
 
   Class create AsyncHttpRequest -superclass HttpCore -slots {
@@ -626,12 +626,12 @@ namespace eval ::xo {
   AsyncHttpRequest instproc reply_first_line_done {} {
     :set_timeout
     :instvar S
-    fileevent $S readable [list [self] header]      
+    fileevent $S readable [list [self] header]
   }
   AsyncHttpRequest instproc reply_header_done {} {
     :instvar S
     :set_timeout
-    # we have received the header, including potentially the 
+    # we have received the header, including potentially the
     # content_type of the returned data
     array set "" [:get_channel_settings [:content_type]]
     fconfigure $S -translation $(translation) -encoding $(encoding)
@@ -647,13 +647,13 @@ namespace eval ::xo {
       set block [read $S]
       :notify reply_data $block
       append :data $block
-      #my debug "reveived [string length $block] bytes"
+      #:debug "received [string length $block] bytes"
     }
   }
 
   #
   # SimpleListener defines a mixin class for providing a stub
-  # implementaton for callbacks of the asynchrous HTTP requests. 
+  # implementation for callbacks of the asynchrous HTTP requests.
   # This class is typically run in the scope of bgdelivery
   #
 
@@ -683,7 +683,7 @@ namespace eval ::xo {
 
       } -instproc success {payload obj} {
         :debug "[string length $payload] bytes payload"
-        #if {[string length $payload]<600} {my log payload=$payload}
+        #if {[string length $payload]<600} {:log payload=$payload}
         # this is called as after a successful request
         :finalize $obj "JOB_COMPLETED" $payload
 
@@ -697,7 +697,7 @@ namespace eval ::xo {
         :log "[self proc] [self args]"
         :log "UNKNOWN $method"
       }
-  
+
   # Mixin class, used to turn instances of
   # AsyncHttpRequest into result callbacks
   # in the scope of bgdelivery, realising
@@ -714,7 +714,7 @@ namespace eval ::xo {
         # If a job was canceled, the status variable might not exist
         # anymore, the condition might be already gone as well.  In
         # this case, we do not have to perform the cond-notify.
-        if {[:exists_status $condition] && 
+        if {[:exists_status $condition] &&
             [:get_status $condition] eq "COND_WAIT_REFRESH"} {
         }
         if {[:exists_status $condition] &&
@@ -731,12 +731,12 @@ namespace eval ::xo {
 
       } -instproc set_cond_timeout {} {
         :instvar condition
-        if {[:exists_status $condition] && 
+        if {[:exists_status $condition] &&
             [:get_status $condition] eq "COND_WAIT_TIMEOUT"} {
           :set_status $condition COND_WAIT_REFRESH
           catch {thread::cond notify $condition}
         }
-        
+
       } -instproc start_request {payload obj} {
         :debug "JOB start request $obj"
         :set_cond_timeout
@@ -754,17 +754,17 @@ namespace eval ::xo {
         :set_cond_timeout
 
       }
-  
-  # 
+
+  #
   # TLS/SSL support
   #
   # Perform HTTPS requests via TLS (does not require nsopenssl)
   # - requires tls 1.5.0 to be compiled into <AOLserver>/lib/ ...
-  # - - - - - - - - - - - - - - - - - - 
+  # - - - - - - - - - - - - - - - - - -
   # - see http://www.ietf.org/rfc/rfc2246.txt
   # - http://wp.netscape.com/eng/ssl3/3-SPEC.HTM
-  # - - - - - - - - - - - - - - - - - - 
-  
+  # - - - - - - - - - - - - - - - - - -
+
   Class create Tls
   Tls instproc open_connection {} {
     :instvar S
@@ -777,27 +777,27 @@ namespace eval ::xo {
     #
     ::tls::import $S
   }
-  
+
 
   #
   # Trace Requests
-  #                                 
+  #
 
-  Class create HttpRequestTrace 
+  Class create HttpRequestTrace
   nsv_set HttpRequestTrace count 0
 
   HttpRequestTrace instproc init {} {
     :instvar F post_data
     set :meta [list]
     set :requestCount [nsv_incr HttpRequestTrace count]  ;# make it an instvar to find it in the log file
-    set F [open /tmp/req-[format %.4d ${:requestCount}] w]
-    
+    set F [open [ad_tmpdir]/req-[format %.4d ${:requestCount}] w]
+
     set method [expr {$post_data eq "" ? "GET" : "POST"}]
     puts $F "$method [:path] HTTP/1.0"
     puts $F "Host: [:host]"
     puts $F "User-Agent: [:user_agent]"
     foreach {tag value} [:request_header_fields] { puts $F "$tag: $value" }
-    next 
+    next
   }
 
   HttpRequestTrace instproc POST {} {
@@ -818,11 +818,11 @@ namespace eval ::xo {
     catch {close ${:F}}
     next
   }
-  
+
   #
   # To activate trace for all requests, uncomment the following line.
   # To trace a single request, mixin ::xo::HttpRequestTrace into the request.
-  #                           
+  #
   # HttpCore instmixin add ::xo::HttpRequestTrace
 }
 

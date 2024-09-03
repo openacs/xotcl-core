@@ -1,6 +1,6 @@
 ::xo::library doc {
 
-  XoTcl - Utility procs for file I/O. Should not be necessary on the
+  XOTcl - Utility procs for file I/O. Should not be necessary on the
   longer run.
 
   @author Gustaf Neumann
@@ -21,6 +21,14 @@ namespace eval ::xo {
     ::fconfigure $F -translation binary -encoding binary
     ::puts -nonewline $F $content
     ::close $F
+  }
+
+  proc write_tmp_file {varFilename content} {
+    upvar $varFilename tmpFileName
+    set F [file tempfile tmpFileName]
+    fconfigure $F -translation binary -encoding binary
+    puts -nonewline $F $content
+    close $F
   }
 }
 

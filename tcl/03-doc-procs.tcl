@@ -1,7 +1,7 @@
 ad_library {
   XOTcl API for the API browser, defines the methods
   ad_proc (for object specific methods),
-  ad_instproc (for tradional methods) and
+  ad_instproc (for traditional methods) and
   ad_doc (for documenting classes). Syntax for the methods
   ad_proc and ad_instproc is like oacs ad_proc, ad_doc
   receives one argument, similar to ad_library.
@@ -9,17 +9,6 @@ ad_library {
   @author Gustaf Neumann
   @creation-date 2005-05-13
   @cvs-id $Id$
-}
-
-# Per default, the content of the ::xotcl:: namespace is not serialized;
-# so we add the specified methods explizitely to the export list
-::Serializer exportMethods {
-  ::xotcl::Object instproc ad_proc
-  ::xotcl::Object instproc ad_forward
-  ::xotcl::Class  instproc ad_instproc
-  ::xotcl::Class  instproc ad_instforward
-  ::xotcl::Object instproc ad_doc
-  ::nx::Class method init
 }
 
 ::nx::Object create ::xo::api {
@@ -121,35 +110,29 @@ ad_library {
     # it multiple times).
     #
     if {$::__form_id eq "1"} {
-      #
-      # jquery is just needed for the used ajax call
-      #
-      template::head::add_javascript -src //code.jquery.com/jquery-1.12.4.min.js
-      security::csp::require script-src code.jquery.com
 
       template::add_body_script -script {
         function ajax_submit(form) {
-          //console.log(form);
-          $.ajax({
-            type: "POST",
-            url: "/xotcl/admin/toggle-debug",
-            data: $(form).serialize(),
-            success: function(msg) {},
-            error: function(){alert("failure");}
-          });
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', '/xotcl/admin/toggle-debug', true);
+          xhr.onreadystatechange = function() {
+            if (this.readyState == 4) {
+              if (this.status != 200) {
+                alert('AJAX submit unexpected response: ' + this.status);
+              }
+            }
+          }
+          xhr.send(new FormData(form));
         };
       }
     }
 
     #
-    # Add the required js and CSS. We use here bootstrap + titatoggle.
+    # Add the required js and CSS. We use here bootstrap + titatoggle,
+    # and assume, we have bootstrap3 installed
     #
-    template::head::add_css -href https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css
-    template::head::add_javascript -src https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js -order 1
-
-    security::csp::require style-src maxcdn.bootstrapcdn.com
-    security::csp::require script-src maxcdn.bootstrapcdn.com
-    security::csp::require font-src maxcdn.bootstrapcdn.com
+    #template::head::add_css -href urn:ad:css:bootstrap3
+    #template::head::add_javascript -src urn:ad:js:bootstrap3
 
     template::head::add_css -href "/resources/xotcl-core/titatoggle/titatoggle-dist.css"
     #
@@ -209,7 +192,10 @@ ad_library {
 
   :public object method scope {} {
     if {[info exists ::xotcl::currentThread]} {
-      # we are in an xotcl thread; the body won't be accessible directly
+      #
+      # We are in an XOTcl thread; the body won't be accessible
+      # by default without the explicit scope.
+      #
       return $::xotcl::currentThread
     }
     return ""
@@ -232,7 +218,7 @@ ad_library {
     if {$script eq "" && [info exists ::xotcl::currentScript]} {
       set script $::xotcl::currentScript
     }
-    set root_dir [acs_root_dir]
+    set root_dir $::acs::rootdir
     set root_length [string length $root_dir]
     if { $root_dir eq [string range $script 0 $root_length-1]} {
       set script [string range $script $root_length+1 end]
@@ -266,9 +252,9 @@ ad_library {
 
   :public object method proc_index {scope obj instproc proc_name} {
     if {$scope eq ""} {
-      return "$obj $instproc $proc_name"
+      return [list [string trimleft $obj :] $instproc $proc_name]
     } else {
-      return "$scope $obj $instproc $proc_name"
+      return [list $scope $obj $instproc $proc_name]
     }
   }
 
@@ -302,20 +288,20 @@ ad_library {
     }
     set string [join $lines \n]
     set html [ns_quotehtml $string]
-    regsub -all {(\n[\t ]*)(\#[^\n]*)} $html \\1<it>\\2</it> html
+    regsub -all -- {(\n[\t ]*)(\#[^\n]*)} $html \\1<it>\\2</it> html
     return "<pre class='code'>$html</pre>"
   }
 
   :public object method get_doc_block {text {restVar ""}} {
     #
     # Get the (first) documentation block of the provided text (which
-    # might be e.g. the body of a method)
+    # might be e.g. the body of a method).
     #
     set lines [split $text \n]
     set docBlock ""
     set i 0
     set nrLines [llength $lines]
-    while {[string trim [lindex $lines $i]] eq "" && $i < $nrLines} {incr i}
+    while {[string is space [lindex $lines $i]] && $i < $nrLines} {incr i}
     while {$i < $nrLines} {
       set line [string trim [lindex $lines $i]]
       incr i
@@ -324,22 +310,21 @@ ad_library {
     }
     if {$restVar ne ""} {
       upvar $restVar rest
-      set rest [join [lrange $lines $i end] \n]
+      set rest [join [lrange $lines $i-1 end] \n]
     }
     #ns_log notice "=================== get_doc_block RETURNS <$docBlock>"
     return $docBlock
   }
 
   :public object method update_object_doc {scope obj doc_string} {
-    ns_log notice "update_object_doc $scope $obj ..."
     #
     # Update the API browser nsvs with information about the provided
     # object.
     #
-
     # If no doc string is provided, try to get it from the object
     # definition.
     #
+
     if {$doc_string eq ""} {
       set doc_string [:get_doc_block [:get_init_block $scope $obj]]
     }
@@ -372,11 +357,15 @@ ad_library {
     set proc_index [::xo::api object_index $scope $obj]
     set doc [dict replace $doc \
                  default_values "" \
-                 switches $switches \
+                 switches0 $switches \
+                 switches1 "" \
                  positionals "" \
                  flags $flags \
                 ]
     #ns_log notice "proc_index <$proc_index> -> $doc"
+    if {![nsv_exists api_proc_doc $proc_index]} {
+      nsv_lappend api_proc_doc_scripts [dict get $doc script] $proc_index
+    }
     nsv_set api_proc_doc $proc_index $doc
     nsv_set api_library_doc $proc_index $doc
 
@@ -403,7 +392,7 @@ ad_library {
       #
       foreach protection {public protected private} {
         foreach m [::nsf::dispatch $obj ::nsf::methods::class::info::methods \
-                       -callprotection $protection -type scripted] {
+                       -path -callprotection $protection -type scripted] {
           set docBlock [:get_doc_block \
                             [::nsf::dispatch $obj ::nsf::methods::class::info::method body $m]]
           ::xo::api update_method_doc \
@@ -437,13 +426,13 @@ ad_library {
   }
 
   :public object method update_method_doc {
-                                           {-protection "public"}
-                                           {-deprecated:switch false}
-                                           {-debug:switch false}
-                                           {-warn:switch false}
-                                           scope obj inst proc_name
-                                           docString
-                                         } {
+    {-protection "public"}
+    {-deprecated:switch false}
+    {-debug:switch false}
+    {-warn:switch false}
+    scope obj inst proc_name
+    docString
+  } {
     set methodType [::xo::getObjectProperty $obj ${inst}methodtype $proc_name]
     set varargs_p [expr {$methodType eq "scripted"
                          && "args" in [::xo::getObjectProperty $obj ${inst}args $proc_name]}]
@@ -452,12 +441,13 @@ ad_library {
                  param "" \
                  protection $protection \
                  varargs_p $varargs_p \
-                 deprecated_p false \
+                 deprecated_p $deprecated \
                  warn_p false \
                  script [::xo::api script_name $scope] \
                  main "" \
                  flags "" \
-                 switches "" \
+                 switches0 "" \
+                 switches1 "" \
                 ]
 
     if {$docString ne ""} {
@@ -488,15 +478,17 @@ ad_library {
           set name $flaggedName
         }
         if {$isFlag} {
-          dict lappend doc switches $name
+          dict lappend doc switches0 $name
           dict lappend doc flags $name $flags
-          #my log "default_value $proc_name: $sw -> '[lindex $f 1]' <$pair/$f>"
+          #:log "default_value $proc_name: $sw -> '[lindex $f 1]' <$pair/$f>"
           if {$flags eq "switch" && $default eq ""} {
             set default "false"
           }
         }
-        #my log "default_value $proc_name: $sw -> 'default' <$pair/$f>"
-        if {[llength $def] > 1} {lappend defaults $name $default}
+        #:log "default_value $proc_name: $sw -> 'default' <$pair/$f>"
+        if {[llength $def] > 1} {
+          lappend defaults $name $default
+        }
       }
       dict set doc default_values $defaults
       dict set doc positionals [::xo::getObjectProperty $obj ${inst}args $proc_name]
@@ -523,6 +515,9 @@ ad_library {
   }
 
   :public object method get_object_source {scope obj} {
+    #
+    # Return the full object definition
+    #
     if {![nsf::is object $obj]} {
       ns_log warning "[self] get_object_source: argument passed as obj is not an object: $obj"
       return ""
@@ -537,17 +532,34 @@ ad_library {
   }
 
   :public object method get_method_source {scope obj prefix method} {
+    #
+    # Return the full method definition.
+    #
     :scope_eval $scope ::Serializer methodSerialize $obj $method $prefix
   }
 
+  :public object method get_method_body {scope obj prefix method} {
+    #
+    # Return the method body on object (when "prefix" is empty) or
+    # class (when "prefix" is "inst").
+    #
+    :scope_eval $scope ::nsf::dispatch $obj \
+        ::nsf::methods::[expr {$prefix eq "inst" ? "class" : "object"}]::info::method \
+        body $method
+  }
+
   :public object method update_nx_docs {{objects ""}} {
+    #
+    # Update for the provided (or all) nx::Object instances the
+    # internal documentation structures.
+    #
     if {[llength $objects] == 0} {
       set objects [nx::Object info instances -closure]
     }
 
     foreach o $objects {
       #
-      # check general per-object documentation
+      # Check general per-object documentation.
       #
       if {[string match ::nx::* $o]} continue
       ::xo::api update_object_doc "" $o ""
@@ -573,10 +585,28 @@ ad_library {
   }
 }
 
-::nx::Class public method init {} {
+# ---------------------------------------------------------------------
+#
+# Per default, the content of the "::xotcl" and "::nx" namespace is
+# not serialized; so when extending the base classes of the object
+# system, one has to these methods explizitely to the export list for
+# the serializer.
+#
+# The following extensions of the base classes are defined here:
+#
+::Serializer exportMethods {
+  ::nx::Class method init
+  ::xotcl::Object instproc ad_proc
+  ::xotcl::Object instproc ad_forward
+  ::xotcl::Class  instproc ad_instproc
+  ::xotcl::Class  instproc ad_instforward
+  ::xotcl::Object instproc ad_doc
+}
+
+::nx::Class method init {} {
   set r [next]
   #
-  # When loading the blueprint, ::xo::api might not be available yet
+  # When loading the blueprint, ::xo::api might not be available yet.
   #
   if {[info commands ::xo::api] ne ""} {
     ::xo::api update_object_doc "" [self] ""

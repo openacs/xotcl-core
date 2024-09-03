@@ -1,7 +1,7 @@
 ::xo::library doc {
 
   Handling ordered Composites
-  
+
   ::xo::OrderedComposite to create tree structures with aggregated
   objects. This is similar to object aggregations, but
   preserves the order. The OrderedComposite supports
@@ -13,7 +13,7 @@
 }
 
 namespace eval ::xo {
-  Class create OrderedComposite 
+  Class create OrderedComposite
 
   OrderedComposite instproc show {} {
     next
@@ -22,12 +22,30 @@ namespace eval ::xo {
     }
   }
 
-  OrderedComposite instproc orderby {{-order "increasing"} variable} {
+  OrderedComposite instproc orderby {{-order "increasing"} {-type dictionary} attribute} {
+    #
+    # Specify the sorting properties order in OrderedComposites. The
+    # sorting is defined via sorting attribute, sorting order and the
+    # sorting type (defining the comparison operators).
+    #
+    # @param order one of "increasing" or "decreasing"
+    # @param type one of "integer", "real", "index" or "dictionary" (default "dictionary")
+    #
+    #ns_log notice "OrderedComposite called with order '$order' type '$type' attribute '$attribute'"
     set :__order $order
-    set :__orderby $variable
+    set :__orderby $attribute
+    set :__ordercompare [ad_decode $type real __compare_tcl integer __compare_tcl __compare]
+    if {$type eq "index"} {
+      :mixin add ::xo::OrderedComposite::IndexCompare
+    }
   }
 
-  OrderedComposite instproc __compare {a b} {
+  OrderedComposite instproc __compare_tcl {a b} {
+    #
+    # Comparison based on plain Tcl compare. This behaves reasonable
+    # on numbers (integer or real) and in mixed cases of numbers and
+    # strings.
+    #
     set by ${:__orderby}
     set x [$a set $by]
     set y [$b set $by]
@@ -40,19 +58,51 @@ namespace eval ::xo {
     }
   }
 
-  OrderedComposite instproc children {} {
-    set children [expr {[info exists :__children] ? ${:__children} : ""}]
-    if {[info exists :__orderby]} {
-      set order [expr {[info exists :__order] ? ${:__order} : "increasing"}]
-      return [lsort -command [list my __compare] -$order $children]
-    } else {
-      return $children
+  if {[::acs::icanuse "ns_strcoll"]} {
+    OrderedComposite instproc __compare {a b} {
+      set by ${:__orderby}
+      set x [$a set $by]
+      set y [$b set $by]
+      return [ns_strcoll $x $y]
+    }
+  } else {
+    OrderedComposite instproc __compare {a b} {
+      set by ${:__orderby}
+      set x [$a set $by]
+      set y [$b set $by]
+      if {$x < $y} {
+        return -1
+      } elseif {$x > $y} {
+        return 1
+      } else {
+        return 0
+      }
     }
   }
+
+  OrderedComposite instproc children {} {
+    if {![info exists :__children]} {
+      return ""
+    }
+
+    if {[info exists :__orderby] && [llength ${:__children}] > 0} {
+      set firstChild [lindex ${:__children} 0]
+      if {[$firstChild exists ${:__orderby}]} {
+        set order [expr {[info exists :__order] ? ${:__order} : "increasing"}]
+        set compare [expr {[info exists :__ordercompare] ? ${:__ordercompare} : "__compare"}]
+        #ns_log notice SORT=[list lsort -command :$compare -$order ${:__children}]
+        return [lsort -command :$compare -$order ${:__children}]
+      } else {
+        ad_log warning "ignore invalid sorting criterion '${:__orderby}'"
+      }
+    }
+    return ${:__children}
+  }
+
   OrderedComposite instproc add obj {
     lappend :__children $obj
     $obj set __parent [self]
-    #my log "-- adding __parent [self] to $obj -- calling after_insert"
+    #:log "-- adding __parent [self] to $obj -- calling after_insert"
     #$obj __after_insert
   }
   OrderedComposite instproc delete obj {
@@ -61,31 +111,42 @@ namespace eval ::xo {
     set :__children [lreplace ${:__children} $p $p]
     $obj destroy
   }
-  
+
   OrderedComposite instproc last_child {} {
     lindex ${:__children} end
+  }
+
+  OrderedComposite instproc deep_copy {} {
+    set copy [:copy [::xotcl::Object new]]
+    if {[info exists :__children]} {
+      $copy set __children {}
+      foreach c ${:__children} {
+        $copy add [$c copy [::xotcl::Object new]]
+      }
+    }
+    return $copy
   }
 
   OrderedComposite instproc destroy {} {
     # destroy all children of the ordered composite
     if {[info exists :__children]} {
-      #my log "--W destroying children ${:__children}"
-      foreach c ${:__children} { 
-        if {[:isobject $c]} {$c destroy}
+      #:log "--W destroying children ${:__children}"
+      foreach c ${:__children} {
+        if {[nsf::is object $c]} {$c destroy}
       }
     }
-    #show_stack;my log "--W children murdered, now next, chlds=[:info children]"
+    #show_stack;:log "--W children murdered, now next, chlds=[:info children]"
     #namespace eval [self] {namespace forget *}  ;# for pre 1.4.0 versions
     next
   }
 
   OrderedComposite instproc contains cmds {
-    :requireNamespace ;# legacy for older xotcl versions
+    :requireNamespace ;# legacy for older XOTcl versions
     set m [Object info instmixin]
     if {"[self class]::ChildManager" ni $m} {
       set insert 1
       Object instmixin add [self class]::ChildManager
-    } else { 
+    } else {
       set insert 0
     }
     #
@@ -93,7 +154,7 @@ namespace eval ::xo {
     # push the active composite
     lappend composite [self]
     set errorOccurred 0
-    # check, if we have Tcl's apply available    
+    # check, if we have Tcl's apply available
     if {[info procs ::apply] eq ""} {
       set applyCmd [list ::apply [list {} $cmds [self]]]
     } else {
@@ -121,7 +182,7 @@ namespace eval ::xo {
     # implementation of the method contains, that does NOT use try.
     #
     OrderedComposite instproc contains cmds {
-      my requireNamespace ;# legacy for older xotcl versions
+      :requireNamespace ;# legacy for older XOTcl versions
       set m [Object info instmixin]
       if {"[self class]::ChildManager" ni $m} {
         set insert 1
@@ -148,7 +209,7 @@ namespace eval ::xo {
       }
       if {$errorOccurred} {error $errorMsg}
     }
-  } 
+  }
 
   Class create OrderedComposite::ChildManager -instproc init args {
     set r [next]
@@ -161,8 +222,8 @@ namespace eval ::xo {
     set parent [lindex [[self class] set composite] end]
     $parent lappend __children [self]
     set :__parent $parent
-    #my __after_insert
-    #my log "-- adding __parent  $parent to [self]"
+    #:__after_insert
+    #:log "-- adding __parent  $parent to [self]"
     return $r
   }
 
@@ -173,7 +234,7 @@ namespace eval ::xo {
     set by ${:__orderby}
     set x [$a set $by]
     set y [$b set $by]
-    #my log "--value compare  $x $y] => [:__value_compare $x $y 0]"
+    #:log "--value compare  $x $y] => [:__value_compare $x $y 0]"
     return [:__value_compare $x $y 0]
   }
   OrderedComposite::IndexCompare instproc __value_compare {x y def} {
@@ -196,15 +257,15 @@ namespace eval ::xo {
     } else {
       set xh [string range $x 0 $xp]
       set yh [string range $y 0 $yp]
-      #puts "xh=$xh yh=$yh"
+      #:log "xh=$xh yh=$yh"
       if {$xh < $yh} {
         return -1
       } elseif {$xh > $yh} {
         return 1
       } else {
-        incr xp 
+        incr xp
         incr yp
-        #puts "rest [string range $x $xp end] [string range $y $yp end]"
+        #:log "rest [string range $x $xp end] [string range $y $yp end]"
         return [:__value_compare [string range $x $xp end] [string range $y $yp end] $def]
       }
     }

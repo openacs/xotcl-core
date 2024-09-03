@@ -50,9 +50,11 @@ namespace eval ::Generic {
     set level [template::adp_level]
     :forward var uplevel #$level set
 
-    if {${:package_id} eq ""} {set :package_id [${:data} package_id]}
+    if {${:package_id} eq ""} {
+      set :package_id [${:data} package_id]
+    }
     if {${:folder_id} < 0} {
-      set :folder_id [expr {[${:data} exists parent_id] ? [${:data} parent_id] : [${:package_id} folder_id]}]
+      set :folder_id [expr {[${:data} exists parent_id] ? [${:data} parent_id] : [::${:package_id} folder_id]}]
     }
 
     set class [${:data} info class]
@@ -92,11 +94,11 @@ namespace eval ::Generic {
     return [${:data} set [:get_id_field]]
   }
   Form instproc edit_data {} {
-    #:log "--- edit_data --- setting form vars=[:form_vars]"
+    #:log "--- edit_data --- setting form vars=[:form_vars] on ${:data}"
     ${:data} save
     # Renaming is meant for cr_items and such
     if {[${:data} istype ::xo::db::CrItem]} {
-      set old_name [::xo::cc form_parameter __object_name ""]
+      set old_name [::xo::cc form_parameter __object_name:signed,convert ""]
       set new_name [${:data} set name]
       if {$old_name ne $new_name} {
         #
@@ -106,19 +108,21 @@ namespace eval ::Generic {
         ${:data} rename -old_name $old_name -new_name $new_name
         #
         # Check, whether we have to change the redirect url due to
-        # renaming. When the method returns non-empty use this value.
+        # renaming. When the method returns nonempty use this value.
         #
         set url [${:data} changed_redirect_url]
         if {$url ne ""} {
           :submit_link $url
         }
+      } else {
+        # :log "--- edit_data $old_name equals $new_name"
       }
     }
     return [${:data} set [:get_id_field]]
   }
 
   Form instproc request {privilege} {
-    if {[:isobject ::${:package_id}] && ![::${:package_id} exists policy]} {
+    if {[nsf::is object ::${:package_id}] && ![::${:package_id} exists policy]} {
       # not needed, if governed by a policy
       auth::require_login
       permission::require_permission \
@@ -155,10 +159,15 @@ namespace eval ::Generic {
   }
 
   Form instproc on_submit {item_id} {
+    # :log "-- on_submit data"
+    #
     # On redirects after a submit to the same page, ensure
-    # the setting of edit_form_page_title and context
+    # the setting of edit_form_page_title and context.
+    #
     :request write
-    # Put form content into data object
+    #
+    # Put form content into data object.
+    #
     foreach __var [:form_vars] {
       ${:data} set $__var [:var $__var]
     }
@@ -206,23 +215,25 @@ namespace eval ::Generic {
     @param export list of attribute value pairs to be exported to the form (nested list)
   } {
     # set form name for adp file
-    set :$template [:name]
+    set :$template ${:name}
 
     set object_type [[${:data} info class] object_type]
     set object_name [expr {[${:data} exists name] ? [${:data} set name] : ""}]
     # :log "-- ${:data}, cl=[${:data} info class] [[${:data} info class] object_type]"
 
-    # :log "--e [:name] final fields ${:fields}"
+    #:log "--e ${:name} final fields ${:fields}"
     set exports [list \
       [list object_type $object_type] \
                      [list folder_id ${:folder_id}] \
-                     [list __object_name $object_name]]
+                     [list __object_name [::security::parameter::signed $object_name]]]
     if {[info exists export]} {
       foreach pair $export {lappend exports $pair}
     }
 
     ad_form -name ${:name} -form ${:fields} -mode $mode \
         -export $exports -action [:action] -html [:html]
+
+    #:log "--- generate: setup methods on data ${:data}"
 
     set new_data            "set item_id \[[self] new_data\]"
     set edit_data           "set item_id \[[self] edit_data\]"
@@ -234,7 +245,7 @@ namespace eval ::Generic {
 
     if {[:with_categories]} {
       set coid [expr {[${:data} exists item_id] ? [${:data} set item_id] : ""}]
-      category::ad_form::add_widgets -form_name [:name] \
+      category::ad_form::add_widgets -form_name ${:name} \
           -container_object_id ${:package_id} \
           -categorized_object_id $coid
 
@@ -257,11 +268,12 @@ namespace eval ::Generic {
       }
     }
     #ns_log notice "-- ad_form new_data=<$new_data> edit_data=<$edit_data> edit_request=<$edit_request>"
-
-    # action blocks must be added last
-    # -new_data and -edit_data are enclosed in a transaction only in the end,
-    # so eventual additional code from category management is executed safely
-    ad_form -extend -name [:name] \
+    #
+    # Action blocks must be added last. "-new_data" and "-edit_data"
+    # are enclosed in a transaction, such that optional additional
+    # code from category management is executed safely
+    #
+    ad_form -extend -name ${:name} \
         -validate [:validate] \
         -new_data "xo::dc transaction \{ $new_data \}" -edit_data "xo::dc transaction \{ $edit_data \}" \
         -on_submit $on_submit -new_request $new_request -edit_request $edit_request \
@@ -290,9 +302,9 @@ namespace eval ::Generic {
     class
     {create_url ""}
     {edit_url   ""}
-    {edit_template {<img src="/resources/acs-subsite/Edit16.gif" width="16" height="16" border="0">}}
+    {edit_template {<adp:icon name="edit">}}
     {delete_url ""}
-    {delete_template {<img src="/resources/acs-subsite/Delete16.gif" width="16" height="16" border="0">}}
+    {delete_template {<adp:icon name="trash">}}
     {no_create_p f}
     {no_edit_p   f}
     {no_delete_p f}
@@ -311,14 +323,17 @@ namespace eval ::Generic {
   } -ad_doc {
 
     Simple OO interface to template::list.
-    This class has been built to allow quick creation of list UIs for generic acs_objects.<br/>
-    <br/>
-    Many parameters are homonimous to those for <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a><br/>
-    and work in the same way, unless stated differently in this documentation.<br/>
-    Despite the high number of object's members, most of them are there for backward compatibility with the procedural API
-    and they seldom need to be specified.<br/>
-    <br/>
-    An example of instantiation could just look as this:<br/>
+    This class has been built to allow quick creation of list UIs for generic acs_objects.
+
+    <p>Many parameters are homonymous to those for
+    <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>
+    and work in the same way, unless stated differently in this documentation.
+
+    <p>Despite the high number of object's members, most of them are
+    there for backward compatibility with the procedural API and they
+    seldom need to be specified.
+
+    <p>An example of instantiation could just look as this:
     <pre>
     # Must be an existing acs_object class on the system.
     set class "::dev::Location"
@@ -389,7 +404,7 @@ namespace eval ::Generic {
     (see <code>row_code</code> below).
 
     @param rows_per_page Behaves as <a href='/api-doc/proc-view?proc=template::list::create'>template::list::create</a>'s
-    <code>page_size</code> parameter. Pagination is automatical for this class. To turn it off, just
+    <code>page_size</code> parameter. Pagination is automatically for this class. To turn it off, just
     set this parameter to "" .
 
     @param row_code This snippet will be executed for every instance/row in the list, so is similar in spirit to

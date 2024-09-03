@@ -53,7 +53,7 @@
   hide the fact, that certain classes/objects
   are part of a thread. The following command
   creates a Proxy for an object c1 in thread t1.
-  After this, c1 can be used like an local object.
+  After this, c1 can be used like a local object.
   <pre>
   ::xotcl::THREAD::Proxy c1 -attach t1
   set x [c1 ++]
@@ -87,9 +87,9 @@
 }
 
 ::xotcl::Object setExitHandler {
-  #my log "EXITHANDLER of request thread [pid]"
+  #:log "EXITHANDLER of request thread [pid]"
   #if {[catch {::xotcl::THREAD::Proxy detachAll} m]} {
-  #  #my log "EXITHANDLER error in detachAll $m"
+  #  #:log "EXITHANDLER error in detachAll $m"
   #}
 }
 
@@ -166,7 +166,7 @@ Class create ::xotcl::THREAD \
 
 ::xotcl::THREAD instproc destroy {} {
   :log "destroy called"
-  if {![:persistent] &&
+  if {!${:persistent} &&
       [nsv_exists [self class] [self]]} {
     set tid [nsv_get [self class] [self]]
     set refcount [::thread::release $tid]
@@ -197,23 +197,23 @@ Class create ::xotcl::THREAD \
     # lazy creation of a new slave thread
 
     ad_mutex_eval ${:mutex} {
-      #my check_blueprint
-      #my log "after lock"
+      #:check_blueprint
+      #:log "after lock"
       if {![nsv_exists [self class] [self]]} {
-        if {[:lightweight]} {
+        if {${:lightweight}} {
           :log "CREATE lightweight thread"
           set tid [::thread::create -thin]
         } else {
           set tid [::thread::create]
         }
         nsv_set [self class] [self] $tid
-        if {[:persistent]} {
+        if {${:persistent}} {
           :log "--created new persistent [self class] as $tid pid=[pid]"
         } else {
           :log "--created new [self class] as $tid pid=[pid]"
         }
-        #my log "--THREAD DO send [self] epoch = [ns_ictl epoch]"
-        if {[:lightweight]} {
+        #:log "--THREAD DO send [self] epoch = [ns_ictl epoch]"
+        if {${:lightweight}} {
         } elseif {![ns_ictl epoch]} {
           #ns_log notice "--THREAD send [self] no epoch"
           # We are during initialization. For some unknown reasons, XOTcl
@@ -225,6 +225,18 @@ Class create ::xotcl::THREAD \
         append initcmd ${:initcmd}
         #ns_log notice "INIT $initcmd"
         ::thread::send $tid $initcmd
+
+        #
+        # There is a potential race condition during startup on a very
+        # slow/busy system, where the throttle thread can receive
+        # commands, although it is not full initialized. One approach
+        # would be to move the nsv setting of the pid here, where the
+        # thread is fully initialized, .... but unfortunately, this
+        # leads to problems as well. This needs deeper investing,
+        # ... but is not very important, since it is very hard to
+        # reconstruct the problem case.
+        #
+        #nsv_set [self class] [self] $tid
       } else {
         set tid [nsv_get [self class] [self]]
       }
@@ -239,7 +251,7 @@ Class create ::xotcl::THREAD \
     #
     # This is the first call.
     #
-    if {![:persistent] && ![info exists :recreate]} {
+    if {!${:persistent} && ![info exists :recreate]} {
       #
       # For a shared thread, we do ref-counting through preserve.
       #
@@ -249,8 +261,9 @@ Class create ::xotcl::THREAD \
     }
     set :tid $tid
   }
-  #my log "calling [self class] ($tid, [pid]) $args"
-  if {$async} {
+  if {[ns_info shutdownpending]} {
+    :log "thread send operation ignored due to pending shutdown: $args"
+  } elseif {$async} {
     return [thread::send -async $tid $args]
   } else {
     return [thread::send $tid $args]
@@ -258,7 +271,7 @@ Class create ::xotcl::THREAD \
 }
 
 #
-# Create a sample persistent thread that can be acessed
+# Create a sample persistent thread that can be accessed
 # via request threads.
 #
 #::xotcl::THREAD create t0 {
@@ -295,12 +308,12 @@ Class create ::xotcl::THREAD \
 
 #
 # Sample Thread client routine, calls a same named object in the
-# server thread. Thread clients should be created in an connection
+# server thread. Thread clients should be created in a connection
 # thread dynamically to avoid name clashes in the blueprint.
 
 Class create ::xotcl::THREAD::Client -parameter {server {serverobj [self]}}
 ::xotcl::THREAD::Client instproc do args {
-  [:server] do [:serverobj] {*}$args
+  ${:server} do ${:serverobj} {*}$args
 }
 
 ::xo::library source_dependent
