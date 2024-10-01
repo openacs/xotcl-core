@@ -18,7 +18,7 @@ namespace eval ::xo {
 
   proc write_file {fn content} {
     set F [::open $fn w]
-    ::fconfigure $F -translation binary -encoding binary
+    ::fconfigure $F -translation binary
     ::puts -nonewline $F $content
     ::close $F
   }
@@ -26,7 +26,7 @@ namespace eval ::xo {
   proc write_tmp_file {varFilename content} {
     upvar $varFilename tmpFileName
     set F [file tempfile tmpFileName]
-    fconfigure $F -translation binary -encoding binary
+    fconfigure $F -translation binary
     puts -nonewline $F $content
     close $F
   }
