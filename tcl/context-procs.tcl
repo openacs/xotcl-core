@@ -711,7 +711,7 @@ namespace eval ::xo {
     array get :perconnectionparam
   }
   ConnectionContext instproc perconnection_parameter_set_all {pairs} {
-    array unset :perconnectionparam
+    unset -nocomplain :perconnectionparam
     array set :perconnectionparam $pairs
   }
 }

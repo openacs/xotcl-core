@@ -414,7 +414,7 @@ namespace eval ::xo::db {
     #
     # Keep "long_text_slots" in a separate array (for Oracle)
     #
-    :array unset long_text_slots
+    unset -nocomplain :long_text_slots
     foreach {slot_name slot} [array get :db_slot] {
       if {[$slot sqltype] eq "long_text"} {
         set :long_text_slots($slot_name) $slot
@@ -1934,7 +1934,7 @@ namespace eval ::xo::db {
     foreach x $non_cached_vars {
       if {[array exists :$x]} {
         lappend arrays $x [array get :$x]
-        array unset :$x
+        unset :$x
       } {
         lappend scalars $x [set :$x]
         unset -nocomplain :$x

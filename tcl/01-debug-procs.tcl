@@ -672,7 +672,7 @@ namespace eval ::xo {
     } on error {errorMsg} {
       ns_log Error "Error during ::xo::cleanup: $errorMsg $::errorInfo"
     }
-    array unset ::xo::cleanup
+    unset -nocomplain ::xo::cleanup
     #ns_log notice "*** end of cleanup"
   }
 

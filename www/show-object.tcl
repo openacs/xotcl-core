@@ -280,7 +280,7 @@ if {[nsv_exists api_library_doc $index]} {
   set url "/api-doc/procs-file-view?path=[ns_urlencode $doc_elements(script)]"
   append output "Defined in <a href='[ns_quotehtml $url]'>$doc_elements(script)</a><p>"
 
-  array unset doc_elements
+  unset -nocomplain doc_elements
 }
 
 set obj_create_source "$my_class create $object"
