@@ -23,6 +23,16 @@ ad_page_contract {
   output:onevalue
 }
 
+#ns_log notice "SHOW OBJECT object=$object show_methods=$show_methods show_source=$show_source show_variables=$show_variables"
+set keys [ns_set keys [ns_parsequery [ns_conn query]]]
+#ns_log notice "... keys $keys"
+if {[::util::suspicious_query_variable -proc xo::update_query $keys]} {
+if {[string match "*amp;*" $keys]} {
+  ad_return_complaint 1 "invalid query parameters: $keys"
+  ns_log notice "... aborting show-object due to suspicious query variables [list $keys]"
+  ad_script_abort
+}
+
 set context [list "XOTcl Object"]
 set output ""
 

@@ -720,17 +720,20 @@ namespace eval ::xo {
 
   ad_proc -private ::xo::update_query_variable {old_query var value} {
 
-     Replace in a URL-query old occurrences of var with new value.
+    Replace in a URL-query old occurrences of var with new value.
 
-     @return pairs in a form suitable for export_vars
-   } {
+    @return pairs in a form suitable for export_vars
+  } {
     set query [list [list $var $value]]
     foreach {key value} [ns_set array [ns_parsequery $old_query]] {
-      if {$key eq $var} continue
+      if {$key eq $var
+          || [::util::suspicious_query_variable -proc xo::update_query $key $value]} {
+        continue
+      }
       lappend query [list $key $value]
     }
     return $query
-   }
+  }
 
   ad_proc -private ::xo::update_query {old_query var value} {
 
@@ -745,7 +748,10 @@ namespace eval ::xo {
 
     if {$old_query ne ""} {
       foreach {key value} [ns_set array [ns_parsequery $old_query]] {
-        if {$key eq $var} continue
+        if {$key eq $var
+            || [::util::suspicious_query_variable -proc xo::update_query $key $value]} {
+          continue
+        }
         append query &[{*}$encodeCmd $key]=[{*}$encodeCmd $value]
       }
     }
