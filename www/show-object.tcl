@@ -27,7 +27,6 @@ ad_page_contract {
 set keys [ns_set keys [ns_parsequery [ns_conn query]]]
 #ns_log notice "... keys $keys"
 if {[::util::suspicious_query_variable -proc xo::update_query $keys]} {
-if {[string match "*amp;*" $keys]} {
   ad_return_complaint 1 "invalid query parameters: $keys"
   ns_log notice "... aborting show-object due to suspicious query variables [list $keys]"
   ad_script_abort
