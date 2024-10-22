@@ -43,6 +43,12 @@ namespace eval ::xo {
         constraint_values
         help_text
         validator
+      } {
+        #
+        # OpenACS specific attribute slot class, which can be further
+        # refined.  Contains meta data based on the OpenACS meta-data
+        # conventions.
+        #
       }
 }
 
@@ -234,6 +240,9 @@ if {[nsf::is object ::nx::Object]} {
 
 namespace eval ::xo {
   ::xo::Attribute instproc init {} {
+    #
+    # Constructor of the OpenACS specific attribute slot class
+    #
     next
     # provide a default pretty name for the attribute based on message keys
     if {![info exists :pretty_name]} {
