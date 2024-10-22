@@ -213,15 +213,30 @@ ad_library {
     return $scope
   }
 
-  :public object method script_name {scope} {
+  :public object method script_name {-obj scope} {
+    #
+    # Determine name of the current "script" as displayed by "Defined
+    # in" in the API browser. Define different sources available in
+    # different situatons.
+    #
+    # @param  obj class name for identifying the source file name
+    # @param scope either empty or thread name
+    # @return path starting with the "packages" directory
+    #
     set script [info script]
-    if {$script eq "" && [info exists ::xotcl::currentScript]} {
-      set script $::xotcl::currentScript
-    }
-    set root_dir $::acs::rootdir
-    set root_length [string length $root_dir]
-    if { $root_dir eq [string range $script 0 $root_length-1]} {
-      set script [string range $script $root_length+1 end]
+    if {$script eq "" || [file tail $script] eq "procdoc-init.tcl"} {
+      set script ""
+      if {$script eq "" && [info exists obj] && [nsv_get proc_source_file " Class $obj" script]} {
+        #ns_log notice "INIT script_name from proc_source_file => <$script>"
+      }
+      if {$script eq "" && [info exists ::xotcl::currentScript]} {
+        set script $::xotcl::currentScript
+      }
+      set root_dir $::acs::rootdir
+      set root_length [string length $root_dir]
+      if { $root_dir eq [string range $script 0 $root_length-1]} {
+        set script [string range $script $root_length+1 end]
+      }
     }
     return $script
   }
@@ -340,7 +355,7 @@ ad_library {
                  varargs_p false \
                  deprecated_p false \
                  warn_p false \
-                 script [::xo::api script_name $scope] \
+                 script [::xo::api script_name -obj $obj $scope] \
                 ]
     set doc [dict replace $doc {*}[array get doc_elements]]
 
@@ -443,7 +458,7 @@ ad_library {
                  varargs_p $varargs_p \
                  deprecated_p $deprecated \
                  warn_p false \
-                 script [::xo::api script_name $scope] \
+                 script [::xo::api script_name -obj $obj $scope] \
                  main "" \
                  flags "" \
                  switches0 "" \
@@ -479,11 +494,13 @@ ad_library {
         }
         if {$isFlag} {
           dict lappend doc switches0 $name
-          dict lappend doc flags $name $flags
+          dict lappend doc flags $name [split $flags ,]
           #:log "default_value $proc_name: $sw -> '[lindex $f 1]' <$pair/$f>"
           if {$flags eq "switch" && $default eq ""} {
             set default "false"
           }
+        } else {
+          dict lappend doc flags $name [split $flags ,]
         }
         #:log "default_value $proc_name: $sw -> 'default' <$pair/$f>"
         if {[llength $def] > 1} {
@@ -595,26 +612,11 @@ ad_library {
 # The following extensions of the base classes are defined here:
 #
 ::Serializer exportMethods {
-  ::nx::Class method init
   ::xotcl::Object instproc ad_proc
   ::xotcl::Object instproc ad_forward
   ::xotcl::Class  instproc ad_instproc
   ::xotcl::Class  instproc ad_instforward
   ::xotcl::Object instproc ad_doc
-}
-
-::nx::Class method init {} {
-  set r [next]
-  #
-  # When loading the blueprint, ::xo::api might not be available yet.
-  #
-  if {[info commands ::xo::api] ne ""} {
-    ::xo::api update_object_doc "" [self] ""
-    #ns_log notice "METHODS [self] <[:info methods]>"
-  } else {
-    #ns_log notice "[self] init: no <::xo::api> available"
-  }
-  return $r
 }
 
 ::xotcl::Object instproc ad_proc {
