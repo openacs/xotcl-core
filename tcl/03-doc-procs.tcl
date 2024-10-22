@@ -12,6 +12,10 @@ ad_library {
 }
 
 ::nx::Object create ::xo::api {
+  #
+  # General interface to obtain information from XOTcl/NX objects and
+  # classes for the API browser.
+  #
 
   array set :methodLabel {
     1-instproc "method"
@@ -28,6 +32,9 @@ ad_library {
   # Support functions for the OpenACS API browser
   #
   :public object method method_label { -kind:switch proc_spec } {
+    #
+    # Return a user-friendly label for methods and objects
+    #
     switch [llength $proc_spec] {
       1 {}
       3 {lassign $proc_spec obj methodType method; set scope ""}
@@ -161,6 +168,10 @@ ad_library {
   }
 
   :public object method method_link {obj kind method} {
+    #
+    # Return a link for the method if possible. If no proc-doc is
+    # available, return just plain text.
+    #
     set kind [string trimright $kind s]
     set proc_index [::xo::api proc_index "" $obj $kind $method]
     if {[nsv_exists api_proc_doc $proc_index]} {
@@ -175,6 +186,10 @@ ad_library {
   }
 
   :public object method scope_eval {scope args} {
+    #
+    # When the scope is not empty, evaluate the command in the
+    # specified scope (thread)
+    #
     if {$scope eq ""} {
       {*}$args
     } else {
@@ -183,18 +198,31 @@ ad_library {
   }
 
   :public object method isclass {scope obj} {
+    #
+    # Check, whether the passed in obj is a class
+    #
     :scope_eval $scope xo::getObjectProperty $obj isclass
   }
 
   :public object method isobject {scope obj} {
+    #
+    # Check, whether the passed in obj is an object
+    #
     :scope_eval $scope xo::getObjectProperty $obj isobject
   }
 
   :public object method scope {} {
+    #
+    # Return the scope of the object. When executed in an XOTcl
+    # thread; the body won't be accessible by default without the
+    # explicit scope.
+    #
+    # The purpose of this proc is to document objects and classes that
+    # live only in a certain thread.
+    #
     if {[info exists ::xotcl::currentThread]} {
       #
-      # We are in an XOTcl thread; the body won't be accessible
-      # by default without the explicit scope.
+      # We are in an XOTcl thread
       #
       return $::xotcl::currentThread
     }
@@ -202,12 +230,18 @@ ad_library {
   }
 
   :public object method scope_from_object_reference {scope_var object_var} {
+    #
+    # Parse the object reference and return the scope from it.
+    #
     upvar $scope_var scope $object_var object
     set scope ""
     regexp {^(.+) do (.+)$} $object match scope object
   }
 
   :public object method scope_from_proc_index {proc_index} {
+    #
+    # Parse the proc_index and return the scope from it.
+    #
     set scope ""
     regexp {^(.+) .+ (inst)?proc (.+)$} $proc_index match scope
     return $scope
@@ -242,6 +276,9 @@ ad_library {
   }
 
   :public object method object_link {{-noimg:boolean off} scope obj} {
+    #
+    # Return a link for the object.
+    #
     set link "<a href='[ns_quotehtml [:object_url $scope $obj]]'>"
     if {$noimg} {
       return "$link$obj</a>"
@@ -251,6 +288,9 @@ ad_library {
   }
 
   :public object method object_url {{-show_source 0} {-show_methods 1} scope obj} {
+    #
+    # Return a link for the object in the object browser (show-object)
+    #
     set isObject [:scope_eval $scope ::nsf::is object $obj]
     if {$isObject} {
       set object [:scope_eval $scope namespace origin $obj]
@@ -261,11 +301,17 @@ ad_library {
   }
 
   :public object method object_index {scope obj} {
+    #
+    # Return a canonical index string for the object
+    #
     set kind [expr {[:isclass $scope $obj] ? "Class" : "Object"}]
     return "$scope $kind $obj"
   }
 
   :public object method proc_index {scope obj instproc proc_name} {
+    #
+    # Return a canonical index string for the specifed method
+    #
     if {$scope eq ""} {
       return [list [string trimleft $obj :] $instproc $proc_name]
     } else {
@@ -274,6 +320,10 @@ ad_library {
   }
 
   :public object method source_to_html {{-width 100} string} {
+    #
+    # Helper proc to preserve indentation in source-code to HTML
+    # conversion.
+    #
     set lines [list]
     foreach l [split $string \n] {
       while {[string length $l] > $width} {
@@ -448,6 +498,10 @@ ad_library {
     scope obj inst proc_name
     docString
   } {
+    #
+    # Obtain a doc-string for a method, convert it and add it to the
+    # proc-doc.
+    #
     set methodType [::xo::getObjectProperty $obj ${inst}methodtype $proc_name]
     set varargs_p [expr {$methodType eq "scripted"
                          && "args" in [::xo::getObjectProperty $obj ${inst}args $proc_name]}]
@@ -584,6 +638,11 @@ ad_library {
   }
 
   :public object method get_proc_definition_flags {debug deprecated} {
+    #
+    # Helper for version compatibility
+    #
+    # @return flags for proc definition
+    #
     if {$::nsf::version < 2.1} {
       return ""
     }
@@ -591,6 +650,11 @@ ad_library {
   }
 
   :public object method get_returns_spec {returns} {
+    #
+    # Helper for version compatibility
+    #
+    # @return flags for -returns flag
+    #
     if {$::nsf::version < 2.1} {
       set result ""
     } elseif {$returns ne ""} {
