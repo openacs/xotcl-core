@@ -102,6 +102,9 @@ nsf::proc local_api_documentation {{-proc_type scripted} show_methods scope obje
                            $proc_index]
     set result $documentation
   } else {
+    #
+    # We have no enty in api_proc_doc; provide minimal info
+    #
     if {$show_methods > 1} {
       set result "<h4><em>$method</em> ($proc_type)</h4>\n"
       append result [::xo::api debug_widget [list {*}$scope $object $kind $method]]
