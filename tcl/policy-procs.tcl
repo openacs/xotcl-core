@@ -206,7 +206,7 @@ namespace eval ::xo {
     return $allowed
   }
 
-  Policy ad_instproc enforce_permissions {-user_id -package_id object:object method} {
+  Policy ad_instproc enforce_permissions {-user_id:integer -package_id:integer object:object method} {
 
     This method checks whether the current user is allowed
     or not to invoke a method based on the given policy and
