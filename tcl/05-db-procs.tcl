@@ -80,7 +80,7 @@ namespace eval ::xo::db {
     switch -- $type {
       string    { set type text }
       long_text { set type text }
-      date      { set type "timestamp with time zone" }
+      date      { set type "timestamp with timezone" }
       ltree     { set type [expr {[::xo::dc has_ltree] ? "ltree" : "text" }] }
       default   { return [next] }
     }
@@ -1035,20 +1035,44 @@ namespace eval ::xo::db {
         -package_key xotcl-core \
         -parameter XOTclObjectCache \
         -default_size 400000 \
-        -partitions 2
+        -partitions 2 {
+          #
+          # XOTcl Object cache. This partitioned cache is used for
+          # objects with numeric keys based on the acs_object_ids of
+          # OpenACS.  Most of these objects refer to content items or
+          # content revisions. In case of bottlenecks, increase the
+          # number of partitions and the cache size.
+          #
+        }
     ns_log notice "... created ::xo::xotcl_object_cache"
 
     ::acs::KeyPartitionedCache create ::xo::xotcl_object_type_cache \
         -package_key xotcl-core \
         -parameter XOTclObjectTypeCache \
         -default_size 50000 \
-        -partitions 2
+        -partitions 2 {
+          #
+          # XOTcl Object type cache. This partitioned cache is used
+          # for obtaining types for objects and for the lookup of
+          # item_ids via parent_id and name for the content
+          # respository.  In case of bottlenecks, increase the number
+          # of partitions and the cache size.
+          #
+        }
     ns_log notice "... created ::xo::xotcl_object_type_cache"
 
     ::acs::Cache create ::xo::xotcl_package_cache \
         -package_key xotcl-core \
         -parameter XOTclPackageCache \
-        -default_size 10000
+        -default_size 10000 {
+          #
+          # XOTcl Object package cache. This cache is used for
+          # package_ids of package names, for ids of root folders, and
+          # for certain properties of the database (has_ltree,
+          # has_hstore). In case of bottlenecks, increase the number
+          # of partitions and the cache size.
+          #
+        }
     ns_log notice "... created ::xo::xotcl_package_cache"
   }
 
@@ -2065,7 +2089,7 @@ namespace eval ::xo::db {
     # DBMS. Therefore, we use a type cast to check whether
     # specified default value (e.g. '1900-01-01') is in fact
     # equivalent to default stored in db (e.g. '1900-01-01
-    # 00:00:00+01'::timestamp with time zone).
+    # 00:00:00+01'::timestamp with timezone).
     #
     # Booleans can be normalized in advance without involving the
     # database
