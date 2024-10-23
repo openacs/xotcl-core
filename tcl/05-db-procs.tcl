@@ -1055,7 +1055,7 @@ namespace eval ::xo::db {
           # XOTcl Object type cache. This partitioned cache is used
           # for obtaining types for objects and for the lookup of
           # item_ids via parent_id and name for the content
-          # respository.  In case of bottlenecks, increase the number
+          # repository.  In case of bottlenecks, increase the number
           # of partitions and the cache size.
           #
         }
