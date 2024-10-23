@@ -247,6 +247,18 @@ ad_library {
     return $scope
   }
 
+  :public object method object_from_proc_index {proc_index} {
+    #
+    # Parse the proc_index and return the scope from it.
+    #
+    set object ""
+    if {[regexp { *([^ ].+) (inst)?proc (.+)$} $proc_index . object]
+        || [regexp { (Class|Object) (.+)$} $proc_index . what object]
+      } {
+    }
+    return $object
+  }
+  
   :public object method script_name {-obj scope} {
     #
     # Determine name of the current "script" as displayed by "Defined
