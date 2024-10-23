@@ -112,7 +112,11 @@ namespace eval ::xo::mr {
   #
   # Create a dummy message relay (which can be always used)
   #
-  xo::MessageRelay create ::xo::mr::none
+  xo::MessageRelay create ::xo::mr::none {
+    #
+    # Dummy message relay, doing nothing.
+    #
+  }
 
   #
   # Message Relay based on bgdelivery. This interface works directly
@@ -120,8 +124,15 @@ namespace eval ::xo::mr {
   # connections.
   #
   xo::MessageRelay create ::xo::mr::bgdelivery {
+    #
+    # Message relay based on bgdelivery
+    #
 
     :public object method subscribe {key {-initmsg ""} {-mode default} } {
+      #
+      # Subscribe to a messaging service using bgdelivery as the low
+      # level transport.
+      #
       ns_log notice "#### [self] subscribe <$key> mode <$mode>"
       set ch [ns_conn channel]
       thread::transfer [::bgdelivery get_tid] $ch
@@ -133,15 +144,18 @@ namespace eval ::xo::mr {
     }
 
     :public object method send_to_subscriber {key msg} {
+      #
+      # Send a message to the subscriber via bgdelivery
+      #
       ns_log notice "#### [self] send_to_subscriber $key $msg"
       ::bgdelivery do -async ::Subscriber broadcast $key $msg
     }
 
     :public object method can_be_used {} {
       #
-      # We require support from the web server, an installed
-      # bgdelivery. This method does not work on HTTPS, since this
-      # method writes to the raw sockets.
+      # To use the bgdelivery serive, we require support from the web
+      # server, an installed bgdelivery. This method does not work on
+      # HTTPS, since this method writes to the raw sockets.
       #
       return [expr {
                     [info commands ::thread::mutex] ne ""
@@ -151,6 +165,10 @@ namespace eval ::xo::mr {
     }
 
     :public object method sweep {key} {
+      #
+      # Clean up messages for this key. This should handle potentially
+      # stale operations.
+      #
       ::bgdelivery do ::Subscriber sweep $key
     }
   }
@@ -161,7 +179,9 @@ namespace eval ::xo::mr {
   # HTTPS connections.
   #
   xo::MessageRelay create ::xo::mr::connchan {
-
+    #
+    # Message relay based on ns_connchan
+    #
     :object method cleanup {key handle} {
 
       catch {ns_connchan close $handle}
@@ -199,8 +219,8 @@ namespace eval ::xo::mr {
 
     :public object method send_to_subscriber {key msg} {
       #
-      # Write directly to the subscribers from the connection
-      # thread. It would be possible, to perform asynchronous
+      # Write directly to the subscribers from the connection thread
+      # via ns_connchan. It would be possible, to perform asynchronous
       # operations via "ns_connchan callback", which would be handled
       # in the background. Not sure, this is necessary.
       #
@@ -219,6 +239,10 @@ namespace eval ::xo::mr {
     }
 
     :public object method can_be_used {} {
+      #
+      # ns_connchan can be used on every recent NaviServer.
+      #
+
       return [expr {[info commands ::ns_connchan] ne ""}]
     }
 
