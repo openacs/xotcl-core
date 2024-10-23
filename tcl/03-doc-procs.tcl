@@ -253,7 +253,7 @@ ad_library {
     # in" in the API browser. Define different sources available in
     # different situatons.
     #
-    # @param  obj class name for identifying the source file name
+    # @param  obj class name for identifying the source filename
     # @param scope either empty or thread name
     # @return path starting with the "packages" directory
     #
@@ -261,7 +261,13 @@ ad_library {
     if {$script eq "" || [file tail $script] eq "procdoc-init.tcl"} {
       set script ""
       if {$script eq "" && [info exists obj] && [nsv_get proc_source_file " Class $obj" script]} {
-        #ns_log notice "INIT script_name from proc_source_file => <$script>"
+        #ns_log notice "INIT script_name of $obj from proc_source_file => <$script>"
+      }
+      if {$script eq "" && [info exists obj]} {
+        set class [$obj info class]
+        if {[nsv_get proc_source_file " Class $class" script]} {
+          #ns_log notice "INIT script_name of $obj via $class from proc_source_file => <$script>"
+        }
       }
       if {$script eq "" && [info exists ::xotcl::currentScript]} {
         set script $::xotcl::currentScript
@@ -310,7 +316,7 @@ ad_library {
 
   :public object method proc_index {scope obj instproc proc_name} {
     #
-    # Return a canonical index string for the specifed method
+    # Return a canonical index string for the specified method
     #
     if {$scope eq ""} {
       return [list [string trimleft $obj :] $instproc $proc_name]
