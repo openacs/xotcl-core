@@ -2969,6 +2969,10 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::Attribute instproc create_attribute {} {
+    #
+    # Create an OpenACS attribute, if not already defined (or
+    # attribute creation is turned off for this xo::db::Attribute)
+    #
     if {!${:create_acs_attribute}} return
 
     set object_type [${:domain} object_type]
@@ -2998,6 +3002,10 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::Attribute instproc attribute_reference {tn} {
+    #
+    # @return the name of a DB attribute, potentially with an alias
+    # name.
+    #
     if {${:column_name} ne ${:name}} {
       return "$tn.${:column_name} AS ${:name}"
     } else {
@@ -3006,6 +3014,10 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::Attribute instproc column_spec {{-id_column false}} {
+    #
+    # @return the full SQL spec for a DB attribute, potentially
+    # containing defaults, primary key, constraints, etc.
+    #
     set table_name [${:domain} table_name]
     set column_spec ""
     append column_spec " " [::xo::dc map_datatype ${:sqltype}]
@@ -3043,6 +3055,10 @@ namespace eval ::xo::db {
   }
 
   ::xo::db::Attribute instproc init {} {
+    #
+    # Constructor of ::xo::db::Attribute. It provides defaults and
+    # creates the ACS attribute if necessary.
+    #
     next    ;# do first ordinary slot initialization
     if {![info exists :sqltype]}     {set :sqltype     ${:datatype}}
     if {![info exists :column_name]} {set :column_name ${:name}}
@@ -3060,7 +3076,11 @@ namespace eval ::xo::db {
       }
 
   ::xo::db::CrAttribute instproc create_attribute {} {
-    # do nothing, if create_acs_attribute is set to false
+    #
+    # Create an OpenACS content repository attribute, if not already
+    # defined (or attribute creation is turned off for this
+    # xo::db::CrAttribute)
+    #
     if {!${:create_acs_attribute}} return
 
     set object_type [${:domain} object_type]
