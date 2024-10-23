@@ -8,6 +8,7 @@
 namespace eval ::xo::ical {}
 
 nx::Object create ::xo::ical {
+  #
   # The Object ::calendar::ical provides the methods for
   # importing and exporting single or multiple calendar items
   #  in the ical format (see rfc 2445). Currently only the part
@@ -24,9 +25,13 @@ nx::Object create ::xo::ical {
   }
 
   #
-  # conversion routines from and to the date formats used by ical
+  # Conversion routines from and to the date formats used by ical
   #
   :public object method date_time_to_clock {date time utc} {
+    #
+    # Convert separate fields date and time with boolean utc flags
+    # into clock value in seconds.
+    #
     set year  [string range $date 0 3]
     set month [string range $date 4 5]
     set day   [string range $date 6 7]
@@ -38,31 +43,53 @@ nx::Object create ::xo::ical {
   }
 
   :public object method tcl_time_to_utc {time} {
+    #
+    # Convert Tcl time stamp to UTC.
+    #
     clock format [clock scan $time] -format "%Y%m%dT%H%M%SZ" -gmt 1
   }
 
   :public object method tcl_time_to_local_day {time} {
+    #
+    # Convert Tcl time stamp into local day format
     # https://tools.ietf.org/html/rfc5545#section-3.3.4
+    #
     return "VALUE=DATE:[:clock_to_local_day [clock scan $time]]"
   }
 
   :public object method utc_to_clock {utc_time} {
+    #
+    # Convert UTC time to clock seconds.
+    #
     clock scan $utc_time -format "%Y%m%dT%H%M%SZ" -gmt 1
   }
 
   :public object method clock_to_utc {seconds:integer} {
+    #
+    # Convert clock epoch (result from [clock seconds]) into UTC time.
+    #
     clock format $seconds -format "%Y%m%dT%H%M%SZ" -gmt 1
   }
 
   :public object method clock_to_iso {seconds:integer} {
+    #
+    # Convert clock epoch (result from [clock seconds]) into ISO format
+    #
     clock format $seconds -format "%Y-%m-%dT%H:%M:%SZ" -gmt 1
   }
 
   :public object method clock_to_local_day {seconds:integer} {
+    #
+    # Convert clock epoch (result from [clock seconds]) to local day (YearMonthDay)
+    #
     clock format $seconds -format "%Y%m%d"
   }
 
   :public object method clock_to_oacstime {seconds:integer} {
+    #
+    # Convert clock epoch (result from [clock seconds]) into time
+    # format usually used in OpenACS.
+    #
     clock format $seconds -format "%Y-%m-%d %H:%M"
   }
 
