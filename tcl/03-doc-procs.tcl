@@ -33,7 +33,8 @@ ad_library {
   #
   :public object method method_label { -kind:switch proc_spec } {
     #
-    # Return a user-friendly label for methods and objects
+    # Return a user-friendly label for methods and objects.
+    # @param kind when set, use naming convention from nx, otherwise XOTcl
     #
     switch [llength $proc_spec] {
       1 {}
@@ -167,15 +168,18 @@ ad_library {
     return $html
   }
 
-  :public object method method_link {obj kind method} {
+  :public object method method_link {{-label ""} obj kind method} {
     #
     # Return a link for the method if possible. If no proc-doc is
     # available, return just plain text.
     #
     set kind [string trimright $kind s]
     set proc_index [::xo::api proc_index "" $obj $kind $method]
+    if {$label eq ""} {
+      set label $method
+    }
     if {[nsv_exists api_proc_doc $proc_index]} {
-      return "<a href='/api-doc/proc-view?proc=[ns_urlencode $proc_index]'>$method</a>"
+      return "<a href='/api-doc/proc-view?proc=[ns_urlencode $proc_index]'>$label</a>"
     } else {
       if {[::xo::getObjectProperty $obj $kind $method] eq ""} {
         return $method<SUP>C</SUP>
@@ -258,7 +262,7 @@ ad_library {
     }
     return $object
   }
-  
+
   :public object method script_name {-obj scope} {
     #
     # Determine name of the current "script" as displayed by "Defined
