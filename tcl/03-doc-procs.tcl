@@ -279,8 +279,8 @@ ad_library {
       if {$script eq "" && [info exists obj] && [nsv_get proc_source_file " Class $obj" script]} {
         #ns_log notice "INIT script_name of $obj from proc_source_file => <$script>"
       }
-      if {$script eq "" && [info exists obj]} {
-        set class [$obj info class]
+      if {$script eq "" && [info exists obj]} {        
+        set class [::nsf::directdispatch $obj ::nsf::methods::object::info::class]
         if {[nsv_get proc_source_file " Class $class" script]} {
           #ns_log notice "INIT script_name of $obj via $class from proc_source_file => <$script>"
         }
