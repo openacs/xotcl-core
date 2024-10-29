@@ -1,5 +1,7 @@
 ad_library {
-  Test of parts of the xotcl-core API
+
+    Test xotcl-core documentation generation.
+
 }
 
 
