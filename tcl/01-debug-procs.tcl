@@ -656,7 +656,7 @@ namespace eval ::xo {
           ns_log notice "... analyze: cmd = $cmd"
           ns_log notice "... analyze: $obj is_object? [nsf::is object $obj]"
           ns_log notice "... analyze: class [$obj info class]"
-          ns_log notice "... analyze: precedence [$obj info precedence]"
+          ns_log notice "... analyze: precedence [$obj ::nsf::methods::object::info::precedence]"
           ns_log notice "... analyze: methods [lsort [$obj info methods]]"
           #
           # In case, we want to destroy some objects, and the
@@ -1005,15 +1005,15 @@ proc ::xo::getObjectProperty {o what args} {
     }
 
     "instproc" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info instprocs {*}$args]}
+      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info instprocs {*}$args]}
       return [$o info methods -path -type scripted -callprotection all {*}$args]
     }
     "instcommand" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info instcommands {*}$args]}
+      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info instcommands {*}$args]}
       return [$o info methods -path {*}$args]
     }
     "instforward" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info instforward {*}$args]}
+      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info instforward {*}$args]}
       return [$o info methods -type forwarder {*}$args]
     }
     "instmethodtype" {
@@ -1023,38 +1023,36 @@ proc ::xo::getObjectProperty {o what args} {
       return [$o ::nsf::methods::object::info::method type {*}$args]
     }
     "proc" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info procs {*}$args]}
+      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info procs {*}$args]}
       return [$o info object methods -path -type scripted {*}$args]
     }
     "command" {
       return [$o ::nsf::methods::object::info::methods {*}$args]
     }
     "forward" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info forward {*}$args]}
+      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info forward {*}$args]}
       return [$o info object methods -type forwarder {*}$args]
     }
     "slots" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info slots]}
+      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info slots]}
       return [$o info object methods -type forwarder]
     }
     "class" {
-      #if {"::xotcl::Object" in [$o info precedence]} {return [$o info class]}
       return [$o ::nsf::methods::object::info::class]
     }
     "superclass" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info superclass]}
+      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info superclass]}
       return [$o info superclasses]
     }
     "heritage" {
-      #if {"::xotcl::Object" in [$o info precedence]} {return [$o info heritage]}
-      return [$o info heritage]
+      return [$o ::nsf::methods::class::info::heritage]
     }
     "subclass" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info subclass]}
+      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info subclass]}
       return [$o info subclasses]
     }
     "parameter" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info parameter]}
+      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info parameter]}
       return [lmap p [$o info variables -closure] {$o info variable parameter $p}]
     }
     "isclass" {
@@ -1065,7 +1063,7 @@ proc ::xo::getObjectProperty {o what args} {
     }
     "isbaseclass" {
       if {![nsf::is class $o]} {return 0}
-      if {[catch {set p [$o info precedence]}]} {return 0}
+      if {[catch {set p [$o ::nsf::methods::object::info::precedence]}]} {return 0}
       return [expr {[lindex $p end] eq $o}]
     }
     "instmethodparameter" {
@@ -1075,25 +1073,29 @@ proc ::xo::getObjectProperty {o what args} {
       return [$o ::nsf::methods::object::info::method parameter {*}$args]
     }
     "instargs" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info instargs {*}$args]}
+      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info instargs {*}$args]}
       set posargs {}
-      foreach m [$o info method args {*}$args] p [$o info method parameters {*}$args] {
+      foreach \
+          m [$o ::nsf::methods::class::info::method args {*}$args] \
+          p [$o ::nsf::methods::class::info::method parameter {*}$args] {
         if {[string index [lindex $p 0] 0] eq "-"} continue
         lappend posargs $m
       }
       return $posargs
     }
     "args" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o info args {*}$args]}
+      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info args {*}$args]}
       set posargs {}
-      foreach m [$o info object method args {*}$args] p [$o info object method parameters {*}$args] {
+      foreach \
+          m [$o ::nsf::methods::object::info::method args {*}$args] \
+          p [$o ::nsf::methods::object::info::method parameter {*}$args] {
         if {[lindex [string index $p 0] 0] eq "-"} continue
         lappend posargs $m
       }
       return $posargs
     }
     "instargdefault" {
-      if {"::xotcl::Object" in [$o info precedence]} {
+      if {[nsf::is object,type=::xotcl::Object $o]} {
         return [uplevel [list $o info instdefault {*}$args]]
       }
       lassign $args method arg varName
@@ -1107,7 +1109,7 @@ proc ::xo::getObjectProperty {o what args} {
       return 0
     }
     "argdefault" {
-      if {"::xotcl::Object" in [$o info precedence]} {
+      if {[nsf::is object,type=::xotcl::Object $o]} {
         return [uplevel [list $o info default {*}$args]]
       }
       lassign $args method arg varName
@@ -1122,19 +1124,19 @@ proc ::xo::getObjectProperty {o what args} {
     }
 
     "array-exists" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o array exists {*}$args]}
+      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o array exists {*}$args]}
       return [$o eval [list array exists :{*}$args]]
     }
     "array-get" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o array get {*}$args]}
+      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o array get {*}$args]}
       return [$o eval [list array get :{*}$args]]
     }
     "array-set" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o array set {*}$args]}
+      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o array set {*}$args]}
       return [$o eval [list array set :{*}$args]]
     }
     "set" {
-      if {"::xotcl::Object" in [$o info precedence]} {return [$o set {*}$args]}
+      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o set {*}$args]}
       return [$o eval [list set :[lindex $args 0]]]
     }
     "vars" {
