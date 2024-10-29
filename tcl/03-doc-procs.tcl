@@ -181,7 +181,7 @@ ad_library {
     if {[nsv_exists api_proc_doc $proc_index]} {
       return "<a href='/api-doc/proc-view?proc=[ns_urlencode $proc_index]'>$label</a>"
     } else {
-      if {[::xo::getObjectProperty $obj $kind $method] eq ""} {
+      if {[::apidoc::get_object_property $obj $kind $method] eq ""} {
         return $method<SUP>C</SUP>
       } else {
         return $method
@@ -205,14 +205,14 @@ ad_library {
     #
     # Check, whether the passed in obj is a class
     #
-    :scope_eval $scope xo::getObjectProperty $obj isclass
+    :scope_eval $scope apidoc::get_object_property $obj isclass
   }
 
   :public object method isobject {scope obj} {
     #
     # Check, whether the passed in obj is an object
     #
-    :scope_eval $scope xo::getObjectProperty $obj isobject
+    :scope_eval $scope apidoc::get_object_property $obj isobject
   }
 
   :public object method scope {} {
@@ -524,9 +524,9 @@ ad_library {
     # Obtain a doc-string for a method, convert it and add it to the
     # proc-doc.
     #
-    set methodType [::xo::getObjectProperty $obj ${inst}methodtype $proc_name]
+    set methodType [::apidoc::get_object_property $obj ${inst}methodtype $proc_name]
     set varargs_p [expr {$methodType eq "scripted"
-                         && "args" in [::xo::getObjectProperty $obj ${inst}args $proc_name]}]
+                         && "args" in [::apidoc::get_object_property $obj ${inst}args $proc_name]}]
 
     set doc [dict create \
                  param "" \
@@ -551,13 +551,13 @@ ad_library {
       dict set doc positionals {}
     } else {
       set defaults [list]
-      foreach a [::xo::getObjectProperty $obj ${inst}args $proc_name] {
-        if {[::xo::getObjectProperty $obj ${inst}argdefault $proc_name $a d]} {
+      foreach a [::apidoc::get_object_property $obj ${inst}args $proc_name] {
+        if {[::apidoc::get_object_property $obj ${inst}argdefault $proc_name $a d]} {
           lappend defaults $a $d
         }
       }
 
-      foreach def [::xo::getObjectProperty $obj ${inst}methodparameter $proc_name] {
+      foreach def [::apidoc::get_object_property $obj ${inst}methodparameter $proc_name] {
         lassign $def f default
         set pair [split [lindex $f 0 0] :]
         lassign $pair flaggedName flags
@@ -584,7 +584,7 @@ ad_library {
         }
       }
       dict set doc default_values $defaults
-      dict set doc positionals [::xo::getObjectProperty $obj ${inst}args $proc_name]
+      dict set doc positionals [::apidoc::get_object_property $obj ${inst}args $proc_name]
     }
 
     # argument documentation finished

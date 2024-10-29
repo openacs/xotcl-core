@@ -62,10 +62,10 @@ interp alias {} DO {} ::xo::api scope_eval $scope
 # get object fully qualified
 set object [DO namespace origin $object]
 
-set my_class [DO xo::getObjectProperty $object class]
+set my_class [DO apidoc::get_object_property $object class]
 set title "$my_class $object"
 set isclass [::xo::api isclass $scope $object]
-set isnx [DO xo::getObjectProperty $object isnxobject]
+set isnx [DO apidoc::get_object_property $object isnxobject]
 set s [DO Serializer new]
 
 set dimensional_slider [ad_dimensional {
@@ -118,8 +118,8 @@ nsf::proc local_api_documentation {{-proc_type scripted} show_methods scope obje
 proc class_relation {scope object kind {dosort 0}} {
   upvar class_references class_references
 
-  set isnx [DO xo::getObjectProperty $object isnxobject]
-  set list [DO xo::getObjectProperty $object $kind]
+  set isnx [DO apidoc::get_object_property $object isnxobject]
+  set list [DO apidoc::get_object_property $object $kind]
 
   if {$dosort} {set list [lsort $list]}
 
@@ -140,7 +140,7 @@ proc class_relation {scope object kind {dosort 0}} {
 proc class_summary {c scope} {
   set result ""
   if {0} {
-    set methods [lsort [DO xo::getObjectProperty $c instcommand]]
+    set methods [lsort [DO apidoc::get_object_property $c instcommand]]
     set pretty [list]
     foreach m $methods {
       if {[info exists param($m)]} continue
@@ -150,10 +150,10 @@ proc class_summary {c scope} {
     if {[llength $pretty]>0} {
       append result "<dt><em>Methods for instances:</em></dt> <dd>[join $pretty {, }]</dd>"
     }
-    set methods [lsort [DO xo::getObjectProperty $c command -callprotection all]]
+    set methods [lsort [DO apidoc::get_object_property $c command -callprotection all]]
     set pretty [list]
     foreach m $methods {
-      if {![DO xo::getObjectProperty ${c}::$m isobject]} {
+      if {![DO apidoc::get_object_property ${c}::$m isobject]} {
         lappend pretty [::xo::api method_link $c proc $m]
       }
     }
@@ -169,7 +169,7 @@ proc class_summary {c scope} {
 
   set pretty_parameter ""
   set line "[::xo::api object_link $scope $c] create ..."
-  set parameters [lsort [DO xo::getObjectProperty $c parameter]]
+  set parameters [lsort [DO apidoc::get_object_property $c parameter]]
   if {[llength $parameters] > 0} {
     #
     # Initial line length is length of class name + "create" + "..." +
@@ -208,9 +208,9 @@ if {$isclass} {
 
   #
   # compute list of classes with siblings
-  foreach c [DO xo::getObjectProperty $object superclass] {
-    if {[DO xo::getObjectProperty $object isbaseclass]} continue
-    lappend class_hierarchy {*}[DO xo::getObjectProperty $c subclass]
+  foreach c [DO apidoc::get_object_property $object superclass] {
+    if {[DO apidoc::get_object_property $object isbaseclass]} continue
+    lappend class_hierarchy {*}[DO apidoc::get_object_property $c subclass]
   }
   if {[llength $class_hierarchy]>5} {
     set class_hierarchy {}
@@ -218,8 +218,8 @@ if {$isclass} {
 
   # Display just up to two extra two levels of heritage to keep the
   # class in question in focus.
-  set heritage [DO xo::getObjectProperty $object heritage]
-  set subclasses [DO xo::getObjectProperty $object subclass]
+  set heritage [DO apidoc::get_object_property $object heritage]
+  set subclasses [DO apidoc::get_object_property $object subclass]
 
   if {[llength $heritage] > $above} {
     # In case we have nothing to show from the subclasses,
@@ -240,7 +240,7 @@ if {$isclass} {
   if {$below > 0} {
     for {set level 1} {$level < $below} {incr level} {
       foreach sc $subclasses {
-        foreach c [DO xo::getObjectProperty $sc subclass] {
+        foreach c [DO apidoc::get_object_property $sc subclass] {
           if {$c ni $subclasses} {
             lappend subclasses $c
           }
@@ -336,11 +336,11 @@ if {$show_methods} {
   #
   # per-object methods
   #
-  set methods [lsort [DO ::xo::getObjectProperty $object command]]
+  set methods [lsort [DO ::apidoc::get_object_property $object command]]
   if {[llength $methods] > 0} {
     set method_output ""
     foreach m $methods {
-      set type [DO ::xo::getObjectProperty $object methodtype $m]
+      set type [DO ::apidoc::get_object_property $object methodtype $m]
       if {$type eq "object"} {
         #
         # filter (sub)objects, which are callable via the method interface
@@ -365,11 +365,11 @@ if {$show_methods} {
     #
     # instance methods
     #
-    set methods [lsort [DO ::xo::getObjectProperty $object instcommand]]
+    set methods [lsort [DO ::apidoc::get_object_property $object instcommand]]
     if {[llength $methods] > 0} {
       set method_output ""
       foreach m $methods {
-        set type [DO ::xo::getObjectProperty $object instmethodtype $m]
+        set type [DO ::apidoc::get_object_property $object instmethodtype $m]
         set out [local_api_documentation -proc_type $type $show_methods $scope $object instproc $m]
         if {$out ne ""} {
           append method_output "<a name='instproc-$m'></a><li>$out"
@@ -392,11 +392,11 @@ if {$show_methods} {
 
 if {$show_variables && !$isnx} {
   set vars ""
-  foreach v [lsort [DO ::xo::getObjectProperty $object vars]] {
-    if {[DO ::xo::getObjectProperty $object array-exists $v]} {
-      append vars "$object array set $v [list [DO ::xo::getObjectProperty $object array-get $v]]\n"
+  foreach v [lsort [DO ::apidoc::get_object_property $object vars]] {
+    if {[DO ::apidoc::get_object_property $object array-exists $v]} {
+      append vars "$object array set $v [list [DO ::apidoc::get_object_property $object array-get $v]]\n"
     } else {
-      append vars "$object set $v [list [DO ::xo::getObjectProperty $object set $v]]\n"
+      append vars "$object set $v [list [DO ::apidoc::get_object_property $object set $v]]\n"
     }
   }
   if {$vars ne ""} {

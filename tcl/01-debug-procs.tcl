@@ -989,172 +989,28 @@ namespace eval ::xo {
   }
 }
 
-proc ::xo::getObjectProperty {o what args} {
-  switch -- $what {
-    "mixin" {
-      return [$o ::nsf::methods::object::info::mixins]
-    }
-    "instmixin" {
-      return [$o ::nsf::methods::class::info::mixins]
-    }
-    "mixinof" {
-      return [$o ::nsf::methods::class::info::mixinof -scope object]
-    }
-    "instmixinof" {
-      return [$o ::nsf::methods::class::info::mixinof -scope class]
-    }
-
-    "instproc" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info instprocs {*}$args]}
-      return [$o info methods -path -type scripted -callprotection all {*}$args]
-    }
-    "instcommand" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info instcommands {*}$args]}
-      return [$o info methods -path {*}$args]
-    }
-    "instforward" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info instforward {*}$args]}
-      return [$o info methods -type forwarder {*}$args]
-    }
-    "instmethodtype" {
-      return [$o ::nsf::methods::class::info::method type {*}$args]
-    }
-    "methodtype" {
-      return [$o ::nsf::methods::object::info::method type {*}$args]
-    }
-    "proc" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info procs {*}$args]}
-      return [$o info object methods -path -type scripted {*}$args]
-    }
-    "command" {
-      return [$o ::nsf::methods::object::info::methods {*}$args]
-    }
-    "forward" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info forward {*}$args]}
-      return [$o info object methods -type forwarder {*}$args]
-    }
-    "slots" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info slots]}
-      return [$o info object methods -type forwarder]
-    }
-    "class" {
-      return [$o ::nsf::methods::object::info::class]
-    }
-    "superclass" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info superclass]}
-      return [$o info superclasses]
-    }
-    "heritage" {
-      return [$o ::nsf::methods::class::info::heritage]
-    }
-    "subclass" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info subclass]}
-      return [$o info subclasses]
-    }
-    "parameter" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info parameter]}
-      return [lmap p [$o info variables -closure] {$o info variable parameter $p}]
-    }
-    "isclass" {
-      return [nsf::is class $o]
-    }
-    "isobject" {
-      return [nsf::is object $o]
-    }
-    "isbaseclass" {
-      if {![nsf::is class $o]} {return 0}
-      if {[catch {set p [$o ::nsf::methods::object::info::precedence]}]} {return 0}
-      return [expr {[lindex $p end] eq $o}]
-    }
-    "instmethodparameter" {
-      return [$o ::nsf::methods::class::info::method parameter {*}$args]
-    }
-    "methodparameter" {
-      return [$o ::nsf::methods::object::info::method parameter {*}$args]
-    }
-    "instargs" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info instargs {*}$args]}
-      set posargs {}
-      foreach \
-          m [$o ::nsf::methods::class::info::method args {*}$args] \
-          p [$o ::nsf::methods::class::info::method parameter {*}$args] {
-        if {[string index [lindex $p 0] 0] eq "-"} continue
-        lappend posargs $m
-      }
-      return $posargs
-    }
-    "args" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o info args {*}$args]}
-      set posargs {}
-      foreach \
-          m [$o ::nsf::methods::object::info::method args {*}$args] \
-          p [$o ::nsf::methods::object::info::method parameter {*}$args] {
-        if {[lindex [string index $p 0] 0] eq "-"} continue
-        lappend posargs $m
-      }
-      return $posargs
-    }
-    "instargdefault" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {
-        return [uplevel [list $o info instdefault {*}$args]]
-      }
-      lassign $args method arg varName
-      foreach p [$o info method parameters $method] {
-        lassign $p name default
-        if {$name eq $arg} {
-          uplevel [list set $varName $default]
-          return [expr {[llength $p] == 2}]
-        }
-      }
-      return 0
-    }
-    "argdefault" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {
-        return [uplevel [list $o info default {*}$args]]
-      }
-      lassign $args method arg varName
-      foreach p [$o info object method parameters $method] {
-        lassign $p name default
-        if {$name eq $arg} {
-          uplevel [list set $varName $default]
-          return [expr {[llength $p] == 2}]
-        }
-      }
-      return 0
-    }
-
-    "array-exists" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o array exists {*}$args]}
-      return [$o eval [list array exists :{*}$args]]
-    }
-    "array-get" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o array get {*}$args]}
-      return [$o eval [list array get :{*}$args]]
-    }
-    "array-set" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o array set {*}$args]}
-      return [$o eval [list array set :{*}$args]]
-    }
-    "set" {
-      if {[nsf::is object,type=::xotcl::Object $o]} {return [$o set {*}$args]}
-      return [$o eval [list set :[lindex $args 0]]]
-    }
-    "vars" {
-      return [$o ::nsf::methods::object::info::vars]
-    }
-
-    "isnxobject" {
-      if {[info commands ::nsf::dispatch] ne "" && [info commands $o] ne ""} {
-        return [::nsf::dispatch $o ::nsf::methods::object::info::hastype ::nx::Object]
-      } {
-        return 0
-      }
-    }
-    default {
-      error "no idea how to return $what"
-    }
-  }
-}
+# nx::Object create acs::object_property {
+#   :public object method mixin {o} {
+#     $o ::nsf::methods::object::info::mixins
+#   }
+#   :public object method instmixin {o} {
+#     $o ::nsf::methods::class::info::mixins
+#   }
+#   :public object method mixinof {o} {
+#     $o ::nsf::methods::class::info::mixinof -scope object   
+#   }
+#   :public object method instmixinof {o} {
+#     $o ::nsf::methods::class::info::mixinof -scope class
+#   }
+#   :public object method instproc {o args} {
+#     if {[nsf::is class,type=::xotcl::Class $o]} {return [$o info instprocs {*}$args]}
+#     if {[nsf::is class,type=::nx::Class $o]} {return $o info methods -path -type scripted -callprotection all {*}$args}
+#   }
+#   :public object method instcommand {o args} {
+#     if {[nsf::is class,type=::xotcl::Class $o]} {return [$o info instcommands {*}$args]}
+#     if {[nsf::is class,type=::nx::Class $o]} {return [$o info methods -path {*}$args]}
+#   }
+# }
 
 #
 # Helper method to copy a slot and configure it

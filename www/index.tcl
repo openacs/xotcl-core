@@ -42,7 +42,7 @@ proc local_link cl {
 proc info_classes {cl key {dosort 0}} {
   upvar all_classes all_classes
   set infos ""
-  set classes [::xo::getObjectProperty $cl $key]
+  set classes [::apidoc::get_object_property $cl $key]
   if {$dosort} {
     set classes [lsort $classes]
   }
@@ -76,7 +76,7 @@ foreach cl [lsort $classes] {
 
   foreach key {proc instproc} {
     set infos ""
-    foreach i [lsort [::xo::getObjectProperty $cl $key]] {append infos [::xo::api method_link $cl $key $i] ", "}
+    foreach i [lsort [::apidoc::get_object_property $cl $key]] {append infos [::xo::api method_link $cl $key $i] ", "}
     set infos [string trimright $infos ", "]
     if {$infos ne ""} {
       append output "<li><em>$key:</em> $infos</li>\n"

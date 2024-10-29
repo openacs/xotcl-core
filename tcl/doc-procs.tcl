@@ -25,7 +25,7 @@ namespace eval ::xo {
         if {$kind eq "instproc"} {append infokind s}
         ::xo::api scope_from_object_reference scope e
         if {$kind eq "proc"} {set prefix "&rarr; "} {set prefix ""}
-        foreach methodName [xo::getObjectProperty $e $kind] {
+        foreach methodName [apidoc::get_object_property $e $kind] {
             if {$documented_methods} {
                 set proc_index [::xo::api proc_index $scope $e $kind $methodName]
                 #:msg "check $methodName => [nsv_exists api_proc_doc $proc_index]"
@@ -114,7 +114,7 @@ namespace eval ::xo {
         foreach e $classes {
             if {![::nsf::is object $e]} continue
             set reduced_sc [list]
-            foreach sc [::xo::getObjectProperty $e superclass] {
+            foreach sc [::apidoc::get_object_property $e superclass] {
                 if {$omit_base_classes && [::nsf::is baseclass $sc]} continue
                 lappend reduced_sc $sc
             }
@@ -146,7 +146,7 @@ namespace eval ::xo {
                     append children "[dotquote $c]->[dotquote $e];\n"
                 }
             }
-            set m [xo::getObjectProperty $e mixin]
+            set m [apidoc::get_object_property $e mixin]
             #puts "-- $e mixin $m"
             if {$m eq ""} continue
             foreach mixin $m {
@@ -157,7 +157,7 @@ namespace eval ::xo {
         set tclasses ""
         set instmixins ""
         foreach e $classes {
-            set m [xo::getObjectProperty $e instmixin]
+            set m [apidoc::get_object_property $e instmixin]
             #puts "-- $e instmixin $m"
             if {$m eq ""} continue
             #foreach mixin $m {
