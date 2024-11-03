@@ -84,6 +84,7 @@ ad_library {
           return ""
         }
       }
+      2 {lassign $proc_spec methodType obj; set scope ""}
       3 {lassign $proc_spec obj methodType method; set scope ""}
       4 {lassign $proc_spec scope obj methodType method}
       default {
