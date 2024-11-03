@@ -38,6 +38,7 @@ ad_library {
     #
     switch [llength $proc_spec] {
       1 {}
+      2 {lassign $proc_spec methodType obj; set scope ""}
       3 {lassign $proc_spec obj methodType method; set scope ""}
       4 {lassign $proc_spec scope obj methodType method}
       default {
@@ -96,7 +97,7 @@ ad_library {
       set modifier "-per-object"
     } elseif {$methodType in {instproc nsfproc}} {
       set modifier ""
-    } elseif {$methodType eq "Class"} {
+    } elseif {$methodType in {Class Object}} {
       return ""
     } else {
       ns_log warning "[self] debug_widget unexpected method type <$methodType>"
@@ -412,6 +413,9 @@ ad_library {
     # If no doc string is provided, try to get it from the object
     # definition.
     #
+    #if {![string match ::* $obj]} {
+    #  ad_log error "==== update_object_doc OBJECT WITHOUT leading colons <$obj>"
+    #}
 
     if {$doc_string eq ""} {
       set doc_string [:get_doc_block [:get_init_block $scope $obj]]
