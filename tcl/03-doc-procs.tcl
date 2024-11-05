@@ -17,7 +17,7 @@ ad_library {
   # classes for the API browser.
   #
 
-  array set :methodLabel {
+  set :methodLabel {
     1-instproc "method"
     1-proc "object method"
     1-forward "object forward"
@@ -51,9 +51,9 @@ ad_library {
         set isNx [:scope_eval $scope \
                       ::nsf::directdispatch $obj ::nsf::methods::object::info::hastype ::nx::Class]
         if {$kind} {
-          set result [set :methodLabel($isNx-$methodType)]
+          set result [dict get ${:methodLabel} $isNx-$methodType]
         } else {
-          set result "$obj [set :methodLabel($isNx-$methodType)] $method"
+          set result "$obj [dict get ${:methodLabel} $isNx-$methodType] $method"
         }
         return $result
       }
@@ -416,7 +416,7 @@ ad_library {
     #if {![string match ::* $obj]} {
     #  ad_log error "==== update_object_doc OBJECT WITHOUT leading colons <$obj>"
     #}
-
+    
     if {$doc_string eq ""} {
       set doc_string [:get_doc_block [:get_init_block $scope $obj]]
     }
@@ -659,7 +659,11 @@ ad_library {
       #
       # Check general per-object documentation.
       #
-      if {[string match ::nx::* $o]} continue
+      if {[string match ::nx::* $o]
+          || [string match *::slot::* $o]
+          || [::nsf::object::property $o slotcontainer]} {
+        continue
+      }
       ::xo::api update_object_doc "" $o ""
     }
   }
