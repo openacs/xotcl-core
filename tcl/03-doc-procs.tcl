@@ -184,6 +184,16 @@ ad_library {
       return "<a href='/api-doc/proc-view?proc=[ns_urlencode $proc_index]'>$label</a>"
     } else {
       if {[::apidoc::get_object_property $obj $kind $method] eq ""} {
+        #
+        # Try to handle aliases via the alias definition
+        #
+        set definition [ns_cache info {*}[expr {$kind eq "proc" ? "object" : ""}] method definition $method]
+        if {[lindex $definition end-2] eq "alias"} {
+          return "<a href='/api-doc/proc-view?proc=[ns_urlencode [lindex $definition end]]'>$label</a>"
+        }
+        #
+        # Must be something implemented in C
+        #
         return $method<SUP>C</SUP>
       } else {
         return $method
@@ -416,7 +426,7 @@ ad_library {
     #if {![string match ::* $obj]} {
     #  ad_log error "==== update_object_doc OBJECT WITHOUT leading colons <$obj>"
     #}
-    
+
     if {$doc_string eq ""} {
       set doc_string [:get_doc_block [:get_init_block $scope $obj]]
     }
