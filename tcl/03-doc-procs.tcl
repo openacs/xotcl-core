@@ -182,12 +182,12 @@ ad_library {
     }
     if {[nsv_exists api_proc_doc $proc_index]} {
       return "<a href='/api-doc/proc-view?proc=[ns_urlencode $proc_index]'>$label</a>"
-    } else {
+    } else {    
       if {[::apidoc::get_object_property $obj $kind $method] eq ""} {
         #
         # Try to handle aliases via the alias definition
         #
-        set definition [ns_cache info {*}[expr {$kind eq "proc" ? "object" : ""}] method definition $method]
+        set definition [$obj info {*}[expr {$kind eq "proc" ? "object" : ""}] method definition $method]
         if {[lindex $definition end-2] eq "alias"} {
           return "<a href='/api-doc/proc-view?proc=[ns_urlencode [lindex $definition end]]'>$label</a>"
         }
