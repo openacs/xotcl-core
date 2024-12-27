@@ -2,7 +2,7 @@ ad_page_contract {
         Cache Viewer
 } {
   {cache:optional,notnull 0}
-  {item:token,optional,notnull 0}
+  {item:safetclchars,optional,notnull 0}
   {flush:boolean,optional,notnull 0}
   {filter ""}
   {flushall:boolean,optional,notnull 0}
