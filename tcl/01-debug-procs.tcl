@@ -867,18 +867,19 @@ namespace eval ::xo {
 
   ::xo::system_stats proc thread_classify {name} {
     switch -glob -- $name {
-      "-main-"    { set group main }
-      "::*"       { set group tcl:[string range $name 2 end]}
-      "-sched*"   { set group scheds  }
-      "-conn:*"   { set group conns   }
-      "-driver:*" { set group drivers }
       "-asynclogwriter*" { set group logwriter }
-      "-writer*"  { set group writers }
-      "-spooler*" { set group spoolers }
-      "-socks-"   { set group socks }
-      "-nsproxy*" { set group nsproxy }
-      "-ns_job_*" { set group ns_job }
-      default     { set group others  }
+      "-conn:*"          { set group conns   }
+      "-driver:*"        { set group drivers }
+      "-main-"           { set group main }
+      "-ns_job_*"        { set group ns_job }
+      "-nsproxy*"        { set group nsproxy }
+      "-sched*"          { set group scheds  }
+      "-socks-"          { set group socks }
+      "-spooler*"        { set group spoolers }
+      "-task:tclhttp*"   { set group tclhttp }
+      "-writer*"         { set group writers }
+      "::*"              { set group tcl:[string range $name 2 end]}
+      default            { set group others  }
     }
     return $group
   }
