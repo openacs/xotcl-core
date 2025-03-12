@@ -134,7 +134,7 @@ namespace eval ::xo::db {
   namespace eval ::db {}
   ::xo::db::postgresql instproc nextval {sequence} {
     if {![info exists ::db::sequences]} {
-      ns_log notice "-- creating per thread sequence table"
+      ns_log notice "-- creating per thread sequence table (triggered by :xo::db::postgresql nextval $sequence)"
       foreach s [::xo::dc list relnames "select relname from pg_class where relkind = 'S'"] {
         set ::db::sequences($s) 1
       }
