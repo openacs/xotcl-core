@@ -182,7 +182,7 @@ ad_library {
     }
     if {[nsv_exists api_proc_doc $proc_index]} {
       return "<a href='/api-doc/proc-view?proc=[ns_urlencode $proc_index]'>$label</a>"
-    } else {    
+    } else {
       if {[::apidoc::get_object_property $obj $kind $method] eq ""} {
         #
         # Try to handle aliases via the alias definition
@@ -292,7 +292,7 @@ ad_library {
         #ns_log notice "INIT script_name of $obj from proc_source_file => <$script>"
       }
       if {$script eq "" && [info exists obj]} {
-        set class [::nsf::directdispatch $obj ::nsf::methods::object::info::class]
+        set class [:scope_eval $scope apidoc::get_object_property $obj class]
         if {[nsv_get proc_source_file " Class $class" script]} {
           #ns_log notice "INIT script_name of $obj via $class from proc_source_file => <$script>"
         }
@@ -488,7 +488,13 @@ ad_library {
     #ns_log notice "elements = [array get elements]"
     nsv_set api_library_doc $file_index [array get elements]
 
-    if {[::nsf::dispatch $obj ::nsf::methods::object::info::hastype ::nx::Class]} {
+    set isNxClass [::xo::api scope_eval $scope \
+                       ::nsf::directdispatch ::$obj \
+                       ::nsf::methods::object::info::hastype ::nx::Class]
+    set isNxObject [::xo::api scope_eval $scope \
+                        ::nsf::directdispatch ::$obj \
+                        ::nsf::methods::object::info::hastype ::nx::Object]
+    if {$isNxClass} {
       #
       # nx classes
       #
@@ -506,7 +512,7 @@ ad_library {
         }
       }
     }
-    if {[::nsf::dispatch $obj ::nsf::methods::object::info::hastype ::nx::Object]} {
+    if {$isNxObject} {
       #
       # nx objects
       #
