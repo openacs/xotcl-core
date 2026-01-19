@@ -386,7 +386,13 @@ ad_library {
     #ns_log notice "elements = [array get elements]"
     nsv_set api_library_doc $file_index [array get elements]
 
-    if {[::nsf::dispatch $obj ::nsf::methods::object::info::hastype ::nx::Class]} {
+    set isNxClass [::xo::api scope_eval $scope \
+                       ::nsf::directdispatch ::$obj \
+                       ::nsf::methods::object::info::hastype ::nx::Class]
+    set isNxObject [::xo::api scope_eval $scope \
+                        ::nsf::directdispatch ::$obj \
+                        ::nsf::methods::object::info::hastype ::nx::Object]
+    if {$isNxClass} {
       #
       # nx classes
       #
@@ -404,7 +410,7 @@ ad_library {
         }
       }
     }
-    if {[::nsf::dispatch $obj ::nsf::methods::object::info::hastype ::nx::Object]} {
+    if {$isNxObject} {
       #
       # nx objects
       #
