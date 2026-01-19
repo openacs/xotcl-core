@@ -2,14 +2,13 @@
   Utility functions for ical data
 
   @author neumann@wu-wien.ac.at
-  @creation-date July 20, 2005
-
-  Incomplete backport from :calendar extensions
+  @creation-date July 20, 2005, modernized in 2019
 }
 
 namespace eval ::xo::ical {}
 
 nx::Object create ::xo::ical {
+  #
   # The Object ::calendar::ical provides the methods for
   # importing and exporting single or multiple calendar items
   #  in the ical format (see rfc 2445). Currently only the part
@@ -20,15 +19,19 @@ nx::Object create ::xo::ical {
 
   :object method debug {msg} {
     #
-    # TODO: mabe add Debug(ical)?
+    # TODO: maybe add Debug(ical)?
     #
     ns_log Debug(caldav) "[uplevel current proc]: $msg"
   }
 
   #
-  # conversion routines from and to the date formats used by ical
+  # Conversion routines from and to the date formats used by ical
   #
   :public object method date_time_to_clock {date time utc} {
+    #
+    # Convert separate fields date and time with boolean utc flags
+    # into clock value in seconds.
+    #
     set year  [string range $date 0 3]
     set month [string range $date 4 5]
     set day   [string range $date 6 7]
@@ -40,31 +43,53 @@ nx::Object create ::xo::ical {
   }
 
   :public object method tcl_time_to_utc {time} {
+    #
+    # Convert Tcl time stamp to UTC.
+    #
     clock format [clock scan $time] -format "%Y%m%dT%H%M%SZ" -gmt 1
   }
 
   :public object method tcl_time_to_local_day {time} {
+    #
+    # Convert Tcl time stamp into local day format
     # https://tools.ietf.org/html/rfc5545#section-3.3.4
+    #
     return "VALUE=DATE:[:clock_to_local_day [clock scan $time]]"
   }
 
   :public object method utc_to_clock {utc_time} {
+    #
+    # Convert UTC time to clock seconds.
+    #
     clock scan $utc_time -format "%Y%m%dT%H%M%SZ" -gmt 1
   }
 
   :public object method clock_to_utc {seconds:integer} {
+    #
+    # Convert clock epoch (result from [clock seconds]) into UTC time.
+    #
     clock format $seconds -format "%Y%m%dT%H%M%SZ" -gmt 1
   }
 
   :public object method clock_to_iso {seconds:integer} {
+    #
+    # Convert clock epoch (result from [clock seconds]) into ISO format
+    #
     clock format $seconds -format "%Y-%m-%dT%H:%M:%SZ" -gmt 1
   }
 
   :public object method clock_to_local_day {seconds:integer} {
+    #
+    # Convert clock epoch (result from [clock seconds]) to local day (YearMonthDay)
+    #
     clock format $seconds -format "%Y%m%d"
   }
 
   :public object method clock_to_oacstime {seconds:integer} {
+    #
+    # Convert clock epoch (result from [clock seconds]) into time
+    # format usually used in OpenACS.
+    #
     clock format $seconds -format "%Y-%m-%d %H:%M"
   }
 
@@ -77,7 +102,7 @@ nx::Object create ::xo::ical {
     # about 100 times faster.
     #
 
-    #:log "$start_date <= $end_date = [expr {[clock scan $start_date] <= [clock scan $end_date]}]"
+    #my log "$start_date <= $end_date = [expr {[clock scan $start_date] <= [clock scan $end_date]}]"
     expr {[clock scan $start_date] <= [clock scan $end_date]}
   }
 
@@ -146,14 +171,14 @@ namespace eval ::xo {
     :property -accessor public last-modified   ;# TODO: who (which client) needs this? not a standard ical attribute
 
     :public method get {property {default ""}} {
-	#
-	# Return a certain property of an ical items. In case, the
-	# item has no such property, return the default value.
-	#
-	if {[info exists :$property]} {
-	    return [set :$property]
-	}
-	return $default
+        #
+        # Return a certain property of an ical items. In case, the
+        # item has no such property, return the default value.
+        #
+        if {[info exists :$property]} {
+            return [set :$property]
+        }
+        return $default
     }
 
     :method tag {-tag -param -conv -value slot:required} {
@@ -215,7 +240,7 @@ namespace eval ::xo {
     :method start_end {} {
       #
       # Output either a DAY-EVENT (denoted by a single DTSTART with
-      # appropriate VALUE format) or a state and end time stamps.
+      # appropriate VALUE format) or a state and end timestamps.
       #
       if {${:is_day_item}} {
         append result \
@@ -249,7 +274,7 @@ namespace eval ::xo {
       # as lists.
       #
       #
-      # All date/time stamps are provided either by
+      # All date/timestamps are provided either by
       # the ANSI date (from postgres) or by a date
       # which can be processed via clock scan
       #
@@ -327,7 +352,7 @@ namespace eval ::xo {
           set every_n $intval
         } elseif { [regexp {^BYDAY\=+(.*)$} $rval _ bydayval] } {
           #
-          # build days_of_week list
+          # Build days_of_week list
           #
           foreach dayval [split $bydayval ","] {
             switch $dayval {
@@ -426,7 +451,7 @@ namespace eval ::xo {
           # calendar::item::delete_recurrence -recurrence_id $recurrence_id
 
           lassign [::xo::dc list -prepare integer get_old_start_date_and_event_id {
-            select start_date, e.event_id
+            select start_date,
             from  acs_events e, timespans t, time_intervals i
             where recurrence_id = :recurrence_id
             and   e.timespan_id = t.timespan_id
@@ -539,7 +564,7 @@ namespace eval ::xo {
     append t "END:VCALENDAR\n"
     return $t
   }
-  
+
   #
   # Subclass ::xo::ProtocolHandler for dav (as used by ical)
   #
