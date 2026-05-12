@@ -465,7 +465,8 @@ namespace eval ::xo {
           ::xo::db::sql::acs_event recurrence_timespan_edit \
               -event_id $old_event_id \
               -start_date $old_start_date \
-              -end_date ${:dtstart}
+              -end_date ${:dtstart} \
+              -edit_past_events_p t
         }
         calendar::item::add_recurrence \
             -cal_item_id $cal_item_id \
