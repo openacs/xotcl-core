@@ -142,7 +142,7 @@ namespace eval ::xo {
         Attribute create method
         Attribute create post_data -default ""
         Attribute create content_type \
-            -default "text/plain; charset=[ns_config ns/parameters OutputCharset iso-8859-1]"
+            -default "text/plain; charset=[ns_config ns/parameters OutputCharset utf-8]"
         Attribute create request_header_fields -default {}
         Attribute create user_agent -default "xohttp/0.2"
       }
