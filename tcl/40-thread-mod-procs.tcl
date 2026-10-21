@@ -33,7 +33,10 @@
   the actual thread is created and the thread
   ID is remembered in a tsv array. When a
   THREAD object is destroyed, the associated
-  thread is terminated as well.
+  thread is terminated as well. Persistent threads remain available while
+  NaviServer drains connection workers. They are released by an at-shutdown
+  callback, after request draining, rather than by request-interpreter cleanup.
+  Calls to a stopping thread fail explicitly with XOTCL THREAD SHUTDOWN.
 
   Notice that according to the aol-server behavior it
   is possible to create **persistent threads**
@@ -164,6 +167,25 @@ Class create ::xotcl::THREAD \
   }
 }
 
+::xotcl::THREAD ad_proc -private shutdown {registry obj tid} {
+  Stop a persistent thread after NaviServer has drained connection workers.
+  The shared stopping marker prevents further sends and duplicate releases.
+
+  @param registry shared thread registry used by the object's class
+  @param obj fully qualified thread object name
+  @param tid thread identifier registered for this shutdown callback
+} {
+  if {![nsv_exists $registry $obj]
+      || [nsv_get $registry $obj] ne $tid
+      || [nsv_exists ${registry}::stopping $obj]} {
+    return
+  }
+  nsv_set ${registry}::stopping $obj $tid
+  if {[::thread::exists $tid]} {
+    ::thread::release $tid
+  }
+}
+
 ::xotcl::THREAD instproc destroy {} {
   :log "destroy called"
   if {!${:persistent} &&
@@ -193,6 +215,11 @@ Class create ::xotcl::THREAD \
 }
 
 ::xotcl::THREAD instproc do {-async:switch args} {
+  # A process-wide shutdown request starts connection draining. Existing
+  # services must remain usable until their own shutdown callback begins.
+  if {[nsv_exists [self class]::stopping [self]]} {
+    return -code error -errorcode {XOTCL THREAD SHUTDOWN} "thread [self] is shutting down"
+  }
   if {![nsv_exists [self class] [self]]} {
     # lazy creation of a new slave thread
 
@@ -200,6 +227,9 @@ Class create ::xotcl::THREAD \
       #:check_blueprint
       #:log "after lock"
       if {![nsv_exists [self class] [self]]} {
+        if {[ns_info shutdownpending]} {
+          return -code error -errorcode {XOTCL THREAD SHUTDOWN} "cannot start thread [self] during shutdown"
+        }
         if {${:lightweight}} {
           :log "CREATE lightweight thread"
           set tid [::thread::create -thin]
@@ -225,6 +255,9 @@ Class create ::xotcl::THREAD \
         append initcmd ${:initcmd}
         #ns_log notice "INIT $initcmd"
         ::thread::send $tid $initcmd
+        if {${:persistent}} {
+          ns_atshutdown ::xotcl::THREAD shutdown [self class] [self] $tid
+        }
 
         #
         # There is a potential race condition during startup on a very
@@ -261,9 +294,7 @@ Class create ::xotcl::THREAD \
     }
     set :tid $tid
   }
-  if {[ns_info shutdownpending]} {
-    :log "thread send operation ignored due to pending shutdown: $args"
-  } elseif {$async} {
+  if {$async} {
     return [thread::send -async $tid $args]
   } else {
     return [thread::send $tid $args]
