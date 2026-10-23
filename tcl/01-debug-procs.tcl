@@ -685,6 +685,23 @@ namespace eval ::xo {
     #ns_log notice "*** end of cleanup"
   }
 
+  proc ::xo::remove_request_traces {} {
+    #
+    # Request-context traces must stop before object finalization. Their
+    # parameter and developer-support caches can be deleted before logging
+    # destructors run. Keep unrelated diagnostic traces installed.
+    #
+    foreach command {::ns_log ::ns_return} {
+      if {[info commands $command] eq ""} continue
+      foreach entry [trace info execution $command] {
+        lassign $entry operations callback
+        if {[string match ::tcltrace::* [lindex $callback 0]]} {
+          trace remove execution $command $operations $callback
+        }
+      }
+    }
+  }
+
   proc ::xo::at_delete args {
     #
     # Delete all object and classes at a time, where the thread is
@@ -697,8 +714,11 @@ namespace eval ::xo {
     # elements will not be freed. If we destroy the objects here, the
     # mentioned problem will not occur.
     #
+    ::xo::remove_request_traces
     ns_log notice "ON DELETE $args"
-    ::xo::broadcast clear
+    if {[info commands ::xo::broadcast] ne ""} {
+      ::xo::broadcast clear
+    }
 
     #
     # Make sure, no handles are allocated any more. Otherwise, when
@@ -706,16 +726,20 @@ namespace eval ::xo {
     # has already a handle associated but tries to obtain an
     # additional handle.
     #
-    db_release_unused_handles
+    if {[info commands ::db_release_unused_handles] ne ""} {
+      db_release_unused_handles
+    }
 
     set t0 [clock clicks -milliseconds]
-    ::xo::system_stats recordtimes
+    if {[nsf::is object ::xo::system_stats]} {
+      ::xo::system_stats recordtimes
+    }
     #
     # Check, if we have a new XOTcl implementation with ::xotcl::finalize
     #
     if {[info commands ::xotcl::finalize] ne ""} {
       ::xotcl::finalize
-    } else {
+    } elseif {[info commands ::xotcl::Object] ne ""} {
       # Delete the objects and classes manually
       set objs [::xotcl::Object allinstances]
       ns_log notice "no finalize available, deleting [llength $objs] objects"

@@ -36,7 +36,9 @@
   thread is terminated as well. Persistent threads remain available while
   NaviServer drains connection workers. They are released by an at-shutdown
   callback, after request draining, rather than by request-interpreter cleanup.
-  Calls to a stopping thread fail explicitly with XOTCL THREAD SHUTDOWN.
+  The shutdown callback is a Tcl proc independent of controller objects and
+  classes, which can already have been finalized. Calls to a stopping thread
+  fail explicitly with XOTCL THREAD SHUTDOWN.
 
   Notice that according to the aol-server behavior it
   is possible to create **persistent threads**
@@ -167,9 +169,10 @@ Class create ::xotcl::THREAD \
   }
 }
 
-::xotcl::THREAD ad_proc -private shutdown {registry obj tid} {
-  Stop a persistent thread after NaviServer has drained connection workers.
-  The shared stopping marker prevents further sends and duplicate releases.
+ad_proc -private ::xo::thread_shutdown {registry obj tid} {
+  Stop a persistent worker after connection workers have drained. This Tcl
+  callback must remain callable after its XOTcl controller or class has been
+  finalized. It uses only the shared registry and the Thread extension.
 
   @param registry shared thread registry used by the object's class
   @param obj fully qualified thread object name
@@ -184,6 +187,16 @@ Class create ::xotcl::THREAD \
   if {[::thread::exists $tid]} {
     ::thread::release $tid
   }
+}
+
+::xotcl::THREAD ad_proc -private shutdown {registry obj tid} {
+  Compatibility entry point for already registered shutdown callbacks.
+
+  @param registry shared thread registry
+  @param obj thread controller name
+  @param tid registered worker identifier
+} {
+  ::xo::thread_shutdown $registry $obj $tid
 }
 
 ::xotcl::THREAD instproc destroy {} {
@@ -256,7 +269,7 @@ Class create ::xotcl::THREAD \
         #ns_log notice "INIT $initcmd"
         ::thread::send $tid $initcmd
         if {${:persistent}} {
-          ns_atshutdown ::xotcl::THREAD shutdown [self class] [self] $tid
+          ns_atshutdown ::xo::thread_shutdown [self class] [self] $tid
         }
 
         #
