@@ -221,6 +221,10 @@ ad_proc -private ::xo::thread_shutdown {registry obj tid} {
     # the thread was already started
     return [nsv_get [self class] [self]]
   }
+  # The initializer can ask for its own ID before publication.
+  if {[info exists ::xotcl::currentThread] && $::xotcl::currentThread eq [self]} {
+    return [::thread::id]
+  }
   # start a small command in the thread
   :do info exists x
   # now we have the thread and can return the tid
@@ -234,6 +238,15 @@ ad_proc -private ::xo::thread_shutdown {registry obj tid} {
     return -code error -errorcode {XOTCL THREAD SHUTDOWN} "thread [self] is shutting down"
   }
   if {![nsv_exists [self class] [self]]} {
+    # The initializer can call its own controller while the creator is
+    # waiting for it under the mutex. Dispatch without taking that mutex.
+    if {[info exists ::xotcl::currentThread] && $::xotcl::currentThread eq [self]} {
+      set tid [::thread::id]
+      if {$async} {
+        return [::thread::send -async $tid $args]
+      }
+      return [::thread::send $tid $args]
+    }
     # lazy creation of a new slave thread
 
     ad_mutex_eval ${:mutex} {
@@ -249,40 +262,30 @@ ad_proc -private ::xo::thread_shutdown {registry obj tid} {
         } else {
           set tid [::thread::create]
         }
-        nsv_set [self class] [self] $tid
         if {${:persistent}} {
           :log "--created new persistent [self class] as $tid pid=[pid]"
         } else {
           :log "--created new [self class] as $tid pid=[pid]"
         }
-        #:log "--THREAD DO send [self] epoch = [ns_ictl epoch]"
-        if {${:lightweight}} {
-        } elseif {![ns_ictl epoch]} {
-          #ns_log notice "--THREAD send [self] no epoch"
-          # We are during initialization. For some unknown reasons, XOTcl
-          # is not available in newly created threads, so we have to care
-          # for full initialization, including xotcl blueprint.
-          _ns_savenamespaces
-          set initcmd [ns_ictl get]
+        try {
+          if {!${:lightweight} && ![ns_ictl epoch]} {
+            # During startup the worker needs the XOTcl blueprint.
+            _ns_savenamespaces
+            set initcmd [ns_ictl get]
+          }
+          append initcmd ${:initcmd}
+          ::thread::send $tid $initcmd
+        } on error {message options} {
+          # Keep the registry empty so the next caller can retry.
+          catch {::thread::release $tid}
+          return -options $options $message
         }
-        append initcmd ${:initcmd}
-        #ns_log notice "INIT $initcmd"
-        ::thread::send $tid $initcmd
+
+        # Publish only after the worker has finished initializing.
+        nsv_set [self class] [self] $tid
         if {${:persistent}} {
           ns_atshutdown ::xo::thread_shutdown [self class] [self] $tid
         }
-
-        #
-        # There is a potential race condition during startup on a very
-        # slow/busy system, where the throttle thread can receive
-        # commands, although it is not full initialized. One approach
-        # would be to move the nsv setting of the pid here, where the
-        # thread is fully initialized, .... but unfortunately, this
-        # leads to problems as well. This needs deeper investing,
-        # ... but is not very important, since it is very hard to
-        # reconstruct the problem case.
-        #
-        #nsv_set [self class] [self] $tid
       } else {
         set tid [nsv_get [self class] [self]]
       }
