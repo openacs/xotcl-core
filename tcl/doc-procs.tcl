@@ -8,7 +8,10 @@ xo::library doc {
 
 namespace eval ::xo {
 
-    proc dotquote {e} {
+    ad_proc -private dotquote {e} {
+      Wrap a value in double quotes for DOT output.
+      @param e Value to quote.
+    } {
         return \"$e\"
     }
 
