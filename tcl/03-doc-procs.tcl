@@ -610,7 +610,15 @@ ad_library {
 
     # argument documentation finished
     set proc_index [::xo::api proc_index $scope $obj ${inst}proc $proc_name]
-    if {![nsv_exists api_proc_doc $proc_index]} {
+    set previous_doc {}
+    if {[nsv_exists api_proc_doc $proc_index]} {
+      set previous_doc [nsv_get api_proc_doc $proc_index]
+      if {[dict exists $previous_doc testcase]} {
+        dict set doc testcase [dict get $previous_doc testcase]
+      }
+    }
+    # Tests can register before the method documentation is generated.
+    if {![dict exists $previous_doc script]} {
       nsv_lappend api_proc_doc_scripts [dict get $doc script] $proc_index
     }
     #ns_log notice "SETTING api_proc_doc '$proc_index' <$doc>"
