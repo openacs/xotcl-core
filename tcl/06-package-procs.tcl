@@ -882,7 +882,9 @@ namespace eval ::xo {
     :initialize
   }
 
-  ::xo::Package instproc initialize {} {
+  ::xo::Package ad_instproc initialize {} {
+    Hook for subclass-specific package initialization. The base method does nothing.
+  } {
     # Empty hook for OpenACS package level initialization.  This is
     # used e.g. by xowf for adding the work flow mixin classes.
   }
@@ -956,7 +958,11 @@ namespace eval ::xo {
     #
   }
 
-  ::xo::Package instproc reply_to_user {text} {
+  ::xo::Package ad_instproc reply_to_user {text} {
+    Apply the HTTP caching policy and run any pending continuation. Otherwise,
+    send the response through the package delivery handler.
+    @param text Response body.
+  } {
 
     :handle_http_caching
 

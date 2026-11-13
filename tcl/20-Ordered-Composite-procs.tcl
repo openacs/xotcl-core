@@ -59,14 +59,24 @@ namespace eval ::xo {
   }
 
   if {[::acs::icanuse "ns_strcoll"]} {
-    OrderedComposite instproc __compare {a b} {
+    OrderedComposite ad_instproc -private __compare {a b} {
+      Compare two children by the configured sort attribute.
+      @param a First child object.
+      @param b Second child object.
+      @return A negative number, zero, or a positive number for sort order.
+    } {
       set by ${:__orderby}
       set x [$a set $by]
       set y [$b set $by]
       return [ns_strcoll $x $y]
     }
   } else {
-    OrderedComposite instproc __compare {a b} {
+    OrderedComposite ad_instproc -private __compare {a b} {
+      Compare two children by the configured sort attribute.
+      @param a First child object.
+      @param b Second child object.
+      @return A negative number, zero, or a positive number for sort order.
+    } {
       set by ${:__orderby}
       set x [$a set $by]
       set y [$b set $by]
@@ -230,7 +240,12 @@ namespace eval ::xo {
   Class create OrderedComposite::Child -instproc __after_insert {} {;}
 
   Class create OrderedComposite::IndexCompare
-  OrderedComposite::IndexCompare instproc __compare {a b} {
+  OrderedComposite::IndexCompare ad_instproc -private __compare {a b} {
+    Compare the dot-separated index values of two children.
+    @param a First child object.
+    @param b Second child object.
+    @return -1, 0, or 1 for the relative order.
+  } {
     set by ${:__orderby}
     set x [$a set $by]
     set y [$b set $by]

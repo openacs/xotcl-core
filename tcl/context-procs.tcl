@@ -36,10 +36,17 @@ namespace eval ::xo {
     set :parameter_declaration $parameter
   }
 
-  Context instproc process_query_parameter {
+  Context ad_instproc process_query_parameter {
     {-all_from_query:boolean true}
     {-all_from_caller:boolean true}
     {-caller_parameters}
+  } {
+    Populate the context query parameters from the request and caller.
+    Use form values for declared parameters absent from the query, then apply
+    caller overrides and parse the declared arguments.
+    @param all_from_query Keep undeclared query parameters.
+    @param all_from_caller Keep undeclared caller parameters.
+    @param caller_parameters Optional dictionary of dash-prefixed caller arguments.
   } {
     set declared_parameters [lmap v ${:parameter_declaration} {
       string range [lindex [split [lindex $v 0] :] 0] 1 end
@@ -127,7 +134,11 @@ namespace eval ::xo {
     #:log "--cc qp [array get :queryparm] // ${:actual_query}"
   }
 
-  Context instproc original_url_and_query args {
+  Context ad_instproc original_url_and_query args {
+    Get or set the original URL and query string.
+    @param args One argument stores an explicit value. With no argument, return
+        the stored value or construct it from the context URL and query.
+  } {
     if {[llength $args] == 1} {
       set :original_url_and_query [lindex $args 0]
     } elseif {[info exists :original_url_and_query]} {
@@ -144,7 +155,10 @@ namespace eval ::xo {
     return $default
   }
 
-  Context instproc exists_query_parameter {name} {
+  Context ad_instproc exists_query_parameter {name} {
+    Return whether a processed query parameter exists.
+    @param name Parameter name.
+  } {
     #:log "--qp exists $name => [info exists :queryparm($name)]"
     info exists :queryparm($name)
   }
@@ -264,7 +278,7 @@ namespace eval ::xo {
     return $package_id
   }
 
-  ConnectionContext proc require {
+  ConnectionContext ad_proc -private require {
                                   -url
                                   {-package_id 0}
                                   {-parameter ""}
@@ -272,6 +286,14 @@ namespace eval ::xo {
                                   {-actual_query " "}
                                   {-keep_cc false}
                                 } {
+    Create or reconfigure the current connection context, ::xo::cc.
+    @param url Request URL. Supply a valid URL outside a connection thread.
+    @param package_id Package ID, or 0 to infer it from the URL.
+    @param parameter Query parameter declarations.
+    @param user_id User ID, or -1 to derive it from the request.
+    @param actual_query Query string, or a single space to read it from the connection.
+    @param keep_cc Keep the existing context when one is already present.
+  } {
     #
     # This is a private method used for low-level connection context
     # creation. This function has to be called either with a valid
@@ -446,7 +468,12 @@ namespace eval ::xo {
     return $result
   }
 
-  ConnectionContext instproc returnredirect {-allow_complete_url:switch url} {
+  ConnectionContext ad_instproc returnredirect {-allow_complete_url:switch url} {
+    Schedule a redirect to be sent when the package replies.
+    @param allow_complete_url Allow a complete URL as the redirect target.
+    @param url Redirect target.
+    @return The empty string.
+  } {
     #:log "--rp"
     set :__continuation [expr {$allow_complete_url
                                  ? [list ad_returnredirect -allow_complete_url $url]
@@ -612,7 +639,12 @@ namespace eval ::xo {
     }
   }
 
-  ConnectionContext instproc form_parameter {spec {default ""}} {
+  ConnectionContext ad_instproc form_parameter {spec {default ""}} {
+    Read a form parameter, loading the request form on demand.
+    @param spec Parameter name, optionally followed by :constraint.
+    @param default Value to return when the parameter is absent.
+    @return The value, or a list for a parameter marked as multiple.
+  } {
     :require_form_parameter
 
     set name $spec
@@ -642,7 +674,9 @@ namespace eval ::xo {
     :require_form_parameter
     info exists :form_parameter($name)
   }
-  ConnectionContext instproc get_all_form_parameter {} {
+  ConnectionContext ad_instproc get_all_form_parameter {} {
+    Load the request form if necessary and return all form parameter name and value pairs.
+  } {
     :require_form_parameter
     return [array get :form_parameter]
   }
@@ -689,7 +723,11 @@ namespace eval ::xo {
     return $value
   }
 
-  ConnectionContext instproc set_parameter {name value} {
+  ConnectionContext ad_instproc set_parameter {name value} {
+    Set a per-connection parameter override and invalidate its cached lookup.
+    @param name Parameter name.
+    @param value Value to store.
+  } {
     set key [list get_parameter $name]
     if {[:cache_exists $key]} {:cache_unset $key}
     set :perconnectionparam($name) $value
@@ -699,7 +737,11 @@ namespace eval ::xo {
     if {[:cache_exists $key]} {:cache_unset $key}
     unset -nocomplain :perconnectionparam($name)
   }
-  ConnectionContext instproc get_parameter {name {default ""}} {
+  ConnectionContext ad_instproc get_parameter {name {default ""}} {
+    Read a per-connection parameter override.
+    @param name Parameter name.
+    @param default Value to return when no override is set.
+  } {
     return [expr {[info exists :perconnectionparam($name)]
                   ? [set :perconnectionparam($name)]
                   : $default}]
@@ -713,6 +755,25 @@ namespace eval ::xo {
   ConnectionContext instproc perconnection_parameter_set_all {pairs} {
     unset -nocomplain :perconnectionparam
     array set :perconnectionparam $pairs
+  }
+
+  # Register documentation for accessors generated by XOTcl's -parameter.
+  ::xo::api update_method_doc "" ::xo::Context inst invoke_object {
+    Get or set the object selected for invocation by this context.
+  }
+  ::xo::api update_method_doc "" ::xo::Context inst package_id {
+    Get or set the OpenACS package instance ID associated with this context.
+  }
+  ::xo::api update_method_doc "" ::xo::ConnectionContext inst mobile {
+    Get or set the mobile-client flag for this request. The initial value
+    is based on the request user agent.
+  }
+  ::xo::api update_method_doc "" ::xo::ConnectionContext inst url {
+    Get or set the request URL stored in the connection context.
+  }
+  ::xo::api update_method_doc "" ::xo::ConnectionContext inst user_id {
+    Get or set the user ID stored on the connection context.
+    @see {xo::ConnectionContext instproc set_user_id}
   }
 }
 

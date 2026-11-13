@@ -1112,23 +1112,39 @@ namespace eval ::xo {
   # xo::Page: Templating and CSS
   #
   Class create Page
-  Page proc requireCSS {{-order 1} name} {
+  Page ad_proc requireCSS {{-order 1} name} {
+    Register a stylesheet for the page head.
+    @param order Relative order group for stylesheets.
+    @param name Stylesheet URL.
+  } {
     set ::_xo_need_css($name) [expr {[array size ::_xo_need_css] + 1000 * $order}]
   }
   Page proc requireStyle {{-order 1} s} {
     set ::_xo_need_style($s) [expr {[array size ::_xo_need_style] + 1000 * $order}]
   }
-  Page proc requireJS  name {
+  Page ad_proc requireJS  name {
+    Register a JavaScript URL or inline statements for the page head.
+    Repeated registrations retain their first position.
+    @param name Script URL, or inline JavaScript containing a semicolon.
+  } {
     if {![info exists ::_xo_need_js($name)]} {lappend ::_xo_js_order $name}
     set ::_xo_need_js($name)  1
   }
   Page proc requireLink {-rel -type -title -href} {
     template::head::add_link -rel $rel -href $href -type $type -title $title
   }
-  Page proc set_property {name element value} {
+  Page ad_proc set_property {name element value} {
+    Store a value under an element of a named page property.
+    @param name Property name.
+    @param element Element key.
+    @param value Value to store.
+  } {
     set ::xo_property_${name}($element) $value
   }
-  Page proc get_property {name} {
+  Page ad_proc get_property {name} {
+    Return the element and value pairs for a named page property, or an empty list.
+    @param name Property name.
+  } {
     if {[array exists ::xo_property_${name}]} {
       return [array get ::xo_property_${name}]
     }
@@ -1146,7 +1162,10 @@ namespace eval ::xo {
     return $result
   }
 
-  Page proc header_stuff {} {
+  Page ad_proc header_stuff {} {
+    Add the registered styles, stylesheets, and scripts to the template head.
+    @return The empty string.
+  } {
 
     foreach style [:sort_keys_by_value [array get ::_xo_need_style]] {
       template::head::add_style -style $style
