@@ -416,16 +416,11 @@ ad_library {
   }
 
   :public object method update_object_doc {scope obj doc_string} {
-    #
-    # Update the API browser nsvs with information about the provided
-    # object.
-    #
-    # If no doc string is provided, try to get it from the object
-    # definition.
-    #
-    #if {![string match ::* $obj]} {
-    #  ad_log error "==== update_object_doc OBJECT WITHOUT leading colons <$obj>"
-    #}
+    # Refresh API Browser metadata for an object or class and its methods.
+    # @param scope Interpreter scope, or empty for the current interpreter.
+    # @param obj Object or class to document.
+    # @param doc_string Explicit documentation, or empty to extract it
+    #     from the object's initialization block.
 
     if {$doc_string eq ""} {
       set doc_string [:get_doc_block [:get_init_block $scope $obj]]
@@ -671,10 +666,10 @@ ad_library {
   }
 
   :public object method update_nx_docs {{objects ""}} {
-    #
-    # Update for the provided (or all) nx::Object instances the
-    # internal documentation structures.
-    #
+    # Refresh API Browser documentation for NX objects and classes.
+    # @param objects List of objects to document, or empty to scan all
+    #     NX instances. Skip NX internals and slot containers.
+
     if {[llength $objects] == 0} {
       set objects [nx::Object info instances -closure]
     }

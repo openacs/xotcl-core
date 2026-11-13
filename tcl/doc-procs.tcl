@@ -12,7 +12,11 @@ namespace eval ::xo {
         return \"$e\"
     }
 
-    proc dotquotel {l} {
+    ad_proc -private dotquotel {l} {
+      Wrap each list element in double quotes for DOT output.
+      @param l List of elements to quote.
+      @return List of quoted elements.
+    } {
         set result [list]
         foreach e $l { lappend result \"$e\" }
         return $result

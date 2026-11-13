@@ -23,7 +23,11 @@ namespace eval ::xo {
     ::close $F
   }
 
-  proc write_tmp_file {varFilename content} {
+  ad_proc -public write_tmp_file {varFilename content} {
+    Write binary content to a temporary file and set its path in the caller.
+    @param varFilename Name of the caller variable to receive the path.
+    @param content Bytes to write.
+  } {
     upvar $varFilename tmpFileName
     set F [file tempfile tmpFileName]
     fconfigure $F -translation binary

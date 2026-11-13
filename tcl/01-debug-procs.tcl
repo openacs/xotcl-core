@@ -443,7 +443,10 @@ namespace eval ::xo {
     :log "--$string (${start_diff}ms, diff ${last_diff}ms)"
   }
 
-  proc show_stack {{m 100}} {
+  ad_proc -public show_stack {{m 100}} {
+    Log the Tcl call stack and available request context at notice level.
+    @param m Maximum number of stack frames to log.
+  } {
     if {[::info exists ::template::parse_level]} {
       set parse_level $::template::parse_level
     } else {
@@ -474,7 +477,11 @@ namespace eval ::xo {
   # Make reporting back of the version numbers of the most important
   # involved components easier.
   #
-  proc report_version_numbers {{pkg_list {acs-kernel xotcl-core xotcl-request-monitor xowiki s5 xoportal xowf}}} {
+  ad_proc -public report_version_numbers {{pkg_list {acs-kernel xotcl-core xotcl-request-monitor xowiki s5 xoportal xowf}}} {
+    Build a diagnostic report of database, server, Tcl, and package versions.
+    @param pkg_list OpenACS package keys to include.
+    @return A multiline version report.
+  } {
     append _ "Database: "
     if {[db_driverkey {}] eq "postgresql"} {
       append _ [db_string dbqd.null.get_version {select version() from dual}] \n

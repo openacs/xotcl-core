@@ -8,8 +8,8 @@ ad_library {
 aa_register_case -cats {
   api smoke
 } -procs {
-    "::xo::api update_object_doc"
-    "::xo::api update_nx_docs"
+    "::xo::api proc update_object_doc"
+    "::xo::api proc update_nx_docs"
 } xo_update_object_doc {
 
     Test rebuilding object documentation in relevant corner cases.

@@ -205,7 +205,12 @@ namespace eval ::xo {
   #
   # Escape provided char in provided string with backslash
   #
-  proc backslash_escape {char string} {
+  ad_proc -public backslash_escape {char string} {
+    Prefix each occurrence of a character with a backslash.
+    @param char Character to escape.
+    @param string Text to process.
+    @return The escaped text.
+  } {
     return [string map [list $char \\$char] $string]
   }
 
@@ -242,7 +247,13 @@ namespace eval ::xo {
 
   set ::xo::acs_lang_url [apm_package_url_from_key acs-lang]admin
 
-  proc localize {text {inline 0}} {
+  ad_proc -public localize {text {inline 0}} {
+    Process translator-mode markers in text from an XOTcl rendering method.
+    @param text Text containing translator-mode markers.
+    @param inline If true, insert editing controls inline. Otherwise, queue them
+        on the calling object for rendering by xo::render_localizer.
+    @return Text with translator-mode markers processed.
+  } {
     #ns_log notice "--local $text $inline"
     set obj [uplevel self]
     if {![$obj exists __localizer]} {
@@ -372,7 +383,11 @@ namespace eval ::xo {
   #
   # for the time being, just a proc
   #
-  proc get_user_name {uid} {
+  ad_proc -public get_user_name {uid} {
+    Look up the name of a person.
+    @param uid Person ID.
+    @return The name, or the localized nobody label if no name is available.
+  } {
     set name [expr {[string is integer -strict $uid]
                     ? [person::name -person_id $uid]
                     : ""}]
