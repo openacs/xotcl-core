@@ -222,14 +222,18 @@ namespace eval ::xo {
   # processing. In such cases, the two functions below can be used to
   # prevent such substitutions.
   #
-  proc remove_escapes {text} {
-    regsub -all \x01# $text "#" text
-    return $text
+  ad_proc -deprecated remove_escapes {text} {
+    Restore literal message keys after localization.
+    @see lang::util::unescape_message_keys
+  } {
+    return [::lang::util::unescape_message_keys $text]
   }
 
-  proc escape_message_keys {text} {
-    regsub -all -- {(\#[a-zA-Z0-9_:-]+\.[a-zA-Z0-9_:-]+)\#} $text "\\1\x01#" text
-    return $text
+  ad_proc -deprecated escape_message_keys {text} {
+    Protect literal message keys from localization.
+    @see lang::util::escape_message_keys
+  } {
+    return [::lang::util::escape_message_keys $text]
   }
 
   #

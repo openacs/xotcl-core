@@ -1025,7 +1025,7 @@ namespace eval ::xo {
     }
     #:log "--after adp $text"
 
-    return [::xo::remove_escapes $text]
+    return [::lang::util::unescape_message_keys $text]
   }
 
 
