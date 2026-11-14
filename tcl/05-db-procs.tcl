@@ -53,7 +53,13 @@ namespace eval ::xo::db {
       where datatype = :type" $type]
   }
   ::xo::db::SQL instproc map_function_name        {sql} {return $sql}
-  ::xo::db::SQL instproc datatype_constraint      {type table att} {return ""}
+  ::xo::db::SQL ad_instproc datatype_constraint      {type table att} {
+    Return a database-specific constraint for an attribute datatype. The
+    base implementation returns an empty string.
+    @param type Attribute datatype.
+    @param table Table name.
+    @param att Attribute name.
+  } {return ""}
   ::xo::db::SQL instproc interval {interval} {
     return [clock format [clock scan "-$interval"] -format "%Y-%m-%d %T"]
   }
@@ -76,7 +82,11 @@ namespace eval ::xo::db {
 
   ::xotcl::Class create ::xo::db::postgresql -superclass ::xo::db::SQL
 
-  ::xo::db::postgresql instproc map_datatype {type} {
+  ::xo::db::postgresql ad_instproc map_datatype {type} {
+    Map an OpenACS datatype to its PostgreSQL representation. Delegate
+    unhandled types to the next method.
+    @param type OpenACS datatype.
+  } {
     switch -- $type {
       string    { set type text }
       long_text { set type text }
@@ -87,7 +97,7 @@ namespace eval ::xo::db {
     return $type
   }
 
-  ::xo::db::postgresql instproc select {
+  ::xo::db::postgresql ad_instproc select {
     -vars:required
     -from:required
     {-where ""}
@@ -97,6 +107,17 @@ namespace eval ::xo::db {
     {-start ""}
     {-orderby ""}
     {-map_function_names false}
+  } {
+    Build a PostgreSQL SELECT statement from SQL fragments.
+    @param vars Expressions to select.
+    @param from FROM clause contents.
+    @param where Optional WHERE condition.
+    @param groupby Optional grouping expressions.
+    @param limit Optional row limit.
+    @param offset Optional row offset.
+    @param orderby Optional ordering expressions.
+    @param start Compatibility option unused by PostgreSQL.
+    @param map_function_names Compatibility option unused by PostgreSQL.
   } {
     set where_clause  [expr {$where   ne "" ? "WHERE $where" : ""}]
     set offset_clause [expr {$offset  ne "" ? "OFFSET $offset" : ""}]
@@ -132,7 +153,11 @@ namespace eval ::xo::db {
   }
 
   namespace eval ::db {}
-  ::xo::db::postgresql instproc nextval {sequence} {
+  ::xo::db::postgresql ad_instproc nextval {sequence} {
+    Return the next value of a PostgreSQL sequence, resolving its name
+    through the per-thread sequence cache.
+    @param sequence Sequence name.
+  } {
     if {![info exists ::db::sequences]} {
       ns_log notice "-- creating per thread sequence table (triggered by :xo::db::postgresql nextval $sequence)"
       foreach s [::xo::dc list relnames "select relname from pg_class where relkind = 'S'"] {
@@ -491,7 +516,12 @@ namespace eval ::xo::db {
     # built-in
   }
 
-  ::xo::db::DB instproc transaction {{-dbn ""} script args} {
+  ::xo::db::DB ad_instproc transaction {{-dbn ""} script args} {
+    Evaluate a script in the caller within a database transaction.
+    @param dbn Database name, or empty for the default.
+    @param script Tcl script to execute.
+    @param args Additional arguments to db_transaction.
+  } {
     return [:uplevel [list ::db_transaction -dbn $dbn $script {*}$args]]
   }
   ::xo::db::DB instproc prepare {-handle {-argtypes ""} sql} {
@@ -504,7 +534,14 @@ namespace eval ::xo::db {
     return [uplevel [list db_list_of_ns_sets -dbn $dbn $qn $sql {*}$bindOpt]]
   }
 
-  ::xo::db::DB-postgresql instproc sets {{-dbn ""} {-bind ""} -prepare qn sql} {
+  ::xo::db::DB-postgresql ad_instproc sets {{-dbn ""} {-bind ""} -prepare qn sql} {
+    Return a list of ns_set handles, one per query result row.
+    @param dbn Database name, or empty for the default.
+    @param bind Query bind values.
+    @param prepare Optional prepared-statement argument types.
+    @param qn Query name.
+    @param sql SQL statement.
+  } {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
 
@@ -769,12 +806,24 @@ namespace eval ::xo::db {
   # The default insert-view operation (different in PostgreSQL and Oracle)
   #
   ::xo::db::Driver instproc insert-view-operation {} { return dml }
-  ::xo::db::DB-postgresql instproc insert-view-operation {} { return 0or1row }
+  ::xo::db::DB-postgresql ad_instproc insert-view-operation {} {
+    Return the database operation used to insert through a PostgreSQL view.
+    @return 0or1row.
+  } { return 0or1row }
 
   #
   # DB driver functions, optimized for PostgreSQL
   #
-  ::xo::db::DB-postgresql instproc 0or1row {{-dbn ""} {-bind ""} -prepare qn sql} {
+  ::xo::db::DB-postgresql ad_instproc 0or1row {{-dbn ""} {-bind ""} -prepare qn sql} {
+    Run a query that returns at most one row. Set caller variables from
+    the columns if a row is present.
+    @return 1 if a row was found, or 0 otherwise.
+    @param dbn Database name, or empty for the default.
+    @param bind Query bind values.
+    @param prepare Optional prepared-statement argument types.
+    @param qn Query name.
+    @param sql SQL statement.
+  } {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     set prepOpt [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
     set answers [uplevel [list [self] exec_0or1row -dbn $dbn {*}$prepOpt -bind $bind $sql]]
@@ -825,7 +874,15 @@ namespace eval ::xo::db {
     }
     return $default
   }
-  ::xo::db::DB-postgresql instproc list_of_lists {{-dbn ""} {-bind ""} {-with_headers false} -prepare qn sql} {
+  ::xo::db::DB-postgresql ad_instproc list_of_lists {{-dbn ""} {-bind ""} {-with_headers false} -prepare qn sql} {
+    Return each query result row as a list of column values.
+    @param with_headers Include a first list containing the column names.
+    @param dbn Database name, or empty for the default.
+    @param bind Query bind values.
+    @param prepare Optional prepared-statement argument types.
+    @param qn Query name.
+    @param sql SQL statement.
+  } {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     db_with_handle -dbn [:map_default_dbn $dbn] db {
@@ -849,7 +906,14 @@ namespace eval ::xo::db {
     }
     return $result
   }
-  ::xo::db::DB-postgresql instproc list {{-dbn ""} {-bind ""} -prepare qn sql} {
+  ::xo::db::DB-postgresql ad_instproc list {{-dbn ""} {-bind ""} -prepare qn sql} {
+    Return the first column of each query result row as a list.
+    @param dbn Database name, or empty for the default.
+    @param bind Query bind values.
+    @param prepare Optional prepared-statement argument types.
+    @param qn Query name.
+    @param sql SQL statement.
+  } {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     db_with_handle -dbn [:map_default_dbn $dbn] db {
@@ -863,7 +927,15 @@ namespace eval ::xo::db {
     }
     return $result
   }
-  ::xo::db::DB-postgresql instproc dml {{-dbn ""} {-bind ""} -prepare qn sql} {
+  ::xo::db::DB-postgresql ad_instproc dml {{-dbn ""} {-bind ""} -prepare qn sql} {
+    Execute a data modification statement.
+    @return The number of affected rows.
+    @param dbn Database name, or empty for the default.
+    @param bind Query bind values.
+    @param prepare Optional prepared-statement argument types.
+    @param qn Query name.
+    @param sql SQL statement.
+  } {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     if {$bind ne ""} {set bindOpt [list -bind $bind]} {set bindOpt ""}
     set bind $bindOpt
@@ -874,7 +946,15 @@ namespace eval ::xo::db {
     return [db_resultrows]
   }
 
-  ::xo::db::DB-postgresql instproc row_lock {{-dbn ""} {-bind ""} {-for "UPDATE"} -prepare qn sql} {
+  ::xo::db::DB-postgresql ad_instproc row_lock {{-dbn ""} {-bind ""} {-for "UPDATE"} -prepare qn sql} {
+    Append a locking clause to a query and return the first column of each row.
+    @param for Locking clause after FOR, defaulting to UPDATE.
+    @param dbn Database name, or empty for the default.
+    @param bind Query bind values.
+    @param prepare Optional prepared-statement argument types.
+    @param qn Query name.
+    @param sql SQL statement.
+  } {
     set prepareOpt [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
     :uplevel [list ::xo::dc list -dbn $dbn -bind $bind {*}$prepareOpt $qn "$sql FOR $for"]
   }
@@ -1613,7 +1693,10 @@ namespace eval ::xo::db {
   # interface for stored procedures
   #
 
-  ::xo::db::postgresql instproc get_all_package_functions {} {
+  ::xo::db::postgresql ad_instproc get_all_package_functions {} {
+    Load PostgreSQL package function argument metadata into the XOTcl
+    database interface cache.
+  } {
     #
     # Load definitions in one step from function args; only for
     # those definitions where we do not have function args, we parse
@@ -1785,7 +1868,13 @@ namespace eval ::xo::db {
   #
   #  DB-postgresql interface method generation (no autonull):
   #
-  ::xo::db::DB-postgresql instproc generate_psql {package_name object_name} {
+  ::xo::db::DB-postgresql ad_instproc generate_psql {package_name object_name} {
+    Generate argument metadata and a Tcl wrapper body for calling a
+    PostgreSQL function through the database API.
+    @param package_name SQL package name.
+    @param object_name Function name within the package.
+    @return The argument metadata dictionary with a body entry.
+  } {
     set function_args [:get_function_args $package_name $object_name]
     set function_args [:fix_function_args $function_args $package_name $object_name]
     set sql_info [:sql_arg_info $function_args $package_name $object_name]
@@ -2056,7 +2145,11 @@ namespace eval ::xo::db {
     }
   }
 
-  ::xo::db::Class proc class_to_object_type {name} {
+  ::xo::db::Class ad_proc class_to_object_type {name} {
+    Map a class name to its OpenACS object type. Prefer an explicitly
+    configured object type when available.
+    @param name Class name.
+  } {
     if {[:isclass $name]} {
       if {[$name exists object_type]} {
         # The specified class has an object_type defined; return it
@@ -2079,7 +2172,10 @@ namespace eval ::xo::db {
     }
   }
 
-  ::xo::db::Class proc object_type_to_class {name} {
+  ::xo::db::Class ad_proc object_type_to_class {name} {
+    Map an OpenACS object type to its XOTcl persistence class name.
+    @param name Object type or fully qualified class name.
+  } {
     switch -glob -- $name {
       acs_object       {return ::xo::db::Object}
       content_revision -

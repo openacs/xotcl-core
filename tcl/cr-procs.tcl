@@ -926,7 +926,13 @@ namespace eval ::xo::db {
       }
     }
 
-    CrItem instproc update_attribute_from_slot {-revision_id slot:object value} {
+    CrItem ad_instproc update_attribute_from_slot {-revision_id slot:object value} {
+      Update the in-memory attribute and persist the value in the slot's
+      column for the specified revision.
+      @param revision_id Revision to update, defaulting to this item's revision.
+      @param slot Attribute slot describing the target table and column.
+      @param value Attribute value to store.
+    } {
       set :[$slot name] $value
       if {![info exists revision_id]} {
         set revision_id ${:revision_id}
@@ -1018,7 +1024,13 @@ namespace eval ::xo::db {
       }
     }
 
-    CrItem instproc update_attribute_from_slot {-revision_id slot:object value} {
+    CrItem ad_instproc update_attribute_from_slot {-revision_id slot:object value} {
+      Update the in-memory attribute and persist the value in the slot's
+      column for the specified revision.
+      @param revision_id Revision to update, defaulting to this item's revision.
+      @param slot Attribute slot describing the target table and column.
+      @param value Attribute value to store.
+    } {
       set :[$slot name] $value
       if {![info exists revision_id]} {set revision_id ${:revision_id}}
       set domain [$slot domain]

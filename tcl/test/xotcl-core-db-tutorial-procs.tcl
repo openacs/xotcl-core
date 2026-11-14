@@ -70,7 +70,7 @@ aa_register_case -cats {
   "::xo::db::Class proc class_to_object_type"
   "::xo::db::Class proc get_table_name"
   "::xo::db::Class proc object_type_to_class"
-  "::xo::db::DB instproc sets"
+  "::xo::db::DB-postgresql instproc sets"
   "::xo::db::DB instproc transaction"
   "::xo::db::DB-postgresql instproc dml"
   "::xo::db::DB-postgresql instproc generate_psql"
