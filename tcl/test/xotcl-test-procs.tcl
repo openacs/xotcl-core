@@ -383,10 +383,10 @@ aa_register_case -cats {
 aa_register_case -cats {
     api smoke
 } -procs {
-    "::xo::dc get_value"
-    "::xo::dc 1row"
-    "::xo::dc foreach"
-    "::xo::dc multirow"
+    "::xo::db::DB-postgresql instproc get_value"
+    "::xo::db::DB-postgresql instproc 1row"
+    "::xo::db::DB-postgresql instproc foreach"
+    "::xo::db::DB-postgresql instproc multirow"
 } test_prepared_statements {
     Tests the ::xo::dc with respect to prepared statements.
 } {
@@ -555,7 +555,7 @@ aa_register_case -cats {
 aa_register_case -cats {
     api smoke
 } -procs {
-    "::xo::dc multirow"
+    "::xo::db::DB-postgresql instproc multirow"
 } test_multirow {
     Tests the ::xo::dc multirow api
 } {
@@ -734,8 +734,8 @@ aa_register_case -cats {
 aa_register_case -cats {
     api smoke
 } -procs {
-    "::xo::dc foreach"
-    "::xo::dc multirow"
+    "::xo::db::DB-postgresql instproc foreach"
+    "::xo::db::DB-postgresql instproc multirow"
 } test_db_out_of_pools {
 
     Makes sure the ::xo::dc api does not incur in the "out of pools"

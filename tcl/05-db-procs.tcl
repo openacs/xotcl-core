@@ -521,7 +521,16 @@ namespace eval ::xo::db {
     return $result
   }
 
-  ::xo::db::DB-postgresql instproc foreach {{-dbn ""} {-bind ""} -prepare qn sql body} {
+  ::xo::db::DB-postgresql ad_instproc foreach {{-dbn ""} {-bind ""} -prepare qn sql body} {
+    Run a query and execute the body in the caller for each row, with the
+    column values available as local variables.
+    @param body Tcl script to run for each row.
+    @param dbn Database name, or empty for the default.
+    @param bind Bind values for the query.
+    @param prepare Optional argument types for a prepared statement.
+    @param qn Query name.
+    @param sql SQL statement.
+  } {
     set prepare [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
     set rows [uplevel 1 [list ::xo::dc list_of_lists -with_headers true -dbn $dbn -bind $bind {*}$prepare $qn $sql]]
     set headers [lindex $rows 0]
@@ -554,7 +563,7 @@ namespace eval ::xo::db {
     }
   }
 
-  ::xo::db::DB-postgresql instproc multirow {
+  ::xo::db::DB-postgresql ad_instproc multirow {
     {-dbn ""}
     {-bind ""}
     {-local false}
@@ -565,6 +574,18 @@ namespace eval ::xo::db {
     qn
     sql
     {body {}}
+  } {
+    Append query results to a template multirow, creating it if needed.
+    @param local Keep the multirow local to the selected caller frame.
+    @param upvar_level Caller level at which to store the multirow.
+    @param extend Additional column names to populate in the row body.
+    @param var_name Template multirow name.
+    @param body Optional Tcl script to run for each row.
+    @param dbn Database name, or empty for the default.
+    @param bind Bind values for the query.
+    @param prepare Optional argument types for a prepared statement.
+    @param qn Query name.
+    @param sql SQL statement.
   } {
     set prepare [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
     set rows [uplevel 1 [list ::xo::dc list_of_lists -with_headers true -dbn $dbn -bind $bind {*}$prepare $qn $sql]]
@@ -764,7 +785,16 @@ namespace eval ::xo::db {
     }
     return 0
   }
-  ::xo::db::DB-postgresql instproc 1row {{-dbn ""} {-bind ""} -prepare qn sql} {
+  ::xo::db::DB-postgresql ad_instproc 1row {{-dbn ""} {-bind ""} -prepare qn sql} {
+    Run a query that must return exactly one row and set its columns as
+    variables in the caller. Raise an error if there is no row.
+    @return 1 on success.
+    @param dbn Database name, or empty for the default.
+    @param bind Bind values for the query.
+    @param prepare Optional argument types for a prepared statement.
+    @param qn Query name.
+    @param sql SQL statement.
+  } {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     set prepOpt [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
     set answers [uplevel [list [self] exec_0or1row -dbn $dbn {*}$prepOpt -bind $bind $sql]]
@@ -775,7 +805,16 @@ namespace eval ::xo::db {
     }
     error "query $sql did not return an answer"
   }
-  ::xo::db::DB-postgresql instproc get_value {{-dbn ""} {-bind ""} -prepare qn sql {default ""}} {
+  ::xo::db::DB-postgresql ad_instproc get_value {{-dbn ""} {-bind ""} -prepare qn sql {default ""}} {
+    Return the first column of a single-row query, or the default if there
+    is no row.
+    @param default Value to return when the query produces no rows.
+    @param dbn Database name, or empty for the default.
+    @param bind Bind values for the query.
+    @param prepare Optional argument types for a prepared statement.
+    @param qn Query name.
+    @param sql SQL statement.
+  } {
     if {$sql eq ""} {set sql [:get_sql $qn]}
     set prepOpt [expr {[info exists prepare] ? [list -prepare $prepare] : ""}]
     set answers [uplevel [list [self] exec_0or1row -dbn $dbn {*}$prepOpt -bind $bind $sql]]
