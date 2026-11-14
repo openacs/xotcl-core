@@ -190,7 +190,10 @@ namespace eval ::xo::tdom {
   # General of HTML markup CSRF tokens in tDOM contexts
   #
   namespace eval ::html {}
-  proc ::html::CSRFToken {} {
+  ad_proc -public ::html::CSRFToken {} {
+    Append a hidden CSRF token input to the current tDOM HTML output
+    when a token is available for the request.
+  } {
     ::if {[::info exists ::__csrf_token]} {
       ::html::input -type hidden -name __csrf_token -value $::__csrf_token {}
     }

@@ -199,7 +199,10 @@ ad_proc -private ::xo::thread_shutdown {registry obj tid} {
   ::xo::thread_shutdown $registry $obj $tid
 }
 
-::xotcl::THREAD instproc destroy {} {
+::xotcl::THREAD ad_instproc destroy {} {
+  Destroy the thread controller and release its worker if it is nonpersistent.
+  Persistent workers are managed by the shutdown callback.
+} {
   :log "destroy called"
   if {!${:persistent} &&
       [nsv_exists [self class] [self]]} {
