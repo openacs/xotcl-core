@@ -1144,7 +1144,12 @@ namespace eval ::xo::db {
     ::db_table_exists $name
   }
 
-  require proc exists_column {table_name column_name} {
+  require ad_proc exists_column {table_name column_name} {
+    Check whether a table contains a column.
+    @param table_name Table to inspect.
+    @param column_name Column to look up.
+    @return Whether the column exists.
+  } {
 
     #
     # The following "try" operation is a transitional code: When
@@ -1177,7 +1182,12 @@ namespace eval ::xo::db {
     }
   }
 
-  require proc table {name definition {populate ""}} {
+  require ad_proc table {name definition {populate ""}} {
+    Create a table if needed, or add missing columns to an existing table.
+    @param name Table name.
+    @param definition Dictionary mapping column names to SQL definitions.
+    @param populate Optional SQL to run after creating the table.
+  } {
     #:log "==== require table $name exists: [:exists_table $name]\n$definition"
     if {![:exists_table $name]} {
       set lines {}
@@ -1212,7 +1222,16 @@ namespace eval ::xo::db {
     }
   }
 
-  require proc index {-table -col -expression -expression_name {-using ""} {-unique false}} {
+  require ad_proc index {-table -col -expression -expression_name {-using ""} {-unique false}} {
+    Create the named-by-convention index if it is missing. Supply either
+    a column list or an expression.
+    @param table Table to index.
+    @param col Comma-separated column list.
+    @param expression SQL expression to index.
+    @param expression_name Optional name component for an expression index.
+    @param using Optional index access method for PostgreSQL.
+    @param unique Whether to create a unique index.
+  } {
     if {![info exists col] && ![info exists expression]} {
       error "Neither col nor expression were provided"
     }
@@ -2081,7 +2100,12 @@ namespace eval ::xo::db {
   # The object require provides an interface to create certain
   # resources in case they are not created already.
   #
-  require proc unique {-table -col} {
+  require ad_proc unique {-table -col} {
+    Add a uniqueness constraint unless the column already has a matching
+    constraint or conventionally named unique index.
+    @param table Table to alter.
+    @param col Column name.
+  } {
     # Unique could be there by an index too
     set idxname [::xo::dc mk_sql_constraint_name $table $col un_idx]
     if {[::acs::dc call util index_exists -name $idxname]} return
@@ -2091,7 +2115,11 @@ namespace eval ::xo::db {
     }
   }
 
-  require proc not_null {-table -col} {
+  require ad_proc not_null {-table -col} {
+    Add a NOT NULL constraint if the column does not already have one.
+    @param table Table to alter.
+    @param col Column name.
+  } {
     set exists_p [::acs::dc call util not_null_exists -table $table -column $col]
     if {!$exists_p} {
       ::xo::dc dml alter-table-$table \
@@ -2099,7 +2127,12 @@ namespace eval ::xo::db {
     }
   }
 
-  require proc default {-table -col -value} {
+  require ad_proc default {-table -col -value} {
+    Set a column default when it differs from the requested value.
+    @param table Table to alter.
+    @param col Column name.
+    @param value SQL default expression.
+  } {
     set default [::acs::dc call util get_default -table $table -column $col]
 
     if {[db_driverkey ""] eq "oracle"} {
@@ -2156,7 +2189,13 @@ namespace eval ::xo::db {
     }
   }
 
-  require proc references {-table -col -ref} {
+  require ad_proc references {-table -col -ref} {
+    Add a foreign key if the specified relationship does not already exist.
+    @param table Table to alter.
+    @param col Column name.
+    @param ref Referenced table or table(column) with optional SQL clauses.
+        A table alone must have a single-column primary key.
+  } {
     # Check for already existing foreign keys.
     set ref [string trim $ref]
     # try to match the full reftable(refcol) syntax...
