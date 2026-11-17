@@ -73,6 +73,7 @@ namespace eval ::xo {
     } on error {errorMsg} {
       ad_log warning "process_query_parameter: $errorMsg"
       ad_return_complaint 1 "invalid characters in HTTP query parameters"
+      ad_script_abort
     }
 
     # get the query parameters (from the form if necessary)
